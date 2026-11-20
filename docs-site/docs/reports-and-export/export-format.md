@@ -939,6 +939,28 @@ File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
 References:
 - `application_id` refers to `applications`
 
+### decision_deliveries
+
+File: `data/decision_deliveries.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `decision_id`: uuid, nullable
+- `appeal_node_id`: uuid, nullable
+- `recipient_role`: text
+- `party_id`: uuid, nullable
+- `recipient_name`: text
+- `method`: text, nullable
+- `delivered_on`: date, nullable
+- `recorded_by`: uuid, nullable
+- `recorded_at`: timestamp with time zone, nullable
+
+References:
+- `application_id` refers to `applications`
+- `decision_id` refers to `board_decisions`
+- `appeal_node_id` refers to `appeal_nodes`
+- `party_id` refers to `project_parties`
+
 ### decision_notices
 
 File: `data/decision_notices.ndjson`. Ordered by application_id.

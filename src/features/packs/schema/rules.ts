@@ -217,3 +217,27 @@ export const NoticeRequirementRuleSchema = z.object({
   overridePolicy: OverridePolicySchema,
 })
 export type NoticeRequirementRule = z.infer<typeof NoticeRequirementRuleSchema>
+
+export const DELIVERY_RECIPIENTS = [
+  'applicant',
+  'agent',
+  'planning_board',
+  'municipal_officers',
+] as const
+export const DeliveryRecipientSchema = z.enum(DELIVERY_RECIPIENTS)
+export type DeliveryRecipient = z.infer<typeof DeliveryRecipientSchema>
+
+export const DELIVERY_METHODS = ['mail', 'hand'] as const
+export const DeliveryMethodSchema = z.enum(DELIVERY_METHODS)
+export type DeliveryMethod = z.infer<typeof DeliveryMethodSchema>
+
+export const DecisionDeliveryRuleSchema = z.object({
+  ...base,
+  kind: z.literal('decision_delivery'),
+  boardKinds: z.array(BoardKindSchema).min(1),
+  recipients: z.array(DeliveryRecipientSchema).min(1),
+  methods: z.array(DeliveryMethodSchema).min(1),
+  dueRuleKey: z.string().min(1),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type DecisionDeliveryRule = z.infer<typeof DecisionDeliveryRuleSchema>

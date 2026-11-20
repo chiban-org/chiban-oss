@@ -95,6 +95,8 @@ const COPY: Record<string, string> = {
   packet_exists:
     'This meeting already has a packet. Change it in the Packet section of the meeting page.',
   already_published: 'This agenda is already on the public site. Reopen it to change it.',
+  already_recorded: 'The delivery to this recipient is already recorded.',
+  method_not_allowed: 'That way of delivering the decision is not one the rules allow.',
 }
 
 const FALLBACK = 'Something went wrong. Try again.'

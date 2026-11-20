@@ -16,6 +16,7 @@ import { roleIssues } from './roleChecks'
 import { type PackRoles, PackRolesSchema } from './roles'
 import {
   ClockRuleSchema,
+  DecisionDeliveryRuleSchema,
   EffectRuleSchema,
   GateRuleSchema,
   ListAgeRuleSchema,
@@ -35,6 +36,7 @@ export const PackRuleSchema = z
     EffectRuleSchema,
     TownSettingRuleSchema,
     NoticeRequirementRuleSchema,
+    DecisionDeliveryRuleSchema,
     CeaseAndDesistRuleSchema,
     CivilPenaltyRuleSchema,
   ])
@@ -49,6 +51,22 @@ export const PackRuleSchema = z
     },
   )
 export type PackRule = z.infer<typeof PackRuleSchema>
+
+function deliveryIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'decision_delivery') return []
+    const due = clockByKey.get(r.dueRuleKey)
+    const valid = due?.clockType === 'action_due' && due.startEvent === 'board_vote'
+    return valid
+      ? []
+      : [
+          `decision_delivery ${r.key} dueRuleKey ${r.dueRuleKey} must be an action_due clock started by board_vote`,
+        ]
+  })
+}
 
 function settingClockIssues(rules: PackRule[]): string[] {
   const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
@@ -107,7 +125,11 @@ export const PackManifestSchema = z
       classificationKeys: new Set(m.classifications.map((c) => c.key)),
       seriesKeys: new Set(m.recordSeries.map((r) => r.key)),
     }
-    const issues = [...roleIssues(m.roles, targets), ...settingClockIssues(m.rules)]
+    const issues = [
+      ...roleIssues(m.roles, targets),
+      ...settingClockIssues(m.rules),
+      ...deliveryIssues(m.rules),
+    ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })
 export type PackManifestData = z.infer<typeof PackManifestSchema>

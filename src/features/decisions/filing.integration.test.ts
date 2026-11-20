@@ -90,6 +90,15 @@ describe('fileDecision', () => {
     expect(filing).toMatchObject({ status: 'met', metOn: '2027-07-09', currentDue: '2027-07-09' })
   })
 
+  it.each([
+    ['2027-07-09', false],
+    ['2027-07-12', true],
+  ])('with no filing clock row, filing on %s after a 2027-07-01 vote has late %s', async (filedOn, late) => {
+    const made = await decided()
+    await handle.db.delete(clocks).where(eq(clocks.applicationId, made.applicationId))
+    expect(await file(made, filedOn)).toEqual({ ok: true, value: { late } })
+  })
+
   it('on-time filing opens no amendment window', async () => {
     const made = await decided()
     await file(made, '2027-07-09')

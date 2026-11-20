@@ -20,6 +20,7 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { boardDecisionClockKeys } from '@/features/decisions/decisionClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
+import { planDeliveries } from '@/features/decisions/delivery'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
@@ -167,6 +168,7 @@ export async function recordDecision(
     await startClocksFor(tx, app.id, 'board_vote', input.votedOn, signal, undefined, undefined, {
       outcome: input.outcome,
     })
+    await planDeliveries(tx, { decisionId: row?.id ?? '' }, signal)
     await writeAudit(
       tx,
       {

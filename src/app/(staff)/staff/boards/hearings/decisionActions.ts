@@ -2,6 +2,7 @@
 
 import { addAppealNode } from '@/features/appeals/graph'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
+import { recordDecisionDelivery } from '@/features/decisions/delivery'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
@@ -14,6 +15,7 @@ import {
   DECISION_ONLY_FORM,
   FILE_DECISION_FORM,
   RECORD_DECISION_FORM,
+  RECORD_DELIVERY_FORM,
 } from './forms'
 
 export async function recordDecisionAction(formData: FormData): Promise<ActionResult> {
@@ -75,6 +77,16 @@ export async function transmittalAction(formData: FormData): Promise<ActionResul
         : 'Transmittal checklist is ready. Record proof for each recipient.',
     }
   })
+}
+
+export async function recordDeliveryAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, RECORD_DELIVERY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await recordDecisionDelivery(db, actor, input, signal), 'Delivery recorded.', {
+      future_date: 'deliveredOn',
+      before_vote: 'deliveredOn',
+      method_not_allowed: 'method',
+    }),
+  )
 }
 
 export async function addAppealNodeAction(formData: FormData): Promise<ActionResult> {

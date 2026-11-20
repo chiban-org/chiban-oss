@@ -2,17 +2,20 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { boardDecisions, clocks, documents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
-import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import { markClockMet, resolveClockLength, startClocksFor } from '@/features/clocks/startClocks'
 import { deliverDecisionLetter } from '@/features/decisions/letterDelivery'
 import { noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
+import type { DecisionOutcome } from '@/features/packs/schema'
 import { approveLatestForPublic } from '@/features/renditions/publicApproval'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -34,6 +37,8 @@ async function filingDue(
   tx: FilingTx,
   applicationId: string,
   votedOn: CivilDate,
+  outcome: DecisionOutcome,
+  signal: AbortSignal,
 ): Promise<CivilDate | null> {
   const filingKey = packRoles().rules.decisionFiling
   if (filingKey === null) return null
@@ -44,10 +49,14 @@ async function filingDue(
     .orderBy(desc(clocks.createdAt))
     .limit(1)
   if (clock !== undefined) return clock.currentDue as CivilDate
-  const rule = ruleByKey(loadPack(), filingKey)
+  const pack = loadPack()
+  const rule = ruleByKey(pack, filingKey)
   if (rule.kind !== 'clock') return votedOn
-  return computeRuleDue(rule, { unit: 'business_days', value: 5 }, votedOn, packHolidayCalendar())
-    .due
+  const app = await loadApplicationContext(tx, applicationId, signal)
+  if (app === null) return votedOn
+  const facts = { ...(await factsWithDeterminations(tx, applicationId, app.facts)), outcome }
+  const length = await resolveClockLength(tx, rule, facts, pack, signal)
+  return computeRuleDue(rule, length, votedOn, packHolidayCalendar()).due
 }
 
 export async function fileDecision(
@@ -88,7 +97,13 @@ export async function fileDecision(
     if ((await noticeProofDocumentIds(tx, [input.minutesDocumentId])).size > 0) {
       return err('wrong_document')
     }
-    const due = await filingDue(tx, decision.applicationId, decision.votedOn as CivilDate)
+    const due = await filingDue(
+      tx,
+      decision.applicationId,
+      decision.votedOn as CivilDate,
+      decision.outcome,
+      signal,
+    )
     const late = due !== null && compareCivil(input.filedOn, due) > 0
     await tx
       .update(documents)

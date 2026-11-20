@@ -10,7 +10,7 @@ import {
   wholeNumber,
 } from '@/features/input/schemas'
 import { PROOF_METHODS } from '@/features/notices/proofMethods'
-import { DECISION_OUTCOMES } from '@/features/packs/schema'
+import { DECISION_OUTCOMES, DELIVERY_METHODS } from '@/features/packs/schema'
 import { err, ok } from '@/types/result'
 import { optionalRecordId, valueList } from '../formFields'
 
@@ -108,6 +108,12 @@ export const FILE_DECISION_FORM = z.object({
   decisionId: decisionId(),
   filedOn: civilDate('the date filed'),
   minutesDocumentId: recordId('the minutes'),
+})
+
+export const RECORD_DELIVERY_FORM = z.object({
+  deliveryId: recordId('a recipient'),
+  method: choice('a way of delivering', DELIVERY_METHODS),
+  deliveredOn: civilDate('the date it was delivered'),
 })
 
 export const ADD_APPEAL_NODE_FORM = z.object({
