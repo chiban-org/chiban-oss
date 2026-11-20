@@ -11,6 +11,7 @@ import {
   notificationOutbox,
 } from '@/db/schema'
 import { recordDecisionNotice, refuseBySilence } from '@/features/applications/deemedRefusal'
+import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { transitionApplication } from '@/features/applications/transition'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { setActivePackForTest } from '@/features/packs/registry'
@@ -319,6 +320,59 @@ describe('refusal edge cases', () => {
   })
 })
 
+describe('the decision notice on the staff view and the portal', () => {
+  const staffView = async (applicationId: string, now: Date = NOW) =>
+    await getStaffApplicationView(handle.db, world.staff, applicationId, now, signal)
+
+  it('reports the due date and citation before a notice is recorded', async () => {
+    const { applicationId } = await clockedApp()
+    const view = await staffView(applicationId, new Date('2027-03-10T15:00:00Z'))
+    expect(view?.decisionNotice).toEqual({
+      required: true,
+      dueOn: DUE,
+      mailedOn: null,
+      refusedOn: null,
+      citation: 'Vellmora Permit Act 4',
+    })
+  })
+
+  it('reports the mailed date once a notice is recorded', async () => {
+    const { applicationId } = await clockedApp()
+    await record(applicationId, '2027-03-15')
+    const view = await staffView(applicationId)
+    expect(view?.decisionNotice).toMatchObject({ mailedOn: '2027-03-15', refusedOn: null })
+  })
+
+  it('reports the refusal date after a refusal and labels the portal record', async () => {
+    const { applicationId } = await clockedApp()
+    await sweep(DAY_AFTER)
+    const view = await staffView(applicationId)
+    expect(view?.decisionNotice).toMatchObject({
+      dueOn: DUE,
+      mailedOn: null,
+      refusedOn: DAY_AFTER,
+    })
+    const portal = await getPortalApplicationView(handle.db, world.applicant, applicationId, signal)
+    expect(portal.ok && portal.value.stateLabel).toBe('Refused by operation of law')
+  })
+
+  it('leaves an ordinary denial labelled Denied on the portal', async () => {
+    const { applicationId } = await clockedApp()
+    await handle.db
+      .update(applications)
+      .set({ state: 'denied' })
+      .where(eq(applications.id, applicationId))
+    const portal = await getPortalApplicationView(handle.db, world.applicant, applicationId, signal)
+    expect(portal.ok && portal.value.stateLabel).toBe('Denied')
+  })
+
+  it('is null for an application whose rules have no refusal consequence', async () => {
+    setActivePackForTest(XX_PACK)
+    const { applicationId } = await clockedApp()
+    expect((await staffView(applicationId))?.decisionNotice).toBeNull()
+  })
+})
+
 describe('under the New Hampshire pack', () => {
   beforeEach(() => {
     setActivePackForTest(null)
@@ -352,5 +406,17 @@ describe('under the New Hampshire pack', () => {
       .from(clocks)
       .where(eq(clocks.applicationId, app.applicationId))
     expect(rows.find((c) => c.ruleKey === 'nh.bp.decision')?.status).toBe('met')
+  })
+
+  it('has no decision notice field on the staff view', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'under_review' })
+    const view = await getStaffApplicationView(
+      handle.db,
+      world.staff,
+      app.applicationId,
+      NOW,
+      signal,
+    )
+    expect(view?.decisionNotice).toBeNull()
   })
 })

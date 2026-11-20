@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import {
   applicationConditions,
   clocks,
+  deemedRefusals,
   ledgerAllocations,
   ledgerEntries,
   parcels,
@@ -98,6 +99,17 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
     hasInspections: app.typeBody.checklistKeys.length > 0,
     mayEnd,
   }
+}
+
+const REFUSED_BY_LAW_LABEL = 'Refused by operation of law'
+
+async function portalStateLabel(db: Db, applicationId: string, state: CoreState): Promise<string> {
+  if (state !== 'denied') return stateLabel(state)
+  const [refusal] = await db
+    .select({ id: deemedRefusals.applicationId })
+    .from(deemedRefusals)
+    .where(eq(deemedRefusals.applicationId, applicationId))
+  return refusal === undefined ? stateLabel(state) : REFUSED_BY_LAW_LABEL
 }
 
 const DECISION_PENDING_STATES = ['submitted', 'under_review']
@@ -237,7 +249,7 @@ export async function getPortalApplicationView(
     number: app.number,
     typeLabel: app.typeBody.label,
     state: app.state,
-    stateLabel: stateLabel(app.state),
+    stateLabel: await portalStateLabel(db, applicationId, app.state),
     parcel: {
       id: project?.parcelId ?? '',
       displayId: project === undefined ? null : (display.get(project.parcelId) ?? null),

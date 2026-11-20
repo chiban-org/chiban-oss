@@ -44,6 +44,7 @@ import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
+import { type DecisionNoticeView, loadDecisionNotice } from './decisionNoticeView'
 import { evaluateViewGates, type GateGroups } from './viewGates'
 import { loadViewParties, type ViewParty } from './viewParties'
 
@@ -97,6 +98,7 @@ export interface StaffApplicationView {
     notices: (typeof regionalImpactNotices.$inferSelect)[]
   }
   appeals: (typeof appeals.$inferSelect)[]
+  decisionNotice: DecisionNoticeView | null
   permissions: {
     canIssue: boolean
     canAdjustClock: boolean
@@ -268,6 +270,7 @@ export async function getStaffApplicationView(
       .from(appeals)
       .where(eq(appeals.applicationId, applicationId))
       .orderBy(asc(appeals.filedOn)),
+    decisionNotice: await loadDecisionNotice(db, app),
     permissions: await permissionsOf(db, actor, signal),
   }
 }

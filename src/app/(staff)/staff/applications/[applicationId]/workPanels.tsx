@@ -6,6 +6,7 @@ import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import { ActivityPanel } from './activityPanel'
 import { BoardPanel } from './boardPanel'
 import { ClocksPanel, noDeadlines } from './clocksPanel'
+import { DecisionNoticePanel } from './decisionNoticePanel'
 import { HearingsPanel } from './hearingsPanel'
 import { NotesPanel } from './notesPanel'
 import type { RecordPanelsInput } from './panelSet'
@@ -92,6 +93,14 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
       ) : null,
     },
     { key: 'clocks', empty: noDeadlines(view), node: <ClocksPanel key="clocks" view={view} /> },
+    {
+      key: 'decisionNotice',
+      empty: false,
+      node:
+        view.decisionNotice == null ? null : (
+          <DecisionNoticePanel key="decisionNotice" view={view} documents={records.documents} />
+        ),
+    },
     {
       key: 'notes',
       empty: notes.notes.length === 0,
