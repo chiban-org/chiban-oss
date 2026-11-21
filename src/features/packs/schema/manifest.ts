@@ -153,6 +153,9 @@ function triggeredClockIssues(rules: PackRule[]): string[] {
     if (r.satisfiedByInspection === true && r.startEvent !== 'permit_issued') {
       issues.push(`clock ${r.key} is satisfiedByInspection and must start at permit_issued`)
     }
+    if (r.satisfiedByCompletion === true && r.startEvent !== 'application_received') {
+      issues.push(`clock ${r.key} is satisfiedByCompletion and must start at application_received`)
+    }
     if (r.onlyIfHearingScheduled === true && r.startEvent !== 'application_accepted') {
       issues.push(`clock ${r.key} is onlyIfHearingScheduled and must start at application_accepted`)
     }

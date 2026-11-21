@@ -150,6 +150,7 @@ export const ClockRuleSchema = z
       .optional(),
     satisfiedByDecision: z.boolean().optional(),
     satisfiedByInspection: z.literal(true).optional(),
+    satisfiedByCompletion: z.literal(true).optional(),
     onlyIfHearingScheduled: z.literal(true).optional(),
     overridePolicy: OverridePolicySchema,
   })

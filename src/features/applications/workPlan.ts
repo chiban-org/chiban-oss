@@ -1,4 +1,4 @@
-import { offersCompleteness } from '@/features/applications/completenessStep'
+import { completenessCopy, offersCompleteness } from '@/features/applications/completenessStep'
 import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
@@ -74,7 +74,7 @@ function completenessRow(view: PlanView, extras: WorkPlanExtras): Requirement | 
     key: 'completeness',
     label: 'Marked complete',
     done: false,
-    detail: 'The decision clock starts when the application is marked complete.',
+    detail: completenessCopy(view).detail,
     task: 'Mark the application complete',
     actor: 'town',
     anchor: 'completeness',

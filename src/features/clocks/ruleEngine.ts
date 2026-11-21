@@ -186,6 +186,12 @@ export function keysSatisfiedByInspection(rules: readonly PackRule[]): string[] 
     .map((r) => r.key)
 }
 
+export function keysSatisfiedByCompletion(rules: readonly PackRule[]): string[] {
+  return rules
+    .filter((r) => r.kind === 'clock' && r.satisfiedByCompletion === true)
+    .map((r) => r.key)
+}
+
 export function keysOnlyIfHearingScheduled(rules: readonly PackRule[]): string[] {
   return rules
     .filter((r) => r.kind === 'clock' && r.onlyIfHearingScheduled === true)

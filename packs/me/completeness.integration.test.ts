@@ -7,7 +7,8 @@ import { getStaffApplicationView } from '@/features/applications/staffApplicatio
 import type { CoreState } from '@/features/applications/states'
 import { transitionApplication } from '@/features/applications/transition'
 import { planWork } from '@/features/applications/workPlan'
-import { markComplete } from '@/features/building/completeness'
+import { markComplete, markedCompleteMessage } from '@/features/building/completeness'
+import { startClocksFor } from '@/features/clocks/startClocks'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -33,6 +34,14 @@ async function received(prefix: string): Promise<string> {
     prefix,
   )
   return made.applicationId
+}
+
+async function receivedWastewater(): Promise<string> {
+  const applicationId = await received('SSW')
+  await handle.db.transaction((tx) =>
+    startClocksFor(tx, applicationId, 'application_received', RECEIVED as CivilDate, signal),
+  )
+  return applicationId
 }
 
 async function completenessTask(applicationId: string) {
@@ -133,6 +142,31 @@ describe('the shoreland decision date', () => {
 
   it('does not offer the completeness step on a permit with no completeness clock', async () => {
     const applicationId = await received('LU')
+    expect(await completenessTask(applicationId)).toBeUndefined()
+  })
+})
+
+describe('the subsurface wastewater completeness date', () => {
+  it('runs from receipt and offers staff the completeness step', async () => {
+    const applicationId = await receivedWastewater()
+    expect(await clockOf(applicationId, 'me.ssw.completeness')).toMatchObject({
+      status: 'running',
+    })
+    const task = await completenessTask(applicationId)
+    expect(task).toMatchObject({ action: { kind: 'mark_complete' } })
+    expect(task?.detail).not.toContain('decision clock')
+  })
+
+  it('is met when staff mark the application complete', async () => {
+    const applicationId = await receivedWastewater()
+    await complete(applicationId)
+    expect(await clockOf(applicationId, 'me.ssw.completeness')).toMatchObject({
+      status: 'met',
+      metOn: COMPLETED,
+    })
+    expect(await markedCompleteMessage(handle.db, applicationId, signal)).toBe(
+      'Marked complete. The completeness review date is met.',
+    )
     expect(await completenessTask(applicationId)).toBeUndefined()
   })
 })

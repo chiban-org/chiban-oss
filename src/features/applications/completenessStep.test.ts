@@ -17,9 +17,15 @@ describe('which permits offer staff the completeness step', () => {
     expect(offering()).toEqual(['nh.building_permit'])
   })
 
-  it('in Maine, the building permit and the shoreland permit, whose decision date starts on completeness', () => {
+  it('in Maine, the building and shoreland permits and the wastewater permit, whose completeness date is met on completeness', () => {
     setActivePackForTest(ME_PACK)
-    expect(offering()).toEqual(['me.building_permit', 'me.shoreland_permit'])
+    expect(offering()).toEqual([
+      'me.building_permit',
+      'me.shoreland_permit',
+      'me.subsurface_wastewater',
+    ])
+    expect(completenessStepFor('me.shoreland_permit')).toBe('starts_decision_clock')
+    expect(completenessStepFor('me.subsurface_wastewater')).toBe('meets_completeness_clock')
   })
 
   it('keeps a view marked as a building permit offering it', () => {

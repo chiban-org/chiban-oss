@@ -49,6 +49,7 @@ export const PLUMBING_RULES: PackRule[] = [
     },
     extension: { allowed: false, note: 'The rule provides no extension.' },
     waivable: false,
+    satisfiedByCompletion: true,
     overridePolicy: { policy: 'fixed' },
   },
 ]
