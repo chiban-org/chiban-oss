@@ -37,6 +37,7 @@ import { getVersion } from '@/features/config/store'
 import { varianceValidity } from '@/features/decisions/recording'
 import type { VarianceValidity } from '@/features/decisions/recordingRequired'
 import { loadRelianceView, type RelianceView } from '@/features/decisions/relianceView'
+import { holdBlocksApplication } from '@/features/enforcement/holdReads'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
@@ -76,6 +77,7 @@ export interface StaffApplicationView {
   noticeDeadlines: NoticeDeadline[]
   nextTransitions: CoreState[]
   allowedMoves: CoreState[]
+  heldParcel?: boolean
   gates: GateGroups
   gatesAhead: GateGroups
   allowsDirectIssue: boolean
@@ -187,6 +189,8 @@ export async function getStaffApplicationView(
   if (project === undefined) return null
   const display = await displayIdsFor(db, [project.parcelId])
   const nextTransitions = CORE_TRANSITIONS[app.state].filter((to) => offersMove(app, to))
+  const heldParcel =
+    nextTransitions.includes('issued') && (await holdBlocksApplication(db, app.id, signal))
   const { gates, gatesAhead } = await evaluateViewGates(db, { app, nextTransitions, today }, signal)
   const assessments = await db
     .select()
@@ -236,7 +240,10 @@ export async function getStaffApplicationView(
     clocks: await clockExplanations(db, applicationId, today),
     noticeDeadlines: await loadNoticeDeadlines(db, applicationId, today, signal),
     nextTransitions,
-    allowedMoves: await movesFor(db, actor, app, nextTransitions, signal),
+    allowedMoves: (await movesFor(db, actor, app, nextTransitions, signal)).filter(
+      (to) => !heldParcel || to !== 'issued',
+    ),
+    heldParcel,
     gates,
     gatesAhead,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,

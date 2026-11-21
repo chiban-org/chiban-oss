@@ -1,9 +1,15 @@
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import type { CoreState } from '@/features/applications/states'
-import { holdBlocksApplication } from '@/features/enforcement/holdReads'
+import { holdBlocksApplication, holdSuspends } from '@/features/enforcement/holdReads'
 
-export function isHoldMove(from: CoreState, to: CoreState): boolean {
-  return (from === 'issued' && to === 'suspended') || (to === 'closed' && from !== 'closed')
+export async function isHoldMove(
+  tx: DbOrTx,
+  app: { id: string; state: CoreState },
+  to: CoreState,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (app.state === 'issued') return to === 'suspended' || to === 'closed'
+  return app.state === 'suspended' && to === 'closed' && (await holdSuspends(tx, app.id, signal))
 }
 
 export async function issuanceHeld(
@@ -14,4 +20,14 @@ export async function issuanceHeld(
 ): Promise<boolean> {
   if (input.to !== 'issued' || app.state === 'suspended' || input.cutover === true) return false
   return await holdBlocksApplication(tx, app.id, signal)
+}
+
+export async function gatesSkipped(
+  tx: Tx,
+  app: { id: string; state: CoreState },
+  input: { to: CoreState; holdId?: string },
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (app.state === 'suspended' && input.to === 'issued') return true
+  return input.holdId !== undefined && (await isHoldMove(tx, app, input.to, signal))
 }

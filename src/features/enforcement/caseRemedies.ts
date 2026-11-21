@@ -87,10 +87,12 @@ export async function remedyFactsFor(
   if (!packHasCureRules() || caseIds.length === 0) return facts
   const ids = [...caseIds]
   const [holds, civil] = await Promise.all([
-    db
-      .select({ caseId: developmentHolds.caseId, releasedOn: developmentHolds.releasedOn })
-      .from(developmentHolds)
-      .where(inArray(developmentHolds.caseId, ids)),
+    holdsEnabled()
+      ? db
+          .select({ caseId: developmentHolds.caseId, releasedOn: developmentHolds.releasedOn })
+          .from(developmentHolds)
+          .where(inArray(developmentHolds.caseId, ids))
+      : [],
     db
       .select({ caseId: enforcementCivilActions.caseId })
       .from(enforcementCivilActions)

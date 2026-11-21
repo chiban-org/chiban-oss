@@ -11,7 +11,7 @@ import {
   assessForTransition,
   runTransitionEffects,
 } from '@/features/applications/transitionEffects'
-import { isHoldMove, issuanceHeld } from '@/features/applications/transitionHold'
+import { gatesSkipped, isHoldMove, issuanceHeld } from '@/features/applications/transitionHold'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -85,7 +85,7 @@ async function isAllowedActor(
 ): Promise<boolean> {
   if (actor.kind === 'system') return to === 'expired' || (to === 'denied' && flags.deemedRefusal)
   if (flags.cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
-  if (flags.underHold && isHoldMove(app.state, to)) {
+  if (flags.underHold && (await isHoldMove(tx, app, to, signal))) {
     return await hasCapability(tx, actor.userId, 'enforcement.manage', signal)
   }
   if (to === 'expired' || to === 'suspended') return false
@@ -130,11 +130,10 @@ async function gateResultsFor(
   app: ApplicationContext,
   input: TransitionInput,
   today: CivilDate,
-  reinstating: boolean,
+  skipGates: boolean,
   signal: AbortSignal,
 ): Promise<GateResult[]> {
-  if (reinstating || input.cutover === true || input.deemedRefusal === true) return []
-  if (input.holdId !== undefined) return []
+  if (skipGates || input.cutover === true || input.deemedRefusal === true) return []
   const results = await evaluateGates(tx, app, input.to, today, signal)
   const reason = input.closureReason
   if (reason === undefined) return results
@@ -168,9 +167,9 @@ export async function applyTransition(
   if (!isTransitionAllowed(app.state, input.to, app.typeBody.workflow))
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
-  const reinstating = app.state === 'suspended' && input.to === 'issued'
   if (await issuanceHeld(tx, app, input, signal)) return err('parcel_held')
-  const results = await gateResultsFor(tx, app, input, today, reinstating, signal)
+  const skipGates = await gatesSkipped(tx, app, input, signal)
+  const results = await gateResultsFor(tx, app, input, today, skipGates, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const assessed = await assessForTransition(tx, actor, app, input.to, signal)
   if (!assessed.ok) return err(assessed.error)
