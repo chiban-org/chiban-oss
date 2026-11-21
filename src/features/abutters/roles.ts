@@ -14,6 +14,8 @@ export const RECIPIENT_ROLES = [
   'municipal_clerk',
   'municipal_reviewing_authority',
   'water_supplier',
+  'planning_board',
+  'municipal_officers',
 ] as const
 
 export const RecipientRoleSchema = z.enum(RECIPIENT_ROLES)
