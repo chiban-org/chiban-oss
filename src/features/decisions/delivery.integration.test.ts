@@ -159,7 +159,7 @@ describe('two decisions on one application', () => {
     }
     const afterFirst = (
       await handle.db.select().from(clocks).where(eq(clocks.applicationId, made.applicationId))
-    ).filter((c) => c.ruleKey === base?.ruleKey)
+    ).filter((c) => c.ruleKey === base.ruleKey)
     expect(afterFirst.find((c) => c.startDate === HEARING_DATE)?.status).toBe('met')
     expect(afterFirst.find((c) => c.startDate === '2027-04-25')?.status).toBe('running')
     for (const row of replacements) {
