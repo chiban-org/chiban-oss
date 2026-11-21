@@ -16,5 +16,5 @@ export const ME_ABUTTER_PARAMS: AbutterParams = {
   alongDepthFt: 5,
   tolerancesLabel:
     'Engineering tolerances chosen by Chiban. Town buffer at most 1000 feet (Chiban limit).',
-  townBuffer: { defaultFt: null, maxFt: 1000 },
+  townBuffer: { defaultFt: null, maxFt: 1000, maxSetBy: 'chiban' },
 }

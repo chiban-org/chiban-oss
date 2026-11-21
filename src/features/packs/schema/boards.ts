@@ -60,7 +60,11 @@ export const AbutterParamsSchema = z.object({
   alongDepthFt: z.number().positive(),
   tolerancesLabel: z.string().min(1),
   townBuffer: z
-    .object({ defaultFt: z.number().positive().nullable(), maxFt: z.number().positive() })
+    .object({
+      defaultFt: z.number().positive().nullable(),
+      maxFt: z.number().positive(),
+      maxSetBy: z.enum(['state_law', 'chiban']).optional(),
+    })
     .optional(),
 })
 export type AbutterParams = z.infer<typeof AbutterParamsSchema>

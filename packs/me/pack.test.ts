@@ -102,7 +102,11 @@ describe('me pack', () => {
   it('keys abutter params by the strategy and has no capture radius', () => {
     expect(ME_ABUTTER_PARAMS.key).toBe('me.adjacent_buffer.v1')
     expect(ME_ABUTTER_PARAMS.captureRadiusFt).toBeNull()
-    expect(ME_ABUTTER_PARAMS.townBuffer).toEqual({ defaultFt: null, maxFt: 1000 })
+    expect(ME_ABUTTER_PARAMS.townBuffer).toEqual({
+      defaultFt: null,
+      maxFt: 1000,
+      maxSetBy: 'chiban',
+    })
     expect(ME_ABUTTER_PARAMS.tolerancesLabel).toContain('(Chiban limit)')
     expect(ME_ABUTTER_PARAMS.citation.label).toBe('30-A MRSA §4403(3)(A)')
   })

@@ -329,7 +329,7 @@ Abutter parameters may also carry `townBuffer`, for a state where a town may wid
 townBuffer: { defaultFt: 100, maxFt: 300 }
 ```
 
-`maxFt` is the most the law lets a town set. `defaultFt` is what applies when the board has not set a distance, and may be `null` for no extra distance. A board then sets `abutters.bufferFt` in its board settings, and the settings are refused above `maxFt`. A pack that leaves `townBuffer` out counts abutters by adjacency alone, and a board setting for the distance is refused.
+`maxFt` is the most a town may set. When the law sets no maximum and the cap is Chiban's own, add `maxSetBy: 'chiban'`, and the refusal says Chiban sets the limit. Left out, `maxSetBy` is `'state_law'` and the refusal cites state law. `defaultFt` is what applies when the board has not set a distance, and may be `null` for no extra distance. A board then sets `abutters.bufferFt` in its board settings, and the settings are refused above `maxFt`. A pack that leaves `townBuffer` out counts abutters by adjacency alone, and a board setting for the distance is refused.
 
 One rule applies to every pack. A clock whose `overridePolicy.policy` is `delegated_choice` must take its length from a town setting with `length.fromSetting`. The manifest check names any such clock that uses a fixed length and stops the pack from loading.
 

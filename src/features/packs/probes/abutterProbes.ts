@@ -2,7 +2,11 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
 import { PROBE_SCENARIOS } from '@/features/abutters/projection/testKit'
-import { bufferWithinMax, effectiveBufferFt } from '@/features/abutters/townBuffer'
+import {
+  bufferAboveMaxMessage,
+  bufferWithinMax,
+  effectiveBufferFt,
+} from '@/features/abutters/townBuffer'
 import { isAdjacent, isCaptured } from '@/features/abutters/verdicts'
 import { loadPack } from '@/features/packs/loadPack'
 import { type FieldProbe, probe } from '@/features/packs/probes/probe'
@@ -25,6 +29,7 @@ function observeParams(params: AbutterParams): unknown {
     townBuffer: {
       unset: effectiveBufferFt(undefined, params),
       accepted: [100, 400, 900].map((ft) => bufferWithinMax(ft, params)),
+      refusal: params.townBuffer === undefined ? null : bufferAboveMaxMessage(params.townBuffer),
     },
     scenarios: PROBE_SCENARIOS.map((scenario) =>
       projectAcross({
@@ -89,6 +94,10 @@ export function abutterProbes(): Record<string, FieldProbe> {
     'abutter_params.townBuffer.maxFt': paramsProbe(
       (p) => ({ ...p, townBuffer: { defaultFt: 300, maxFt: 800 } }),
       (p) => ({ ...p, townBuffer: { defaultFt: 300, maxFt: 300 } }),
+    ),
+    'abutter_params.townBuffer.maxSetBy': paramsProbe(
+      (p) => ({ ...p, townBuffer: { defaultFt: 300, maxFt: 1000, maxSetBy: 'chiban' } }),
+      (p) => ({ ...p, townBuffer: { defaultFt: 300, maxFt: 1000 } }),
     ),
     'abutter_params.alongDepthFt': paramsProbe((p) => ({ ...p, alongDepthFt: 10 })),
   }

@@ -139,6 +139,32 @@ describe('abutter buffer', () => {
     })
   })
 
+  it('names state law as the limit when the pack does not say who set it', () => {
+    withPackForTest(packWithTownBuffer({ defaultFt: null, maxFt: 500 }), () => {
+      expect(checkBoardSettings(withBuffer(501), ACTIVE)).toEqual({
+        invalid: [
+          {
+            path: 'abutters.bufferFt',
+            message: 'State law lets a town set this distance to at most 500 feet.',
+          },
+        ],
+      })
+    })
+  })
+
+  it('names Chiban as the limit when the pack sets the maximum itself', () => {
+    withPackForTest(packWithTownBuffer({ defaultFt: null, maxFt: 500, maxSetBy: 'chiban' }), () => {
+      expect(checkBoardSettings(withBuffer(501), ACTIVE)).toEqual({
+        invalid: [
+          {
+            path: 'abutters.bufferFt',
+            message: 'Chiban limits this distance to at most 500 feet.',
+          },
+        ],
+      })
+    })
+  })
+
   it('refuses a buffer when the pack counts abutters by adjacency alone', () => {
     expect(checkBoardSettings(withBuffer(100), ACTIVE)).toMatchObject({
       invalid: [{ path: 'abutters.bufferFt' }],
