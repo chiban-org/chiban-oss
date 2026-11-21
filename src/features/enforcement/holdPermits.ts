@@ -44,6 +44,23 @@ export interface HeldPermit {
   number: string
   state: 'issued' | 'suspended'
   action: 'suspended' | null
+  suspendable: boolean
+}
+
+async function appealAlreadySuspends(db: DbOrTx, app: ApplicationContext, signal: AbortSignal) {
+  return appealStops(app) && (await appealOpen(db, app.id, signal))
+}
+
+async function suspendableUnderHold(
+  db: DbOrTx,
+  row: { id: string; state: string },
+  actedHere: boolean,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (row.state === 'issued') return true
+  if (actedHere) return false
+  const app = await loadApplicationContext(db, row.id, signal)
+  return app !== null && (await appealAlreadySuspends(db, app, signal))
 }
 
 export async function permitsOnHeldParcel(
@@ -71,15 +88,19 @@ export async function permitsOnHeldParcel(
     .select()
     .from(holdPermitActions)
     .where(eq(holdPermitActions.holdId, hold.holdId))
-  return rows.map((r) => {
+  const permits: HeldPermit[] = []
+  for (const r of rows) {
     const acted = actions.find((a) => a.applicationId === r.id && a.reinstatedOn === null)
-    return {
+    const actedHere = acted?.action === 'suspended'
+    permits.push({
       applicationId: r.id,
       number: r.number,
       state: r.state === 'suspended' ? 'suspended' : 'issued',
-      action: acted?.action === 'suspended' ? 'suspended' : null,
-    }
-  })
+      action: actedHere ? 'suspended' : null,
+      suspendable: await suspendableUnderHold(db, r, actedHere, signal),
+    })
+  }
+  return permits
 }
 
 interface Checked {
@@ -109,8 +130,7 @@ async function suspendedPermitCheck(
     if (input.actedOn < action.actedOn) return err('before_suspension')
     return ok({ rowVersion: app.rowVersion, move: true })
   }
-  const byAppeal =
-    action === undefined && appealStops(app) && (await appealOpen(tx, app.id, signal))
+  const byAppeal = action === undefined && (await appealAlreadySuspends(tx, app, signal))
   return byAppeal ? ok({ rowVersion: app.rowVersion, move: false }) : err('not_issued')
 }
 

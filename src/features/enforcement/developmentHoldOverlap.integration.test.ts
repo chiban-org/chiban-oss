@@ -8,6 +8,7 @@ import {
   suspendPermitUnderHold,
 } from '@/features/enforcement/developmentHolds'
 import { markFindingCorrected } from '@/features/enforcement/findingChanges'
+import { permitsOnHeldParcel } from '@/features/enforcement/holdPermits'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -156,5 +157,37 @@ describe('an appeal body revoking a permit a hold suspends', () => {
     expect(actions.map((a) => [a.action, a.actedOn, a.reinstatedOn])).toEqual([
       ['suspended', '2027-03-13', null],
     ])
+  })
+})
+
+describe('the permits the case page offers to suspend under the hold', () => {
+  it('are the ones the hold suspension would accept', async () => {
+    const byAppeal = await clockedPermit()
+    const byHold = await clockedPermit()
+    const elsewhere = await clockedPermit()
+    const plain = await clockedPermit()
+    const { holdId } = await hold.heldCase()
+    expect(await appeal(byAppeal, d('2027-03-14'))).toEqual(DONE)
+    expect(await suspend(holdId, byHold, d('2027-03-14'))).toEqual(DONE)
+    await handle.db
+      .update(applications)
+      .set({ state: 'suspended' })
+      .where(eq(applications.id, elsewhere))
+    const permits = await permitsOnHeldParcel(
+      handle.db,
+      { holdId, parcelId: world.permit.parcelId },
+      signal,
+    )
+    const offered = (id: string) => permits.find((p) => p.applicationId === id)?.suspendable
+    expect([offered(plain), offered(byAppeal), offered(byHold), offered(elsewhere)]).toEqual([
+      true,
+      true,
+      false,
+      false,
+    ])
+    expect(await suspend(holdId, elsewhere, d('2027-03-15'))).toEqual({
+      ok: false,
+      error: 'not_issued',
+    })
   })
 })

@@ -113,7 +113,7 @@ function PermitItem(props: { hold: Hold; permit: HeldPermit; today: string; mana
         >{`Permit ${permit.number}`}</Link>
         {`, ${status}.`}
       </p>
-      {manage && !suspendedHere ? <SuspendForm {...props} /> : null}
+      {manage && permit.suspendable ? <SuspendForm {...props} /> : null}
       {manage && (permit.state === 'issued' || suspendedHere) ? <RevokeForm {...props} /> : null}
     </li>
   )
