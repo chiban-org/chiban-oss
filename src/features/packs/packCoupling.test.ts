@@ -14,6 +14,8 @@ const TEST_FILE = /\.test\.tsx?$/
 const SOURCE_FILE = /\.tsx?$/
 const NH_IMPORT = /['"]@packs\/nh[/'"]/
 const NH_KEY_LITERAL = /['"`]nh\./
+const ME_IMPORT = /['"]@packs\/me[/'"]/
+const ME_KEY_LITERAL = /['"`]me\./
 
 function sourceFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
@@ -29,24 +31,24 @@ function scanned(rel: string): boolean {
   return !ALLOWED_PREFIXES.some((prefix) => rel.startsWith(prefix))
 }
 
-function couplingHits(): string[] {
+function couplingHits(matches: (line: string) => boolean): string[] {
   return SCANNED_DIRS.flatMap((dir) => sourceFiles(dir))
     .filter(scanned)
     .flatMap((rel) => {
       const text = readFileSync(path.join(ROOT, rel), 'utf8')
       return text
         .split('\n')
-        .flatMap((line, i) =>
-          NH_IMPORT.test(line) || NH_KEY_LITERAL.test(line)
-            ? [`${rel}:${i + 1}: ${line.trim()}`]
-            : [],
-        )
+        .flatMap((line, i) => (matches(line) ? [`${rel}:${i + 1}: ${line.trim()}`] : []))
     })
 }
 
 describe('engine coupling to the New Hampshire pack', () => {
   it('no engine file imports @packs/nh or names an nh. key', () => {
-    expect(couplingHits()).toEqual([])
+    expect(couplingHits((line) => NH_IMPORT.test(line) || NH_KEY_LITERAL.test(line))).toEqual([])
+  })
+
+  it('no engine file imports @packs/me or names an me. key', () => {
+    expect(couplingHits((line) => ME_IMPORT.test(line) || ME_KEY_LITERAL.test(line))).toEqual([])
   })
 
   it('detects an import and a key literal', () => {
@@ -55,5 +57,11 @@ describe('engine coupling to the New Hampshire pack', () => {
     expect(NH_KEY_LITERAL.test("const k = 'nh.bp.decision'")).toBe(true)
     expect(NH_KEY_LITERAL.test('const k = `nh.${suffix}`')).toBe(true)
     expect(NH_KEY_LITERAL.test("const k = 'xx.bp.decision'")).toBe(false)
+  })
+
+  it('detects a Maine import and key literal', () => {
+    expect(ME_IMPORT.test(`import { X } from '@packs/me'`)).toBe(true)
+    expect(ME_KEY_LITERAL.test("ruleByKey(pack, 'me.bp.decision')")).toBe(true)
+    expect(ME_KEY_LITERAL.test("const k = 'xx.bp.decision'")).toBe(false)
   })
 })
