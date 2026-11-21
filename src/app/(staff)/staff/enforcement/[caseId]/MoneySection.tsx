@@ -21,10 +21,17 @@ const METHODS: [string, string][] = [
   ['check', 'Check'],
 ]
 
+const ACCRUAL_NOT_STARTED =
+  'Accrual has not started: no written notice has been received and no conviction has been recorded.'
+
+function accrualDays(fromDate: string, days: number): string {
+  return `Accrual began ${formatCivilDate(fromDate)}. ${days} ${days === 1 ? 'day' : 'days'}`
+}
+
 function accrualSentence(exposure: PenaltyExposure): string {
   return exposure.fromDate === null
-    ? 'Accrual has not started: no written notice has been received and no conviction has been recorded.'
-    : `Accrual began ${formatCivilDate(exposure.fromDate)}. ${exposure.days} ${exposure.days === 1 ? 'day' : 'days'}`
+    ? ACCRUAL_NOT_STARTED
+    : `${accrualDays(exposure.fromDate, exposure.days)}.`
 }
 
 function PenaltyExposureNote({
@@ -38,7 +45,7 @@ function PenaltyExposureNote({
     return (
       <div className="record-item">
         <p className="m-0 font-medium">{exposure.label}</p>
-        <p className="m-0">{`${accrualSentence(exposure)}${exposure.fromDate === null ? '' : '.'}`}</p>
+        <p className="m-0">{accrualSentence(exposure)}</p>
         {penaltyRangeLines(exposure).map((line) => (
           <p key={line} className="m-0">
             {line}
@@ -54,8 +61,8 @@ function PenaltyExposureNote({
       </p>
       <p className="m-0">
         {exposure.fromDate === null
-          ? accrualSentence(exposure)
-          : `${accrualSentence(exposure)}, estimated ${formatCents(exposure.cents)}.`}
+          ? ACCRUAL_NOT_STARTED
+          : `${accrualDays(exposure.fromDate, exposure.days)}, estimated ${formatCents(exposure.cents)}.`}
       </p>
     </div>
   )
