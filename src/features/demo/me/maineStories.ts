@@ -1,5 +1,3 @@
-export const MAINE_TITLE_PREFIX = 'Demo permit:'
-
 export const FERNHOLLOW_STORIES = {
   buildingUnderReview: 'Camp addition under review',
   buildingRefused: 'Garage refused by operation of law',

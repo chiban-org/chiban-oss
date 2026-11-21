@@ -1,8 +1,10 @@
+import { ME_PACK } from '@packs/me'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { env } from '@/config/env'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { createSession, loadSession } from '@/features/auth/session'
 import { resetDemoSignInLimiter } from '@/features/demo/demoSignInLimit'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { makeUser } from '@/test/factories'
 import { actionHarness, redirectsTo, settle } from '@/test/testHarness/actions'
 import { harnessState } from '@/test/testHarness/actions/state'
@@ -112,5 +114,26 @@ describe('demo sign-in', () => {
     )
     expect(outcome).toEqual(redirectsTo('/dev/sign-in'))
     expect(sid()).toBeUndefined()
+  })
+})
+
+describe('demo sign-in under the Maine pack', () => {
+  afterEach(() => {
+    setActivePackForTest(null)
+  })
+
+  it('signs a visitor in as the plumbing inspector, who is refused under New Hampshire', async () => {
+    await makeUser(h.db, {
+      email: 'plumbing@alderpond.example',
+      roles: ['inspector', 'plumbing_inspector'],
+    })
+    expect(await settle(demoSignInAction(h.form({ email: 'plumbing@alderpond.example' })))).toEqual(
+      redirectsTo('/demo'),
+    )
+    setActivePackForTest(ME_PACK)
+    expect(await settle(demoSignInAction(h.form({ email: 'plumbing@alderpond.example' })))).toEqual(
+      redirectsTo('/staff'),
+    )
+    expect(sid()).toBeDefined()
   })
 })

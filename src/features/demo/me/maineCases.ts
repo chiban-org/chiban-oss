@@ -1,3 +1,4 @@
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { day, type MaineContext, noonOf } from '@/features/demo/me/maineContext'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
@@ -105,12 +106,16 @@ export async function seedMaineShorelandCase(ctx: MaineContext): Promise<void> {
     ),
     'cure notice',
   )
+  const [ownerCopy] = sent.ids
+  if (ownerCopy === undefined) {
+    throw new AppError(ErrorIds.DB_INVARIANT, `No cure notice was sent on ${sentOn}`)
+  }
   const receivedOn = day(ctx, -3)
   must(
     await recordCureReturnReceipt(
       ctx.db,
       officer,
-      { cureNoticeId: sent.ids[0] ?? '', receivedOn },
+      { cureNoticeId: ownerCopy, receivedOn },
       ctx.signal,
       noonOf(receivedOn),
     ),

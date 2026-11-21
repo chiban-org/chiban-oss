@@ -17,10 +17,10 @@ import { day, maineContext } from '@/features/demo/me/maineContext'
 import { seedMaineParcels } from '@/features/demo/me/maineParcels'
 import { seedMaineBuildingPermits, seedMaineShoreland } from '@/features/demo/me/mainePermits'
 import { seedMainePlumbing } from '@/features/demo/me/mainePlumbing'
-import { MAINE_TITLE_PREFIX } from '@/features/demo/me/maineStories'
 import { seedMaineBase } from '@/features/demo/me/maineTown'
 import { runDailyJobsAsOf } from '@/features/demo/seedDailyJobs'
 import type { SeedDemoDeps, SeedReport } from '@/features/demo/seedDemo'
+import { TITLE_PREFIX } from '@/features/demo/seedPermitSupport'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 
@@ -28,7 +28,7 @@ async function alreadySeeded(db: Db): Promise<boolean> {
   const rows = await db
     .select({ id: projects.id })
     .from(projects)
-    .where(like(projects.title, `${MAINE_TITLE_PREFIX}%`))
+    .where(like(projects.title, `${TITLE_PREFIX}%`))
     .limit(1)
   return rows.length > 0
 }

@@ -2,7 +2,7 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { inviteBoardMember } from '@/features/boards/members'
 import { boardIdOf } from '@/features/boards/townBoards'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
-import { day, type MaineContext, MEETING_WEEKS, meetingDay } from '@/features/demo/me/maineContext'
+import { day, type MaineContext, MEETINGS, meetingDay } from '@/features/demo/me/maineContext'
 import { must } from '@/features/demo/seedPermitSupport'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 
@@ -33,12 +33,12 @@ export function boardVotes(board: 'planning_board' | 'zba') {
 
 export async function seedMaineBoardSetup(ctx: MaineContext): Promise<void> {
   const boards = [
-    ['planning_board', MEETING_WEEKS.planning_board, PLANNING_SEATS],
-    ['zba', MEETING_WEEKS.zba, APPEALS_SEATS],
+    ['planning_board', MEETINGS.planning_board, PLANNING_SEATS],
+    ['zba', MEETINGS.zba, APPEALS_SEATS],
   ] as const
-  for (const [board, weeks, seats] of boards) {
+  for (const [board, schedule, seats] of boards) {
     const boardId = await boardIdOf(ctx.db, board)
-    for (const meetingDate of weeks.map((w) => meetingDay(ctx, board, w))) {
+    for (const meetingDate of schedule.weeks.map((w) => meetingDay(ctx, schedule, w))) {
       must(
         await scheduleMeeting(
           ctx.db,

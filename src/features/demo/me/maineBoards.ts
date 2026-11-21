@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { applications, decisionDeliveries } from '@/db/schema'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { setApplicationMunicipalities } from '@/features/boards/applicationMunicipalities'
@@ -10,6 +11,7 @@ import { boardVotes } from '@/features/demo/me/maineBoardSetup'
 import {
   day,
   type MaineContext,
+  MEETINGS,
   meetingDay,
   meetingOn,
   noonOf,
@@ -92,8 +94,8 @@ export async function seedMaineSubdivision(ctx: MaineContext): Promise<void> {
     'receipt notices',
   )
   await proveNoticeSet(ctx, applicationId, receipt.noticeSetId, day(ctx, -45))
-  await acceptAt(ctx, applicationId, meetingDay(ctx, 'planning_board', -5))
-  const decidedOn = meetingDay(ctx, 'planning_board', -2)
+  await acceptAt(ctx, applicationId, meetingDay(ctx, MEETINGS.planning_board, -5))
+  const decidedOn = meetingDay(ctx, MEETINGS.planning_board, -2)
   must(
     await recordDecision(
       ctx.db,
@@ -133,12 +135,15 @@ async function addAgent(ctx: MaineContext, applicationId: string): Promise<void>
     .select({ projectId: applications.projectId })
     .from(applications)
     .where(eq(applications.id, applicationId))
+  if (app === undefined) {
+    throw new AppError(ErrorIds.DB_INVARIANT, `No application ${applicationId} for the agent`)
+  }
   must(
     await addParty(
       ctx.db,
       ctx.cast.staff,
       {
-        projectId: app?.projectId ?? '',
+        projectId: app.projectId,
         role: 'agent',
         name: 'Ivy Larkin, Larkin Survey and Design',
         ownerAuthorizationOnFile: true,
@@ -178,7 +183,7 @@ export async function seedMaineVariance(ctx: MaineContext): Promise<void> {
   })
   await addAgent(ctx, s.applicationId)
   await issueAbutterList(ctx, s.applicationId, day(ctx, -48))
-  const heldOn = meetingDay(ctx, 'zba', -3)
+  const heldOn = meetingDay(ctx, MEETINGS.zba, -3)
   const hearing = await scheduleBoardHearing(ctx, s.applicationId, { board: 'zba', on: heldOn })
   await holdNoticedHearing(
     ctx,
@@ -233,5 +238,8 @@ export async function seedMaineAdminAppeal(ctx: MaineContext): Promise<void> {
     on: day(ctx, -7),
   })
   await issueAbutterList(ctx, s.applicationId, day(ctx, -6))
-  await scheduleBoardHearing(ctx, s.applicationId, { board: 'zba', on: meetingDay(ctx, 'zba', 2) })
+  await scheduleBoardHearing(ctx, s.applicationId, {
+    board: 'zba',
+    on: meetingDay(ctx, MEETINGS.zba, 2),
+  })
 }

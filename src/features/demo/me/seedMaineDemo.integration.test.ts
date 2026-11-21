@@ -12,6 +12,7 @@ import {
   cureNotices,
   decisionDeliveries,
   deemedRefusals,
+  enforcementCases,
   enforcementDesignations,
   hearings,
   inspections,
@@ -24,9 +25,11 @@ import {
 } from '@/db/schema'
 import { getPublished } from '@/features/config/store'
 import { varianceValidity } from '@/features/decisions/recording'
+import { DEMO_USERS } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
-import { FERNHOLLOW_STORIES, MAINE_TITLE_PREFIX } from '@/features/demo/me/maineStories'
+import { FERNHOLLOW_STORIES } from '@/features/demo/me/maineStories'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { TITLE_PREFIX } from '@/features/demo/seedPermitSupport'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { syncPackParcelIdFormats } from '@/features/parcels/syncPackFormats'
@@ -58,7 +61,7 @@ async function story(title: string) {
     .select({ app: applications })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(eq(projects.title, `${MAINE_TITLE_PREFIX} ${title}`))
+    .where(eq(projects.title, `${TITLE_PREFIX} ${title}`))
   if (row === undefined) throw new Error(`missing story ${title}`)
   return row.app
 }
@@ -69,6 +72,12 @@ async function clockOf(applicationId: string, ruleKey: string) {
     .from(clocks)
     .where(and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, ruleKey)))
   return row
+}
+
+function plumberId(rows: { userId: string }[]): string {
+  const [first] = rows
+  if (first === undefined) throw new Error('missing plumbing inspector')
+  return first.userId
 }
 
 async function rolesOf(local: string) {
@@ -110,16 +119,16 @@ describe('the Fernhollow demo town', () => {
   })
 
   it('has the NH staff roles plus a plumbing inspector who is the code enforcement officer', async () => {
-    for (const local of ['admin', 'staff', 'official', 'inspector', 'finance', 'records']) {
-      expect((await rolesOf(local)).length, local).toBeGreaterThan(0)
-    }
+    const seeded = await handle.db.select({ email: users.email, kind: users.kind }).from(users)
+    const kinds = new Map(seeded.map((u) => [u.email, u.kind]))
+    for (const user of DEMO_USERS) expect(kinds.get(user.email), user.email).toBe(user.kind)
     const plumber = await rolesOf('plumbing')
     expect(plumber.map((r) => r.role).sort()).toEqual(['inspector', 'plumbing_inspector'])
-    expect(plumber[0]?.kind).toBe('staff')
+    expect(plumber.every((r) => r.kind === 'staff')).toBe(true)
     const [designation] = await handle.db
       .select()
       .from(enforcementDesignations)
-      .where(eq(enforcementDesignations.userId, plumber[0]?.userId ?? ''))
+      .where(eq(enforcementDesignations.userId, plumberId(plumber)))
     expect(designation?.title).toContain('Code Enforcement Officer')
   })
 })
@@ -143,8 +152,10 @@ describe('the Fernhollow stories', () => {
     expect(refusal?.ruleKey).toBe('me.bp.decision')
   })
 
-  it('has an issued shoreland permit', async () => {
-    expect((await story(FERNHOLLOW_STORIES.shorelandIssued)).state).toBe('issued')
+  it('has an issued shoreland permit with its decision date met', async () => {
+    const app = await story(FERNHOLLOW_STORIES.shorelandIssued)
+    expect(app.state).toBe('issued')
+    expect((await clockOf(app.id, 'town.slz.decision'))?.status).toBe('met')
   })
 
   it('has an internal plumbing permit issued by the plumbing inspector', async () => {
@@ -184,13 +195,23 @@ describe('the Fernhollow stories', () => {
       await handle.db.select().from(hearings).where(eq(hearings.applicationId, app.id)),
     ).toEqual([])
     expect((await clockOf(app.id, 'me.pb.receipt_notice'))?.status).toBe('met')
+    expect((await clockOf(app.id, 'me.pb.decision_no_hearing'))?.status).toBe('met')
     const sets = await handle.db
       .select({ id: noticeSets.id })
       .from(noticeSets)
       .where(eq(noticeSets.subjectId, app.id))
-    expect(sets).toHaveLength(1)
-    const status = await noticeStatus(handle.db, sets[0]?.id ?? '', signal)
-    expect(status.items.length).toBeGreaterThan(0)
+    const [receipt] = sets
+    if (sets.length !== 1 || receipt === undefined) throw new Error('expected one receipt set')
+    const status = await noticeStatus(handle.db, receipt.id, signal)
+    expect(status.items.map((i) => i.recipientName).sort()).toEqual([
+      'Brackett Planning Board',
+      'Brackett Town Clerk',
+      'Callen, Rhodes',
+      'Dunlevy, Owen',
+      'Fennimore, Cyrus',
+      'Sorrel Point Trust',
+      'Yarrow, June',
+    ])
     expect(status.items.every((i) => i.state === 'proved_on_time')).toBe(true)
   })
 
@@ -223,7 +244,12 @@ describe('the Fernhollow stories', () => {
   })
 
   it('has a shoreland case with a cure notice and one return receipt', async () => {
-    const rows = await handle.db.select().from(cureNotices)
+    const [found] = await handle.db
+      .select({ id: enforcementCases.id })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.locationText, '12 Pickerel Lane'))
+    if (found === undefined) throw new Error('missing shoreland case')
+    const rows = await handle.db.select().from(cureNotices).where(eq(cureNotices.caseId, found.id))
     expect(rows).toHaveLength(2)
     expect(rows.filter((r) => r.returnReceiptOn !== null)).toHaveLength(1)
   })

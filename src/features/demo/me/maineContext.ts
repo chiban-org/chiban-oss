@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { boardMeetings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -24,15 +25,16 @@ export function day(ctx: MaineContext, offset: number): CivilDate {
   return addDays(ctx.today, offset)
 }
 
-const MEETING_WEEKDAY = { planning_board: 3, zba: 2 } as const
 const DAYS_PER_WEEK = 7
 
-export const MEETING_WEEKS = { planning_board: [-8, -5, -2, 1, 4], zba: [-6, -3, 2, 5] } as const
+export const MEETINGS = {
+  planning_board: { weekday: 3, weeks: [-8, -5, -2, 1, 4] },
+  zba: { weekday: 2, weeks: [-6, -3, 2, 5] },
+} as const
 
-export function meetingDay(ctx: MaineContext, board: 'planning_board' | 'zba', weeks: number) {
-  const weekday = board === 'planning_board' ? MEETING_WEEKDAY.planning_board : MEETING_WEEKDAY.zba
-  const back = (dayOfWeek(ctx.today) - weekday + DAYS_PER_WEEK) % DAYS_PER_WEEK
-  return addDays(ctx.today, weeks * DAYS_PER_WEEK - back)
+export function meetingDay(ctx: MaineContext, schedule: { weekday: number }, weeks: number) {
+  const sinceMeetingDay = (dayOfWeek(ctx.today) - schedule.weekday + DAYS_PER_WEEK) % DAYS_PER_WEEK
+  return addDays(ctx.today, weeks * DAYS_PER_WEEK - sinceMeetingDay)
 }
 
 export function noonOf(date: CivilDate): Date {
@@ -60,7 +62,10 @@ export async function meetingOn(
         eq(boardMeetings.meetingDate, date),
       ),
     )
-  return row?.id ?? ''
+  if (row === undefined) {
+    throw new AppError(ErrorIds.DB_INVARIANT, `No ${board} meeting on ${date}`)
+  }
+  return row.id
 }
 
 export async function maineContext(

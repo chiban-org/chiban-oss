@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { hearings } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
 import { generateList } from '@/features/abutters/lists'
@@ -128,7 +129,13 @@ export async function scheduleBoardHearing(
     `hearing ${input.on}`,
   )
   const [row] = await ctx.db.select().from(hearings).where(eq(hearings.id, made.hearingId))
-  return { hearingId: made.hearingId, setId: row?.noticeSetId ?? '' }
+  if (row === undefined) {
+    throw new AppError(
+      ErrorIds.DB_INVARIANT,
+      `No hearing row for the ${input.board} meeting on ${input.on}`,
+    )
+  }
+  return { hearingId: made.hearingId, setId: row.noticeSetId }
 }
 
 export async function holdNoticedHearing(

@@ -22,14 +22,14 @@ export const FERNHOLLOW_CONTACTS = {
     {
       key: 'brackett',
       name: 'Town of Brackett',
-      mailingAddress: '11 Grange Road, Brackett, ME 04001',
+      mailingAddress: '11 Grange Road, Brackett, ME 04000',
       clerk: {
         name: 'Brackett Town Clerk',
-        mailingAddress: '11 Grange Road, Brackett, ME 04001',
+        mailingAddress: '11 Grange Road, Brackett, ME 04000',
       },
       reviewingAuthority: {
         name: 'Brackett Planning Board',
-        mailingAddress: '11 Grange Road, Brackett, ME 04001',
+        mailingAddress: '11 Grange Road, Brackett, ME 04000',
       },
     },
   ],
