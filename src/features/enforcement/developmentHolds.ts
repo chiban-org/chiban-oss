@@ -127,8 +127,11 @@ async function reinstatePermits(
 ): Promise<void> {
   const { holdId, releasedOn } = release
   const suspended = await tx
-    .update(holdPermitActions)
-    .set({ reinstatedOn: releasedOn })
+    .select({
+      applicationId: holdPermitActions.applicationId,
+      actedOn: holdPermitActions.actedOn,
+    })
+    .from(holdPermitActions)
     .where(
       and(
         eq(holdPermitActions.holdId, holdId),
@@ -136,14 +139,20 @@ async function reinstatePermits(
         isNull(holdPermitActions.reinstatedOn),
       ),
     )
-    .returning({
-      applicationId: holdPermitActions.applicationId,
-      actedOn: holdPermitActions.actedOn,
-    })
   for (const { applicationId, actedOn } of suspended) {
     await lockApplication(tx, applicationId)
     const app = await loadApplicationContext(tx, applicationId, signal)
-    if (app?.state !== 'suspended' || (await stillSuspended(tx, app, signal))) continue
+    if (app?.state !== 'suspended') continue
+    await tx
+      .update(holdPermitActions)
+      .set({ reinstatedOn: releasedOn })
+      .where(
+        and(
+          eq(holdPermitActions.holdId, holdId),
+          eq(holdPermitActions.applicationId, applicationId),
+        ),
+      )
+    if (await stillSuspended(tx, app, signal)) continue
     const moved = await applyTransition(
       tx,
       actor,

@@ -133,3 +133,28 @@ describe('resolving an appeal on a permit a hold also suspends', () => {
     })
   })
 })
+
+describe('an appeal body revoking a permit a hold suspends', () => {
+  it('closes the permit, and release leaves it closed with its hold action as it was', async () => {
+    const permitId = await clockedPermit()
+    const { holdId, findingId } = await hold.heldCase()
+    expect(await suspend(holdId, permitId, d('2027-03-13'))).toEqual(DONE)
+    expect(await appeal(permitId, d('2027-03-14'))).toEqual(DONE)
+    expect(await resolve(permitId, d('2027-03-20'), 'permit_revoked')).toEqual(DONE)
+    const closed = async () =>
+      (
+        await handle.db
+          .select({ state: applications.state, closureReason: applications.closureReason })
+          .from(applications)
+          .where(eq(applications.id, permitId))
+      )[0]
+    expect(await closed()).toEqual({ state: 'closed', closureReason: 'revoked_on_appeal' })
+    await correct(findingId)
+    expect(await release(holdId, d('2027-03-30'))).toEqual(DONE)
+    expect(await closed()).toEqual({ state: 'closed', closureReason: 'revoked_on_appeal' })
+    const actions = await handle.db.select().from(holdPermitActions)
+    expect(actions.map((a) => [a.action, a.actedOn, a.reinstatedOn])).toEqual([
+      ['suspended', '2027-03-13', null],
+    ])
+  })
+})
