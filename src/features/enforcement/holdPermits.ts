@@ -8,7 +8,7 @@ import {
   projects,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { stopExerciseClocks } from '@/features/appeals/suspensionClocks'
+import { lastReturnToIssued, stopExerciseClocks } from '@/features/appeals/suspensionClocks'
 import { loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -25,6 +25,7 @@ export type HoldPermitError =
   | 'not_on_parcel'
   | 'not_issued'
   | 'before_placed'
+  | 'before_reinstatement'
 
 interface HoldPermitInput {
   holdId: string
@@ -92,6 +93,8 @@ async function checkPermit(
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (!(await applicationParcelIds(tx, app.id)).includes(hold.parcelId)) return err('not_on_parcel')
+  const returned = await lastReturnToIssued(tx, app)
+  if (returned !== null && input.actedOn < returned) return err('before_reinstatement')
   if (app.state === 'issued') return ok({ rowVersion: app.rowVersion })
   if (!allowSuspended || app.state !== 'suspended') return err('not_issued')
   const [action] = await tx

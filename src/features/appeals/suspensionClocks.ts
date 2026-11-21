@@ -65,6 +65,31 @@ async function endedSuspensions(tx: Tx, app: ApplicationContext): Promise<Span[]
   return [...appealRows, ...holdRows].map((r) => ({ start: r.start, end: r.end ?? r.start }))
 }
 
+export async function lastReturnToIssued(
+  tx: Tx,
+  app: Pick<ApplicationContext, 'id' | 'issuedOn'>,
+): Promise<string | null> {
+  const [appealRows, holdRows] = await Promise.all([
+    tx
+      .select({ on: appeals.resolvedOn })
+      .from(appeals)
+      .where(and(eq(appeals.applicationId, app.id), isNotNull(appeals.resolvedOn))),
+    tx
+      .select({ on: holdPermitActions.reinstatedOn })
+      .from(holdPermitActions)
+      .where(
+        and(eq(holdPermitActions.applicationId, app.id), isNotNull(holdPermitActions.reinstatedOn)),
+      ),
+  ])
+  const dates = [app.issuedOn, ...appealRows.map((r) => r.on), ...holdRows.map((r) => r.on)]
+  return (
+    dates
+      .filter((x): x is string => x !== null)
+      .sort()
+      .at(-1) ?? null
+  )
+}
+
 export async function stoppedSince(
   tx: Tx,
   app: ApplicationContext,

@@ -6,15 +6,43 @@ import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { recordCounselOutcome, referToCounsel } from '@/features/enforcement/counsel'
 import { placeDevelopmentHold } from '@/features/enforcement/developmentHolds'
 import { recordFine } from '@/features/enforcement/fines'
+import type { PackRule, StatePack } from '@/features/packs/schema'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { CURE_NOW, type CureHelpers, cureHelpers } from '@/test/cureFixtures'
 import type { EnforcementWorld } from '@/test/enforcementFixtures'
+import { XX_CURE } from '@/test/packs/xx/cure'
+import { xxPackWith } from '@/test/packs/xx/variants'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
+
+export const HOLD_EXERCISE_KEY = 'xx.bp.exercise'
+
+const HOLD_EXERCISE: PackRule = {
+  kind: 'clock',
+  key: HOLD_EXERCISE_KEY,
+  version: 1,
+  label: 'Building permit exercise-by date',
+  citation: { label: 'Vellmora Permit Act 5', url: 'https://laws.example/vellmora/permit-act' },
+  clockType: 'exercise_by',
+  whose: 'applicant',
+  startEvent: 'permit_issued',
+  length: { unit: 'days', value: 60 },
+  direction: 'after',
+  consequence: { kind: 'lapse', text: 'The permit expires unless work starts.' },
+  extension: { allowed: false, note: 'The act provides no extension.' },
+  waivable: false,
+  overridePolicy: { policy: 'fixed' },
+}
+
+const HOLD_CLOCK_RULES: PackRule[] = [...XX_CURE.manifest.rules, HOLD_EXERCISE]
+export const HOLD_CLOCK_PACK: StatePack = xxPackWith({
+  manifest: { rules: HOLD_CLOCK_RULES },
+  pack: { ruleAreas: [{ title: 'All rules', rules: HOLD_CLOCK_RULES }] },
+})
 
 export const HOLD_TYPE = 'BPX'
 export const HOLD_LAPSED = '2027-03-12' as CivilDate

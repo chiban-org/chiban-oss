@@ -12,11 +12,12 @@ import {
 import { markFindingCorrected } from '@/features/enforcement/findingChanges'
 import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { setActivePackForTest } from '@/features/packs/registry'
-import type { PackRule } from '@/features/packs/schema'
 import { makeApplication, setupPermitWorld } from '@/test/applicationFixtures'
 import { CURE_NOW } from '@/test/cureFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
+  HOLD_CLOCK_PACK,
+  HOLD_EXERCISE_KEY,
   HOLD_LATER,
   HOLD_NOW,
   HOLD_TYPE,
@@ -25,38 +26,13 @@ import {
   holdHelpers,
   setupHoldWorld,
 } from '@/test/holdFixtures'
-import { XX_CURE } from '@/test/packs/xx/cure'
-import { xxPackWith } from '@/test/packs/xx/variants'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const d = (s: string) => s as CivilDate
-const EXERCISE_KEY = 'xx.bp.exercise'
+const EXERCISE_KEY = HOLD_EXERCISE_KEY
 const ISSUED = d('2027-03-05')
 const FIRST_DUE = '2027-05-04'
-
-const EXERCISE: PackRule = {
-  kind: 'clock',
-  key: EXERCISE_KEY,
-  version: 1,
-  label: 'Building permit exercise-by date',
-  citation: { label: 'Vellmora Permit Act 5', url: 'https://laws.example/vellmora/permit-act' },
-  clockType: 'exercise_by',
-  whose: 'applicant',
-  startEvent: 'permit_issued',
-  length: { unit: 'days', value: 60 },
-  direction: 'after',
-  consequence: { kind: 'lapse', text: 'The permit expires unless work starts.' },
-  extension: { allowed: false, note: 'The act provides no extension.' },
-  waivable: false,
-  overridePolicy: { policy: 'fixed' },
-}
-
-const RULES: PackRule[] = [...XX_CURE.manifest.rules, EXERCISE]
-const CLOCK_PACK = xxPackWith({
-  manifest: { rules: RULES },
-  pack: { ruleAreas: [{ title: 'All rules', rules: RULES }] },
-})
 
 let handle: TestDb
 let world: HoldWorld
@@ -65,7 +41,7 @@ let hold: HoldHelpers
 beforeEach(async () => {
   handle = await makeTestDb()
   const permit = await setupPermitWorld(handle.db)
-  setActivePackForTest(CLOCK_PACK)
+  setActivePackForTest(HOLD_CLOCK_PACK)
   world = await setupHoldWorld(handle.db, permit, [
     'xx.bp.decision',
     EXERCISE_KEY,

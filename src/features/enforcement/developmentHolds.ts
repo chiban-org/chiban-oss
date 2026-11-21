@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gt, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
@@ -117,6 +117,22 @@ async function balanceDue(tx: Tx, caseId: string): Promise<boolean> {
   return false
 }
 
+async function suspendedAfter(tx: Tx, holdId: string, releasedOn: CivilDate): Promise<boolean> {
+  const later = await tx
+    .select({ actedOn: holdPermitActions.actedOn })
+    .from(holdPermitActions)
+    .where(
+      and(
+        eq(holdPermitActions.holdId, holdId),
+        eq(holdPermitActions.action, 'suspended'),
+        isNull(holdPermitActions.reinstatedOn),
+        gt(holdPermitActions.actedOn, releasedOn),
+      ),
+    )
+    .limit(1)
+  return later.length > 0
+}
+
 async function stillSuspended(tx: Tx, app: ApplicationContext, signal: AbortSignal) {
   if (await holdSuspends(tx, app.id, signal)) return true
   return appealStops(app) && (await appealOpen(tx, app.id, signal))
@@ -180,6 +196,7 @@ export async function releaseDevelopmentHold(
     | 'not_found'
     | 'already_released'
     | 'before_placed'
+    | 'before_suspension'
     | 'findings_open'
     | 'balance_due'
   >
@@ -196,6 +213,7 @@ export async function releaseDevelopmentHold(
     if (hold === undefined) return err('not_found')
     if (hold.releasedOn !== null) return err('already_released')
     if (input.releasedOn < hold.placedOn) return err('before_placed')
+    if (await suspendedAfter(tx, hold.id, input.releasedOn)) return err('before_suspension')
     const open = await tx
       .select({ id: violationFindings.id })
       .from(violationFindings)

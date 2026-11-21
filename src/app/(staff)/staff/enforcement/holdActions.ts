@@ -24,6 +24,7 @@ export async function releaseDevelopmentHoldAction(formData: FormData): Promise<
   return await runStaffFormToday(formData, releaseHoldForm, async ({ db, actor, signal }, input) =>
     settled(await releaseDevelopmentHold(db, actor, input, signal), 'Development hold released.', {
       before_placed: 'releasedOn',
+      before_suspension: 'releasedOn',
     }),
   )
 }
@@ -32,6 +33,7 @@ export async function suspendUnderHoldAction(formData: FormData): Promise<Action
   return await runStaffFormToday(formData, holdPermitForm, async ({ db, actor, signal }, input) =>
     settled(await suspendPermitUnderHold(db, actor, input, signal), 'Permit suspended.', {
       before_placed: 'actedOn',
+      before_reinstatement: 'actedOn',
     }),
   )
 }
@@ -40,6 +42,7 @@ export async function revokeUnderHoldAction(formData: FormData): Promise<ActionR
   return await runStaffFormToday(formData, holdPermitForm, async ({ db, actor, signal }, input) =>
     settled(await revokePermitUnderHold(db, actor, input, signal), 'Permit revoked.', {
       before_placed: 'actedOn',
+      before_reinstatement: 'actedOn',
     }),
   )
 }
