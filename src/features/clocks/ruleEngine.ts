@@ -93,10 +93,12 @@ export function rulesForEvent(
   event: StartEvent,
   bound: ReadonlySet<string>,
   facts?: ProjectFacts,
+  hearingScheduled = false,
 ): ClockRule[] {
   const best = new Map<string, ClockRule>()
   for (const r of rules) {
     if (r.kind !== 'clock' || r.startEvent !== event || !bound.has(r.key)) continue
+    if (r.onlyIfHearingScheduled === true && !hearingScheduled) continue
     if (r.onlyWhen !== undefined && (facts === undefined || !factMatches(r.onlyWhen, facts)))
       continue
     const held = best.get(r.key)
@@ -117,4 +119,16 @@ export function keysCancelledBy(rules: readonly PackRule[], event: StartEvent): 
 
 export function keysSatisfiedByDecision(rules: readonly PackRule[]): string[] {
   return rules.filter((r) => r.kind === 'clock' && r.satisfiedByDecision === true).map((r) => r.key)
+}
+
+export function keysSatisfiedByInspection(rules: readonly PackRule[]): string[] {
+  return rules
+    .filter((r) => r.kind === 'clock' && r.satisfiedByInspection === true)
+    .map((r) => r.key)
+}
+
+export function keysOnlyIfHearingScheduled(rules: readonly PackRule[]): string[] {
+  return rules
+    .filter((r) => r.kind === 'clock' && r.onlyIfHearingScheduled === true)
+    .map((r) => r.key)
 }

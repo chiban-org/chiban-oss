@@ -7,6 +7,7 @@ import type { CoreState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayActOnInspection } from '@/features/authz/classificationScope'
+import { markInspectionClocksMet } from '@/features/clocks/triggeredClocks'
 import { getVersion } from '@/features/config/store'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
@@ -155,6 +156,7 @@ async function recordInTransaction(
       updatedAt: new Date(),
     })
     .where(eq(inspections.id, locked.id))
+  await markInspectionClocksMet(tx, locked.applicationId, today, signal)
   const passedFinal = input.result === 'passed' && locked.isFinal
   const outcome = passedFinal
     ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)

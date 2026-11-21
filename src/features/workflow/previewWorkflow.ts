@@ -116,7 +116,7 @@ function clocksFor(body: ApplicationTypeBody, facts: ProjectFacts, dates: Dates)
     const placed = eventPlacement(event, dates)
     if (placed === null) continue
     const { state, on } = placed
-    for (const rule of rulesForEvent(pack.rules, event, bound, eventFacts)) {
+    for (const rule of rulesForEvent(pack.rules, event, bound, eventFacts, true)) {
       const list = byState.get(state) ?? []
       list.push({
         ruleKey: rule.key,

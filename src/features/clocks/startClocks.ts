@@ -14,12 +14,14 @@ import {
   eventMovesClocks,
   hasLocalBound,
   keysCancelledBy,
+  keysOnlyIfHearingScheduled,
   type ResolvedLength,
   resolveRuleLength,
   rulesForEvent,
 } from '@/features/clocks/ruleEngine'
 import { effectiveBindings } from '@/features/config/bindings'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
+import { hasElectedHearing } from '@/features/hearings/electedHearing'
 import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import type { ClockRule, StartEvent } from '@/features/packs/schema'
@@ -87,7 +89,10 @@ export async function startClocksFor(
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
   await cancelClocksFor(tx, applicationId, event, pack)
-  const rules = rulesForEvent(pack.rules, event, bound, facts)
+  const hearingScheduled =
+    keysOnlyIfHearingScheduled(pack.rules).length > 0 &&
+    (await hasElectedHearing(tx, applicationId))
+  const rules = rulesForEvent(pack.rules, event, bound, facts, hearingScheduled)
   const started = ONCE_PER_APPLICATION.includes(event)
     ? ne(clocks.status, 'superseded')
     : eq(clocks.status, 'running')

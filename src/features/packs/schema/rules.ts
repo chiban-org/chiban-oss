@@ -142,6 +142,8 @@ export const ClockRuleSchema = z
     relianceFloorMonths: z.number().int().positive().optional(),
     cancelledBy: StartEventSchema.optional(),
     satisfiedByDecision: z.boolean().optional(),
+    satisfiedByInspection: z.literal(true).optional(),
+    onlyIfHearingScheduled: z.literal(true).optional(),
     overridePolicy: OverridePolicySchema,
   })
   .refine(

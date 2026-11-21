@@ -17,6 +17,10 @@ import {
   startClocksFor,
   startClocksWhenPackUses,
 } from '@/features/clocks/startClocks'
+import {
+  markHearingScheduledClocksMet,
+  startHearingScheduledClocks,
+} from '@/features/clocks/triggeredClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
@@ -152,6 +156,7 @@ export async function scheduleHearing(
       noticeSetId: derived.value.setId,
       createdBy: actor.userId,
     })
+    if (input.kind !== 'rehearing') await startHearingScheduledClocks(tx, app.id, signal)
     await writeAudit(
       tx,
       {
@@ -250,6 +255,7 @@ export async function markHearingHeld(
     if (app !== null && boardOfApplication(app) === 'zba') {
       await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
     }
+    await markHearingScheduledClocksMet(tx, hearing.applicationId, input.heldOn, signal)
     if (app?.state === 'under_review') {
       await startClocksWhenPackUses(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)
     }
