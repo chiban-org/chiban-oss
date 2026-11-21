@@ -80,4 +80,13 @@ describe('request stage strip', () => {
       'Withdrawn:current',
     ])
   })
+
+  it('a request with only an acknowledgement is at Acknowledged until a substantive response', () => {
+    expect(
+      summary({ status: 'responded', firstResponseOn: ON, firstResponseKind: 'acknowledged' }),
+    ).toEqual(['Received:done', 'Acknowledged:current', 'Responded:upcoming', 'Closed:upcoming'])
+    expect(
+      summary({ status: 'responded', firstResponseOn: ON, firstResponseKind: 'made_available' }),
+    ).toEqual(['Received:done', 'Responded:current', 'Closed:upcoming'])
+  })
 })

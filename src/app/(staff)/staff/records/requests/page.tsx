@@ -8,7 +8,6 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
-import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { requestsNoPermissionAction, requestsTitle } from '@/features/rtk/requestCopy'
 import { listRtkRequestPage, rtkRequestFacets } from '@/features/rtk/requestList'
 import { requestChipGroups } from '@/features/rtk/requestListChips'
@@ -18,7 +17,7 @@ import {
   REQUESTS_PATH,
   readRequestsView,
 } from '@/features/rtk/requestListParams'
-import { requestRowChipStatus } from '@/features/rtk/requestStatus'
+import { requestRowChipStatus, requestStatusLabel } from '@/features/rtk/requestStatus'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -99,8 +98,9 @@ export default async function RightToKnowLogPage({
                       status={requestRowChipStatus(
                         row.status,
                         row.dueOn !== null && row.dueOn < today,
+                        row.firstResponseKind,
                       )}
-                      label={RTK_STATUS_LABELS[row.status]}
+                      label={requestStatusLabel(row)}
                     />
                   </td>
                   <td>

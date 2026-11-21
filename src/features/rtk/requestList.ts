@@ -24,6 +24,7 @@ export interface RtkListRow {
   status: RtkStatus
   dueOn: CivilDate | null
   requesterName: string | null
+  firstResponseKind: string | null
 }
 
 export interface RtkRequestPage {
@@ -116,6 +117,7 @@ export async function listRtkRequestPage(
       status: rtkRequests.status,
       dueOn: rtkRequests.openDueOn,
       requesterName: rtkRequests.requesterName,
+      firstResponseKind: rtkRequests.firstResponseKind,
     })
     .from(rtkRequests)
     .where(where)

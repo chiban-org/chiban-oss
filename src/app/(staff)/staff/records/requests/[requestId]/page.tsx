@@ -8,7 +8,6 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { recordsRequest } from '@/features/packs/vocabulary'
-import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { letterDeliveries } from '@/features/rtk/letterDelivery'
 import { requestsNoPermissionAction, requestsTitle } from '@/features/rtk/requestCopy'
 import { requesterEmailOf } from '@/features/rtk/requesterEmail'
@@ -19,7 +18,7 @@ import {
   loadRequestApprovals,
   loadRequestLetters,
 } from '@/features/rtk/requestPage'
-import { isRequestOpen, requestChipStatus } from '@/features/rtk/requestStatus'
+import { isRequestOpen, requestChipStatus, requestStatusLabel } from '@/features/rtk/requestStatus'
 import { rtkRequestView } from '@/features/rtk/requests'
 import { requestStages } from '@/features/rtk/stageStrip'
 import { planRequestWork } from '@/features/rtk/workPlan'
@@ -158,10 +157,7 @@ export default async function RequestPage({
         kicker={recordsRequest()}
         title={request.number}
         status={
-          <StatusChip
-            status={requestChipStatus(request)}
-            label={RTK_STATUS_LABELS[request.status]}
-          />
+          <StatusChip status={requestChipStatus(request)} label={requestStatusLabel(request)} />
         }
         lead={request.description}
         summary={

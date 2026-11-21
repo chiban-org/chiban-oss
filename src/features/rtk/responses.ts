@@ -20,6 +20,7 @@ import { civilDateSchema } from '@/features/packs/schema'
 import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { rtkDueContext } from '@/features/rtk/dueContext'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
+import { isAcknowledgedOnly } from '@/features/rtk/requestStatus'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
@@ -79,10 +80,6 @@ async function countFor(
 ): Promise<number> {
   const [row] = await tx.select({ n: count() }).from(table).where(eq(table.requestId, requestId))
   return row?.n ?? 0
-}
-
-function awaitsFollowUp(request: typeof rtkRequests.$inferSelect): boolean {
-  return request.status === 'responded' && request.firstResponseKind === 'acknowledged'
 }
 
 async function kindPrecondition(
@@ -159,7 +156,7 @@ export async function recordFirstResponse(
         .where(eq(rtkRequests.id, value.requestId))
         .for('update')
       if (request === undefined) return err('not_found')
-      const followUp = awaitsFollowUp(request)
+      const followUp = isAcknowledgedOnly(request)
       if (request.status !== 'open' && !followUp) return err('already_responded')
       if (followUp && value.kind === 'acknowledged') return err('already_responded')
       const today = await townToday(tx, now, signal)
