@@ -6,6 +6,7 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedMaineDemo } from '@/features/demo/me/seedMaineDemo'
 import {
   applyOverlayAfterStory,
   applyOverlayBeforeStory,
@@ -40,6 +41,7 @@ import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport } from '@/features/mail/transport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
+import { activePack } from '@/features/packs/registry'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 
@@ -170,6 +172,7 @@ export async function seedDemo(
   deps: SeedDemoDeps = {},
 ): Promise<SeedReport> {
   signal.throwIfAborted()
+  if (activePack().manifest.id === 'me') return await seedMaineDemo(db, signal, deps)
   const name = overlayTownName(deps.overlay)
   const base = await db.transaction(async (tx) => {
     const town = await tx
