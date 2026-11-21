@@ -9,7 +9,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
-import { planDeliveries } from '@/features/decisions/delivery'
+import { planAppealDecisionDelivery } from '@/features/decisions/appealDelivery'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
@@ -288,8 +288,8 @@ export async function addAppealNode(
       await tx.update(appealNodes).set({ status: 'resolved' }).where(eq(appealNodes.id, parent.id))
     }
     await startWindowClocks(tx, parent, input, clockApplicationId, linkedPbNodeId !== null, signal)
-    if (input.kind === 'zba_decision' && linkedPbNodeId === null && row !== undefined) {
-      await planDeliveries(tx, { appealNodeId: row.id }, signal)
+    if (input.kind === 'zba_decision' && row !== undefined) {
+      await planAppealDecisionDelivery(tx, row.id, linkedPbNodeId !== null, input, signal)
     }
     await writeAudit(
       tx,

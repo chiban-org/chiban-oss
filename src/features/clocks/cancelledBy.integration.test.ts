@@ -60,7 +60,11 @@ async function acceptedApplication(): Promise<string> {
   return applicationId
 }
 
-async function holdHearing(applicationId: string, heldOn: string): Promise<string> {
+async function holdHearing(
+  applicationId: string,
+  heldOn: string,
+  decideFirst = false,
+): Promise<string> {
   await issueListWithRecipients(handle.db, world, applicationId, [recipient(1), recipient(2)])
   const scheduled = await scheduleHearing(
     handle.db,
@@ -83,6 +87,7 @@ async function holdHearing(applicationId: string, heldOn: string): Promise<strin
     now,
   )
   await markProperlyNoticed(handle.db, world.staff, hearingId, signal, now)
+  if (decideFirst) expect((await decide(applicationId, null)).ok).toBe(true)
   const held = await markHearingHeld(
     handle.db,
     world.staff,
@@ -175,6 +180,16 @@ describe('a clock cancelled by the hearing held event', () => {
       status: 'met',
       metOn: MEETING_DATE,
     })
+    expect(
+      rows.filter((c) => DECISION_CLOCKS.includes(c.ruleKey) && c.status === 'running'),
+    ).toEqual([])
+  })
+
+  it('holding a still scheduled hearing after a decision without one starts no clock', async () => {
+    const applicationId = await acceptedApplication()
+    await holdHearing(applicationId, MEETING_DATE, true)
+    const rows = await clockRows(applicationId)
+    expect(rows.find((c) => c.ruleKey === AFTER_HEARING)).toBeUndefined()
     expect(
       rows.filter((c) => DECISION_CLOCKS.includes(c.ruleKey) && c.status === 'running'),
     ).toEqual([])

@@ -13,7 +13,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { markClockMet } from '@/features/clocks/startClocks'
+import { markDeliveryClockMetForSource } from '@/features/decisions/deliveryClocks'
 import { loadPack, type Pack } from '@/features/packs/loadPack'
 import type {
   BoardKind,
@@ -233,7 +233,13 @@ export async function recordDecisionDelivery(
       .where(and(resolved.where, isNull(decisionDeliveries.deliveredOn)))
       .limit(1)
     if (undelivered.length === 0 && rest?.latest !== null && rest?.latest !== undefined) {
-      await markClockMet(tx, row.applicationId, rule.dueRuleKey, rest.latest as CivilDate, signal)
+      await markDeliveryClockMetForSource(
+        tx,
+        row.applicationId,
+        rule.dueRuleKey,
+        resolved.happenedOn,
+        rest.latest as CivilDate,
+      )
     }
     await writeAudit(
       tx,
