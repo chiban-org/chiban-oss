@@ -43,6 +43,7 @@ export async function revokeUnderHoldAction(formData: FormData): Promise<ActionR
     settled(await revokePermitUnderHold(db, actor, input, signal), 'Permit revoked.', {
       before_placed: 'actedOn',
       before_reinstatement: 'actedOn',
+      before_suspension: 'actedOn',
     }),
   )
 }

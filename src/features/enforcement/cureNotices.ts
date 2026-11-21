@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, ne } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import {
   cureNotices,
   enforcementCases,
@@ -229,7 +229,7 @@ export async function recordCureReturnReceipt(
 }
 
 export async function cureStatus(
-  db: Db,
+  db: DbOrTx,
   caseId: string,
   today: CivilDate,
   signal: AbortSignal,

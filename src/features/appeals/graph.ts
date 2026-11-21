@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { appealNodes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { recordAppealAuthorizedByCaller } from '@/features/appeals/appeals'
+import { acceptsIssuanceAppeal, recordAppealAuthorizedByCaller } from '@/features/appeals/appeals'
 import { declareFinalApproval } from '@/features/appeals/projectFinality'
 import {
   chooseRoute,
@@ -32,6 +32,7 @@ export type AppealError =
   | 'duplicate_step'
   | 'not_final'
   | 'already_final'
+  | 'before_reinstatement'
 
 export interface AddNodeInput {
   parentId: string
@@ -140,7 +141,7 @@ async function maybeSuspendIssuedPermit(
   if (parent.kind !== 'administrative_decision' || input.kind !== 'zba_appeal') return ok(undefined)
   if (parent.applicationId === null) return ok(undefined)
   const app = await loadApplicationContext(tx, parent.applicationId, signal)
-  if (app?.state !== 'issued') return ok(undefined)
+  if (app === null || !(await acceptsIssuanceAppeal(tx, app, signal))) return ok(undefined)
   return await recordAppealAuthorizedByCaller(
     tx,
     actor,

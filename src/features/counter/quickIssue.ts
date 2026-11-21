@@ -69,6 +69,7 @@ export type QuickIssueError =
   | 'check_number_required'
   | 'unknown_parcel'
   | 'parcel_held'
+  | 'held_suspension'
   | 'not_published'
   | 'config_inconsistent'
   | 'not_configured'

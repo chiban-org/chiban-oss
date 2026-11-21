@@ -8,8 +8,13 @@ import {
   projects,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { lastReturnToIssued, stopExerciseClocks } from '@/features/appeals/suspensionClocks'
-import { loadApplicationContext } from '@/features/applications/context'
+import { appealOpen } from '@/features/appeals/suspension'
+import {
+  appealStops,
+  lastReturnToIssued,
+  stopExerciseClocks,
+} from '@/features/appeals/suspensionClocks'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -26,6 +31,7 @@ export type HoldPermitError =
   | 'not_issued'
   | 'before_placed'
   | 'before_reinstatement'
+  | 'before_suspension'
 
 interface HoldPermitInput {
   holdId: string
@@ -76,12 +82,44 @@ export async function permitsOnHeldParcel(
   })
 }
 
+interface Checked {
+  rowVersion: number
+  move: boolean
+}
+
+async function suspendedPermitCheck(
+  tx: Tx,
+  input: HoldPermitInput,
+  app: ApplicationContext,
+  revoking: boolean,
+  signal: AbortSignal,
+): Promise<Result<Checked, Exclude<HoldPermitError, 'forbidden'>>> {
+  const [action] = await tx
+    .select()
+    .from(holdPermitActions)
+    .where(
+      and(
+        eq(holdPermitActions.holdId, input.holdId),
+        eq(holdPermitActions.applicationId, app.id),
+        eq(holdPermitActions.action, 'suspended'),
+      ),
+    )
+  if (revoking) {
+    if (action === undefined) return err('not_issued')
+    if (input.actedOn < action.actedOn) return err('before_suspension')
+    return ok({ rowVersion: app.rowVersion, move: true })
+  }
+  const byAppeal =
+    action === undefined && appealStops(app) && (await appealOpen(tx, app.id, signal))
+  return byAppeal ? ok({ rowVersion: app.rowVersion, move: false }) : err('not_issued')
+}
+
 async function checkPermit(
   tx: Tx,
   input: HoldPermitInput,
-  allowSuspended: boolean,
+  revoking: boolean,
   signal: AbortSignal,
-): Promise<Result<{ rowVersion: number }, Exclude<HoldPermitError, 'forbidden'>>> {
+): Promise<Result<Checked, Exclude<HoldPermitError, 'forbidden'>>> {
   const [hold] = await tx
     .select()
     .from(developmentHolds)
@@ -90,24 +128,44 @@ async function checkPermit(
   if (hold === undefined) return err('not_found')
   if (hold.releasedOn !== null) return err('after_released')
   if (input.actedOn < hold.placedOn) return err('before_placed')
+  await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.id, input.applicationId))
+    .for('update')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (!(await applicationParcelIds(tx, app.id)).includes(hold.parcelId)) return err('not_on_parcel')
   const returned = await lastReturnToIssued(tx, app)
   if (returned !== null && input.actedOn < returned) return err('before_reinstatement')
-  if (app.state === 'issued') return ok({ rowVersion: app.rowVersion })
-  if (!allowSuspended || app.state !== 'suspended') return err('not_issued')
-  const [action] = await tx
-    .select()
-    .from(holdPermitActions)
-    .where(
-      and(
-        eq(holdPermitActions.holdId, hold.id),
-        eq(holdPermitActions.applicationId, app.id),
-        eq(holdPermitActions.action, 'suspended'),
-      ),
-    )
-  return action === undefined ? err('not_issued') : ok({ rowVersion: app.rowVersion })
+  if (app.state === 'issued') return ok({ rowVersion: app.rowVersion, move: true })
+  if (app.state !== 'suspended') return err('not_issued')
+  return await suspendedPermitCheck(tx, input, app, revoking, signal)
+}
+
+async function movePermit(
+  tx: Tx,
+  actor: Actor,
+  { action, ...input }: HoldPermitInput & { action: 'suspended' | 'revoked' },
+  rowVersion: number,
+  signal: AbortSignal,
+): Promise<Result<void, HoldPermitError>> {
+  const moved = await transitionApplication(
+    tx,
+    actor,
+    {
+      applicationId: input.applicationId,
+      to: action === 'suspended' ? 'suspended' : 'closed',
+      expectedRowVersion: rowVersion,
+      onDate: input.actedOn,
+      holdId: input.holdId,
+      ...(action === 'revoked' ? { closureReason: 'revoked_under_hold' as const } : {}),
+    },
+    signal,
+  )
+  if (!moved.ok) return err(moved.error === 'forbidden' ? 'forbidden' : 'not_issued')
+  if (action === 'suspended') await stopExerciseClocks(tx, input.applicationId)
+  return ok(undefined)
 }
 
 async function actUnderHold(
@@ -122,21 +180,16 @@ async function actUnderHold(
   return await transactionResult<void, HoldPermitError>(db, async (tx) => {
     const checked = await checkPermit(tx, input, action === 'revoked', signal)
     if (!checked.ok) return checked
-    const moved = await transitionApplication(
-      tx,
-      actor,
-      {
-        applicationId: input.applicationId,
-        to: action === 'suspended' ? 'suspended' : 'closed',
-        expectedRowVersion: checked.value.rowVersion,
-        onDate: input.actedOn,
-        holdId: input.holdId,
-        ...(action === 'revoked' ? { closureReason: 'revoked_under_hold' as const } : {}),
-      },
-      signal,
-    )
-    if (!moved.ok) return err(moved.error === 'forbidden' ? 'forbidden' : 'not_issued')
-    if (action === 'suspended') await stopExerciseClocks(tx, input.applicationId)
+    if (checked.value.move) {
+      const moved = await movePermit(
+        tx,
+        actor,
+        { ...input, action },
+        checked.value.rowVersion,
+        signal,
+      )
+      if (!moved.ok) return moved
+    }
     const row = { action, actedOn: input.actedOn, actedBy: actor.userId, reinstatedOn: null }
     await tx
       .insert(holdPermitActions)

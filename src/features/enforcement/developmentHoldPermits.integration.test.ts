@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { appeals, applications, developmentHolds, holdPermitActions } from '@/db/schema'
-import { resolveAppeal } from '@/features/appeals/appeals'
+import { applications, developmentHolds, holdPermitActions } from '@/db/schema'
+import { recordAppeal, resolveAppeal } from '@/features/appeals/appeals'
 import { isSuspended } from '@/features/appeals/suspension'
 import { recordEnforcementAppeal } from '@/features/enforcement/appeals'
 import { designateEnforcementOfficer } from '@/features/enforcement/designations'
@@ -85,14 +85,15 @@ async function correct(findingId: string) {
   if (!fixed.ok) throw new Error(fixed.error)
 }
 
-function openAppeal(applicationId: string) {
-  return handle.db.insert(appeals).values({
-    applicationId,
-    kind: 'appeal_of_issuance',
-    filedOn: '2027-03-14',
-    appellantName: 'Pat Abutter',
-    recordedBy: world.permit.staff.userId,
-  })
+async function openAppeal(applicationId: string, filedOn: CivilDate) {
+  const filed = await recordAppeal(
+    handle.db,
+    world.permit.staff,
+    { applicationId, filedOn, appellantName: 'Pat Abutter' },
+    signal,
+    { now: HOLD_LATER },
+  )
+  if (!filed.ok) throw new Error(filed.error)
 }
 
 describe('permits under a development hold', () => {
@@ -238,7 +239,7 @@ describe('a permit both under a hold and on appeal', () => {
     const permitId = await hold.issuedPermit()
     const { holdId, findingId } = await hold.heldCase()
     await suspend(holdId, permitId)
-    await openAppeal(permitId)
+    await openAppeal(permitId, d('2027-03-14'))
     const upheld = await resolveAppeal(
       handle.db,
       world.permit.staff,
@@ -248,7 +249,7 @@ describe('a permit both under a hold and on appeal', () => {
     )
     expect(upheld).toEqual({ ok: true, value: undefined })
     expect((await stateOf(permitId))?.state).toBe('suspended')
-    await openAppeal(permitId)
+    await openAppeal(permitId, d('2027-03-21'))
     await correct(findingId)
     expect(await release(holdId)).toEqual({ ok: true, value: undefined })
     expect((await stateOf(permitId))?.state).toBe('suspended')

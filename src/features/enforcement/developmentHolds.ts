@@ -1,11 +1,8 @@
 import { and, eq, gt, isNull } from 'drizzle-orm'
-import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
   developmentHolds,
-  enforcementCases,
-  enforcementCivilActions,
   enforcementFines,
   holdPermitActions,
   violationFindings,
@@ -19,67 +16,35 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { lockCase } from '@/features/enforcement/cases'
-import { cureStatus } from '@/features/enforcement/cureNotices'
-import { cureRuleByKey } from '@/features/enforcement/cureRules'
-import { holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
+import { lockedRemedyOpen, type RemedyError } from '@/features/enforcement/civilActions'
+import { holdSuspends } from '@/features/enforcement/holdReads'
 import { fineDueCents } from '@/features/ledger/fineDue'
-import { civilDateSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
+export { recordCivilAction } from '@/features/enforcement/civilActions'
 export { revokePermitUnderHold, suspendPermitUnderHold } from '@/features/enforcement/holdPermits'
 export { activeHoldFor, HELD_PARCEL_COPY } from '@/features/enforcement/holdReads'
 
-type Remedy = 'developmentHold' | 'civilAction'
-type RemedyError = 'not_found' | 'remedy_not_available' | 'cure_not_lapsed'
-
-async function remedyOpen(
-  db: Db,
-  input: { caseId: string; remedy: Remedy; on: CivilDate },
-  signal: AbortSignal,
-): Promise<Result<typeof enforcementCases.$inferSelect, RemedyError | 'no_parcel'>> {
-  const { caseId, remedy, on } = input
-  const [row] = await db.select().from(enforcementCases).where(eq(enforcementCases.id, caseId))
-  if (row === undefined) return err('not_found')
-  if (remedy === 'developmentHold' && row.parcelId === null) return err('no_parcel')
-  const rule = cureRuleByKey(row.cureRuleKey)
-  const offered =
-    remedy === 'developmentHold'
-      ? rule?.remedies.developmentHold === true && holdsEnabled()
-      : rule?.remedies.civilAction === true
-  if (!offered) return err('remedy_not_available')
-  const status = await cureStatus(db, caseId, on, signal)
-  return status.lapsedUncorrected ? ok(row) : err('cure_not_lapsed')
-}
+type PlaceError = 'forbidden' | 'no_parcel' | RemedyError | 'already_held'
 
 export async function placeDevelopmentHold(
   db: Db,
   actor: Actor,
   input: { caseId: string; placedOn: CivilDate },
   signal: AbortSignal,
-): Promise<
-  Result<
-    { holdId: string },
-    | 'forbidden'
-    | 'not_found'
-    | 'no_parcel'
-    | 'remedy_not_available'
-    | 'cure_not_lapsed'
-    | 'already_held'
-  >
-> {
+): Promise<Result<{ holdId: string }, PlaceError>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
   if (!allowed.ok) return err('forbidden')
-  const open = await remedyOpen(
-    db,
-    { caseId: input.caseId, remedy: 'developmentHold', on: input.placedOn },
-    signal,
-  )
-  if (!open.ok) return open
-  const parcelId = open.value.parcelId ?? ''
-  return await transactionResult(db, async (tx) => {
-    await lockCase(tx, input.caseId)
+  return await transactionResult<{ holdId: string }, PlaceError>(db, async (tx) => {
+    const open = await lockedRemedyOpen(
+      tx,
+      { caseId: input.caseId, remedy: 'developmentHold', on: input.placedOn },
+      signal,
+    )
+    if (!open.ok) return open
+    const parcelId = open.value.parcelId ?? ''
     const [placed] = await tx
       .insert(developmentHolds)
       .values({
@@ -104,6 +69,21 @@ export async function placeDevelopmentHold(
     )
     return ok({ holdId: placed.id })
   })
+}
+
+async function lockHoldWithCase(tx: Tx, holdId: string) {
+  const [unlocked] = await tx
+    .select({ caseId: developmentHolds.caseId })
+    .from(developmentHolds)
+    .where(eq(developmentHolds.id, holdId))
+  if (unlocked === undefined) return undefined
+  await lockCase(tx, unlocked.caseId)
+  const [hold] = await tx
+    .select()
+    .from(developmentHolds)
+    .where(eq(developmentHolds.id, holdId))
+    .for('update')
+  return hold
 }
 
 async function balanceDue(tx: Tx, caseId: string): Promise<boolean> {
@@ -205,11 +185,7 @@ export async function releaseDevelopmentHold(
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
   if (!allowed.ok) return err('forbidden')
   return await transactionResult(db, async (tx) => {
-    const [hold] = await tx
-      .select()
-      .from(developmentHolds)
-      .where(eq(developmentHolds.id, input.holdId))
-      .for('update')
+    const hold = await lockHoldWithCase(tx, input.holdId)
     if (hold === undefined) return err('not_found')
     if (hold.releasedOn !== null) return err('already_released')
     if (input.releasedOn < hold.placedOn) return err('before_placed')
@@ -238,58 +214,5 @@ export async function releaseDevelopmentHold(
       signal,
     )
     return ok(undefined)
-  })
-}
-
-const CivilActionSchema = z.object({
-  caseId: z.string().uuid(),
-  filedOn: civilDateSchema,
-  court: z.string().trim().min(1).max(200),
-  docket: z.string().trim().min(1).max(100).nullable(),
-})
-
-export async function recordCivilAction(
-  db: Db,
-  actor: Actor,
-  input: { caseId: string; filedOn: CivilDate; court: string; docket: string | null },
-  signal: AbortSignal,
-): Promise<Result<{ civilActionId: string }, 'forbidden' | 'invalid' | RemedyError>> {
-  signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
-  if (!allowed.ok) return err('forbidden')
-  const parsed = CivilActionSchema.safeParse(input)
-  if (!parsed.success) return err('invalid')
-  const value = parsed.data
-  const open = await remedyOpen(
-    db,
-    { caseId: value.caseId, remedy: 'civilAction', on: value.filedOn },
-    signal,
-  )
-  if (!open.ok) return err(open.error === 'no_parcel' ? 'not_found' : open.error)
-  return await transactionResult(db, async (tx) => {
-    await lockCase(tx, value.caseId)
-    const [row] = await tx
-      .insert(enforcementCivilActions)
-      .values({
-        caseId: value.caseId,
-        filedOn: value.filedOn,
-        court: value.court,
-        docket: value.docket,
-        recordedBy: actor.userId,
-      })
-      .returning({ id: enforcementCivilActions.id })
-    const civilActionId = row?.id ?? ''
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'enforcement.civil_action_recorded',
-        entityType: 'enforcement_case',
-        entityId: value.caseId,
-        after: { civilActionId, filedOn: value.filedOn, court: value.court },
-      },
-      signal,
-    )
-    return ok({ civilActionId })
   })
 }

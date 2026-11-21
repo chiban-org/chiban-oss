@@ -88,7 +88,7 @@ const COPY: Record<string, string> = {
   already_released: 'This hold was already released.',
   after_released: 'This hold was released, so it no longer acts on permits.',
   before_placed: 'The date cannot be before the hold was placed.',
-  before_suspension: 'The release cannot be dated before a permit was suspended under the hold.',
+  before_suspension: 'The date cannot be before the permit was suspended under the hold.',
   before_reinstatement:
     'The date cannot be before the permit last went back into force after an appeal or an earlier hold.',
   findings_open: 'Mark every finding corrected or withdrawn before releasing the hold.',

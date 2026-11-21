@@ -12,7 +12,17 @@ export async function isHoldMove(
   return app.state === 'suspended' && to === 'closed' && (await holdSuspends(tx, app.id, signal))
 }
 
-export async function issuanceHeld(
+export async function heldClose(
+  tx: DbOrTx,
+  app: { id: string; state: CoreState },
+  input: { to: CoreState; holdId?: string },
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (input.holdId !== undefined || app.state !== 'suspended' || input.to !== 'closed') return false
+  return await holdSuspends(tx, app.id, signal)
+}
+
+async function issuanceHeld(
   tx: Tx,
   app: { id: string; state: CoreState },
   input: { to: CoreState; cutover?: boolean },
@@ -22,7 +32,7 @@ export async function issuanceHeld(
   return await holdBlocksApplication(tx, app.id, signal)
 }
 
-export async function gatesSkipped(
+async function gatesSkipped(
   tx: Tx,
   app: { id: string; state: CoreState },
   input: { to: CoreState; holdId?: string },
@@ -30,4 +40,16 @@ export async function gatesSkipped(
 ): Promise<boolean> {
   if (app.state === 'suspended' && input.to === 'issued') return true
   return input.holdId !== undefined && (await isHoldMove(tx, app, input.to, signal))
+}
+
+export async function holdChecks(
+  tx: Tx,
+  app: { id: string; state: CoreState },
+  input: { to: CoreState; cutover?: boolean; holdId?: string },
+  signal: AbortSignal,
+): Promise<{ issuanceHeld: boolean; skipGates: boolean }> {
+  return {
+    issuanceHeld: await issuanceHeld(tx, app, input, signal),
+    skipGates: await gatesSkipped(tx, app, input, signal),
+  }
 }

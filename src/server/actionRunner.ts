@@ -61,6 +61,10 @@ export const ERROR_COPY: Record<string, string> = {
   stale_version: 'This application changed since you opened it. Reload the page and try again.',
   invalid_transition: 'That step is not available from the current state.',
   parcel_held: HELD_PARCEL_COPY,
+  held_suspension:
+    'This permit is suspended under an enforcement hold. Revoke it from the enforcement case.',
+  before_reinstatement:
+    'The filing date cannot be before the permit last went back into force after an appeal or a hold.',
   not_submitted: 'The application has not been submitted yet.',
   already_complete: 'The application is already marked complete.',
   already_signed_off: 'You have already signed off on this review.',

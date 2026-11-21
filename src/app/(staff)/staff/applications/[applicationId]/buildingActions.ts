@@ -98,7 +98,9 @@ export async function recordAppealAction(formData: FormData): Promise<ActionResu
     if (!recorded.ok && recorded.error === 'future_date') {
       return refuseField('filedOn', FUTURE_FILING)
     }
-    return outcome(recorded, 'Appeal recorded. The permit is suspended.')
+    return outcome(recorded, 'Appeal recorded. The permit is suspended.', {
+      before_reinstatement: 'filedOn',
+    })
   })
 }
 

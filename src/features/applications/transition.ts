@@ -11,7 +11,7 @@ import {
   assessForTransition,
   runTransitionEffects,
 } from '@/features/applications/transitionEffects'
-import { gatesSkipped, isHoldMove, issuanceHeld } from '@/features/applications/transitionHold'
+import { heldClose, holdChecks, isHoldMove } from '@/features/applications/transitionHold'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -57,6 +57,7 @@ export type TransitionError =
   | 'fees_incomplete'
   | 'not_found'
   | 'parcel_held'
+  | 'held_suspension'
   | { gateBlocked: GateResult[] }
 
 export interface TransitionOutcome {
@@ -167,9 +168,9 @@ export async function applyTransition(
   if (!isTransitionAllowed(app.state, input.to, app.typeBody.workflow))
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
-  if (await issuanceHeld(tx, app, input, signal)) return err('parcel_held')
-  const skipGates = await gatesSkipped(tx, app, input, signal)
-  const results = await gateResultsFor(tx, app, input, today, skipGates, signal)
+  const hold = await holdChecks(tx, app, input, signal)
+  if (hold.issuanceHeld) return err('parcel_held')
+  const results = await gateResultsFor(tx, app, input, today, hold.skipGates, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const assessed = await assessForTransition(tx, actor, app, input.to, signal)
   if (!assessed.ok) return err(assessed.error)
@@ -245,6 +246,7 @@ export async function transitionApplication(
   ) {
     return err('forbidden')
   }
+  if (await heldClose(tx, app, input, signal)) return err('held_suspension')
   if (needsBoardVote(app, input.to) && input.boardVote !== true) return err('invalid_transition')
   return await applyTransition(tx, actor, input, signal, now)
 }

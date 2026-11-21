@@ -1,14 +1,15 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { appeals } from '@/db/schema'
+import { appeals, applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { appealSuspends } from '@/features/appeals/suspension'
+import { appealOpen, appealSuspends } from '@/features/appeals/suspension'
 import {
+  lastReturnToIssued,
   stopExerciseClocks,
   stoppedSince,
   tollStoppedClocks,
 } from '@/features/appeals/suspensionClocks'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -29,7 +30,7 @@ export async function recordAppeal(
   input: AppealInput,
   signal: AbortSignal,
   { pack = loadPack(), now = new Date() }: AppealOptions = {},
-): Promise<Result<void, 'forbidden' | 'not_issued' | 'future_date'>> {
+): Promise<Result<void, 'forbidden' | FilingError | 'future_date'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.filedOn, now, signal)) return err('future_date')
@@ -38,18 +39,53 @@ export async function recordAppeal(
   )
 }
 
+type FilingError = 'not_issued' | 'before_reinstatement'
+
+export async function acceptsIssuanceAppeal(
+  tx: Tx,
+  app: Pick<ApplicationContext, 'id' | 'state'>,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (app.state === 'issued') return true
+  return (
+    app.state === 'suspended' &&
+    (await holdSuspends(tx, app.id, signal)) &&
+    !(await appealOpen(tx, app.id, signal))
+  )
+}
+
+async function filingTarget(
+  tx: Tx,
+  input: AppealInput,
+  signal: AbortSignal,
+): Promise<Result<{ app: ApplicationContext; held: boolean }, FilingError>> {
+  await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.id, input.applicationId))
+    .for('update')
+  const app = await loadApplicationContext(tx, input.applicationId, signal)
+  if (app === null) return err('not_issued')
+  if (!(await acceptsIssuanceAppeal(tx, app, signal))) return err('not_issued')
+  const held = app.state === 'suspended'
+  const returned = await lastReturnToIssued(tx, app)
+  if (returned !== null && input.filedOn < returned) return err('before_reinstatement')
+  return ok({ app, held })
+}
+
 export async function recordAppealAuthorizedByCaller(
   tx: Tx,
   actor: Actor,
   input: AppealInput,
   signal: AbortSignal,
   pack: Pack = loadPack(),
-): Promise<Result<void, 'not_issued'>> {
+): Promise<Result<void, FilingError>> {
   signal.throwIfAborted()
-  const app = await loadApplicationContext(tx, input.applicationId, signal)
-  if (app?.state !== 'issued') return err('not_issued')
+  const target = await filingTarget(tx, input, signal)
+  if (!target.ok) return target
+  const { app, held } = target.value
   const suspends = appealSuspends(pack, new Set(effectiveBindings(app.typeBody, pack)))
-  if (suspends) {
+  if (suspends && !held) {
     const moved = await applyTransition(
       tx,
       actor,
@@ -70,7 +106,7 @@ export async function recordAppealAuthorizedByCaller(
     appellantName: input.appellantName,
     recordedBy: actor.userId,
   })
-  if (suspends) await stopExerciseClocks(tx, input.applicationId)
+  if (suspends && !held) await stopExerciseClocks(tx, input.applicationId)
   await writeAudit(
     tx,
     {

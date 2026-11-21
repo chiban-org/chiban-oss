@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { appeals, clocks } from '@/db/schema'
-import { resolveAppeal } from '@/features/appeals/appeals'
+import { clocks } from '@/db/schema'
+import { recordAppeal, resolveAppeal } from '@/features/appeals/appeals'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { planWork } from '@/features/applications/workPlan'
 import { startClocksFor } from '@/features/clocks/startClocks'
@@ -99,14 +99,15 @@ async function appealThenResolve(applicationId: string, resolvedOn: CivilDate) {
   )
 }
 
-function openAppeal(applicationId: string) {
-  return handle.db.insert(appeals).values({
-    applicationId,
-    kind: 'appeal_of_issuance',
-    filedOn: '2027-03-14',
-    appellantName: 'Pat Abutter',
-    recordedBy: world.permit.staff.userId,
-  })
+async function openAppeal(applicationId: string) {
+  const filed = await recordAppeal(
+    handle.db,
+    world.permit.staff,
+    { applicationId, filedOn: d('2027-03-14'), appellantName: 'Pat Abutter' },
+    signal,
+    { now: HOLD_LATER },
+  )
+  if (!filed.ok) throw new Error(filed.error)
 }
 
 describe('the exercise-by clock under a development hold', () => {
