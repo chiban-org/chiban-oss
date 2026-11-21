@@ -113,12 +113,13 @@ async function correct(findingId: string) {
 const DONE = { ok: true, value: undefined }
 
 describe('resolving an appeal on a permit a hold also suspends', () => {
-  it('refuses a date before the hold suspension and tolls the whole span once', async () => {
+  it('refuses a date on or before the hold suspension and tolls the whole span once', async () => {
     const permitId = await clockedPermit()
     const { holdId, findingId } = await hold.heldCase()
     expect(await appeal(permitId, d('2027-03-14'))).toEqual(DONE)
     expect(await suspend(holdId, permitId, d('2027-03-25'))).toEqual(DONE)
     expect(await resolve(permitId, d('2027-03-20'))).toEqual({ ok: false, error: 'before_hold' })
+    expect(await resolve(permitId, d('2027-03-25'))).toEqual({ ok: false, error: 'before_hold' })
     expect(await resolve(permitId, d('2027-03-26'))).toEqual(DONE)
     expect(await permitState(permitId)).toEqual({
       state: 'suspended',
