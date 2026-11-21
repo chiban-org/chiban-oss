@@ -1,7 +1,7 @@
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil, daysBetween } from '@/types/civilDate'
 import { cureStanding, uncoveredOpenFindings } from './cureStanding'
-import type { CasePlanInput } from './workPlanInput'
+import { type CasePlanInput, draftOrderOf } from './workPlanInput'
 import type { Step } from './workPlanSteps'
 import type { CaseAction, CaseDue } from './workPlanTypes'
 
@@ -14,7 +14,16 @@ export function remedyActions(input: CasePlanInput): CaseAction[] {
   return [
     ...(cure.rule.remedies.developmentHold ? [{ kind: 'place_hold' as const }] : []),
     ...(cure.rule.remedies.civilAction ? [{ kind: 'file_civil_action' as const }] : []),
+    ...(draftOrderOf(input) === null ? [{ kind: 'draft_order' as const }] : []),
   ]
+}
+
+export function cureNoticeSent(input: CasePlanInput): boolean {
+  return input.cure?.rule != null && input.cure.notices.length > 0
+}
+
+export function cureReceiptRecorded(input: CasePlanInput): boolean {
+  return input.cure?.rule != null && input.cure.notices.some((n) => n.returnReceiptOn !== null)
 }
 
 export function cureDue(input: CasePlanInput): CaseDue | null {

@@ -16,7 +16,7 @@ import {
   violationNotices,
 } from '@/db/schema'
 import { buildOrderDetail } from '@/features/enforcement/caseDetail'
-import { casePlanCure } from '@/features/enforcement/cureRules'
+import { casePlanCure, packHasCureRules } from '@/features/enforcement/cureRules'
 import { serviceStateOf } from '@/features/enforcement/service'
 import { staysFor } from '@/features/enforcement/stay'
 import type { CasePlanInput } from '@/features/enforcement/workPlan'
@@ -31,6 +31,19 @@ function groupBy<T>(items: readonly T[], key: (item: T) => string): Map<string, 
     else list.push(item)
   }
   return groups
+}
+
+async function cureNoticeRows(db: DbOrTx, caseIds: string[]) {
+  if (!packHasCureRules()) return []
+  return await db.select().from(cureNotices).where(inArray(cureNotices.caseId, caseIds))
+}
+
+async function cureKeyRows(db: DbOrTx, caseIds: string[]) {
+  if (!packHasCureRules()) return []
+  return await db
+    .select({ id: enforcementCases.id, cureRuleKey: enforcementCases.cureRuleKey })
+    .from(enforcementCases)
+    .where(inArray(enforcementCases.id, caseIds))
 }
 
 export async function loadCasePlanInputs(
@@ -71,11 +84,8 @@ export async function loadCasePlanInputs(
         .from(counselReferrals)
         .where(inArray(counselReferrals.caseId, caseIds))
         .orderBy(asc(counselReferrals.referredOn)),
-      db.select().from(cureNotices).where(inArray(cureNotices.caseId, caseIds)),
-      db
-        .select({ id: enforcementCases.id, cureRuleKey: enforcementCases.cureRuleKey })
-        .from(enforcementCases)
-        .where(inArray(enforcementCases.id, caseIds)),
+      cureNoticeRows(db, caseIds),
+      cureKeyRows(db, caseIds),
     ])
   const orderIds = orders.map((o) => o.id)
   const referralIds = referrals.map((r) => r.id)

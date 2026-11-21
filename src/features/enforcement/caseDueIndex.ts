@@ -1,4 +1,4 @@
-import { and, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { enforcementCases } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -26,7 +26,13 @@ export async function loadCaseDueIndex(
     .where(
       and(
         enforcementCaseVisibleTo(actor),
-        inArray(enforcementCases.status, ['order_issued', 'in_court']),
+        or(
+          inArray(enforcementCases.status, ['order_issued', 'in_court']),
+          and(
+            eq(enforcementCases.status, 'violation_found'),
+            isNotNull(enforcementCases.cureRuleKey),
+          ),
+        ),
       ),
     )
   const inputs = await loadCasePlanInputs(db, cases, today, signal)

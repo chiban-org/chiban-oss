@@ -1,6 +1,12 @@
-import { and, asc, eq, inArray } from 'drizzle-orm'
-import type { Db } from '@/db/client'
-import { cureNotices, enforcementCases, violationFindings } from '@/db/schema'
+import { and, asc, eq, inArray, ne } from 'drizzle-orm'
+import type { Db, Tx } from '@/db/client'
+import {
+  cureNotices,
+  enforcementCases,
+  enforcementOrders,
+  violationFindings,
+  violationNotices,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -42,12 +48,7 @@ export async function applyCureProcedure(
       .where(eq(enforcementCases.id, input.caseId))
       .for('update')
     if (row === undefined) return err('not_found')
-    const [sent] = await tx
-      .select({ id: cureNotices.id })
-      .from(cureNotices)
-      .where(eq(cureNotices.caseId, input.caseId))
-      .limit(1)
-    if (sent !== undefined) return err('notice_sent')
+    if (await noticeOrOrderExists(tx, input.caseId)) return err('notice_sent')
     await tx
       .update(enforcementCases)
       .set({ cureRuleKey: input.ruleKey, updatedAt: new Date() })
@@ -66,6 +67,27 @@ export async function applyCureProcedure(
     )
     return ok(undefined)
   })
+}
+
+async function noticeOrOrderExists(tx: Tx, caseId: string): Promise<boolean> {
+  const [[cure], [violation], [order]] = await Promise.all([
+    tx
+      .select({ id: cureNotices.id })
+      .from(cureNotices)
+      .where(eq(cureNotices.caseId, caseId))
+      .limit(1),
+    tx
+      .select({ id: violationNotices.id })
+      .from(violationNotices)
+      .where(eq(violationNotices.caseId, caseId))
+      .limit(1),
+    tx
+      .select({ id: enforcementOrders.id })
+      .from(enforcementOrders)
+      .where(and(eq(enforcementOrders.caseId, caseId), ne(enforcementOrders.status, 'withdrawn')))
+      .limit(1),
+  ])
+  return cure !== undefined || violation !== undefined || order !== undefined
 }
 
 export async function sendCureNotice(

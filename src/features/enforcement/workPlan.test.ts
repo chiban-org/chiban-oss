@@ -122,7 +122,7 @@ const CURE_RULE = {
   label: 'Cure procedure',
   remedies: { developmentHold: true, civilAction: true },
 }
-const NOTICED = { findingIds: ['f1'], due: '2026-11-10' as CivilDate }
+const NOTICED = { findingIds: ['f1'], due: '2026-11-10' as CivilDate, returnReceiptOn: null }
 
 function cureInput(overrides: Parameters<typeof planInput>[1] = {}, notices = [NOTICED]) {
   return planInput('violation_found', {
@@ -156,7 +156,11 @@ describe('the case work plan under a cure procedure', () => {
   it('offers both remedies the day after the due date with a noticed finding open', () => {
     const p = planFor(cureInput({ today: '2026-11-11' as CivilDate }))
     expect(p.now?.action).toEqual({ kind: 'place_hold' })
-    expect(p.remedies).toEqual([{ kind: 'place_hold' }, { kind: 'file_civil_action' }])
+    expect(p.remedies).toEqual([
+      { kind: 'place_hold' },
+      { kind: 'file_civil_action' },
+      { kind: 'draft_order' },
+    ])
   })
 
   it('offers only the remedies the rule allows', () => {
@@ -164,7 +168,7 @@ describe('the case work plan under a cure procedure', () => {
     const p = planFor(
       cureInput({ today: '2026-11-11' as CivilDate, cure: { rule, notices: [NOTICED] } }),
     )
-    expect(p.remedies).toEqual([{ kind: 'file_civil_action' }])
+    expect(p.remedies).toEqual([{ kind: 'file_civil_action' }, { kind: 'draft_order' }])
     expect(p.now?.action).toEqual({ kind: 'file_civil_action' })
   })
 

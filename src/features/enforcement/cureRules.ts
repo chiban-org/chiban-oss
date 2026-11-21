@@ -59,12 +59,24 @@ export function cureMethodPhrase(rule: Pick<CureNoticeRule, 'method'> | null): s
 
 export function casePlanCure(
   cureRuleKey: string | null,
-  rows: readonly { findingIds: readonly string[]; cureDue: Pick<SubjectDue, 'due'> }[],
+  rows: readonly {
+    findingIds: readonly string[]
+    cureDue: Pick<SubjectDue, 'due'>
+    returnReceiptOn: string | null
+  }[],
 ): CasePlanCure | null {
   const rule = cureRuleByKey(cureRuleKey)
   if (rule === null) return null
   return {
     rule,
-    notices: rows.map((r) => ({ findingIds: r.findingIds, due: r.cureDue.due })),
+    notices: rows.map((r) => ({
+      findingIds: r.findingIds,
+      due: r.cureDue.due,
+      returnReceiptOn: r.returnReceiptOn,
+    })),
   }
+}
+
+export function packHasCureRules(): boolean {
+  return cureRules().length > 0
 }

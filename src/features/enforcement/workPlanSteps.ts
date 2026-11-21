@@ -83,6 +83,8 @@ function violationStep(input: CasePlanInput): Step {
   if (standing === 'corrected') return resolveStep()
   if (standing === 'withdrawn') return noViolationStep()
   const cure = cureStep(input)
+  const lapsedDraft = cure?.key === 'cure.remedy' ? draftOrderOf(input) : null
+  if (lapsedDraft !== null) return draftStep(input, lapsedDraft)
   if (cure !== null) return cure
   if (!noticeOfViolationSent(input.notices)) {
     return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })

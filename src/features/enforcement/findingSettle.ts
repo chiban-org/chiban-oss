@@ -3,6 +3,7 @@ import type { Tx } from '@/db/client'
 import {
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   type EnforcementStatus,
   enforcementCases,
   enforcementOrders,
@@ -23,6 +24,12 @@ async function somethingWentOut(tx: Tx, caseId: string): Promise<boolean> {
     .where(eq(violationNotices.caseId, caseId))
     .limit(1)
   if (notice !== undefined) return true
+  const [cure] = await tx
+    .select({ id: cureNotices.id })
+    .from(cureNotices)
+    .where(eq(cureNotices.caseId, caseId))
+    .limit(1)
+  if (cure !== undefined) return true
   const [order] = await tx
     .select({ id: enforcementOrders.id })
     .from(enforcementOrders)

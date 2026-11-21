@@ -229,7 +229,7 @@ function observeCure(rule: CureNoticeRule): unknown {
     orders: [],
     fines: [],
     referrals: [],
-    cure: { rule, notices: [{ findingIds: ['f1'], due: d('2027-03-10') }] },
+    cure: { rule, notices: [{ findingIds: ['f1'], due: d('2027-03-10'), returnReceiptOn: null }] },
   }
   const links = attempt(() => cureLinks(packWith(PROBE_CURE_RULES), rule))
   return {

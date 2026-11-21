@@ -3,6 +3,7 @@ import { type CivilDate, compareCivil } from '@/types/civilDate'
 export interface CureNoticeFact {
   findingIds: readonly string[]
   due: CivilDate
+  returnReceiptOn: string | null
 }
 
 export interface CureStanding {
