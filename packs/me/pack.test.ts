@@ -43,7 +43,14 @@ describe('me pack', () => {
   it('labels every town setting as a Chiban starting value', () => {
     const settings = ME_PACK_MANIFEST.rules.filter((r) => r.kind === 'town_setting')
     expect(settings.length).toBeGreaterThan(0)
-    for (const s of settings) expect(s.label.endsWith('(Chiban starting value)')).toBe(true)
+    for (const s of settings) {
+      expect(
+        s.label.endsWith('(Chiban starting value)') ||
+          s.label.endsWith(
+            '(Chiban starting value, from the DEP Chapter 1000 guideline ordinance)',
+          ),
+      ).toBe(true)
+    }
   })
 
   it('treats no written decision within 30 days of filing as a refused permit', () => {

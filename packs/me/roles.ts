@@ -5,7 +5,11 @@ export const ME_ROLES: PackRoles = {
     buildingPermit: 'me.building_permit',
     tradePermit: null,
     enforcement: [],
-    plumbingInspectorOwns: [],
+    plumbingInspectorOwns: [
+      'me.internal_plumbing',
+      'me.subsurface_wastewater',
+      'me.seasonal_conversion',
+    ],
   },
   rules: {
     buildingPermitDecision: 'me.bp.decision',

@@ -178,6 +178,13 @@ export const ME_RECORD_SERIES: RecordSeries[] = [
 export const ME_RECORD_SERIES_DEFAULTS = {
   byClassification: {
     'me.building_permit': 'me.rs.building_permits',
+    'me.shoreland_permit': 'me.rs.zoning_permits',
+    'me.land_use_permit': 'me.rs.zoning_permits',
+    'me.demolition_permit': UNSCHEDULED,
+    'me.sign_permit': UNSCHEDULED,
+    'me.internal_plumbing': 'me.rs.plumbing_internal',
+    'me.subsurface_wastewater': 'me.rs.plumbing_external',
+    'me.seasonal_conversion': 'me.rs.seasonal_conversion',
   } as Record<string, string>,
   byApplicationType: {
     SSW: 'me.rs.plumbing_external',
