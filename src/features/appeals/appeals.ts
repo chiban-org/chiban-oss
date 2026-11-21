@@ -1,34 +1,24 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { appeals, clocks } from '@/db/schema'
+import { appeals } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { appealSuspends } from '@/features/appeals/suspension'
+import {
+  stopExerciseClocks,
+  stoppedSince,
+  tollStoppedClocks,
+} from '@/features/appeals/suspensionClocks'
 import { loadApplicationContext } from '@/features/applications/context'
-import { stateLabel } from '@/features/applications/stateLabel'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { effectiveBindings } from '@/features/config/bindings'
 import { holdSuspends } from '@/features/enforcement/holdReads'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
-import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
+import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-async function exerciseByClocks(tx: Tx, applicationId: string, status: 'running' | 'stopped') {
-  const rows = await tx
-    .select()
-    .from(clocks)
-    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.status, status)))
-    .orderBy(desc(clocks.createdAt))
-  const pack = loadPack()
-  return rows.filter((c) => {
-    const rule = ruleByKey(pack, c.ruleKey, c.ruleVersion)
-    return rule.kind === 'clock' && rule.clockType === 'exercise_by'
-  })
-}
 
 type AppealInput = { applicationId: string; filedOn: CivilDate; appellantName: string }
 type AppealOptions = { pack?: Pack; now?: Date }
@@ -80,11 +70,7 @@ export async function recordAppealAuthorizedByCaller(
     appellantName: input.appellantName,
     recordedBy: actor.userId,
   })
-  if (suspends) {
-    for (const clock of await exerciseByClocks(tx, input.applicationId, 'running')) {
-      await tx.update(clocks).set({ status: 'stopped' }).where(eq(clocks.id, clock.id))
-    }
-  }
+  if (suspends) await stopExerciseClocks(tx, input.applicationId)
   await writeAudit(
     tx,
     {
@@ -151,13 +137,12 @@ export async function resolveAppeal(
       )
       if (!moved.ok) return err('not_suspended')
     }
-    if (input.outcome !== 'permit_revoked') {
+    if (input.outcome !== 'permit_revoked' && !held) {
+      const from = await stoppedSince(tx, app, open.filedOn as CivilDate)
       await tollStoppedClocks(
         tx,
         actor,
-        input.applicationId,
-        open.filedOn as CivilDate,
-        input.resolvedOn,
+        { applicationId: input.applicationId, from, to: input.resolvedOn },
         signal,
       )
     }
@@ -174,31 +159,4 @@ export async function resolveAppeal(
     )
     return ok(undefined)
   })
-}
-
-async function tollStoppedClocks(
-  tx: Tx,
-  actor: Actor,
-  applicationId: string,
-  filedOn: CivilDate,
-  resolvedOn: CivilDate,
-  signal: AbortSignal,
-): Promise<void> {
-  const label = stateLabel('suspended')
-  const days = daysBetween(filedOn, resolvedOn)
-  for (const clock of await exerciseByClocks(tx, applicationId, 'stopped')) {
-    await tx.update(clocks).set({ status: 'running' }).where(eq(clocks.id, clock.id))
-    await recordAdjustment(
-      tx,
-      actor,
-      { ...clock, status: 'running' },
-      {
-        kind: 'tolling',
-        days,
-        newDue: addDays(clock.currentDue as CivilDate, days),
-        reason: label,
-      },
-      signal,
-    )
-  }
 }

@@ -8,6 +8,7 @@ import {
   projects,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { stopExerciseClocks } from '@/features/appeals/suspensionClocks'
 import { loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -20,9 +21,10 @@ import { err, ok, type Result } from '@/types/result'
 export type HoldPermitError =
   | 'forbidden'
   | 'not_found'
-  | 'hold_released'
+  | 'after_released'
   | 'not_on_parcel'
   | 'not_issued'
+  | 'before_placed'
 
 interface HoldPermitInput {
   holdId: string
@@ -85,7 +87,8 @@ async function checkPermit(
     .where(eq(developmentHolds.id, input.holdId))
     .for('update')
   if (hold === undefined) return err('not_found')
-  if (hold.releasedOn !== null) return err('hold_released')
+  if (hold.releasedOn !== null) return err('after_released')
+  if (input.actedOn < hold.placedOn) return err('before_placed')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (!(await applicationParcelIds(tx, app.id)).includes(hold.parcelId)) return err('not_on_parcel')
@@ -130,6 +133,7 @@ async function actUnderHold(
       signal,
     )
     if (!moved.ok) return err(moved.error === 'forbidden' ? 'forbidden' : 'not_issued')
+    if (action === 'suspended') await stopExerciseClocks(tx, input.applicationId)
     const row = { action, actedOn: input.actedOn, actedBy: actor.userId, reinstatedOn: null }
     await tx
       .insert(holdPermitActions)

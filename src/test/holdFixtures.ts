@@ -35,7 +35,11 @@ export interface HoldWorld {
   cure: CureHelpers
 }
 
-export async function setupHoldWorld(db: Db, permit: PermitWorld): Promise<HoldWorld> {
+export async function setupHoldWorld(
+  db: Db,
+  permit: PermitWorld,
+  bindings: string[] = ['xx.bp.decision'],
+): Promise<HoldWorld> {
   await saveAndPublish(
     db,
     permit.admin,
@@ -45,7 +49,7 @@ export async function setupHoldWorld(db: Db, permit: PermitWorld): Promise<HoldW
       key: HOLD_TYPE,
       prefix: 'BX',
       classification: 'xx.building_permit',
-      bindings: ['xx.bp.decision'],
+      bindings,
     }),
   )
   const enforcement: EnforcementWorld = {

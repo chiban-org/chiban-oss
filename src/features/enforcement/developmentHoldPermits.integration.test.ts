@@ -41,7 +41,7 @@ beforeEach(async () => {
   handle = await makeTestDb()
   const permit = await setupPermitWorld(handle.db)
   setActivePackForTest(XX_CURE)
-  world = await setupHoldWorld(handle.db, permit)
+  world = await setupHoldWorld(handle.db, permit, ['xx.bp.decision', 'xx.appeal.suspension'])
   hold = holdHelpers(handle.db, world)
 })
 afterEach(async () => {

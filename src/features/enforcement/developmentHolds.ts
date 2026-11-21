@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
-  applications,
   developmentHolds,
   enforcementCases,
   enforcementCivilActions,
@@ -12,7 +11,9 @@ import {
   violationFindings,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { isSuspended } from '@/features/appeals/suspension'
+import { appealOpen } from '@/features/appeals/suspension'
+import { appealStops, stoppedSince, tollStoppedClocks } from '@/features/appeals/suspensionClocks'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -20,7 +21,7 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { lockCase } from '@/features/enforcement/cases'
 import { cureStatus } from '@/features/enforcement/cureNotices'
 import { cureRuleByKey } from '@/features/enforcement/cureRules'
-import { holdsEnabled } from '@/features/enforcement/holdReads'
+import { holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
 import { fineDueCents } from '@/features/ledger/fineDue'
 import { civilDateSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
@@ -116,6 +117,11 @@ async function balanceDue(tx: Tx, caseId: string): Promise<boolean> {
   return false
 }
 
+async function stillSuspended(tx: Tx, app: ApplicationContext, signal: AbortSignal) {
+  if (await holdSuspends(tx, app.id, signal)) return true
+  return appealStops(app) && (await appealOpen(tx, app.id, signal))
+}
+
 async function reinstatePermits(
   tx: Tx,
   actor: Actor,
@@ -133,13 +139,13 @@ async function reinstatePermits(
         isNull(holdPermitActions.reinstatedOn),
       ),
     )
-    .returning({ applicationId: holdPermitActions.applicationId })
-  for (const { applicationId } of suspended) {
-    const [app] = await tx
-      .select({ state: applications.state, rowVersion: applications.rowVersion })
-      .from(applications)
-      .where(eq(applications.id, applicationId))
-    if (app?.state !== 'suspended' || (await isSuspended(tx, applicationId, signal))) continue
+    .returning({
+      applicationId: holdPermitActions.applicationId,
+      actedOn: holdPermitActions.actedOn,
+    })
+  for (const { applicationId, actedOn } of suspended) {
+    const app = await loadApplicationContext(tx, applicationId, signal)
+    if (app?.state !== 'suspended' || (await stillSuspended(tx, app, signal))) continue
     const moved = await applyTransition(
       tx,
       actor,
@@ -153,14 +159,12 @@ async function reinstatePermits(
       signal,
     )
     if (!moved.ok) {
-      throw new AppError(
-        ErrorIds.ENF_INVARIANT,
-        'A permit suspended under a hold did not reinstate',
-        {
-          applicationId,
-        },
-      )
+      throw new AppError(ErrorIds.ENF_INVARIANT, 'A held permit did not reinstate', {
+        applicationId,
+      })
     }
+    const from = await stoppedSince(tx, app, actedOn as CivilDate)
+    await tollStoppedClocks(tx, actor, { applicationId, from, to: releasedOn }, signal)
   }
 }
 
@@ -170,7 +174,15 @@ export async function releaseDevelopmentHold(
   input: { holdId: string; releasedOn: CivilDate },
   signal: AbortSignal,
 ): Promise<
-  Result<void, 'forbidden' | 'not_found' | 'already_released' | 'findings_open' | 'balance_due'>
+  Result<
+    void,
+    | 'forbidden'
+    | 'not_found'
+    | 'already_released'
+    | 'before_placed'
+    | 'findings_open'
+    | 'balance_due'
+  >
 > {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
@@ -183,6 +195,7 @@ export async function releaseDevelopmentHold(
       .for('update')
     if (hold === undefined) return err('not_found')
     if (hold.releasedOn !== null) return err('already_released')
+    if (input.releasedOn < hold.placedOn) return err('before_placed')
     const open = await tx
       .select({ id: violationFindings.id })
       .from(violationFindings)
