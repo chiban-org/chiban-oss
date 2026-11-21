@@ -57,6 +57,7 @@ export type DecisionError =
   | 'invalid_state'
   | 'before_meeting'
   | 'future_date'
+  | 'already_final'
   | { notSeated: string[] }
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
@@ -245,17 +246,20 @@ export async function recordDecision(
     await startClocksFor(tx, app.id, 'board_vote', input.votedOn, signal, undefined, undefined, {
       outcome: input.outcome,
     })
-    await declareFinalApproval(
+    const declared = await declareFinalApproval(
       tx,
       {
         declared: input.finalMunicipalApproval,
-        projectId: app.projectId,
+        applicationId: app.id,
         outcome: input.outcome,
         votedOn: input.votedOn,
         boardKind,
+        actorUserId: actor.userId,
+        decisionId: row?.id ?? null,
       },
       signal,
     )
+    if (!declared.ok) return err(declared.error)
     await planDeliveries(tx, { decisionId: row?.id ?? '' }, signal)
     await writeAudit(
       tx,

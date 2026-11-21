@@ -3,6 +3,7 @@ import type { Db, Tx } from '@/db/client'
 import { appealNodes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { recordAppealAuthorizedByCaller } from '@/features/appeals/appeals'
+import { declareFinalApproval } from '@/features/appeals/projectFinality'
 import {
   chooseRoute,
   finalityForRoute,
@@ -30,6 +31,7 @@ export type AppealError =
   | 'before_parent'
   | 'duplicate_step'
   | 'not_final'
+  | 'already_final'
 
 export interface AddNodeInput {
   parentId: string
@@ -39,6 +41,7 @@ export interface AddNodeInput {
   outcome?: string
   linkedComponent?: boolean
   appellantName?: string
+  finalMunicipalApproval?: boolean
 }
 
 type NodeRow = typeof appealNodes.$inferSelect
@@ -150,6 +153,36 @@ async function maybeSuspendIssuedPermit(
   )
 }
 
+async function finishAppealDecision(
+  tx: Tx,
+  node: {
+    actor: Actor
+    nodeId: string | undefined
+    applicationId: string | null
+    linked: boolean
+    input: AddNodeInput
+  },
+  signal: AbortSignal,
+): Promise<Result<void, AppealError>> {
+  const { input } = node
+  if (input.kind !== 'zba_decision' || node.nodeId === undefined) return ok(undefined)
+  await planAppealDecisionDelivery(tx, node.nodeId, node.linked, input, signal)
+  return await declareFinalApproval(
+    tx,
+    {
+      declared: input.finalMunicipalApproval,
+      applicationId: node.applicationId,
+      outcome: input.outcome ?? null,
+      votedOn: input.occurredOn,
+      boardKind: 'zba',
+      actorUserId: node.actor.userId,
+      decisionId: null,
+      appealNodeId: node.nodeId,
+    },
+    signal,
+  )
+}
+
 export async function addAppealNode(
   db: Db,
   actor: Actor,
@@ -237,9 +270,12 @@ export async function addAppealNode(
       await tx.update(appealNodes).set({ status: 'resolved' }).where(eq(appealNodes.id, parent.id))
     }
     await startWindowClocks(tx, parent, input, clockApplicationId, linkedPbNodeId !== null, signal)
-    if (input.kind === 'zba_decision' && row !== undefined) {
-      await planAppealDecisionDelivery(tx, row.id, linkedPbNodeId !== null, input, signal)
-    }
+    const finished = await finishAppealDecision(
+      tx,
+      { actor, nodeId: row?.id, applicationId, linked: linkedPbNodeId !== null, input },
+      signal,
+    )
+    if (!finished.ok) return finished
     await writeAudit(
       tx,
       {

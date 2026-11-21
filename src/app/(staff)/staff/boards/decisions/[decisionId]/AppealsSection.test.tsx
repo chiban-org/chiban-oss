@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
@@ -34,5 +34,19 @@ describe('recording an appeal step', () => {
       () => screen.getByLabelText(/^Date( \*)?$/),
       'The date cannot be before the step it follows.',
     )
+  })
+
+  it('asks whether the step is the last approval when the pack waits for one', () => {
+    render(
+      <CsrfProvider token="t">
+        <AppealsSection view={{ ...view, offerFinalApproval: true }} today="2026-11-02" />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByText('Record an appeal step'))
+    expect(
+      screen.getByRole('checkbox', {
+        name: 'This is the last municipal approval the project needs',
+      }),
+    ).toBeTruthy()
   })
 })

@@ -91,6 +91,8 @@ const COPY: Record<string, string> = {
   },
   before_parent: 'The date cannot be before the step it follows.',
   duplicate_step: 'That step is already recorded after the one it follows.',
+  already_final:
+    'The project already has its last municipal approval, recorded on another decision.',
   not_final:
     'The project does not have its last municipal approval yet, so the appeal period has not started.',
   no_route: 'No Technical Review Committee route is set for this application type.',

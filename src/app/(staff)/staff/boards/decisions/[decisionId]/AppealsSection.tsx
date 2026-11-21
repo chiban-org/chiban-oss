@@ -12,6 +12,7 @@ import {
 } from '@/features/appeals/appealWords'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
 function appealSteps(): [string, string][] {
   return [
@@ -63,6 +64,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
               ['yes', 'Yes'],
             ]}
           />
+          <LastApprovalCheck offered={view.offerFinalApproval} />
         </ActionForm>
       </details>
     </section>

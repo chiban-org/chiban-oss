@@ -10,6 +10,7 @@ import {
   rehearingGrantedLabel,
 } from '@/features/appeals/appealWords'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
 function steps(): [string, string][] {
   return [
@@ -33,9 +34,11 @@ function results(): [string, string][] {
 export function AppealSteps({
   nodeChoices,
   today,
+  offerFinalApproval = false,
 }: {
   nodeChoices: { id: string; label: string }[]
   today: string
+  offerFinalApproval?: boolean
 }) {
   return (
     <ActionForm action={addAppealNodeAction} submitLabel="Record the step" className="max-w-md">
@@ -56,6 +59,7 @@ export function AppealSteps({
       />
       <TextField label="Who appealed" name="appellantName" hint={appealStepHint()} />
       <SelectField label={appealResultLabel()} name="outcome" options={results()} />
+      <LastApprovalCheck offered={offerFinalApproval} />
     </ActionForm>
   )
 }

@@ -1,10 +1,12 @@
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
-import { applications, projects } from '@/db/schema'
+import { appealNodes, applications, projects } from '@/db/schema'
+import { writeAudit } from '@/features/audit/writeAudit'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { loadPack, type Pack } from '@/features/packs/loadPack'
-import { type BoardKind, BoardKindSchema, type DecisionOutcome } from '@/features/packs/schema'
+import { type BoardKind, BoardKindSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
+import { err, ok, type Result } from '@/types/result'
 
 export const PROJECT_FINAL_APPROVAL = 'project_final_approval'
 
@@ -14,6 +16,7 @@ export interface ProjectFinality {
 }
 
 const APPROVING: readonly string[] = ['approved', 'approved_with_conditions']
+const DECISION_NODE_KINDS = ['zba_decision', 'pb_decision'] as const
 
 export function isApprovingOutcome(outcome: string | null): boolean {
   return outcome !== null && APPROVING.includes(outcome)
@@ -73,30 +76,87 @@ export async function applicationProjectFinality(
 
 export interface FinalApprovalDeclaration {
   declared: boolean | undefined
-  projectId: string
-  outcome: DecisionOutcome
+  applicationId: string | null
+  outcome: string | null
   votedOn: CivilDate
   boardKind: BoardKind | null
+  actorUserId: string
+  decisionId: string | null
+  appealNodeId?: string
+}
+
+export function declarationApplies(input: {
+  declared: boolean | undefined
+  boardKind: BoardKind | null
+  outcome: string | null
+}): boolean {
+  return (
+    input.declared === true &&
+    input.boardKind !== null &&
+    isApprovingOutcome(input.outcome) &&
+    packWaitsForFinalApproval()
+  )
+}
+
+async function approvedMembers(tx: Tx, projectId: string): Promise<string[]> {
+  const nodes = await tx
+    .select({
+      applicationId: appealNodes.applicationId,
+      outcome: appealNodes.outcome,
+    })
+    .from(appealNodes)
+    .innerJoin(applications, eq(applications.id, appealNodes.applicationId))
+    .where(
+      and(
+        eq(applications.projectId, projectId),
+        inArray(appealNodes.kind, [...DECISION_NODE_KINDS]),
+      ),
+    )
+    .orderBy(asc(applications.seq), desc(appealNodes.occurredOn), desc(appealNodes.createdAt))
+  const latest = new Map<string, string | null>()
+  for (const node of nodes) {
+    if (node.applicationId !== null && !latest.has(node.applicationId))
+      latest.set(node.applicationId, node.outcome)
+  }
+  return [...latest].filter(([, outcome]) => isApprovingOutcome(outcome)).map(([id]) => id)
 }
 
 export async function declareFinalApproval(
   tx: Tx,
   input: FinalApprovalDeclaration,
   signal: AbortSignal,
-): Promise<void> {
-  if (input.declared !== true || input.boardKind === null) return
-  if (!isApprovingOutcome(input.outcome) || !packWaitsForFinalApproval()) return
+): Promise<Result<void, 'already_final'>> {
+  if (!declarationApplies(input) || input.boardKind === null || input.applicationId === null)
+    return ok(undefined)
   signal.throwIfAborted()
+  const [member] = await tx
+    .select({ projectId: applications.projectId })
+    .from(applications)
+    .where(eq(applications.id, input.applicationId))
+  if (member === undefined) return ok(undefined)
+  if ((await projectFinality(tx, member.projectId, signal)) !== null) return err('already_final')
   await tx
     .update(projects)
     .set({ finalApprovalOn: input.votedOn, finalReviewBoard: input.boardKind })
-    .where(eq(projects.id, input.projectId))
-  const members = await tx
-    .select({ id: applications.id })
-    .from(applications)
-    .where(eq(applications.projectId, input.projectId))
-    .orderBy(asc(applications.seq))
-  for (const member of members) {
-    await startClocksFor(tx, member.id, PROJECT_FINAL_APPROVAL, input.votedOn, signal)
+    .where(eq(projects.id, member.projectId))
+  for (const applicationId of await approvedMembers(tx, member.projectId)) {
+    await startClocksFor(tx, applicationId, PROJECT_FINAL_APPROVAL, input.votedOn, signal)
   }
+  await writeAudit(
+    tx,
+    {
+      actor: { kind: 'user', userId: input.actorUserId },
+      action: 'project.final_approval',
+      entityType: 'project',
+      entityId: member.projectId,
+      after: {
+        finalApprovalOn: input.votedOn,
+        finalReviewBoard: input.boardKind,
+        decisionId: input.decisionId,
+        ...(input.appealNodeId === undefined ? {} : { appealNodeId: input.appealNodeId }),
+      },
+    },
+    signal,
+  )
+  return ok(undefined)
 }

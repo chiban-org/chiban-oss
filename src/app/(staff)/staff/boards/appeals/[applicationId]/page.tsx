@@ -50,7 +50,11 @@ export default async function ApplicationAppealsPage({
         {view.nodeChoices.length === 0 ? null : (
           <details open={view.graph.length === 1}>
             <summary>Record an appeal step</summary>
-            <AppealSteps nodeChoices={view.nodeChoices} today={today} />
+            <AppealSteps
+              nodeChoices={view.nodeChoices}
+              today={today}
+              offerFinalApproval={view.offerFinalApproval}
+            />
           </details>
         )}
       </section>

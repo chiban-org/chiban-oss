@@ -36,6 +36,7 @@ export async function recordDecisionAction(formData: FormData): Promise<ActionRe
       )
       return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
         future_date: 'votedOn',
+        already_final: 'finalMunicipalApproval',
       })
     },
   )
@@ -59,6 +60,7 @@ export async function recordDecisionWithoutHearingAction(
         future_date: 'votedOn',
         before_meeting: 'votedOn',
         not_found: 'meetingId',
+        already_final: 'finalMunicipalApproval',
       })
     },
   )
@@ -163,6 +165,7 @@ export async function addAppealNodeAction(formData: FormData): Promise<ActionRes
         duplicate_step: 'kind',
         route_not_allowed: 'kind',
         not_final: 'kind',
+        already_final: 'finalMunicipalApproval',
         wrong_outcome: 'outcome',
       })
     },
