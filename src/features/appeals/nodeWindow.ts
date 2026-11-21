@@ -11,6 +11,7 @@ import {
   ruleWindowDue,
   windowRoutesFrom,
 } from '@/features/appeals/routeWindow'
+import { AWAITING_DECISION_FILED, AWAITING_FINAL_APPROVAL } from '@/features/appeals/windowStart'
 import { hasWindowLength } from '@/features/clocks/resolvedLength'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { AppealNodeKind } from '@/features/packs/schema'
@@ -21,8 +22,6 @@ const DECISION_KINDS: readonly AppealNodeKind[] = [
   'pb_decision',
   'administrative_decision',
 ]
-
-export const AWAITING_FINAL_APPROVAL = 'after the project has its last municipal approval'
 
 async function dueText(
   db: DbOrTx,
@@ -39,6 +38,13 @@ async function dueText(
   if (waiting) return AWAITING_FINAL_APPROVAL
   const clocked =
     node.applicationId === null ? null : clockedWindowDue(node.windowClocks ?? [], node, ruleKey)
+  const rule = ruleByKey(loadPack(), ruleKey)
+  const unfiled =
+    node.applicationId !== null &&
+    clocked === null &&
+    rule.kind === 'clock' &&
+    rule.startEvent === 'decision_filed'
+  if (unfiled) return AWAITING_DECISION_FILED
   return formatCivilDate(clocked ?? (await ruleWindowDue(db, node, ruleKey, finality, signal)))
 }
 
@@ -54,7 +60,7 @@ export async function nodeWindow(
     : null
   const bySpecificity =
     DECISION_KINDS.includes(node.kind) ||
-    (node.kind === 'rehearing_outcome' && significant !== null)
+    (node.kind === 'rehearing_outcome' && (significant !== null || finality !== null))
   const route = bySpecificity
     ? mostSpecificRoute(routes, routeFacts(node, false, finality, significant))
     : routes[0]

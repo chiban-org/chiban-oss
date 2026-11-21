@@ -9,6 +9,7 @@ import { HEARING_STATUS_LABELS } from '@/features/hearings/views'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import { inRuleGroup } from '@/features/packs/ruleGroups'
+import { pendingWindowLines } from '@/features/portal/pendingWindows'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -63,6 +64,7 @@ export async function loadPortalBoardRecord(
       const rule = ruleByKey(pack, c.ruleKey, c.ruleVersion)
       return rule.kind === 'clock' ? [`${rule.label}, due ${formatCivilDate(c.currentDue)}.`] : []
     })
+  const pending = await pendingWindowLines(db, decisions.at(-1), signal)
   return ok({
     hearings: held.map(({ hearing, meeting, boardShortName }) => {
       const where = meeting.location === '' ? '' : `, ${meeting.location}`
@@ -72,6 +74,6 @@ export async function loadPortalBoardRecord(
       (d) =>
         `${OUTCOME_LABELS[d.outcome]}, voted ${formatCivilDate(d.votedOn)}.${d.filedOn === null ? '' : ` Filed ${formatCivilDate(d.filedOn)}.`}`,
     ),
-    deadlines,
+    deadlines: [...deadlines, ...pending],
   })
 }

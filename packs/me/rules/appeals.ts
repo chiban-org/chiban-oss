@@ -106,7 +106,7 @@ export const APPEAL_RULES: PackRule[] = [
   }),
   courtWindow({
     key: 'me.appeal.board_court_final',
-    label: 'Court appeal after the project has its last municipal approval',
+    label: 'Court appeal of an approval',
     startEvent: 'project_final_approval',
     onlyWhen: NOT_SIGNIFICANT,
     citation: OTHER_DECISIONS,
@@ -124,7 +124,7 @@ export const APPEAL_RULES: PackRule[] = [
   }),
   courtWindow({
     key: 'me.appeal.significant_final',
-    label: 'Court appeal of a significant decision after the last municipal approval',
+    label: 'Court appeal of a significant approval',
     startEvent: 'project_final_approval',
     onlyWhen: SIGNIFICANT,
     citation: {
@@ -136,7 +136,7 @@ export const APPEAL_RULES: PackRule[] = [
   }),
   courtWindow({
     key: 'me.appeal.significant_denial',
-    label: 'Court appeal of a significant denial after the written decision',
+    label: 'Court appeal of a significant denial',
     startEvent: 'decision_filed',
     onlyWhen: [DENIED, SIGNIFICANT],
     citation: { label: 'M.R. Civ. P. 80B(b)', url: ME_URLS.civilProcedureRules },

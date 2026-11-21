@@ -195,6 +195,35 @@ export async function deniedSubdivision(
   return { applicationId, decisionId: decided.value.decisionId }
 }
 
+export async function approvedLastSubdivision(
+  db: Db,
+  world: BoardWorld,
+  applicationId: string,
+  on: string,
+) {
+  const decided = await recordDecision(
+    db,
+    world.staff,
+    {
+      applicationId,
+      hearingId: null,
+      meetingId: await pbMeetingOn(db, on),
+      votedOn: d(on),
+      outcome: 'approved',
+      motion: 'Move to approve the subdivision as presented.',
+      votes: FIXTURE_VOTES,
+      findings: 'The subdivision meets each criterion of the ordinance.',
+      significant: false,
+      finalMunicipalApproval: true,
+    },
+    signal,
+    BOARD_FIXTURE_NOW,
+  )
+  if (!decided.ok) {
+    throw new AppError(ErrorIds.DB_INVARIANT, `decision: ${JSON.stringify(decided.error)}`)
+  }
+}
+
 export async function filedOn(
   db: Db,
   world: BoardWorld,
