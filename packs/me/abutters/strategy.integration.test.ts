@@ -153,6 +153,9 @@ describe('a Maine list drawn with a town buffer', () => {
       bufferFt: 300,
     })
     expect(stored?.snapshot.strategy.key).toBe('me.adjacent_buffer.v1')
+    expect(stored?.snapshot.candidates.find((c) => c.parcelId === ids.W2)?.reasons).toEqual([
+      { kind: 'within_buffer', bufferFt: 300 },
+    ])
     expect(stored === null ? null : snapshotHash(stored.snapshot)).toBe(stored?.snapshotSha256)
   })
 

@@ -23,10 +23,7 @@ export const ME_RESOLVER_VERSION = 1
 const OFFICE_ROLES: readonly RecipientRole[] = ['municipal_clerk', 'municipal_reviewing_authority']
 
 function wantsWater(input: ResolverInput): boolean {
-  return (
-    input.roles.includes('water_supplier') ||
-    input.conditionalRoles.some((c) => c.role === 'water_supplier')
-  )
+  return input.conditionalRoles.some((c) => c.when === 'source_water_area')
 }
 
 async function officeRecipients(ctx: ResolverContext, roles: RecipientRole[]) {
