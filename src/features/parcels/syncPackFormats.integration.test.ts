@@ -20,6 +20,20 @@ const XX_FORMAT = {
   example: '0010020000',
 }
 const XX_PACK = xxPackWith({ pack: { parcelIdFormats: [XX_FORMAT] } })
+const FREE_TEXT_PACK = xxPackWith({
+  pack: {
+    parcelIdFormats: [
+      {
+        key: 'map_lot',
+        label: 'Map and lot',
+        kind: 'free_text' as const,
+        width: null,
+        isDisplay: true,
+        example: 'R04-012',
+      },
+    ],
+  },
+})
 
 beforeEach(async () => {
   handle = await makeTestDb()
@@ -80,6 +94,20 @@ describe('syncPackParcelIdFormats', () => {
     expect([...result.removed].sort()).toEqual(['cama15', 'gis12'])
     expect(await formatKeys()).toEqual(['xx_map_lot'])
     expect(await displayKeys()).toEqual(['xx_map_lot'])
+  })
+
+  it('installs a free-text pack format with no width as the display format', async () => {
+    setActivePackForTest(FREE_TEXT_PACK)
+    const result = await syncPackParcelIdFormats(handle.db, signal)
+    expect(result.inserted).toEqual(['map_lot'])
+    const rows = await handle.db.select().from(parcelIdFormats)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      key: 'map_lot',
+      kind: 'free_text',
+      width: null,
+      isDisplay: true,
+    })
   })
 
   it('keeps an NH format that parcels already use', async () => {

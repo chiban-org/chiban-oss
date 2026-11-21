@@ -73,7 +73,7 @@ Parts marked No are not checked by the manifest schema. They have their own test
 ```
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.8.0',
+  version: '0.9.0',
   rules: [...],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,
@@ -367,9 +367,9 @@ A starter is a complete application type in one object: the application type, it
 
 ## Versioning
 
-Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.8.0.
+Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.9.0.
 
-- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.8.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
+- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.9.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
 - A rule: when a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
 - A transition: to act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
 - Starters, record series and abutter parameters: each carries its own integer `version`.
