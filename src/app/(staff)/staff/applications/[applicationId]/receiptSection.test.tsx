@@ -45,6 +45,7 @@ function panel(overrides: Partial<ReceiptPanel> = {}): ReceiptPanel {
     applicationId: 'a1',
     canPrepare: true,
     prepared: false,
+    outOfDate: false,
     checklist: [],
     itemChoices: [],
     proofChoices: [],

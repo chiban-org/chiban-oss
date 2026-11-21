@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { applications, clocks, noticeItems, noticeSets } from '@/db/schema'
+import { abutterLists, applications, clocks, noticeItems, noticeSets } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordDecision } from '@/features/decisions/recordDecision'
@@ -208,6 +208,70 @@ describe('prepareReceiptNotices', () => {
     )
     expect(proved.ok).toBe(true)
     expect((await leadClock(id))?.status).toBe('running')
+  })
+})
+
+async function reissueList(
+  applicationId: string,
+  recipients: Parameters<typeof issueListWithRecipients>[3],
+) {
+  const [old] = await handle.db
+    .select()
+    .from(abutterLists)
+    .where(eq(abutterLists.applicationId, applicationId))
+  if (old === undefined) throw new Error('missing list')
+  const { id: oldId, createdAt: _createdAt, ...copy } = old
+  const [next] = await handle.db
+    .insert(abutterLists)
+    .values({ ...copy, version: 2, status: 'draft', snapshot: { recipients } })
+    .returning({ id: abutterLists.id })
+  const nextId = next?.id ?? ''
+  await handle.db
+    .update(abutterLists)
+    .set({ status: 'superseded', supersededBy: nextId })
+    .where(eq(abutterLists.id, oldId))
+  await handle.db.update(abutterLists).set({ status: 'issued' }).where(eq(abutterLists.id, nextId))
+}
+
+describe('preparing receipt notices again after the list is issued again', () => {
+  it('keeps the old set and its proofs as history and derives an unproved set from the new list', async () => {
+    const id = await receivedApplication()
+    const first = await prepared(id)
+    await proveEverything(handle.db, world, id, first, d('2027-03-08'), NOW)
+    expect((await leadClock(id))?.status).toBe('met')
+    await reissueList(id, [
+      recipient(1),
+      recipient(2),
+      recipient(3, ['municipal_clerk']),
+      recipient(4),
+    ])
+    const panel = (await loadBoardPanel(handle.db, world.staff, id, signal))?.receipt
+    expect(panel).toMatchObject({ canPrepare: true, prepared: true, outOfDate: true })
+    const second = await prepared(id)
+    expect(second).not.toBe(first)
+    const sets = await handle.db
+      .select({ id: noticeSets.id, subjectKind: noticeSets.subjectKind })
+      .from(noticeSets)
+      .where(eq(noticeSets.subjectId, id))
+    expect(sets).toEqual(
+      expect.arrayContaining([
+        { id: first, subjectKind: 'receipt_superseded' },
+        { id: second, subjectKind: 'receipt' },
+      ]),
+    )
+    expect(
+      (await noticeStatus(handle.db, first, signal)).items.every((i) => i.proof !== null),
+    ).toBe(true)
+    const fresh = await noticeStatus(handle.db, second, signal)
+    expect(fresh.items).toHaveLength(4)
+    expect(fresh.items.every((i) => i.proof === null)).toBe(true)
+    expect((await leadClock(id))?.status).toBe('running')
+    const after = (await loadBoardPanel(handle.db, world.staff, id, signal))?.receipt
+    expect(after).toMatchObject({ canPrepare: false, prepared: true, outOfDate: false })
+    expect(after?.checklist).toHaveLength(4)
+    expect(
+      await prepareReceiptNotices(handle.db, world.staff, { applicationId: id }, signal),
+    ).toEqual({ ok: false, error: 'already_prepared' })
   })
 })
 

@@ -1798,6 +1798,7 @@ File: `data/notice_sets.ndjson`. Ordered by id.
 - `application_id`: uuid, nullable
 - `anchor_date`: date
 - `inherited_from`: uuid, nullable
+- `abutter_list_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 ### notification_outbox

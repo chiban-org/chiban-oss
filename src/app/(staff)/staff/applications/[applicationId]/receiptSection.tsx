@@ -87,8 +87,17 @@ export function ReceiptSection({ data, today }: { data: ReceiptPanel; today: str
           </details>
         </>
       ) : null}
+      {data.outOfDate ? (
+        <p>
+          The abutter list was issued again after these notices were prepared. Prepare them again
+          from the new list; the notices below and their proofs stay on the record.
+        </p>
+      ) : null}
       {data.canPrepare ? (
-        <ActionForm action={prepareReceiptNoticesAction} submitLabel="Prepare receipt notices">
+        <ActionForm
+          action={prepareReceiptNoticesAction}
+          submitLabel={data.prepared ? 'Prepare receipt notices again' : 'Prepare receipt notices'}
+        >
           <input type="hidden" name="applicationId" value={data.applicationId} />
         </ActionForm>
       ) : null}

@@ -11,7 +11,7 @@ import { currentIssuedList } from '@/features/abutters/queries'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { checklistFor } from '@/features/decisions/decisionView'
 import { evidenceOf } from '@/features/documents/evidence'
-import { RECEIPT_SUBJECT } from '@/features/notices/receiptNotices'
+import { RECEIPT_SUBJECT, receiptSetOutOfDate } from '@/features/notices/receiptNotices'
 import { hasReceiptNotices } from '@/features/notices/requirementsFor'
 import type { ProceedingClassification } from '@/features/packs/schema'
 
@@ -19,6 +19,7 @@ export interface ReceiptPanel {
   applicationId: string
   canPrepare: boolean
   prepared: boolean
+  outOfDate: boolean
   checklist: ChecklistItem[]
   itemChoices: { id: string; label: string }[]
   proofChoices: { id: string; label: string }[]
@@ -71,7 +72,7 @@ export async function loadReceiptPanel(
     .where(eq(applicationMunicipalities.applicationId, applicationId))
     .orderBy(asc(applicationMunicipalities.municipalityKey))
   const [set] = await db
-    .select({ id: noticeSets.id })
+    .select({ id: noticeSets.id, abutterListId: noticeSets.abutterListId })
     .from(noticeSets)
     .where(
       and(eq(noticeSets.subjectKind, RECEIPT_SUBJECT), eq(noticeSets.subjectId, applicationId)),
@@ -82,12 +83,15 @@ export async function loadReceiptPanel(
     .from(documents)
     .where(evidenceOf(applicationId))
     .orderBy(asc(documents.seq))
-  const issued = (await currentIssuedList(db, applicationId, signal)) !== null
+  const issuedList = await currentIssuedList(db, applicationId, signal)
+  const issued = issuedList !== null
+  const outOfDate = receiptSetOutOfDate(set, issuedList?.id ?? null)
   const nameOf = (key: string) => contacts.municipalities.find((m) => m.key === key)?.name ?? key
   return {
     applicationId,
-    canPrepare: input.canRecord && issued && set === undefined,
+    canPrepare: input.canRecord && issued && (set === undefined || outOfDate),
     prepared: set !== undefined,
+    outOfDate,
     checklist,
     itemChoices: checklist.map((i) => ({ id: i.itemId, label: i.recipientName ?? i.channel })),
     proofChoices: docs.map((d) => ({ id: d.id, label: d.title })),

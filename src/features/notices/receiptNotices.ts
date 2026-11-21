@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { clocks, noticeSets } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { currentIssuedList } from '@/features/abutters/queries'
 import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { loadApplicationContext } from '@/features/applications/context'
 import { lockApplication } from '@/features/applications/lockApplication'
@@ -17,6 +18,14 @@ import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export const RECEIPT_SUBJECT = 'receipt'
+export const SUPERSEDED_RECEIPT_SUBJECT = 'receipt_superseded'
+
+export function receiptSetOutOfDate(
+  set: { abutterListId: string | null } | undefined,
+  issuedListId: string | null,
+): boolean {
+  return set !== undefined && issuedListId !== null && set.abutterListId !== issuedListId
+}
 
 export type ReceiptNoticeError =
   | 'forbidden'
@@ -44,11 +53,20 @@ export async function prepareReceiptNotices(
       return err('no_receipt_requirements')
     }
     const [existing] = await tx
-      .select({ id: noticeSets.id })
+      .select({ id: noticeSets.id, abutterListId: noticeSets.abutterListId })
       .from(noticeSets)
       .where(and(eq(noticeSets.subjectKind, RECEIPT_SUBJECT), eq(noticeSets.subjectId, app.id)))
-    if (existing !== undefined) return err('already_prepared')
+    const issued = await currentIssuedList(tx, app.id, signal)
+    if (existing !== undefined && !receiptSetOutOfDate(existing, issued?.id ?? null)) {
+      return err('already_prepared')
+    }
     if (await hasOpenRegeneration(tx, app.id)) return err('list_out_of_date')
+    if (existing !== undefined) {
+      await tx
+        .update(noticeSets)
+        .set({ subjectKind: SUPERSEDED_RECEIPT_SUBJECT })
+        .where(eq(noticeSets.id, existing.id))
+    }
     const derived = await deriveNoticeItems(
       tx,
       {
@@ -61,6 +79,11 @@ export async function prepareReceiptNotices(
       signal,
     )
     if (!derived.ok) return err(derived.error)
+    await tx
+      .update(noticeSets)
+      .set({ abutterListId: issued?.id ?? null })
+      .where(eq(noticeSets.id, derived.value.setId))
+    if (existing !== undefined) await syncReceiptClocks(tx, derived.value.setId, signal)
     await writeAudit(
       tx,
       {
@@ -68,7 +91,11 @@ export async function prepareReceiptNotices(
         action: 'notice.receipt.prepare',
         entityType: 'application',
         entityId: app.id,
-        after: { noticeSetId: derived.value.setId, items: derived.value.items },
+        after: {
+          noticeSetId: derived.value.setId,
+          items: derived.value.items,
+          ...(existing === undefined ? {} : { supersededNoticeSetId: existing.id }),
+        },
       },
       signal,
     )
