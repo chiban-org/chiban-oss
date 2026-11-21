@@ -111,6 +111,7 @@ describe('recorded first response', () => {
       firstResponseOn: '2026-11-05',
       deniedOn: null,
       acknowledgedOn: null,
+      followUpOn: null,
       clarificationQuestion: null,
       timeliness: { kind: 'responded_on_time' },
       timeStatements: [],
@@ -130,6 +131,18 @@ describe('recorded first response', () => {
     renderRecorded({ firstResponseOn: null })
     expect(screen.getByText(/^Written statement of the time needed/).textContent).toBe(
       'Written statement of the time needed.',
+    )
+  })
+
+  it('shows the acknowledgement date and the later response date separately', () => {
+    renderRecorded({
+      acknowledgedOn: '2026-11-05' as CivilDate,
+      followUpOn: '2026-11-12' as CivilDate,
+      firstResponseKind: 'website_reference',
+    })
+    expect(screen.getByText('Receipt acknowledged, November 5, 2026.')).toBeTruthy()
+    expect(screen.getByText(/^Records are posted on the town website/).textContent).toBe(
+      'Records are posted on the town website, November 12, 2026.',
     )
   })
 

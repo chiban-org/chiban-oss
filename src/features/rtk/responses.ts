@@ -122,6 +122,7 @@ export async function recordFirstResponse(
   const parsed = ResponseSchema.safeParse(input)
   if (!parsed.success) return err('invalid')
   const value = parsed.data
+  if (value.kind !== 'acknowledged' && value.clarification !== undefined) return err('invalid')
   if (value.kind === 'acknowledged' && !acknowledgementEnabled()) {
     return err('acknowledgement_unavailable')
   }
@@ -161,6 +162,7 @@ export async function recordFirstResponse(
         .set({
           status: value.kind === 'time_statement' ? 'awaiting_decision' : 'responded',
           firstResponseOn: followUp ? request.firstResponseOn : value.respondedOn,
+          ...(followUp ? { followUpOn: value.respondedOn } : {}),
           firstResponseKind: value.kind,
           firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
           ...(value.kind === 'acknowledged'

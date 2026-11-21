@@ -56,6 +56,7 @@ export const rtkRequests = pgTable(
     firstResponseUrl: text('first_response_url'),
     acknowledgedOn: date('acknowledged_on', { mode: 'string' }),
     clarificationQuestion: text('clarification_question'),
+    followUpOn: date('follow_up_on', { mode: 'string' }),
     deniedOn: date('denied_on', { mode: 'string' }),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

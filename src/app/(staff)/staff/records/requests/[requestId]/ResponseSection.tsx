@@ -14,9 +14,8 @@ function timelinessText(request: RtkRequestView): string | null {
 
 function recordedLine(request: RtkRequestView): string {
   const label = responseLabel(request.firstResponseKind) ?? 'Response recorded'
-  return request.firstResponseOn === null || request.acknowledgedOn !== null
-    ? `${label}.`
-    : `${label}, ${formatCivilDate(request.firstResponseOn)}.`
+  const on = request.acknowledgedOn === null ? request.firstResponseOn : request.followUpOn
+  return on === null ? `${label}.` : `${label}, ${formatCivilDate(on)}.`
 }
 
 function acknowledgementLines(request: RtkRequestView): string[] {

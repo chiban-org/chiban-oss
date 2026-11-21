@@ -2,14 +2,18 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { setActivePackForTest } from '@/features/packs/registry'
+import { createRelease } from '@/features/rtk/releases'
 import { logRequest, rtkRequestView } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
+import { recordWithholding } from '@/features/rtk/withholdings'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import { ACKNOWLEDGING_PACK } from '@/test/packs/acknowledgingPack'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
+import { releasableRecord } from '@/test/rtkFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -84,7 +88,8 @@ describe('under a pack that accepts an acknowledgement', () => {
     expect(row?.clarificationQuestion).toBe('Which years do you mean?')
     expect(row?.openDueOn).toBeNull()
     const view = await rtkRequestView(handle.db, staff, requestId, d('2027-07-05'), signal)
-    expect(view.ok && view.value.timeliness.kind).toBe('responded_on_time')
+    if (!view.ok) throw new Error('view failed')
+    expect(view.value.timeliness.kind).toBe('responded_on_time')
   })
 
   it('a later time statement still records and keeps the acknowledgement date', async () => {
@@ -119,6 +124,70 @@ describe('under a pack that accepts an acknowledgement', () => {
     expect(row?.firstResponseKind).toBe('website_reference')
     expect(row?.firstResponseUrl).toBe('https://town.example/records')
     expect(row?.firstResponseOn).toBe('2027-07-05')
+  })
+
+  it('a release after the acknowledgement keeps the acknowledgement date and becomes made_available', async () => {
+    const requestId = await logged()
+    await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })
+    const record = await releasableRecord(handle.db, store, staff, requestId)
+    const released = await createRelease(
+      handle.db,
+      store,
+      createMemoryTransport(),
+      staff,
+      {
+        requestId,
+        releasedOn: d('2027-07-09'),
+        method: 'paper',
+        items: [{ documentId: record.documentId, approvalId: record.approvalId }],
+      },
+      signal,
+      NOW,
+    )
+    expect(released.ok).toBe(true)
+    const row = await rowOf(requestId)
+    expect(row?.status).toBe('responded')
+    expect(row?.firstResponseKind).toBe('made_available')
+    expect(row?.firstResponseOn).toBe('2027-07-05')
+    expect(row?.acknowledgedOn).toBe('2027-07-05')
+    expect(row?.followUpOn).toBe('2027-07-09')
+  })
+
+  it('a denial after the acknowledgement records with its withholding', async () => {
+    const requestId = await logged()
+    await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })
+    const withheld = await recordWithholding(
+      handle.db,
+      staff,
+      {
+        requestId,
+        scope: 'withheld_in_full',
+        recordDescription: 'Email from the town attorney about the Birch Lane variance',
+        exemptionKey: 'nh.rtk.91a5.xii',
+        explanation: 'The email is a confidential communication seeking legal advice from counsel.',
+      },
+      signal,
+    )
+    expect(withheld.ok).toBe(true)
+    const r = await respond({ requestId, kind: 'denied', respondedOn: d('2027-07-09') })
+    expect(r.ok).toBe(true)
+    const row = await rowOf(requestId)
+    expect(row?.status).toBe('responded')
+    expect(row?.firstResponseKind).toBe('denied')
+    expect(row?.firstResponseOn).toBe('2027-07-05')
+    expect(row?.followUpOn).toBe('2027-07-09')
+  })
+
+  it('a clarification with any other response is invalid', async () => {
+    const requestId = await logged()
+    const r = await respond({
+      requestId,
+      kind: 'website_reference',
+      respondedOn: d('2027-07-05'),
+      websiteUrl: 'https://town.example/records',
+      clarification: 'Which years?',
+    })
+    expect(r).toEqual({ ok: false, error: 'invalid' })
   })
 
   it('a second acknowledgement is already_responded', async () => {

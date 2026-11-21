@@ -855,6 +855,13 @@
       "when": 1795271951448,
       "tag": "0121_rtk_acknowledgement",
       "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1795272482107,
+      "tag": "0122_rtk_follow_up_on",
+      "breakpoints": true
     }
   ]
 }

@@ -70,6 +70,22 @@ async function checkReleaseDate(
   return daysBetween(receivedOn, releasedOn) < 0 ? 'before_received' : null
 }
 
+type RequestRow = typeof rtkRequests.$inferSelect
+
+function responseFieldsAfterRelease(request: RequestRow, releasedOn: CivilDate) {
+  if (request.firstResponseKind === 'acknowledged') {
+    return {
+      firstResponseOn: request.firstResponseOn,
+      firstResponseKind: 'made_available' as const,
+      followUpOn: releasedOn,
+    }
+  }
+  return {
+    firstResponseOn: request.firstResponseOn ?? releasedOn,
+    firstResponseKind: request.firstResponseKind ?? ('made_available' as const),
+  }
+}
+
 export async function createRelease(
   db: Db,
   store: ObjectStore,
@@ -154,11 +170,7 @@ export async function createRelease(
         .update(rtkRequests)
         .set({
           status: 'responded',
-          firstResponseOn: request.firstResponseOn ?? value.releasedOn,
-          firstResponseKind:
-            request.firstResponseKind === 'acknowledged'
-              ? 'made_available'
-              : (request.firstResponseKind ?? 'made_available'),
+          ...responseFieldsAfterRelease(request, value.releasedOn),
           openDueOn: null,
           rowVersion: request.rowVersion + 1,
         })
