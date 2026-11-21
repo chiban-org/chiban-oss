@@ -1,3 +1,5 @@
+import { SITE_PLAN_RULE_KEYS, SUBDIVISION_RULE_KEYS } from '@packs/me/rules/planningBoard'
+import { SUBDIVISION_NOTICE_REQUIREMENTS } from '@packs/me/rules/planningBoardNotices'
 import type { ProceedingClassification } from '@/features/packs/schema'
 
 function direct(key: string, label: string, mandatoryRuleKeys: string[]): ProceedingClassification {
@@ -12,6 +14,32 @@ function direct(key: string, label: string, mandatoryRuleKeys: string[]): Procee
     directIssueAllowed: true,
     hearing: 'required',
     recordingRequired: false,
+    appealRights: '',
+  }
+}
+
+function planningBoard(
+  key: string,
+  label: string,
+  rules: { mandatory: string[]; notices: string[] },
+): ProceedingClassification {
+  return {
+    key,
+    label,
+    mandatoryRuleKeys: rules.mandatory,
+    boardKind: 'planning_board',
+    abutters: {
+      strategyKey: 'me.adjacent_buffer.v1',
+      resolverKey: 'me.recipients.v1',
+      roles: ['applicant', 'abutter_owner', 'municipal_clerk', 'municipal_reviewing_authority'],
+      conditionalRoles: [{ role: 'water_supplier', when: 'source_water_area' }],
+    },
+    noticeRequirementKeys: rules.notices,
+    requiredSubsteps: [],
+    directIssueAllowed: false,
+    hearing: 'optional',
+    recordingRequired: false,
+    significanceApplies: true,
     appealRights: '',
   }
 }
@@ -54,4 +82,12 @@ export const ME_CLASSIFICATIONS: ProceedingClassification[] = [
     'me.ssw.completeness',
   ]),
   direct('me.seasonal_conversion', 'Seasonal dwelling conversion permit', ['me.plumbing.validity']),
+  planningBoard('me.pb_subdivision', 'Subdivision', {
+    mandatory: SUBDIVISION_RULE_KEYS,
+    notices: SUBDIVISION_NOTICE_REQUIREMENTS,
+  }),
+  planningBoard('me.pb_site_plan', 'Site plan review', {
+    mandatory: SITE_PLAN_RULE_KEYS,
+    notices: [],
+  }),
 ]

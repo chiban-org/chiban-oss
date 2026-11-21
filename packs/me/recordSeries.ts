@@ -185,6 +185,8 @@ export const ME_RECORD_SERIES_DEFAULTS = {
     'me.internal_plumbing': 'me.rs.plumbing_internal',
     'me.subsurface_wastewater': 'me.rs.plumbing_external',
     'me.seasonal_conversion': 'me.rs.seasonal_conversion',
+    'me.pb_subdivision': 'me.rs.subdivision_permits',
+    'me.pb_site_plan': 'me.rs.site_plans_approved',
   } as Record<string, string>,
   byApplicationType: {
     SSW: 'me.rs.plumbing_external',
