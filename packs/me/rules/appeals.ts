@@ -94,6 +94,7 @@ export const APPEAL_RULES: PackRule[] = [
     key: 'me.appeal.boa_court',
     label: 'Court appeal of a Board of Appeals decision',
     startEvent: 'board_vote',
+    cancelledBy: 'rehearing_vote',
     citation: SECTION_2691('(G), (H)'),
     days: 45,
     extension: COURT_EXTENDS_2691,

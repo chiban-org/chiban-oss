@@ -96,6 +96,16 @@ describe('a reconsidered Board of Appeals decision on a project the planning boa
           'me.appeal.boa_court_after_planning_board',
         ),
       ).toMatchObject([{ status: 'superseded', startDate: '2027-04-28' }])
+      expect(
+        await clocksOf(handle.db, variance.applicationId, 'me.appeal.boa_court'),
+      ).toMatchObject([{ status: 'superseded', startDate: '2027-04-15' }])
+      const running = await handle.db.query.clocks.findMany({
+        where: (c, { and: both, eq: same }) =>
+          both(same(c.applicationId, variance.applicationId), same(c.status, 'running')),
+      })
+      expect(running.map((c) => c.ruleKey).filter((k) => k.includes('court'))).toEqual([
+        'me.appeal.boa_court_after_reconsideration',
+      ])
       const reconsiderationWindow = ruleByKey(
         loadPack(),
         'me.appeal.boa_court_after_reconsideration',

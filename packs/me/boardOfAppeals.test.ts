@@ -62,6 +62,7 @@ describe('Board of Appeals windows', () => {
 
   it('takes a court appeal within 45 days, rolling past Memorial Day', () => {
     expect(clockDue('me.appeal.boa_court', '2027-04-15')).toBe('2027-06-01')
+    expect(rule('me.appeal.boa_court')).toMatchObject({ cancelledBy: 'rehearing_vote' })
   })
 
   it('takes a court appeal within 15 days of the reconsideration vote', () => {
