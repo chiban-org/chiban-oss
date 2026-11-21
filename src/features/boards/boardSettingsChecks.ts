@@ -1,4 +1,8 @@
-import { primaryAbutterParams } from '@/features/abutters/packParams'
+import {
+  NO_PROJECTION_MESSAGE,
+  primaryAbutterParams,
+  supportsProjection,
+} from '@/features/abutters/packParams'
 import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
@@ -12,6 +16,11 @@ type Board = BoardSettingsBody['boards'][number]
 
 function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | null {
   if (!abutters.projectionEnabled) return null
+  if (!supportsProjection(primaryAbutterParams())) {
+    return {
+      invalid: [{ path: 'abutters.projectionEnabled', message: NO_PROJECTION_MESSAGE }],
+    }
+  }
   if (abutters.layersConfirmedBy === null) {
     return {
       invalid: [

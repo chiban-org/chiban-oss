@@ -48,7 +48,7 @@ export const AbutterParamsSchema = z.object({
   key: z.string().min(1),
   version: z.number().int().positive(),
   citation: z.object({ label: z.string().min(1), url: z.string().url() }),
-  captureRadiusFt: z.number().positive(),
+  captureRadiusFt: z.number().positive().nullable(),
   adjacencyToleranceFt: z.number().positive(),
   simplifyToleranceFt: z.number().positive(),
   cornerTurnDeg: z.number().positive(),

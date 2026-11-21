@@ -19,7 +19,9 @@ function observeParams(params: AbutterParams): unknown {
       label: params.tolerancesLabel,
     },
     adjacent: [0, 0.5, 1, 3].map((ft) => isAdjacent(ft, params.adjacencyToleranceFt)),
-    captured: [49.5, 50, 55].map((ft) => isCaptured(ft, params.captureRadiusFt)),
+    captured: [49.5, 50, 55].map((ft) =>
+      params.captureRadiusFt === null ? null : isCaptured(ft, params.captureRadiusFt),
+    ),
     townBuffer: {
       unset: effectiveBufferFt(undefined, params),
       accepted: [100, 400, 900].map((ft) => bufferWithinMax(ft, params)),

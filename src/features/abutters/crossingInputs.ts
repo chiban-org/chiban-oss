@@ -84,11 +84,12 @@ function featureOf(row: {
 export async function loadCrossingInputs(
   tx: DbOrTx,
   applicantParcelIds: string[],
-  radiusFt: number,
+  radiusFt: number | null,
   signal: AbortSignal,
 ): Promise<CrossingInputs> {
   signal.throwIfAborted()
-  if (applicantParcelIds.length === 0) return { applicantRings: [], others: [], features: [] }
+  if (radiusFt === null || applicantParcelIds.length === 0)
+    return { applicantRings: [], others: [], features: [] }
   const srid = projectedSridParam()
   const union = sql`(select ST_Transform(ST_Union(a.geom), ${srid}) from parcels a where a.id = any(${uuidArray(applicantParcelIds)}))`
   const applicant = await tx.execute<{ gj: string | null }>(

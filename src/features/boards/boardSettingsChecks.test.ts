@@ -8,6 +8,7 @@ import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
 import type { BoardRow } from '@/features/boards/townBoards'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { withPackForTest } from '@/features/packs/registry'
+import { packWithoutCapture } from '@/test/packs/noCapturePack'
 import { packWithTownBuffer } from '@/test/packs/townBufferPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -146,5 +147,40 @@ describe('abutter buffer', () => {
 
   it('accepts settings with no buffer', () => {
     expect(checkBoardSettings(DEFAULT_BODY, ACTIVE)).toBeNull()
+  })
+})
+
+describe('projection without a capture radius', () => {
+  const projectionOn: BoardSettingsBody = {
+    ...DEFAULT_BODY,
+    abutters: {
+      ...DEFAULT_BODY.abutters,
+      projectionEnabled: true,
+      layersConfirmedBy: 'Land Use Technician',
+      layersConfirmedOn: '2027-02-01' as CivilDate,
+    },
+  }
+
+  it('refuses turning projection on', () => {
+    withPackForTest(packWithoutCapture(), () => {
+      expect(checkBoardSettings(projectionOn, ACTIVE)).toEqual({
+        invalid: [
+          {
+            path: 'abutters.projectionEnabled',
+            message: "This state's notice law has no street or stream projection.",
+          },
+        ],
+      })
+    })
+  })
+
+  it('accepts projection off', () => {
+    withPackForTest(packWithoutCapture(), () => {
+      expect(checkBoardSettings(DEFAULT_BODY, ACTIVE)).toBeNull()
+    })
+  })
+
+  it('accepts projection on for a pack with a capture radius', () => {
+    expect(checkBoardSettings(projectionOn, ACTIVE)).toBeNull()
   })
 })

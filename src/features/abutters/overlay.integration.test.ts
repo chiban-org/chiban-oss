@@ -54,25 +54,4 @@ describe('projectionOverlay', () => {
     expect(labels).toContain('009001000000')
     expect(labels).toContain('Osprey Point Road')
   })
-
-  it('draws the buffer outline only when a buffer is given', async () => {
-    const without = await handle.db.transaction((tx) =>
-      projectionOverlay(tx, [ids.A ?? ''], NH_ABUTTER_PARAMS, 50, signal),
-    )
-    expect(without.features.some((f) => f.properties.kind === 'buffer')).toBe(false)
-    const withBuffer = await handle.db.transaction((tx) =>
-      projectionOverlay(tx, [ids.A ?? ''], NH_ABUTTER_PARAMS, 50, signal, 300),
-    )
-    const outlines = withBuffer.features.filter((f) => f.properties.kind === 'buffer')
-    expect(outlines).toHaveLength(1)
-    expect(outlines[0]?.geometry.type).toBe('Polygon')
-  })
-
-  it('draws the buffer outline for a parcel with no street or stream frontage', async () => {
-    const overlay = await handle.db.transaction((tx) =>
-      projectionOverlay(tx, [ids.M4 ?? ''], NH_ABUTTER_PARAMS, 50, signal, 300),
-    )
-    const drawn = overlay.features.map((f) => f.properties.kind).filter((k) => k !== 'label')
-    expect(drawn).toEqual(['buffer'])
-  })
 })

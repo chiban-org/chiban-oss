@@ -72,6 +72,8 @@ export default async function AbutterListPage({ params }: { params: Promise<{ li
     notFound()
   }
   const town = await getTownSettings(ctx.db, ctx.signal)
+  const mapTitle =
+    primaryAbutterParams().captureRadiusFt === null ? 'Town buffer' : 'Across the street or stream'
   return (
     <main>
       <PageHeader
@@ -84,8 +86,8 @@ export default async function AbutterListPage({ params }: { params: Promise<{ li
       <RecordLayout rail={<ListRail view={view} />}>
         <Incomplete view={view} />
         {view.overlay === null ? null : (
-          <section aria-label="Across the street or stream">
-            <h2>Across the street or stream</h2>
+          <section aria-label={mapTitle}>
+            <h2>{mapTitle}</h2>
             <ProjectionMap
               overlay={view.overlay}
               bbox={view.bbox}
