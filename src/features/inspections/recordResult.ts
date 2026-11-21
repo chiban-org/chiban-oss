@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { applications, inspectionItemResults, inspections } from '@/db/schema'
+import { inspectionItemResults, inspections } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { isSuspended } from '@/features/appeals/suspension'
+import { lockApplication } from '@/features/applications/lockApplication'
 import type { CoreState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -96,7 +97,7 @@ async function storeItems(
 interface Prepared {
   locked: typeof inspections.$inferSelect
   checklist: ChecklistBody
-  appState: string
+  appState: CoreState
 }
 
 async function prepare(
@@ -106,6 +107,12 @@ async function prepare(
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<Result<Prepared, RecordResultError>> {
+  const [owner] = await tx
+    .select({ applicationId: inspections.applicationId })
+    .from(inspections)
+    .where(eq(inspections.id, input.inspectionId))
+  if (owner === undefined) return err('not_found')
+  const appState = await lockApplication(tx, owner.applicationId)
   const [locked] = await tx
     .select()
     .from(inspections)
@@ -115,11 +122,7 @@ async function prepare(
   if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
   if (locked.status !== 'scheduled') return err('not_scheduled')
   if (!recordsInspection(actor, locked.inspectorUserId)) return err('not_assigned')
-  const [app] = await tx
-    .select({ state: applications.state })
-    .from(applications)
-    .where(eq(applications.id, locked.applicationId))
-  if (app?.state === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
+  if (appState === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
     return err('permit_suspended')
   }
   if (locked.scheduledDate === null || today < locked.scheduledDate) return err('not_scheduled')
@@ -130,7 +133,7 @@ async function prepare(
   if (itemsConflict(input, checklist)) return err('result_conflicts_items')
   const notes = input.notes?.trim() ?? ''
   if (input.result === 'failed' && notes.length < MIN_FAIL_NOTES) return err('notes_required')
-  return ok({ locked, checklist, appState: app?.state ?? 'issued' })
+  return ok({ locked, checklist, appState: appState ?? 'issued' })
 }
 
 async function recordInTransaction(
@@ -160,7 +163,7 @@ async function recordInTransaction(
   const passedFinal = input.result === 'passed' && locked.isFinal
   const outcome = passedFinal
     ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
-    : ok({ applicationState: appState as CoreState, closed: false })
+    : ok({ applicationState: appState, closed: false })
   if (!outcome.ok) return err(outcome.error === 'forbidden' ? 'forbidden' : outcome.error)
   if (passedFinal) {
     await recordSystemEvent(
