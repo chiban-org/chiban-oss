@@ -140,6 +140,27 @@ describe('permits under a development hold', () => {
     })
   })
 
+  it('revokes a permit it suspended, and release leaves it closed', async () => {
+    const permitId = await hold.issuedPermit()
+    const { holdId, findingId } = await hold.heldCase()
+    await suspend(holdId, permitId)
+    const revoked = await revokePermitUnderHold(
+      handle.db,
+      world.permit.staff,
+      { holdId, applicationId: permitId, actedOn: d('2027-03-15') },
+      signal,
+    )
+    expect(revoked).toEqual({ ok: true, value: undefined })
+    const [action] = await handle.db.select().from(holdPermitActions)
+    expect(action).toMatchObject({ action: 'revoked', reinstatedOn: null })
+    await correct(findingId)
+    expect(await release(holdId)).toEqual({ ok: true, value: undefined })
+    expect(await stateOf(permitId)).toEqual({
+      state: 'closed',
+      closureReason: 'revoked_under_hold',
+    })
+  })
+
   it('stays active when an enforcement appeal is recorded', async () => {
     const { caseId, findingId } = await hold.heldCase()
     const designated = await designateEnforcementOfficer(
