@@ -29,7 +29,7 @@ The engine needs to know which of a pack's keys plays a part it has code for: wh
 | `rules` | A rule key, such as `buildingPermitDecision` or `appealSuspension` |
 | `recordSeries` | A record series key, such as `complaintLog`, or a list, such as `publicParcelFiles` |
 | `ruleGroups` | A list of rule key prefixes ending in a dot, or whole keys, such as `building: ['nh.bp.']` |
-| `gates` | The key of a gate the engine defines but the pack names, such as `abutterListFresh` |
+| `gates` | The key of a gate the engine defines but the pack names, such as `abutterListFresh` or `varianceRecorded` |
 
 Roles that every state's permitting needs are required: the zoning cease and desist order rule, the two Right-to-Know response clocks and the record series for request letters, complaint photos and enforcement papers. Every other role can be `null`. Most of them are features New Hampshire law has and another state may not, such as regional impact, the DES 500-foot notice, the ZBA exercise period, the abutter list age, the Planning Board filing lead time, the appeal suspension and the administrative appeal to the ZBA. A `null` role means the feature is absent: its gate is not registered, its panel, step or check does not appear, and no clock is looked for. The fictional pack sets every optional role to `null`.
 
@@ -73,7 +73,7 @@ Parts marked No are not checked by the manifest schema. They have their own test
 ```
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.7.0',
+  version: '0.8.0',
   rules: [...],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,
@@ -92,7 +92,7 @@ The `rules` list is the spread of the arrays exported by the files under `rules/
 
 Each rule has a `key`, an integer `version`, a `label` and a `citation` with a label and a URL. A key that begins `town.` is a rule the town sets, and it cites "Town rule" with no URL. Every other rule must have a URL.
 
-There are ten kinds of rule: `clock`, `gate`, `list_age`, `proximity`, `required_record`, `effect`, `town_setting`, `notice_requirement`, `cease_and_desist` and `civil_penalty`. A clock is the one that does the most work. This one is the building permit decision deadline:
+There are twelve kinds of rule: `clock`, `gate`, `list_age`, `proximity`, `required_record`, `effect`, `town_setting`, `notice_requirement`, `cease_and_desist`, `civil_penalty`, `decision_delivery` and `cure_notice`. The last two, and the newer clock consequences and start events, are covered under [Legal features a pack can switch on](#legal-features-a-pack-can-switch-on). A clock is the one that does the most work. This one is the building permit decision deadline:
 
 ```
 {
@@ -136,6 +136,161 @@ A clock names the event that starts it (`startEvent`, one of a fixed list), how 
 A value that differs from the pack's needs an adopting authority and an adoption date recorded with it. A direction of `before` is allowed only for `notice_lead` and `filing_window` clocks.
 
 A town setting and the clock that reads it work as a pair. `town.bp.validity` is a `town_setting` in months with a `delegated_choice` default of 12. `town.bp.expiration` is a clock whose length is `{ unit: 'months', fromSetting: 'town.bp.validity' }`. The town changes the first under **Settings**, **Town rule settings**, and the whole set of rules appears under **Settings**, **State law**.
+
+## Legal features a pack can switch on
+
+Contract 0.8.0 adds features that New Hampshire does not use. A pack for another state turns each one on by writing the rule, field or role described here. The New Hampshire pack leaves them all off, so its behaviour is unchanged. The examples use the fictional state of Vellmora.
+
+### Silence and recording consequences on a clock
+
+A clock's `consequence.kind` has two more values. Both require `clockType: 'action_due'`, and the manifest refuses the pack otherwise.
+
+`deemed_refused` is for a law that treats an application as refused when the board does not act by the date. The clock is met only when staff record a written decision notice for the application, with a mailing date and the notice document. The daily job refuses an application that is still undecided after the due date, with a system decision on the refusal date, and the applicant's portal says "Refused by operation of law". An application that was already decided or issued is not changed. It is flagged on the application page as owing a notice. A clock with this consequence no longer counts as an ordinary decision deadline for the workflow, but the portal still shows its date.
+
+`void_unless_recorded` is for an approval that lapses unless its certificate is recorded at the registry. The clock starts when staff record the final written approval, and recording on or before the due date meets it. After the due date the daily job lapses the clock. It does not change the application's state.
+
+```
+{
+  kind: 'clock',
+  key: 'xx.variance.notice',
+  version: 1,
+  label: 'Written decision notice',
+  citation: { label: 'Vellmora Code 12.4', url: VELLMORA_12_4 },
+  clockType: 'action_due',
+  whose: 'board',
+  startEvent: 'application_completed',
+  length: { unit: 'days', otherwise: 45 },
+  direction: 'after',
+  consequence: { kind: 'deemed_refused', text: 'An application with no written notice by the due date is refused.' },
+  extension: { allowed: false, note: 'No extension.' },
+  waivable: false,
+  overridePolicy: { policy: 'fixed' },
+}
+```
+
+### Clock fields and start events
+
+A clock rule may set `cancelledBy`, a start event. When that event happens on an application, a running or overdue clock of this rule is superseded with the reason `cancelled_by_event`, and the rules that start on the event begin. A clock rule may also set `satisfiedByDecision: true`, which means recording the board's decision meets the clock without any other step.
+
+Together they describe a deadline that depends on whether a hearing was held. One clock runs from the application and is cancelled by `hearing_held`. A second clock starts on `hearing_held`. The decision meets whichever of the two is live when the board decides.
+
+Four start events are new:
+
+| Start event | Set when |
+| --- | --- |
+| `hearing_held` | Staff mark a hearing held, on the day it was held. |
+| `final_written_approval` | Staff record the date of the final written approval on a decision whose classification has `recordingRequired`. |
+| `cure_notice_sent` | Staff send a cure notice. |
+| `project_final_approval` | A decision is declared the last municipal approval the project needs. |
+
+### Decision delivery
+
+A `decision_delivery` rule makes the engine track who receives a board's decision, and how.
+
+```
+{
+  kind: 'decision_delivery',
+  key: 'xx.delivery',
+  version: 1,
+  label: 'Delivery of the decision',
+  citation: { label: 'Vellmora Code 12.6', url: VELLMORA_12_6 },
+  boardKinds: ['zba'],
+  recipients: ['applicant', 'agent', 'municipal_officers'],
+  methods: ['mail', 'hand'],
+  dueRuleKey: 'xx.delivery.due',
+  overridePolicy: { policy: 'fixed' },
+}
+```
+
+`recipients` come from `applicant`, `agent`, `planning_board` and `municipal_officers`. `methods` are `mail` and `hand`. `dueRuleKey` names an `action_due` clock that starts on `board_vote`. The decision page lists each recipient with a method and a date. The clock is met when every recipient has a recorded delivery. A decision in an appeal chain gets its own group in the same list.
+
+### Hearing optional and recording
+
+A classification's `hearing` is `required` or `optional`, and defaults to `required`. When it is `optional`, a board may decide an application at a past meeting with no hearing, and the decision page offers "Record a decision without a hearing". Set `hearing: 'required'` explicitly on every classification in a pack that does not use the feature.
+
+`recordingRequired: true` on a classification turns on the final written approval and the registry certificate on its decisions. It defaults to `false`.
+
+### Notices due on receipt
+
+A notice requirement's `stage` is `before_hearing` (the default) or `on_receipt`. A receipt notice is prepared when the application arrives, not when a hearing is scheduled. Its lead clock must count `after` from `application_received`, or the manifest refuses the pack. Staff prepare the set from a panel on the application, and the lead clock is met when every item is proved on time.
+
+The `onlyWhen` condition has a third value, `source_water_area`. It holds when staff record that the project is inside a source water protection area, along with the water supplier to notify. Until a determination is recorded, a before-hearing rule with this condition cannot be derived, and the checklist says so.
+
+Three recipient roles come with it: `municipal_clerk`, `municipal_reviewing_authority` and `water_supplier`. Their addresses come from the `regional_contacts` setting. Each neighbouring municipality may carry a `clerk` and a `reviewingAuthority`, and the setting has a `waterSuppliers` list. Staff record which municipalities an application abuts or includes. A pack's abutter resolver can call `resolveMunicipalOffices` and `resolveWaterSupplier` from `src/features/abutters/municipalOffices.ts`, which return the recipients and report a missing contact or determination through the resolver's `incomplete` list.
+
+### Variances and dependent permits
+
+The role `gates.varianceRecorded` names a gate rule. A permit that relies on a variance whose certificate is not yet recorded, or whose recording window has lapsed, is blocked from issue by that gate. Staff link a permit to the variance it relies on from the application page, and the link is accepted only for a variance on the same parcel. Leave the role `null` if the state has no such rule. The lot conditions then show "Approved, not valid until recorded" or "Void, not recorded in time" for the variance.
+
+### Plumbing inspectors
+
+`classifications.plumbingInspectorOwns` lists the classification keys that belong to a plumbing inspector. For each, only a user with the `plumbing_inspector` staff role may issue, decide, correct or inspect, and the plumbing inspector may not act on any other classification. An empty list turns the feature off, and the role is then hidden from the role pages.
+
+### Cure notices and civil penalties
+
+A `cure_notice` rule lets an enforcement case send a notice of violation with a time to cure it, in place of drafting an order straight away.
+
+```
+{
+  kind: 'cure_notice',
+  key: 'xx.cure',
+  version: 1,
+  label: 'Notice of violation with time to cure',
+  citation: { label: 'Vellmora Code 14.2', url: VELLMORA_14_2 },
+  occupant: 'if_applicable',
+  method: 'certified_mail_return_receipt',
+  cureRuleKey: 'xx.cure.period',
+  penaltyRuleKey: 'xx.penalty.range',
+  remedies: { developmentHold: true, civilAction: true },
+  overridePolicy: { policy: 'fixed' },
+}
+```
+
+`cureRuleKey` names an `action_due` clock that starts on `cure_notice_sent`. `penaltyRuleKey` names a `civil_penalty` rule, or is `null`. The case sends one notice per recipient, to the owner and, where there is one, the occupant, by certified mail. Staff record the date each return receipt came back. The notice names the findings it covers, and those findings can no longer be edited or withdrawn.
+
+A `civil_penalty` rule has a `model`. The existing one is `fixed_daily`, the default. The new one is `range_daily`:
+
+```
+{
+  kind: 'civil_penalty',
+  model: 'range_daily',
+  categories: [
+    { key: 'general', label: 'General violation', minCentsPerDay: 10000, maxCentsPerDay: 250000 },
+  ],
+  aggravations: [
+    { key: 'repeat', label: 'Repeat violation', maxCentsPerDay: 500000 },
+    { key: 'gain', label: 'Economic benefit', maxMultipleOfBenefit: 2 },
+  ],
+}
+```
+
+The numbers are placeholders. Each aggravation sets exactly one of `maxCentsPerDay` and `maxMultipleOfBenefit`, and the manifest refuses one that sets both or neither. The engine shows the statutory range and says the court sets the amount. It computes no figure for a range rule, in the case's money section or in the counsel packet. On the cure path, accrual counts from the earliest return receipt, and until one is recorded the range shows with no start date.
+
+### Development holds and civil actions
+
+When a cure notice rule has `remedies.developmentHold: true`, a case whose cure period has lapsed with the violation uncorrected may place a hold on the parcel. A hold blocks new applications and submissions on that parcel, which show a message instead. Staff can suspend or revoke the parcel's issued permits under the hold, and release it once no finding is open and no fine has a balance. Release reinstates the permits that the hold suspended. With `remedies.civilAction: true`, staff may record that a civil action was filed.
+
+A hold and an appeal can overlap on one permit. The permit stays suspended until both are done, and each suspends only once. When the appeal resolves with the permit upheld while the hold stands, the permit stays suspended, and the appeal's tolling of the permit's clocks is counted once for the whole suspended span.
+
+### Appeal routes and rehearing wording
+
+`AppealRoute.when` is a structure, not text:
+
+```
+{
+  from: 'zba_decision',
+  when: { outcome: 'granted', finalReviewBoard: 'planning_board', label: 'Approval, reviewed by the Planning Board' },
+  to: 'court_petition',
+  windowRuleKey: 'xx.appeal.window',
+  citation: { label: 'Vellmora Code 15.1', url: VELLMORA_15_1 },
+}
+```
+
+`outcome` (`granted` or `denied`) matches the outcome of the decision, or of a rehearing outcome's parent. `linkedComponent` matches when the decision is a component of a linked application. `finalReviewBoard` matches when the project's final review board is that board kind. `label` is the route's name in the pack. When several routes match, the most specific one, the one with the most conditions set, wins. A route with `finalReviewBoard` also needs the project to have its final approval declared.
+
+A project is final when staff tick "This is the last municipal approval the project needs" on an approving decision. A pack without a clock rule on `project_final_approval` never shows the checkbox. The declaration records the vote date and the board kind on the project and starts the `project_final_approval` clocks of every application in it. A court petition on an approving decision whose window starts on that event is refused until the project is final. A second declaration is refused.
+
+`StatePack.labels.rehearing` holds the state's word for a rehearing, as `{ noun: 'reconsideration', capitalised: 'Reconsideration' }`, and the engine uses it wherever a rehearing is named on screen. Node kinds such as `rehearing_motion` are stored names and do not change.
 
 ## Building codes and the town building program
 
@@ -208,9 +363,9 @@ A starter is a complete application type in one object: the application type, it
 
 ## Versioning
 
-Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.7.0.
+Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.8.0.
 
-- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.7.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
+- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.8.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
 - A rule: when a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
 - A transition: to act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
 - Starters, record series and abutter parameters: each carries its own integer `version`.
