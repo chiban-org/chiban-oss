@@ -5,10 +5,12 @@ type WindowOptions = Pick<ClockRule, 'key' | 'label' | 'startEvent' | 'citation'
   Partial<Pick<ClockRule, 'onlyWhen'>> & {
     days: number
     extension: string
+    filing?: string
   }
 
 function courtWindow(options: WindowOptions): ClockRule {
   const { key, label, startEvent, citation, onlyWhen, days, extension } = options
+  const filing = options.filing ?? 'An appeal'
   return {
     kind: 'clock',
     key,
@@ -23,7 +25,7 @@ function courtWindow(options: WindowOptions): ClockRule {
     ...(onlyWhen === undefined ? {} : { onlyWhen }),
     consequence: {
       kind: 'appeal_untimely',
-      text: `An appeal filed after this date is untimely (${citation.label}).`,
+      text: `${filing} filed after this date is untimely (${citation.label}).`,
     },
     extension: { allowed: false, note: extension },
     waivable: false,
@@ -83,6 +85,7 @@ export const APPEAL_RULES: PackRule[] = [
     startEvent: 'board_vote',
     citation: SECTION_2691('(F)'),
     days: 10,
+    filing: 'A reconsideration request',
     extension: '30-A MRSA §2691(3)(F) provides no extension.',
   }),
   courtWindow({
@@ -124,7 +127,10 @@ export const APPEAL_RULES: PackRule[] = [
     label: 'Court appeal of a significant decision after the last municipal approval',
     startEvent: 'project_final_approval',
     onlyWhen: SIGNIFICANT,
-    citation: { label: '30-A MRSA §4482(3); M.R. Civ. P. 80B(b)', url: ME_URLS.title30Asec4482 },
+    citation: {
+      label: '30-A MRSA §4482(3); M.R. Civ. P. 80B(b)',
+      url: ME_URLS.civilProcedureRules,
+    },
     days: 30,
     extension: COURT_ENLARGES_80B,
   }),

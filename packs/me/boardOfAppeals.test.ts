@@ -53,6 +53,11 @@ describe('Board of Appeals windows', () => {
 
   it('takes a reconsideration request within 10 days, rolling past a Sunday', () => {
     expect(clockDue('me.appeal.boa_reconsideration', '2027-04-15')).toBe('2027-04-26')
+    expect(rule('me.appeal.boa_reconsideration')).toMatchObject({
+      consequence: {
+        text: 'A reconsideration request filed after this date is untimely (30-A MRSA §2691(3)(F)).',
+      },
+    })
   })
 
   it('takes a court appeal within 45 days, rolling past Memorial Day', () => {
@@ -72,6 +77,10 @@ describe('Board of Appeals windows', () => {
     expect(clockDue('me.appeal.board_court_denial', '2027-04-15')).toBe('2027-05-17')
     expect(clockDue('me.appeal.significant_denial', '2027-04-20')).toBe('2027-05-20')
     expect(rule('me.appeal.significant_denial')).toMatchObject({ startEvent: 'decision_filed' })
+    expect(rule('me.appeal.significant_final').citation).toEqual({
+      label: '30-A MRSA §4482(3); M.R. Civ. P. 80B(b)',
+      url: 'https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf',
+    })
   })
 
   it('voids an unrecorded variance 90 days after the final written approval', () => {
