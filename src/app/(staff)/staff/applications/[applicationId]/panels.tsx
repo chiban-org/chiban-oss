@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { offersCompleteness } from '@/features/applications/completenessStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
@@ -46,7 +47,7 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
 
 export function completenessApplies(view: StaffApplicationView): boolean {
   return (
-    view.isBuildingPermit &&
+    offersCompleteness(view) &&
     view.completedDate === null &&
     ['submitted', 'under_review'].includes(view.state)
   )

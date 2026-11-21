@@ -30,6 +30,7 @@ export const LOCAL_PERMIT_RULES: PackRule[] = [
     },
     extension: { allowed: false, note: 'The guideline ordinance provides no extension.' },
     waivable: false,
+    satisfiedByDecision: true,
     overridePolicy: { policy: 'fixed' },
   },
   {

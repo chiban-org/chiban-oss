@@ -1,0 +1,29 @@
+import { ME_PACK } from '@packs/me'
+import { afterEach, describe, expect, it } from 'vitest'
+import { completenessStepFor, offersCompleteness } from '@/features/applications/completenessStep'
+import { loadPack } from '@/features/packs/loadPack'
+import { setActivePackForTest } from '@/features/packs/registry'
+
+afterEach(() => setActivePackForTest(null))
+
+function offering(): string[] {
+  return loadPack()
+    .classifications.map((c) => c.key)
+    .filter((key) => completenessStepFor(key) !== null)
+}
+
+describe('which permits offer staff the completeness step', () => {
+  it('in New Hampshire, only the building permit', () => {
+    expect(offering()).toEqual(['nh.building_permit'])
+  })
+
+  it('in Maine, the building permit and the shoreland permit, whose decision date starts on completeness', () => {
+    setActivePackForTest(ME_PACK)
+    expect(offering()).toEqual(['me.building_permit', 'me.shoreland_permit'])
+  })
+
+  it('keeps a view marked as a building permit offering it', () => {
+    expect(offersCompleteness({ isBuildingPermit: true })).toBe(true)
+    expect(offersCompleteness({ isBuildingPermit: false, classification: 'nh.other' })).toBe(false)
+  })
+})
