@@ -8,7 +8,11 @@ import {
   documents,
   relianceLinks,
 } from '@/db/schema'
-import { recordDecisionRecording, recordFinalWrittenApproval } from '@/features/decisions/recording'
+import {
+  recordDecisionRecording,
+  recordFinalWrittenApproval,
+  varianceValidity,
+} from '@/features/decisions/recording'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { markUnrecordedVoid } from '@/jobs/clocksDaily'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
@@ -200,6 +204,17 @@ describe('registry recording', () => {
     const made = await approved()
     expect(await record(made, addDays(DUE, 1))).toEqual({ ok: false, error: 'after_period' })
     expect((await voidClock(made.applicationId))?.status).toBe('running')
+  })
+
+  it('dated after the period is refused once a withdrawal has stopped the clock', async () => {
+    const made = await approved()
+    await handle.db
+      .update(clocks)
+      .set({ status: 'stopped' })
+      .where(and(eq(clocks.applicationId, made.applicationId), eq(clocks.ruleKey, XX_VOID_KEY)))
+    expect(await record(made, addDays(DUE, 1))).toEqual({ ok: false, error: 'after_period' })
+    expect(await handle.db.select().from(decisionRecordings)).toHaveLength(0)
+    expect(await varianceValidity(handle.db, made.applicationId, signal)).toBe('pending_recording')
   })
 })
 

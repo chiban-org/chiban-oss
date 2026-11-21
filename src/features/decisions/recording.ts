@@ -125,7 +125,6 @@ async function voidClockOf(tx: Tx, applicationId: string, approvedOn: CivilDate)
         eq(clocks.applicationId, applicationId),
         inArray(clocks.ruleKey, keys),
         eq(clocks.startDate, approvedOn),
-        inArray(clocks.status, [...OPEN_OR_LAPSED]),
       ),
     )
     .orderBy(desc(clocks.createdAt))
@@ -222,6 +221,7 @@ export async function varianceValidity(
   signal: AbortSignal,
 ): Promise<VarianceValidity> {
   signal.throwIfAborted()
+  if (!loadPack().classifications.some(recordingIsRequired)) return 'not_required'
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null || !recordingIsRequired(classificationOfApplication(app))) return 'not_required'
   const [decision] = await db

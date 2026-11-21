@@ -1,15 +1,8 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField } from '@/components/staff/fields'
-import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import { VALIDITY_LABELS, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { RelianceView } from '@/features/decisions/relianceView'
 import { linkRelianceAction } from './relianceActions'
-
-const VALIDITY_TEXT: Record<VarianceValidity, string> = {
-  not_required: '',
-  pending_recording: 'Approved, not valid until recorded',
-  recorded: 'Recorded',
-  void: 'Void, not recorded in time',
-}
 
 interface Props {
   applicationId: string
@@ -26,7 +19,7 @@ export function ReliancePanel({ applicationId, validity, reliance, canLink }: Pr
   return (
     <section aria-label="Variance" id="variance">
       <h2>Variance</h2>
-      {validity === 'not_required' ? null : <p>{VALIDITY_TEXT[validity]}</p>}
+      {validity === 'not_required' ? null : <p>{VALIDITY_LABELS[validity]}</p>}
       {reliance === null ? null : (
         <>
           {reliance.linked.length === 0 ? (
@@ -36,7 +29,7 @@ export function ReliancePanel({ applicationId, validity, reliance, canLink }: Pr
               {reliance.linked.map((l) => (
                 <li key={l.id} className="record-item">
                   <p className="m-0 font-medium">{`Relies on ${l.number}`}</p>
-                  <p className="m-0">{VALIDITY_TEXT[l.validity]}</p>
+                  <p className="m-0">{VALIDITY_LABELS[l.validity]}</p>
                 </li>
               ))}
             </ul>

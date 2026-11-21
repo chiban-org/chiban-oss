@@ -1,7 +1,7 @@
 import type { Role } from '@/constants/roles'
 import type { EnforcementStatus, InspectionStatus } from '@/db/schema'
 import type { CoreState } from '@/features/applications/states'
-import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import { VALIDITY_LABELS, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { Status } from '@/features/design/tokens'
 import type { DecisionOutcome } from '@/features/packs/schema'
 
@@ -89,8 +89,8 @@ const OUTCOME_WORDS = new Map<DecisionOutcome, { label: string; chip: Status }>(
 ])
 
 const VALIDITY_WORDS = new Map<VarianceValidity, { label: string; chip: Status }>([
-  ['pending_recording', { label: 'Approved, not valid until recorded', chip: 'neutral' }],
-  ['void', { label: 'Void, not recorded in time', chip: 'failed' }],
+  ['pending_recording', { label: VALIDITY_LABELS.pending_recording, chip: 'neutral' }],
+  ['void', { label: VALIDITY_LABELS.void, chip: 'failed' }],
 ])
 
 export function decisionOutcome(
