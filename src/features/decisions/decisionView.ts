@@ -10,7 +10,12 @@ import {
   noticeSets,
   regionalImpactDeterminations,
 } from '@/db/schema'
-import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
+import {
+  appealToBoard,
+  boardDecision,
+  motionForRehearing,
+  rehearingDecision,
+} from '@/features/appeals/appealWords'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -37,15 +42,14 @@ function nodeLabels() {
     zba_decision: boardDecision(),
     pb_decision: `${boardShort('planning_board')} decision`,
     zba_appeal: appealToBoard(),
-    rehearing_motion: 'Motion for rehearing',
-    rehearing_outcome: 'Rehearing decision',
+    rehearing_motion: motionForRehearing(),
+    rehearing_outcome: rehearingDecision(),
     court_petition: 'Court petition',
   } as const
 }
 
-const OUTCOME_WORDS: Record<string, string> = {
-  ...OUTCOME_LABELS,
-  granted: 'Granted',
+function outcomeWords(): Record<string, string> {
+  return { ...OUTCOME_LABELS, granted: 'Granted' }
 }
 
 export interface DecisionView {
@@ -120,7 +124,7 @@ export function toGraphNodes(rows: (typeof appealNodes.$inferSelect)[]): GraphNo
     nodeId: n.id,
     kindLabel: labels[n.kind],
     dateText: formatCivilDate(n.occurredOn),
-    outcomeText: n.outcome === null ? null : (OUTCOME_WORDS[n.outcome] ?? null),
+    outcomeText: n.outcome === null ? null : (outcomeWords()[n.outcome] ?? null),
     status: n.status,
     untimely: n.untimely,
     parentId: n.parentId,

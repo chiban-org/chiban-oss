@@ -57,6 +57,7 @@ export interface PackLabels {
   recordsLaw: string
   recordsRequest: string
   governingBody: string
+  rehearing: { noun: string; capitalised: string }
   citations: PackCitations
 }
 

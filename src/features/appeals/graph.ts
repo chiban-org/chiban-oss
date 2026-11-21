@@ -66,25 +66,42 @@ export async function recordDecisionNode(
   })
 }
 
+function routeSpecificity(when: AppealRoute['when']): number {
+  if (when === undefined) return 0
+  return (
+    (when.outcome === undefined ? 0 : 1) +
+    (when.linkedComponent === undefined ? 0 : 1) +
+    (when.finalReviewBoard === undefined ? 0 : 1)
+  )
+}
+
+function routeApplies(
+  when: NonNullable<AppealRoute['when']>,
+  facts: { outcome: 'granted' | 'denied' | null; linkedComponent: boolean },
+): boolean {
+  if (when.outcome !== undefined && when.outcome !== facts.outcome) return false
+  return when.linkedComponent === undefined || when.linkedComponent === facts.linkedComponent
+}
+
 function chooseRoute(
   parent: NodeRow,
   input: AddNodeInput,
 ): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
-  const candidates = activePack().appealRoutes.filter(
-    (r) => r.from === parent.kind && r.to === input.kind,
-  )
-  if (parent.kind === 'rehearing_outcome') {
-    const linked = parent.linkedPbNodeId !== null
-    const wanted =
-      parent.outcome === 'granted' ? 'granted' : linked ? 'denied on a linked component' : 'denied'
-    const hit = candidates.find((r) => r.when === wanted)
-    return hit === undefined ? err('route_not_allowed') : ok(hit)
+  const afterRehearing = parent.kind === 'rehearing_outcome'
+  const facts = {
+    outcome: afterRehearing
+      ? parent.outcome === 'granted'
+        ? ('granted' as const)
+        : ('denied' as const)
+      : null,
+    linkedComponent: afterRehearing
+      ? parent.linkedPbNodeId !== null
+      : input.linkedComponent === true,
   }
-  if (parent.kind === 'pb_decision' && input.kind === 'zba_appeal') {
-    const hit = input.linkedComponent === true ? candidates[0] : undefined
-    return hit === undefined ? err('route_not_allowed') : ok(hit)
-  }
-  const hit = candidates.find((r) => r.when === undefined)
+  const hit = activePack()
+    .appealRoutes.filter((r) => r.from === parent.kind && r.to === input.kind)
+    .filter((r) => r.when === undefined || routeApplies(r.when, facts))
+    .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
   return hit === undefined ? err('route_not_allowed') : ok(hit)
 }
 

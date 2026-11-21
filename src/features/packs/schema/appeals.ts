@@ -1,3 +1,5 @@
+import type { BoardKind } from '@/features/packs/schema/boards'
+
 export const APPEAL_NODE_KINDS = [
   'administrative_decision',
   'zba_decision',
@@ -9,9 +11,16 @@ export const APPEAL_NODE_KINDS = [
 ] as const
 export type AppealNodeKind = (typeof APPEAL_NODE_KINDS)[number]
 
+export interface AppealRouteWhen {
+  outcome?: 'granted' | 'denied'
+  linkedComponent?: boolean
+  finalReviewBoard?: BoardKind
+  label: string
+}
+
 export interface AppealRoute {
   from: AppealNodeKind
-  when?: string
+  when?: AppealRouteWhen
   to: AppealNodeKind
   windowRuleKey: string | null
   citation: { label: string; url: string }

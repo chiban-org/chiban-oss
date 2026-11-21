@@ -1,6 +1,7 @@
 import type { clockAdjustments, clocks } from '@/db/schema'
 import type { Sourced } from '@/features/fees/sourced'
 import type { ClockRule } from '@/features/packs/schema'
+import { rehearingWords } from '@/features/packs/vocabulary'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 type ClockRow = typeof clocks.$inferSelect
@@ -18,7 +19,9 @@ export const START_EVENT_LABELS: Record<string, string> = {
   final_written_approval: 'Final written approval',
   board_vote: 'Board vote',
   decision_filed: 'Decision filed',
-  rehearing_vote: 'Rehearing vote',
+  get rehearing_vote() {
+    return `${rehearingWords().capitalised} vote`
+  },
   administrative_decision: 'Administrative decision',
   order_served: 'Order served',
   cure_notice_sent: 'Cure notice sent',

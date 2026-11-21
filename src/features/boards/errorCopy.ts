@@ -2,6 +2,7 @@ import { missingBoardMessage } from '@/features/boards/townBoards'
 import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { channelLabel } from '@/features/notices/channels'
 import type { BoardKind } from '@/features/packs/schema'
+import { rehearingWords } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const COPY: Record<string, string> = {
@@ -85,7 +86,9 @@ const COPY: Record<string, string> = {
   contacts_missing: 'Add the regional planning commission and affected municipalities in Settings.',
   no_clock: 'The transmittal deadline was not started for this application.',
   route_not_allowed: 'That step does not follow from the one you chose.',
-  wrong_outcome: 'Choose whether the rehearing was granted or denied.',
+  get wrong_outcome() {
+    return `Choose whether the ${rehearingWords().noun} was granted or denied.`
+  },
   before_parent: 'The date cannot be before the step it follows.',
   duplicate_step: 'That step is already recorded after the one it follows.',
   no_route: 'No Technical Review Committee route is set for this application type.',

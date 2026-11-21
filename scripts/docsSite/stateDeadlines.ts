@@ -10,7 +10,7 @@ import type {
   PackRule,
   StartEvent,
 } from '@/features/packs/schema'
-import { boardLabel } from '@/features/packs/vocabulary'
+import { boardLabel, rehearingWords } from '@/features/packs/vocabulary'
 import { formatCivilDateWithWeekday } from '@/lib/formatDate'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { escapeText, joinBlocks, listInWords, table } from './markdown'
@@ -45,7 +45,9 @@ const START_EVENTS: Record<StartEvent, string> = {
   final_written_approval: 'the final written approval is issued',
   board_vote: 'the board votes',
   decision_filed: 'the decision is filed',
-  rehearing_vote: 'the board votes on the rehearing',
+  get rehearing_vote() {
+    return `the board votes on the ${rehearingWords().noun}`
+  },
   administrative_decision: 'the administrative decision',
   order_served: 'the order is served',
   cure_notice_sent: 'the cure notice is sent',

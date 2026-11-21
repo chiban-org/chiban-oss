@@ -1,9 +1,12 @@
 import type { HearingKind } from '@/features/hearings/hearings'
+import { rehearingWords } from '@/features/packs/vocabulary'
 
 export const HEARING_KIND_LABELS: Record<HearingKind, string> = {
   submission_and_hearing: 'Submission and public hearing',
   public_hearing: 'Public hearing',
-  rehearing: 'Rehearing',
+  get rehearing() {
+    return rehearingWords().capitalised
+  },
 }
 
 export const NOTICE_DEADLINE_LABEL = 'Notice'
