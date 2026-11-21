@@ -4,6 +4,7 @@ import type { Db, Tx } from '@/db/client'
 import { applications, hearings } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { setSubstep, transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -232,6 +233,12 @@ export async function markHearingHeld(
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.heldOn, now, signal)) return err('future_date')
   return await transactionResult<void, HeldError>(db, async (tx) => {
+    const [owner] = await tx
+      .select({ applicationId: hearings.applicationId })
+      .from(hearings)
+      .where(eq(hearings.id, input.hearingId))
+    if (owner === undefined) return err('not_found')
+    await lockApplication(tx, owner.applicationId)
     const [hearing] = await tx
       .select()
       .from(hearings)
