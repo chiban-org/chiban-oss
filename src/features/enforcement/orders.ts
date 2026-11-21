@@ -35,8 +35,9 @@ type OrderRuleKey =
 
 function orderRuleKeyFor(kinds: readonly string[], codeOpen: boolean): OrderRuleKey {
   const building = kinds.filter((k) => k === 'building_code').length
+  if (building > 0 && building === kinds.length && !codeOpen) return { kind: 'not_enforced' }
+  if (kinds.every((k) => orderRuleKeyForKind(k) === null)) return { kind: 'not_available' }
   if (building > 0 && building < kinds.length) return { kind: 'split' }
-  if (building > 0 && !codeOpen) return { kind: 'not_enforced' }
   const key = orderRuleKeyForKind(kinds[0])
   return key === null ? { kind: 'not_available' } : { kind: 'key', key }
 }

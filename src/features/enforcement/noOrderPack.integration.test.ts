@@ -81,13 +81,13 @@ async function foundCase(kind: Kind = 'zoning_ordinance') {
   return { caseId, findingId: made.value.findingId }
 }
 
-function draft(caseId: string, findingId: string) {
+function draft(caseId: string, ...findingIds: string[]) {
   return draftOrder(
     handle.db,
     world.staff,
     {
       caseId,
-      findingIds: [findingId],
+      findingIds,
       correctiveAction: 'Remove the garage.',
       correctiveDeadline: '2027-04-01',
       ceaseImmediately: false,
@@ -150,6 +150,16 @@ describe('a pack with no statutory order', () => {
     expect(await draft(caseId, findingId)).toEqual({ ok: false, error: 'order_not_available' })
   })
 
+  it('refuses a mixed draft as having no order rather than needing a split', async () => {
+    const { caseId, findingId } = await foundCase('building_code')
+    const zoning = await finding(caseId, 'zoning_ordinance')
+    if (!zoning.ok) throw new Error(zoning.error)
+    expect(await draft(caseId, findingId, zoning.value.findingId)).toEqual({
+      ok: false,
+      error: 'order_not_available',
+    })
+  })
+
   it('leaves the order step out of the work plan and the queue', async () => {
     const caseId = await noticedCase()
     const detail = await detailOf(caseId)
@@ -170,7 +180,7 @@ describe('a pack with no statutory order', () => {
       signal,
     )
     const row = queue.rows.find((r) => r.caseId === caseId)
-    expect(row?.nextStep?.ask).not.toMatch(/order/)
+    expect(row?.nextStep).toEqual({ actor: 'Town', ask: 'refer the case to town counsel' })
   })
 
   it('shows the pack penalty range with no amount and no accrual start', async () => {
@@ -198,6 +208,8 @@ describe('a pack with no statutory order', () => {
     const text = await packetText(referred.value.packetDocumentId)
     expect(text).toContain('Statutory range, set by the court')
     expect(text).toContain('No permit: $100.00 to $2,500.00 per day')
+    expect(text).toContain('Accrual began None recorded')
+    expect(text).not.toContain('Not started')
     expect(text).not.toContain('Estimated exposure')
   })
 })

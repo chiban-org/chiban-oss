@@ -133,6 +133,13 @@ describe('the penalty exposure', () => {
     ).toBeTruthy()
   })
 
+  it('says no accrual start is recorded for a range with no accrual rule', () => {
+    const noRule = stubDetail({ exposure: { ...rangeExposure(null, 0), noAccrualRule: true } })
+    renderForm(<MoneySection detail={noRule} can={ALL_CAN} />)
+    expect(screen.getByText('No accrual start is recorded for this penalty.')).toBeTruthy()
+    expect(screen.queryByText(/Accrual has not started/)).toBeNull()
+  })
+
   it('renders a computed estimate for a fixed daily rule', () => {
     const fixed = stubDetail({
       exposure: {
