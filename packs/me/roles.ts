@@ -37,7 +37,12 @@ export const ME_ROLES: PackRoles = {
     rtkCorrespondence: 'me.rs.foaa_requests',
     complaintLog: 'me.rs.citizen_complaints',
     codeEnforcementFiles: 'me.rs.enforcement_files',
-    publicParcelFiles: [],
+    publicParcelFiles: [
+      'me.rs.building_permits',
+      'me.rs.building_plans',
+      'me.rs.plumbing_external',
+      'me.rs.zoning_permits',
+    ],
   },
   ruleGroups: {
     building: ['me.bp.'],
