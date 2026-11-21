@@ -255,7 +255,9 @@ export async function markHearingHeld(
     if (app !== null && boardOfApplication(app) === 'zba') {
       await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
     }
-    await markHearingScheduledClocksMet(tx, hearing.applicationId, input.heldOn, signal)
+    if (hearing.kind !== 'rehearing') {
+      await markHearingScheduledClocksMet(tx, hearing.applicationId, input.heldOn, signal)
+    }
     if (app?.state === 'under_review') {
       await startClocksWhenPackUses(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)
     }

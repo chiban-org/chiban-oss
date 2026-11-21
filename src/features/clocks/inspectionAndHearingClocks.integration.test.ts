@@ -87,6 +87,15 @@ describe('a lapse clock met by the first inspection', () => {
     expect((await commencement(applicationId))?.status).toBe('met')
   })
 
+  it('is met by a failed inspection result too', async () => {
+    const applicationId = await issuedCommencementPermit(handle.db, w, ISSUED)
+    await recordRoughInspection(handle.db, w, applicationId, 'failed')
+    expect(await commencement(applicationId)).toMatchObject({
+      status: 'met',
+      metOn: '2027-07-07',
+    })
+  })
+
   it('expires the permit when no inspection was recorded', async () => {
     const applicationId = await issuedCommencementPermit(handle.db, w, ISSUED)
     expect(await expire()).toEqual([])
@@ -150,9 +159,8 @@ describe('a clock that starts only when a hearing is scheduled', () => {
     ])
   })
 
-  it('never appears for an application decided without a hearing', async () => {
-    const applicationId = await acceptedBoardApplication(handle.db, world, ACCEPTED)
-    const decided = await recordDecision(
+  async function decideWithoutHearing(applicationId: string) {
+    return await recordDecision(
       handle.db,
       world.staff,
       {
@@ -168,8 +176,21 @@ describe('a clock that starts only when a hearing is scheduled', () => {
       signal,
       BOARD_FIXTURE_NOW,
     )
-    expect(decided.ok).toBe(true)
+  }
+
+  it('never appears for an application decided without a hearing', async () => {
+    const applicationId = await acceptedBoardApplication(handle.db, world, ACCEPTED)
+    expect((await decideWithoutHearing(applicationId)).ok).toBe(true)
     expect(await hearingBy(applicationId)).toEqual([])
+  })
+
+  it('is superseded when the board decides before holding the scheduled hearing', async () => {
+    const applicationId = await acceptedBoardApplication(handle.db, world, ACCEPTED)
+    await scheduleTriggerHearing(handle.db, world, applicationId)
+    expect((await decideWithoutHearing(applicationId)).ok).toBe(true)
+    expect(await hearingBy(applicationId)).toMatchObject([
+      { status: 'superseded', supersededReason: 'decided_without_hearing', metOn: null },
+    ])
   })
 
   it('waits for a recorded acceptance and starts when acceptance follows the scheduling', async () => {

@@ -22,7 +22,7 @@ import {
 } from '@/features/clocks/ruleEngine'
 import { effectiveBindings } from '@/features/config/bindings'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
-import { hasElectedHearing } from '@/features/hearings/electedHearing'
+import { electedHearing } from '@/features/hearings/electedHearing'
 import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import type { ClockRule, StartEvent } from '@/features/packs/schema'
@@ -90,13 +90,8 @@ export async function startClocksFor(
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
   await cancelClocksFor(tx, applicationId, event, pack)
-  const hearingScheduled =
-    keysOnlyIfHearingScheduled(pack.rules).length > 0 &&
-    (await hasElectedHearing(tx, applicationId))
-  const rules = [
-    ...rulesForEvent(pack.rules, event, bound, facts),
-    ...(hearingScheduled ? hearingDependentRulesForEvent(pack.rules, event, bound, facts) : []),
-  ]
+  const hearing = await hearingDependentStart(tx, applicationId, { pack, event, bound, facts })
+  const rules = [...rulesForEvent(pack.rules, event, bound, facts), ...hearing.rules]
   const started = ONCE_PER_APPLICATION.includes(event)
     ? ne(clocks.status, 'superseded')
     : eq(clocks.status, 'running')
@@ -111,6 +106,38 @@ export async function startClocksFor(
       if (await clockStartedOn(tx, applicationId, rule.key, onDate)) continue
     } else if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
+  }
+  await meetIfHearingHeld(tx, applicationId, hearing, signal)
+}
+
+interface HearingDependentStart {
+  rules: ClockRule[]
+  heldOn: CivilDate | null
+}
+
+async function hearingDependentStart(
+  tx: Tx,
+  applicationId: string,
+  s: { pack: Pack; event: StartEvent; bound: ReadonlySet<string>; facts: ProjectFacts },
+): Promise<HearingDependentStart> {
+  if (keysOnlyIfHearingScheduled(s.pack.rules).length === 0) return { rules: [], heldOn: null }
+  const elected = await electedHearing(tx, applicationId)
+  if (elected === null) return { rules: [], heldOn: null }
+  return {
+    rules: hearingDependentRulesForEvent(s.pack.rules, s.event, s.bound, s.facts),
+    heldOn: elected.firstHeldOn,
+  }
+}
+
+export async function meetIfHearingHeld(
+  tx: Tx,
+  applicationId: string,
+  hearing: HearingDependentStart,
+  signal: AbortSignal,
+): Promise<void> {
+  if (hearing.heldOn === null) return
+  for (const rule of hearing.rules) {
+    await markClockMet(tx, applicationId, rule.key, hearing.heldOn, signal)
   }
 }
 

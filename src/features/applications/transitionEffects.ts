@@ -3,6 +3,7 @@ import type { ApplicationContext } from '@/features/applications/context'
 import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { markClockMet, startClocksFor, stopRunningClocks } from '@/features/clocks/startClocks'
+import { supersedeHearingDependentClocks } from '@/features/clocks/triggeredClocks'
 import { decisionClockKeys } from '@/features/decisions/decisionClocks'
 import { assessFees } from '@/features/fees/assess'
 import {
@@ -68,6 +69,7 @@ export async function runTransitionEffects(
   const issuedDirectly = to === 'issued' && app.state === 'submitted'
   if (to === 'decided' || to === 'denied' || issuedDirectly) {
     for (const key of decisionClockKeys()) await markClockMet(tx, app.id, key, today, signal)
+    await supersedeHearingDependentClocks(tx, app.id, signal)
   }
   if (to === 'issued' && app.state !== 'suspended') {
     await startClocksFor(tx, app.id, 'permit_issued', today, signal)

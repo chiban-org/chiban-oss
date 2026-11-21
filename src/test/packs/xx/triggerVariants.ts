@@ -1,6 +1,6 @@
 import type { PackRule, StatePack } from '@/features/packs/schema'
 import { XX_PACK } from './index'
-import { xxPackWith } from './variants'
+import { XX_OPTIONAL_HEARING, XX_PB_SUBDIVISION_KEY, xxPackWith } from './variants'
 
 export const XX_COMMENCEMENT_KEY = 'xx.bp.commencement'
 export const XX_HEARING_BY_KEY = 'xx.pb.hearing_by'
@@ -49,16 +49,23 @@ const TRIGGER_PACK_RULES = [...XX_PACK.manifest.rules, ...XX_TRIGGER_RULES]
 export const XX_TRIGGER_CLOCKS: StatePack = xxPackWith({
   manifest: {
     rules: TRIGGER_PACK_RULES,
-    classifications: XX_PACK.manifest.classifications.map((c) =>
-      c.key === 'xx.board_variance'
+    classifications: XX_OPTIONAL_HEARING.manifest.classifications.map((c) => {
+      if (c.key === XX_PB_SUBDIVISION_KEY) {
+        return {
+          ...c,
+          mandatoryRuleKeys: [...c.mandatoryRuleKeys, XX_HEARING_BY_KEY],
+          noticeRequirementKeys: ['xx.zba.notice.mail'],
+        }
+      }
+      return c.key === 'xx.board_variance'
         ? {
             ...c,
             hearing: 'optional' as const,
             requiredSubsteps: [],
             mandatoryRuleKeys: [...c.mandatoryRuleKeys, XX_HEARING_BY_KEY],
           }
-        : c,
-    ),
+        : c
+    }),
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: TRIGGER_PACK_RULES }] },
 })

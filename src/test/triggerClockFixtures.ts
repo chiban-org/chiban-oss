@@ -67,17 +67,24 @@ export async function recordRoughInspection(
   db: Db,
   w: InspectionWorld,
   applicationId: string,
+  result: 'passed' | 'failed' = 'passed',
 ): Promise<void> {
   const id = await scheduledInspection(db, w.inspector, applicationId, 'rough')
   const [row] = await db.select().from(inspections).where(eq(inspections.id, id))
+  const passing = await passingItems(db, applicationId, 'rough')
+  const items =
+    result === 'passed'
+      ? passing
+      : passing.map((item, i) => (i === 0 ? { ...item, outcome: 'fail' as const } : item))
   const recorded = await recordInspectionResult(
     db,
     w.inspector,
     {
       inspectionId: id,
       expectedRowVersion: row?.rowVersion ?? 0,
-      result: 'passed',
-      items: await passingItems(db, applicationId, 'rough'),
+      result,
+      items,
+      notes: result === 'failed' ? 'Footing depth short of the drawings.' : undefined,
     },
     signal,
     { now: RESULT_NOW },

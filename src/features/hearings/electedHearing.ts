@@ -1,10 +1,18 @@
 import { and, eq, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { hearings } from '@/db/schema'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 
-export async function hasElectedHearing(db: DbOrTx, applicationId: string): Promise<boolean> {
-  const [found] = await db
-    .select({ id: hearings.id })
+export interface ElectedHearing {
+  firstHeldOn: CivilDate | null
+}
+
+export async function electedHearing(
+  db: DbOrTx,
+  applicationId: string,
+): Promise<ElectedHearing | null> {
+  const rows = await db
+    .select({ heldOn: hearings.heldOn })
     .from(hearings)
     .where(
       and(
@@ -13,6 +21,9 @@ export async function hasElectedHearing(db: DbOrTx, applicationId: string): Prom
         ne(hearings.kind, 'rehearing'),
       ),
     )
-    .limit(1)
-  return found !== undefined
+  if (rows.length === 0) return null
+  const held = rows
+    .flatMap((r) => (r.heldOn === null ? [] : [r.heldOn as CivilDate]))
+    .sort(compareCivil)
+  return { firstHeldOn: held[0] ?? null }
 }
