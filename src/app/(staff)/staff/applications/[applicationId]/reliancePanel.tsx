@@ -1,0 +1,62 @@
+import { ActionForm } from '@/components/ActionForm'
+import { SelectField } from '@/components/staff/fields'
+import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import type { RelianceView } from '@/features/decisions/relianceView'
+import { linkRelianceAction } from './relianceActions'
+
+const VALIDITY_TEXT: Record<VarianceValidity, string> = {
+  not_required: '',
+  pending_recording: 'Approved, not valid until recorded',
+  recorded: 'Recorded',
+  void: 'Void, not recorded in time',
+}
+
+interface Props {
+  applicationId: string
+  validity: VarianceValidity
+  reliance: RelianceView | null
+  canLink: boolean
+}
+
+export function reliancePanelApplies(validity: VarianceValidity, reliance: RelianceView | null) {
+  return validity !== 'not_required' || reliance !== null
+}
+
+export function ReliancePanel({ applicationId, validity, reliance, canLink }: Props) {
+  return (
+    <section aria-label="Variance" id="variance">
+      <h2>Variance</h2>
+      {validity === 'not_required' ? null : <p>{VALIDITY_TEXT[validity]}</p>}
+      {reliance === null ? null : (
+        <>
+          {reliance.linked.length === 0 ? (
+            <p>This application does not rely on a variance.</p>
+          ) : (
+            <ul className="list-none space-y-2 p-0">
+              {reliance.linked.map((l) => (
+                <li key={l.id} className="record-item">
+                  <p className="m-0 font-medium">{`Relies on ${l.number}`}</p>
+                  <p className="m-0">{VALIDITY_TEXT[l.validity]}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {canLink && reliance.choices.length > 0 ? (
+            <details>
+              <summary>Relies on a variance</summary>
+              <ActionForm action={linkRelianceAction} submitLabel="Link variance">
+                <input type="hidden" name="applicationId" value={applicationId} />
+                <SelectField
+                  label="Variance"
+                  name="varianceApplicationId"
+                  required
+                  options={reliance.choices.map((c) => [c.id, c.number] as const)}
+                />
+              </ActionForm>
+            </details>
+          ) : null}
+        </>
+      )}
+    </section>
+  )
+}

@@ -45,6 +45,8 @@ function view(overrides: Record<string, unknown>): StaffApplicationView {
     permissions: {},
     parties: [],
     appeals: [],
+    varianceValidity: 'not_required',
+    reliance: null,
     regionalImpact: { applies: false, determination: null, notices: [] },
     ...overrides,
   } as unknown as StaffApplicationView

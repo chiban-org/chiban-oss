@@ -12,6 +12,7 @@ import { NotesPanel } from './notesPanel'
 import type { RecordPanelsInput } from './panelSet'
 import { CompletenessPanel, completenessApplies } from './panels'
 import { mayAddToRecord, mayAssignReviewers } from './recordStage'
+import { ReliancePanel, reliancePanelApplies } from './reliancePanel'
 import { ReviewersPanel } from './reviewersPanel'
 
 function reviewRequired(view: StaffApplicationView): boolean {
@@ -100,6 +101,19 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
         view.decisionNotice == null ? null : (
           <DecisionNoticePanel key="decisionNotice" view={view} documents={records.documents} />
         ),
+    },
+    {
+      key: 'variance',
+      empty: false,
+      node: reliancePanelApplies(view.varianceValidity, view.reliance) ? (
+        <ReliancePanel
+          key="variance"
+          applicationId={view.id}
+          validity={view.varianceValidity}
+          reliance={view.reliance}
+          canLink={view.permissions.canOpenHearings}
+        />
+      ) : null,
     },
     {
       key: 'notes',

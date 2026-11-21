@@ -42,5 +42,5 @@ export const XX_ROLES: PackRoles = {
     board: [],
     portalBoardDeadlines: [],
   },
-  gates: { abutterListFresh: null },
+  gates: { abutterListFresh: null, varianceRecorded: null },
 }

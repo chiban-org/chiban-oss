@@ -48,5 +48,5 @@ export const NH_ROLES: PackRoles = {
     board: ['nh.pb.', 'nh.zba.', 'nh.ri.', 'nh.board.'],
     portalBoardDeadlines: ['nh.appeal.', 'nh.zba.exercise'],
   },
-  gates: { abutterListFresh: 'nh.pb.abutter_list_fresh' },
+  gates: { abutterListFresh: 'nh.pb.abutter_list_fresh', varianceRecorded: null },
 }

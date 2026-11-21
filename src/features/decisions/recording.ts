@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import { applications, boardDecisions, clocks, decisionRecordings, documents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -8,7 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { classificationOfApplication } from '@/features/decisions/hearingOptional'
-import { recordingIsRequired } from '@/features/decisions/recordingRequired'
+import { recordingIsRequired, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import { loadPack } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -214,4 +214,40 @@ export async function recordDecisionRecording(
     )
     return ok(undefined)
   })
+}
+
+export async function varianceValidity(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<VarianceValidity> {
+  signal.throwIfAborted()
+  const app = await loadApplicationContext(db, applicationId, signal)
+  if (app === null || !recordingIsRequired(classificationOfApplication(app))) return 'not_required'
+  const [decision] = await db
+    .select({ id: boardDecisions.id, outcome: boardDecisions.outcome })
+    .from(boardDecisions)
+    .where(eq(boardDecisions.applicationId, applicationId))
+    .orderBy(desc(boardDecisions.votedOn), desc(boardDecisions.recordedAt))
+    .limit(1)
+  if (decision === undefined || !APPROVING.includes(decision.outcome)) return 'not_required'
+  const [recording] = await db
+    .select({ id: decisionRecordings.decisionId })
+    .from(decisionRecordings)
+    .where(eq(decisionRecordings.decisionId, decision.id))
+  if (recording !== undefined) return 'recorded'
+  const keys = voidRuleKeys()
+  if (keys.length === 0) return 'pending_recording'
+  const [lapsed] = await db
+    .select({ id: clocks.id })
+    .from(clocks)
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        inArray(clocks.ruleKey, keys),
+        eq(clocks.status, 'lapsed'),
+      ),
+    )
+    .limit(1)
+  return lapsed === undefined ? 'pending_recording' : 'void'
 }

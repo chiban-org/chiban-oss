@@ -1,6 +1,7 @@
 import type { Role } from '@/constants/roles'
 import type { EnforcementStatus, InspectionStatus } from '@/db/schema'
 import type { CoreState } from '@/features/applications/states'
+import type { VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { Status } from '@/features/design/tokens'
 import type { DecisionOutcome } from '@/features/packs/schema'
 
@@ -87,10 +88,18 @@ const OUTCOME_WORDS = new Map<DecisionOutcome, { label: string; chip: Status }>(
   ['rehearing_denied', { label: 'Rehearing denied', chip: 'neutral' }],
 ])
 
+const VALIDITY_WORDS = new Map<VarianceValidity, { label: string; chip: Status }>([
+  ['pending_recording', { label: 'Approved, not valid until recorded', chip: 'neutral' }],
+  ['void', { label: 'Void, not recorded in time', chip: 'failed' }],
+])
+
 export function decisionOutcome(
   outcome: DecisionOutcome,
   boardKind: string | null,
+  validity: VarianceValidity = 'not_required',
 ): { label: string; chip: Status } {
+  const unrecorded = VALIDITY_WORDS.get(validity)
+  if (unrecorded !== undefined && APPROVING_OUTCOMES.includes(outcome)) return unrecorded
   const words = OUTCOME_WORDS.get(outcome) ?? { label: 'Decided', chip: 'neutral' }
   if (boardKind !== 'zba' || !APPROVING_OUTCOMES.includes(outcome)) return words
   return { ...words, label: words.label.replace('Approved', 'Granted') }

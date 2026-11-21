@@ -34,6 +34,9 @@ import { type ClockExplanation, explainClock } from '@/features/clocks/explainCl
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
+import { varianceValidity } from '@/features/decisions/recording'
+import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import { loadRelianceView, type RelianceView } from '@/features/decisions/relianceView'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
@@ -98,6 +101,8 @@ export interface StaffApplicationView {
     notices: (typeof regionalImpactNotices.$inferSelect)[]
   }
   appeals: (typeof appeals.$inferSelect)[]
+  varianceValidity: VarianceValidity
+  reliance: RelianceView | null
   decisionNotice: DecisionNoticeView | null
   permissions: {
     canIssue: boolean
@@ -270,6 +275,8 @@ export async function getStaffApplicationView(
       .from(appeals)
       .where(eq(appeals.applicationId, applicationId))
       .orderBy(asc(appeals.filedOn)),
+    varianceValidity: await varianceValidity(db, app.id, signal),
+    reliance: await loadRelianceView(db, app.id, project.parcelId, signal),
     decisionNotice: await loadDecisionNotice(db, app),
     permissions: await permissionsOf(db, actor, signal),
   }

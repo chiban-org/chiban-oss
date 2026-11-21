@@ -68,9 +68,20 @@ describe('pack roles', () => {
     const roles = XX_PACK_MANIFEST.roles
     const broken = {
       ...XX_PACK_MANIFEST,
-      roles: { ...roles, gates: { abutterListFresh: 'xx.gate' } },
+      roles: { ...roles, gates: { ...roles.gates, abutterListFresh: 'xx.gate' } },
     }
     expect(issuesOf(broken)).toContain('role gates.abutterListFresh needs rules.abutterListAge')
+  })
+
+  it('rejects a variance gate role that names no rule', () => {
+    const roles = XX_PACK_MANIFEST.roles
+    const broken = {
+      ...XX_PACK_MANIFEST,
+      roles: { ...roles, gates: { ...roles.gates, varianceRecorded: 'xx.gate.nope' } },
+    }
+    expect(issuesOf(broken)).toContain(
+      'role gates.varianceRecorded names unknown rule xx.gate.nope',
+    )
   })
 
   it('rejects a missing required role', () => {

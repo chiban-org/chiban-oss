@@ -50,6 +50,8 @@ export function stubDetail(overrides: Record<string, unknown> = {}): CaseDetail 
     notices: [],
     orders: [],
     appeals: [],
+    varianceValidity: 'not_required',
+    reliance: null,
     fines: [],
     referrals: [],
     exposure: null,

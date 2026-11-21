@@ -59,6 +59,8 @@ function view(overrides: Record<string, unknown>): StaffApplicationView {
     substeps: [],
     permissions: { canIssue: true, canDetermineRegionalImpact: true },
     appeals: [],
+    varianceValidity: 'not_required',
+    reliance: null,
     regionalImpact: { applies: true, determination: null, notices: [] },
     ...overrides,
   } as unknown as StaffApplicationView

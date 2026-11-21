@@ -50,6 +50,7 @@ export const RuleGroupRolesSchema = z.object({
 
 export const GateRolesSchema = z.object({
   abutterListFresh: absentOr,
+  varianceRecorded: absentOr,
 })
 
 export const PackRolesSchema = z.object({

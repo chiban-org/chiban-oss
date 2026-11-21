@@ -1,13 +1,25 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { applicationConditions, associationRosters, restrictionHoldings, users } from '@/db/schema'
+import {
+  applicationConditions,
+  associationRosters,
+  documents,
+  restrictionHoldings,
+  users,
+} from '@/db/schema'
+import { recordDecisionRecording, recordFinalWrittenApproval } from '@/features/decisions/recording'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { loadLotConditions } from '@/features/parcels/lotConditions'
 import { loadNextLotInspection } from '@/features/parcels/lotInspection'
 import { loadNoticeRecipients, noticeRecipientsText } from '@/features/rosters/noticeRecipients'
+import { markUnrecordedVoid } from '@/jobs/clocksDaily'
 import { makeApplication, type PermitWorld } from '@/test/applicationFixtures'
+import { setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { decideUnderXx, HEARING_DATE } from '@/test/deliveryFixtures'
 import { insertInspection, setupInspectionWorld } from '@/test/inspectionFixtures'
-import type { CivilDate } from '@/types/civilDate'
+import { XX_RECORDING } from '@/test/packs/xx/variants'
+import { addDays, type CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const TODAY = '2027-03-02' as CivilDate
@@ -149,5 +161,86 @@ describe('who notices go to', () => {
       'Heron Cove Condominium Association officers',
       'Alder Pond Land Trust, restriction holder',
     ])
+  })
+})
+
+describe('a variance that must be recorded on a lot', () => {
+  const NOW = new Date('2027-09-30T16:00:00Z')
+  const APPROVED = '2027-04-20' as CivilDate
+
+  async function approvedVariance() {
+    const variance = await makeTestDb()
+    setActivePackForTest(XX_RECORDING)
+    const board = await setupBoardWorld(variance.db, {
+      zbaMeetings: [HEARING_DATE],
+      pack: XX_RECORDING,
+      classificationKey: 'xx.board_variance',
+    })
+    const made = await decideUnderXx(variance.db, board)
+    await recordFinalWrittenApproval(
+      variance.db,
+      board.staff,
+      { decisionId: made.decisionId, approvedOn: APPROVED },
+      signal,
+      NOW,
+    )
+    return { variance, board, made }
+  }
+
+  const outcomeOf = async (variance: TestDb, parcelId: string, applicationId: string) =>
+    (await loadLotConditions(variance.db, parcelId, signal)).find(
+      (e) => e.applicationId === applicationId,
+    )?.outcome
+
+  it('is labelled not valid until recorded, then plain once recorded', async () => {
+    const { variance, board, made } = await approvedVariance()
+    try {
+      expect(await outcomeOf(variance, board.parcelId, made.applicationId)).toEqual({
+        label: 'Approved, not valid until recorded',
+        chip: 'neutral',
+      })
+      const [doc] = await variance.db
+        .insert(documents)
+        .values({
+          recordKind: 'application',
+          recordId: made.applicationId,
+          title: 'Certificate of approval',
+          docKind: 'attachment',
+          createdByKind: 'system',
+        })
+        .returning({ id: documents.id })
+      await recordDecisionRecording(
+        variance.db,
+        board.staff,
+        {
+          decisionId: made.decisionId,
+          registry: 'Vellmora County Registry of Deeds',
+          book: '4410',
+          page: '212',
+          recordedOn: '2027-05-10' as CivilDate,
+          certificateDocumentId: doc?.id ?? '',
+        },
+        signal,
+        NOW,
+      )
+      expect((await outcomeOf(variance, board.parcelId, made.applicationId))?.label).toBe('Granted')
+    } finally {
+      setActivePackForTest(null)
+      await variance.drop()
+    }
+  })
+
+  it('is labelled void once the period lapses and still shows on the parcel', async () => {
+    const { variance, board, made } = await approvedVariance()
+    try {
+      await variance.db.transaction((tx) => markUnrecordedVoid(tx, addDays(APPROVED, 91), signal))
+      expect(await outcomeOf(variance, board.parcelId, made.applicationId)).toEqual({
+        label: 'Void, not recorded in time',
+        chip: 'failed',
+      })
+    } finally {
+      setActivePackForTest(null)
+      await variance.drop()
+    }
   })
 })

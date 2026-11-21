@@ -40,6 +40,11 @@ export function roleIssues(roles: PackRoles, targets: RoleTargets): string[] {
     roles.gates.abutterListFresh !== null && roles.rules.abutterListAge === null
       ? ['role gates.abutterListFresh needs rules.abutterListAge']
       : []
+  const variance = roles.gates.varianceRecorded
+  const varianceGate =
+    variance !== null && !targets.ruleKeys.has(variance)
+      ? [`role gates.varianceRecorded names unknown rule ${variance}`]
+      : []
   return [
     ...unknownIn(roles.rules, 'rules', targets.ruleKeys, 'rule'),
     ...unknownIn(
@@ -51,5 +56,6 @@ export function roleIssues(roles: PackRoles, targets: RoleTargets): string[] {
     ...unknownIn(roles.recordSeries, 'recordSeries', targets.seriesKeys, 'series'),
     ...groups,
     ...gates,
+    ...varianceGate,
   ]
 }
