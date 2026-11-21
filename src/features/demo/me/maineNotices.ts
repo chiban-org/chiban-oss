@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { hearings } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
 import { generateList } from '@/features/abutters/lists'
-import { day, type MaineContext, meetingOn, noonOf } from '@/features/demo/me/maineContext'
+import { type MaineContext, meetingOn, noonOf } from '@/features/demo/me/maineContext'
 import { FERNHOLLOW } from '@/features/demo/me/maineTown'
 import { must } from '@/features/demo/seedPermitSupport'
 import { attachDocument } from '@/features/documents/attach'
@@ -152,11 +152,4 @@ export async function holdNoticedHearing(
     ),
     'hearing held',
   )
-}
-
-export function meetingDays(ctx: MaineContext) {
-  return {
-    planningBoard: [-56, -35, -14, 7, 28].map((n) => day(ctx, n)),
-    boardOfAppeals: [-42, -21, 14, 35].map((n) => day(ctx, n)),
-  }
 }

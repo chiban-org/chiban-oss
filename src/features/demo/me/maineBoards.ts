@@ -7,7 +7,13 @@ import { recordDecisionDelivery } from '@/features/decisions/delivery'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { recordFinalWrittenApproval } from '@/features/decisions/recording'
 import { boardVotes } from '@/features/demo/me/maineBoardSetup'
-import { day, type MaineContext, meetingOn, noonOf } from '@/features/demo/me/maineContext'
+import {
+  day,
+  type MaineContext,
+  meetingDay,
+  meetingOn,
+  noonOf,
+} from '@/features/demo/me/maineContext'
 import {
   holdNoticedHearing,
   issueAbutterList,
@@ -19,7 +25,7 @@ import { FERNHOLLOW_STORIES } from '@/features/demo/me/maineStories'
 import { must } from '@/features/demo/seedPermitSupport'
 import { prepareReceiptNotices } from '@/features/notices/receiptNotices'
 import { addParty } from '@/features/projects/parties'
-import type { CivilDate } from '@/types/civilDate'
+import { addDays, type CivilDate } from '@/types/civilDate'
 
 const COMMON = {
   applicant_name: 'Alex Applicant',
@@ -48,7 +54,7 @@ async function acceptAt(ctx: MaineContext, applicationId: string, on: ReturnType
 export async function seedMaineSubdivision(ctx: MaineContext): Promise<void> {
   const received = day(ctx, -49)
   const s = await openStory(ctx, {
-    parcel: 'R07-015',
+    parcel: 'R07-014',
     title: FERNHOLLOW_STORIES.subdivision,
     typeKey: 'SUB',
     values: {
@@ -86,8 +92,8 @@ export async function seedMaineSubdivision(ctx: MaineContext): Promise<void> {
     'receipt notices',
   )
   await proveNoticeSet(ctx, applicationId, receipt.noticeSetId, day(ctx, -45))
-  await acceptAt(ctx, applicationId, day(ctx, -35))
-  const decidedOn = day(ctx, -14)
+  await acceptAt(ctx, applicationId, meetingDay(ctx, 'planning_board', -5))
+  const decidedOn = meetingDay(ctx, 'planning_board', -2)
   must(
     await recordDecision(
       ctx.db,
@@ -172,12 +178,12 @@ export async function seedMaineVariance(ctx: MaineContext): Promise<void> {
   })
   await addAgent(ctx, s.applicationId)
   await issueAbutterList(ctx, s.applicationId, day(ctx, -48))
-  const heldOn = day(ctx, -21)
+  const heldOn = meetingDay(ctx, 'zba', -3)
   const hearing = await scheduleBoardHearing(ctx, s.applicationId, { board: 'zba', on: heldOn })
   await holdNoticedHearing(
     ctx,
     { ...hearing, applicationId: s.applicationId },
-    { provedOn: day(ctx, -33), heldOn },
+    { provedOn: addDays(heldOn, -12), heldOn },
   )
   const decided = must(
     await recordDecision(
@@ -197,8 +203,8 @@ export async function seedMaineVariance(ctx: MaineContext): Promise<void> {
     ),
     'variance decision',
   )
-  await deliverDecision(ctx, s.applicationId, day(ctx, -19))
-  const approvedOn = day(ctx, -14)
+  await deliverDecision(ctx, s.applicationId, addDays(heldOn, 2))
+  const approvedOn = addDays(heldOn, 7)
   must(
     await recordFinalWrittenApproval(
       ctx.db,
@@ -227,5 +233,5 @@ export async function seedMaineAdminAppeal(ctx: MaineContext): Promise<void> {
     on: day(ctx, -7),
   })
   await issueAbutterList(ctx, s.applicationId, day(ctx, -6))
-  await scheduleBoardHearing(ctx, s.applicationId, { board: 'zba', on: day(ctx, 14) })
+  await scheduleBoardHearing(ctx, s.applicationId, { board: 'zba', on: meetingDay(ctx, 'zba', 2) })
 }

@@ -51,6 +51,7 @@ export function maineUsers(): readonly MaineUser[] {
     staff('works', 'Wes Works', ['reviewer']),
     resident('pb.member', 'Robin Vale', ['board_member']),
     resident('zba.member', 'Drew Hale', ['board_member']),
+    resident('concom.member', 'Cleo Marsh', ['board_member']),
     resident('applicant', 'Alex Applicant', ['applicant']),
     resident('contractor', 'Cory Contractor', ['contractor']),
   ]

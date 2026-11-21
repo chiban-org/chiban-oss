@@ -24,6 +24,17 @@ export function day(ctx: MaineContext, offset: number): CivilDate {
   return addDays(ctx.today, offset)
 }
 
+const MEETING_WEEKDAY = { planning_board: 3, zba: 2 } as const
+const DAYS_PER_WEEK = 7
+
+export const MEETING_WEEKS = { planning_board: [-8, -5, -2, 1, 4], zba: [-6, -3, 2, 5] } as const
+
+export function meetingDay(ctx: MaineContext, board: 'planning_board' | 'zba', weeks: number) {
+  const weekday = board === 'planning_board' ? MEETING_WEEKDAY.planning_board : MEETING_WEEKDAY.zba
+  const back = (dayOfWeek(ctx.today) - weekday + DAYS_PER_WEEK) % DAYS_PER_WEEK
+  return addDays(ctx.today, weeks * DAYS_PER_WEEK - back)
+}
+
 export function noonOf(date: CivilDate): Date {
   return new Date(`${date}T16:00:00Z`)
 }
