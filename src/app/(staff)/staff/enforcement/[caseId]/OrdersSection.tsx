@@ -9,6 +9,7 @@ import { openFindingChoices } from '@/features/enforcement/findingChoices'
 import { findingUses } from '@/features/enforcement/findingUses'
 import { motionGateText } from '@/features/enforcement/gateText'
 import { MOTION_BLOCK_TEXT, ORDER_STATUS_LABELS } from '@/features/enforcement/labels'
+import { NO_ORDER_TEXT, orderAvailableForFindings } from '@/features/enforcement/orderAvailability'
 import { draftIsStale } from '@/features/enforcement/workPlanInput'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -216,13 +217,15 @@ export function OrdersSection({
   withService?: boolean
 }) {
   const open = detail.findings.filter((f) => f.status === 'open')
+  const available = orderAvailableForFindings(detail.findings)
   return (
     <Section id="orders" title="Cease and desist orders">
-      {detail.orders.length === 0 ? <p>No order has been drafted.</p> : null}
+      {available ? null : <p>{NO_ORDER_TEXT}</p>}
+      {available && detail.orders.length === 0 ? <p>No order has been drafted.</p> : null}
       {detail.orders.map((o) => (
         <OrderBlock key={o.row.id} {...{ order: o, detail, can, hosted, withService }} />
       ))}
-      {can.manage && open.length > 0 && !hosted.has('draft_order') ? (
+      {available && can.manage && open.length > 0 && !hosted.has('draft_order') ? (
         <details>
           <summary>Draft an order</summary>
           <DraftOrderForm detail={detail} variant="outline" />

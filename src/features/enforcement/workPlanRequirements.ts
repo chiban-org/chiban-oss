@@ -3,6 +3,7 @@ import type { RecipientRole } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
+import { orderAvailableForFindings } from './orderAvailability'
 import { rolesToServe } from './serviceStatus'
 import { cureNoticeSent, cureReceiptRecorded } from './workPlanCure'
 import {
@@ -42,21 +43,32 @@ const findingRow = (input: CasePlanInput) =>
     input.findings.some((f) => f.status !== 'withdrawn'),
   )
 
-function orderGroup(input: CasePlanInput): CaseRequirementGroup {
+function noticeRows(input: CasePlanInput, receivedDetail: string): CaseRequirement[] {
   const notice = noticeOfViolationSent(input.notices) || cureNoticeSent(input)
+  return [
+    findingRow(input),
+    row('notice.sent', 'Notice of violation sent', notice),
+    row(
+      'notice.received',
+      'Receipt of the notice recorded',
+      input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input),
+      receivedDetail,
+    ),
+  ]
+}
+
+function violationGroup(input: CasePlanInput): CaseRequirementGroup {
+  if (orderAvailableForFindings(input.findings)) return orderGroup(input)
+  return { key: 'notice', title: 'Before the case goes to counsel', rows: noticeRows(input, '') }
+}
+
+function orderGroup(input: CasePlanInput): CaseRequirementGroup {
   const drafted = input.orders.some((o) => o.row.status !== 'withdrawn')
   return {
     key: 'order',
     title: 'Before the order is issued',
     rows: [
-      findingRow(input),
-      row('notice.sent', 'Notice of violation sent', notice),
-      row(
-        'notice.received',
-        'Receipt of the notice recorded',
-        input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input),
-        'Penalty accrual starts when written notice is received.',
-      ),
+      ...noticeRows(input, 'Penalty accrual starts when written notice is received.'),
       row('order.drafted', 'Order drafted', drafted),
       row(
         'order.issued',
@@ -177,7 +189,7 @@ export function requirementGroups(input: CasePlanInput): CaseRequirementGroup[] 
     case 'investigating':
       return [{ key: 'finding', title: 'Before a violation is found', rows: [findingRow(input)] }]
     case 'violation_found':
-      return [orderGroup(input)]
+      return [violationGroup(input)]
     case 'order_issued':
     case 'in_court':
       return courtGroups(input)

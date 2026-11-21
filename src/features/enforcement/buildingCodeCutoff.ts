@@ -3,7 +3,10 @@ import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
 import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import { activePack } from '@/features/packs/registry'
-import { packRoles } from '@/features/packs/roles'
+
+function packHasBuildingCodes(): boolean {
+  return activePack().buildingCodes.choices.length > 0
+}
 
 type CodeState = { kind: 'enforced' } | { kind: 'dropped'; since: Date | null }
 
@@ -43,13 +46,13 @@ export async function buildingCodeOpenFor(
   caseCreatedAt: Date,
   signal: AbortSignal,
 ): Promise<boolean> {
-  if (packRoles().rules.buildingCodeOrder === null) return false
+  if (!packHasBuildingCodes()) return false
   const state = await codeState(db, signal)
   if (state.kind === 'enforced') return true
   return state.since !== null && caseCreatedAt < state.since
 }
 
 export async function buildingCodeEnforced(db: DbOrTx, signal: AbortSignal): Promise<boolean> {
-  if (packRoles().rules.buildingCodeOrder === null) return false
+  if (!packHasBuildingCodes()) return false
   return (await codeState(db, signal)).kind === 'enforced'
 }

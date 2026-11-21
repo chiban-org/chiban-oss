@@ -19,6 +19,7 @@ export type PenaltyExposure =
       fromDate: CivilDate | null
       days: number
       label: string
+      noAccrualRule?: true
       categories: RangeRule['categories']
       aggravations: RangeRule['aggravations']
     }
@@ -30,18 +31,21 @@ const ACCRUAL_STARTS: Partial<
   Record<string, (notice: CivilDate | null, conviction: CivilDate | null) => CivilDate | null>
 > = { after_earlier_of_conviction_or_written_notice: EARLIER_OF }
 
-function accrualStart(
-  rule: CivilPenaltyRule,
-  notice: CivilDate | null,
-  conviction: CivilDate | null,
-): CivilDate | null {
+export interface PenaltyDates {
+  noticeReceivedOn: CivilDate | null
+  convictedOn: CivilDate | null
+  cureReceiptOn?: CivilDate | null
+}
+
+function accrualStart(rule: CivilPenaltyRule, dates: PenaltyDates): CivilDate | null {
+  if (rule.accrual === null) return dates.cureReceiptOn ?? null
   const start = ACCRUAL_STARTS[rule.accrual]
   if (start === undefined) {
     throw new AppError(ErrorIds.ENF_INVARIANT, 'Unknown penalty accrual rule', {
       accrual: String(rule.accrual),
     })
   }
-  return start(notice, conviction)
+  return start(dates.noticeReceivedOn, dates.convictedOn)
 }
 
 export function penaltyRangeLines(exposure: PenaltyExposure): string[] {
@@ -61,14 +65,9 @@ export function penaltyRangeLines(exposure: PenaltyExposure): string[] {
 
 export function penaltyExposure(
   rule: CivilPenaltyRule,
-  input: {
-    noticeReceivedOn: CivilDate | null
-    convictedOn: CivilDate | null
-    through: CivilDate
-    offense: 'first' | 'subsequent'
-  },
+  input: PenaltyDates & { through: CivilDate; offense: 'first' | 'subsequent' },
 ): PenaltyExposure {
-  const fromDate = accrualStart(rule, input.noticeReceivedOn, input.convictedOn)
+  const fromDate = accrualStart(rule, input)
   const days = fromDate === null ? 0 : Math.max(0, daysBetween(fromDate, input.through))
   if (rule.model === 'range_daily') {
     return {
@@ -78,6 +77,7 @@ export function penaltyExposure(
       label: PENALTY_RANGE_LABEL,
       categories: rule.categories,
       aggravations: rule.aggravations,
+      ...(rule.accrual === null ? { noAccrualRule: true as const } : {}),
     }
   }
   const perDay =

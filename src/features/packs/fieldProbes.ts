@@ -5,6 +5,7 @@ import { decisionProbes } from '@/features/packs/probes/decisionProbes'
 import { deliveryProbes } from '@/features/packs/probes/deliveryProbes'
 import { enforcementProbes } from '@/features/packs/probes/enforcementProbes'
 import { otherProbes } from '@/features/packs/probes/otherProbes'
+import { penaltyProbes } from '@/features/packs/probes/penaltyProbes'
 import type { FieldProbe } from '@/features/packs/probes/probe'
 import { seriesProbes } from '@/features/packs/probes/seriesProbes'
 
@@ -19,4 +20,5 @@ export const FIELD_PROBES: Record<string, FieldProbe> = {
   ...otherProbes(),
   ...seriesProbes(),
   ...enforcementProbes(),
+  ...penaltyProbes(),
 }

@@ -28,10 +28,13 @@ function accrualDays(fromDate: string, days: number): string {
   return `Accrual began ${formatCivilDate(fromDate)}. ${days} ${days === 1 ? 'day' : 'days'}`
 }
 
+const NO_ACCRUAL_START = 'No accrual start is recorded for this penalty.'
+
 function accrualSentence(exposure: PenaltyExposure): string {
-  return exposure.fromDate === null
-    ? ACCRUAL_NOT_STARTED
-    : `${accrualDays(exposure.fromDate, exposure.days)}.`
+  if (exposure.fromDate !== null) return `${accrualDays(exposure.fromDate, exposure.days)}.`
+  return exposure.kind === 'range' && exposure.noAccrualRule === true
+    ? NO_ACCRUAL_START
+    : ACCRUAL_NOT_STARTED
 }
 
 function PenaltyExposureNote({

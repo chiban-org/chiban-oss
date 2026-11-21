@@ -113,6 +113,15 @@ function cureIssues(rules: PackRule[]): string[] {
   })
 }
 
+function penaltyRoleIssues(roles: PackRoles, rules: PackRule[]): string[] {
+  const key = roles.rules.enforcementPenalty
+  if (key === null) return []
+  const rule = rules.find((r) => r.key === key)
+  return rule === undefined || rule.kind === 'civil_penalty'
+    ? []
+    : [`role rules.enforcementPenalty ${key} must be a civil_penalty rule`]
+}
+
 function settingClockIssues(rules: PackRule[]): string[] {
   const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
   const issues: string[] = []
@@ -179,6 +188,7 @@ export const PackManifestSchema = z
       ...deliveryIssues(m.rules),
       ...receiptStageIssues(m.rules),
       ...cureIssues(m.rules),
+      ...penaltyRoleIssues(m.roles, m.rules),
     ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })

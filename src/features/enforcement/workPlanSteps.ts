@@ -5,6 +5,7 @@ import { boardAbbrev } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
+import { orderAvailableForFindings } from './orderAvailability'
 import { cureStep } from './workPlanCure'
 import {
   type CasePlanInput,
@@ -83,13 +84,17 @@ function violationStep(input: CasePlanInput): Step {
   if (standing === 'corrected') return resolveStep()
   if (standing === 'withdrawn') return noViolationStep()
   const cure = cureStep(input)
-  const lapsedDraft = cure?.key === 'cure.remedy' ? draftOrderOf(input) : null
+  const lapsedDraft =
+    cure?.key === 'cure.remedy' && orderAvailableForFindings(input.findings)
+      ? draftOrderOf(input)
+      : null
   if (lapsedDraft !== null) return draftStep(input, lapsedDraft)
   if (cure !== null) return cure
   if (!noticeOfViolationSent(input.notices)) {
     return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
   }
-  const draft = draftOrderOf(input)
+  const ordered = orderAvailableForFindings(input.findings)
+  const draft = ordered ? draftOrderOf(input) : null
   if (draft !== null) return draftStep(input, draft)
   const unreceived = input.notices.find((n) => n.receivedOn === null)
   if (unreceived !== undefined && !input.notices.some((n) => n.receivedOn !== null)) {
@@ -98,7 +103,23 @@ function violationStep(input: CasePlanInput): Step {
       noticeId: unreceived.id,
     })
   }
+  if (!ordered) return noOrderCounselStep(input)
   return town('order.drafted', 'Draft a cease and desist order', { kind: 'draft_order' })
+}
+
+function noOrderCounselStep(input: CasePlanInput): Step {
+  const counsel = counselState(input)
+  if (counsel === 'won') return judgmentStep(input)
+  if (counsel === 'ended') return resolveStep()
+  if (counsel === 'open') {
+    return waiting({
+      key: 'counsel.referred',
+      actor: 'counsel',
+      ask: 'Take the case to court',
+      task: 'Wait for town counsel',
+    })
+  }
+  return town('counsel.referred', 'Refer the case to town counsel', null)
 }
 
 function serviceStep(order: CasePlanOrder): Step | null {

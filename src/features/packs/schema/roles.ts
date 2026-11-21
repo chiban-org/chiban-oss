@@ -12,8 +12,9 @@ export const ClassificationRolesSchema = z.object({
 
 export const RuleRolesSchema = z.object({
   buildingPermitDecision: absentOr,
-  zoningOrder: key,
+  zoningOrder: absentOr,
   buildingCodeOrder: absentOr,
+  enforcementPenalty: absentOr,
   rtkResponse: key,
   rtkStatedTime: key,
   planningBoardDecision: absentOr,
