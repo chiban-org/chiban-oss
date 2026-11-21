@@ -99,6 +99,7 @@ const COPY: Record<string, string> = {
   already_published: 'This agenda is already on the public site. Reopen it to change it.',
   already_recorded: 'The delivery to this recipient is already recorded.',
   supplier_required: 'Choose the water supplier for the protection area.',
+  unknown_supplier: 'That water supplier has no contact on file. Add it in Settings first.',
   no_receipt_requirements: 'This kind of application has no notices due on receipt.',
   already_prepared: 'The receipt notices are already prepared.',
   not_approving: 'Only an approval can be recorded at the registry.',

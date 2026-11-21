@@ -5,8 +5,9 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { continueHearing } from '@/features/hearings/continuations'
-import { scheduleHearing } from '@/features/hearings/hearings'
+import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
 import { earliestNoticeDue } from '@/features/notices/noticeDue'
+import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
 import { prepareReceiptNotices } from '@/features/notices/receiptNotices'
 import { planRequirement } from '@/features/notices/requirementPlan'
@@ -277,10 +278,6 @@ describe('hearing notices beside a receipt set', () => {
     return id
   }
 
-  async function hearingSetOf(setId: string) {
-    return await itemsOf(setId)
-  }
-
   it('scheduling a hearing derives only the before-hearing requirements', async () => {
     const id = await underReview()
     const scheduled = await scheduleHearing(
@@ -293,7 +290,7 @@ describe('hearing notices beside a receipt set', () => {
     const [hearing] = await handle.db.query.hearings.findMany({
       where: (h, { eq: same }) => same(h.applicationId, id),
     })
-    const items = await hearingSetOf(hearing?.noticeSetId ?? '')
+    const items = await itemsOf(hearing?.noticeSetId ?? '')
     expect(items.map((i) => i.requirementKey)).toEqual([XX_HEARING_MAIL_KEY, XX_HEARING_MAIL_KEY])
     expect(items.every((i) => i.dueOn === '2027-04-04')).toBe(true)
   })
@@ -322,9 +319,43 @@ describe('hearing notices beside a receipt set', () => {
     const [next] = await handle.db.query.hearings.findMany({
       where: (h, { eq: same }) => same(h.id, continued.value.hearingId),
     })
-    const items = await hearingSetOf(next?.noticeSetId ?? '')
+    const items = await itemsOf(next?.noticeSetId ?? '')
     expect(items.map((i) => i.requirementKey)).toEqual([XX_HEARING_MAIL_KEY, XX_HEARING_MAIL_KEY])
     expect(items.every((i) => i.dueOn === '2027-04-18')).toBe(true)
+  })
+
+  it('marks the hearing noticed and held while the receipt set has unproved items', async () => {
+    const id = await underReview()
+    const scheduled = await scheduleHearing(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId: await meetingOn('2027-04-14'), kind: 'public_hearing' },
+      signal,
+    )
+    if (!scheduled.ok) throw new Error('schedule failed')
+    const [hearing] = await handle.db.query.hearings.findMany({
+      where: (h, { eq: same }) => same(h.id, scheduled.value.hearingId),
+    })
+    const now = new Date('2027-04-14T16:00:00Z')
+    await proveEverything(handle.db, world, id, hearing?.noticeSetId ?? '', d('2027-04-01'), now)
+    expect(
+      (await markProperlyNoticed(handle.db, world.staff, scheduled.value.hearingId, signal, now))
+        .ok,
+    ).toBe(true)
+    const held = await markHearingHeld(
+      handle.db,
+      world.staff,
+      { hearingId: scheduled.value.hearingId, heldOn: d('2027-04-14') },
+      signal,
+      now,
+    )
+    expect(held.ok).toBe(true)
+    const [receiptSet] = await handle.db
+      .select()
+      .from(noticeSets)
+      .where(eq(noticeSets.subjectKind, 'receipt'))
+    const receiptStatus = await noticeStatus(handle.db, receiptSet?.id ?? '', signal)
+    expect(receiptStatus.items.every((i) => i.state === 'missing')).toBe(true)
   })
 
   it('the earliest notice due ignores the receipt requirement', async () => {

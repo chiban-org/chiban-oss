@@ -6,12 +6,17 @@ import { lockApplication } from '@/features/applications/lockApplication'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
 
 export type MunicipalityRelation = 'abutting' | 'includes'
 
-export type ApplicationMunicipalitiesError = 'forbidden' | 'not_found' | 'application_closed'
+export type ApplicationMunicipalitiesError =
+  | 'forbidden'
+  | 'not_found'
+  | 'application_closed'
+  | 'unknown_municipality'
 
 export async function setApplicationMunicipalities(
   db: Db,
@@ -30,6 +35,8 @@ export async function setApplicationMunicipalities(
     const state = await lockApplication(tx, input.applicationId)
     if (state === null) return err('not_found')
     if (TERMINAL_STATES.includes(state)) return err('application_closed')
+    const known = new Set((await getRegionalContacts(tx, signal)).municipalities.map((m) => m.key))
+    if ([...byKey.keys()].some((key) => !known.has(key))) return err('unknown_municipality')
     await tx
       .delete(applicationMunicipalities)
       .where(eq(applicationMunicipalities.applicationId, input.applicationId))

@@ -251,3 +251,38 @@ export const XX_RECORDING: StatePack = xxPackWith({
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: RECORDING_PACK_RULES }] },
 })
+
+export const XX_SECOND_RECEIPT_LEAD_KEY = 'xx.pb.receipt_second_lead'
+export const XX_SECOND_RECEIPT_MAIL_KEY = 'xx.pb.notice.receipt_second'
+
+const SECOND_RECEIPT_RULES: PackRule[] = [
+  {
+    ...(XX_RECEIPT_RULES[0] as PackRule),
+    key: XX_SECOND_RECEIPT_LEAD_KEY,
+    length: { unit: 'days', value: 5 },
+  } as PackRule,
+  {
+    ...(XX_RECEIPT_RULES[2] as PackRule),
+    key: XX_SECOND_RECEIPT_MAIL_KEY,
+    recipients: { roles: ['municipal_clerk'] },
+    leadRuleKey: XX_SECOND_RECEIPT_LEAD_KEY,
+  } as PackRule,
+]
+
+const TWO_LEAD_PACK_RULES = [...RECEIPT_PACK_RULES, ...SECOND_RECEIPT_RULES]
+
+export const XX_TWO_RECEIPT_LEADS: StatePack = xxPackWith({
+  manifest: {
+    rules: TWO_LEAD_PACK_RULES,
+    classifications: XX_RECEIPT_NOTICES.manifest.classifications.map((c) =>
+      c.key === XX_PB_SUBDIVISION_KEY
+        ? {
+            ...c,
+            mandatoryRuleKeys: [...c.mandatoryRuleKeys, XX_SECOND_RECEIPT_LEAD_KEY],
+            noticeRequirementKeys: [...c.noticeRequirementKeys, XX_SECOND_RECEIPT_MAIL_KEY],
+          }
+        : c,
+    ),
+  },
+  pack: { ruleAreas: [{ title: 'All rules', rules: TWO_LEAD_PACK_RULES }] },
+})

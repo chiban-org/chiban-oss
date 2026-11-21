@@ -6,6 +6,7 @@ import { lockApplication } from '@/features/applications/lockApplication'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
@@ -16,6 +17,7 @@ export type SourceWaterError =
   | 'forbidden'
   | 'not_found'
   | 'supplier_required'
+  | 'unknown_supplier'
   | 'application_closed'
 
 export async function recordSourceWaterDetermination(
@@ -37,6 +39,11 @@ export async function recordSourceWaterDetermination(
     const state = await lockApplication(tx, input.applicationId)
     if (state === null) return err('not_found')
     if (TERMINAL_STATES.includes(state)) return err('application_closed')
+    if (supplierKey !== '') {
+      const contacts = await getRegionalContacts(tx, signal)
+      if (!contacts.waterSuppliers.some((s) => s.key === supplierKey))
+        return err('unknown_supplier')
+    }
     const values = {
       applicationId: input.applicationId,
       determination: input.determination,

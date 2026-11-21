@@ -3,7 +3,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applicationMunicipalities, applications, sourceWaterDeterminations } from '@/db/schema'
 import { setApplicationMunicipalities } from '@/features/boards/applicationMunicipalities'
 import { recordSourceWaterDetermination } from '@/features/boards/sourceWater'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import {
+  ALDER_POND_CONTACTS,
+  type BoardWorld,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 
 const signal = new AbortController().signal
@@ -16,6 +22,16 @@ beforeEach(async () => {
   handle = await makeTestDb()
   world = await setupBoardWorld(handle.db)
   applicationId = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+  await saveAndPublish(handle.db, world.admin, 'regional_contacts', 'default', {
+    ...ALDER_POND_CONTACTS,
+    waterSuppliers: [
+      {
+        key: 'lakeside_water',
+        name: 'Lakeside Water District',
+        mailingAddress: '2 Reservoir Road, Alder Pond NH 03999',
+      },
+    ],
+  })
 })
 afterEach(async () => {
   await handle.drop()
@@ -51,6 +67,19 @@ describe('recordSourceWaterDetermination', () => {
         NOW,
       ),
     ).toEqual({ ok: false, error: 'supplier_required' })
+    expect(await handle.db.select().from(sourceWaterDeterminations)).toHaveLength(0)
+  })
+
+  it('within with a supplier the town has not listed is refused', async () => {
+    expect(
+      await recordSourceWaterDetermination(
+        handle.db,
+        world.staff,
+        { applicationId, determination: 'within', supplierKey: 'forged_supplier' },
+        signal,
+        NOW,
+      ),
+    ).toEqual({ ok: false, error: 'unknown_supplier' })
     expect(await handle.db.select().from(sourceWaterDeterminations)).toHaveLength(0)
   })
 
@@ -150,6 +179,31 @@ describe('setApplicationMunicipalities', () => {
     const rows = await handle.db.select().from(applicationMunicipalities)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ municipalityKey: 'dunmore', relation: 'abutting' })
+  })
+
+  it('refuses a municipality the town has not listed and keeps the earlier list', async () => {
+    await setApplicationMunicipalities(
+      handle.db,
+      world.staff,
+      { applicationId, municipalities: [{ key: 'dunmore', relation: 'abutting' }] },
+      signal,
+    )
+    expect(
+      await setApplicationMunicipalities(
+        handle.db,
+        world.staff,
+        {
+          applicationId,
+          municipalities: [
+            { key: 'pine_river', relation: 'abutting' },
+            { key: 'forged_town', relation: 'includes' },
+          ],
+        },
+        signal,
+      ),
+    ).toEqual({ ok: false, error: 'unknown_municipality' })
+    const rows = await handle.db.select().from(applicationMunicipalities)
+    expect(rows.map((r) => r.municipalityKey)).toEqual(['dunmore'])
   })
 
   it('refuses a reviewer and a closed application', async () => {

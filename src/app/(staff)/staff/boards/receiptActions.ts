@@ -27,7 +27,7 @@ export async function sourceWaterDeterminationAction(formData: FormData): Promis
     errorOrField(
       await recordSourceWaterDetermination(db, actor, input, signal),
       'Source water protection area determination recorded. Draw and issue a new list.',
-      { supplier_required: 'supplierKey' },
+      { supplier_required: 'supplierKey', unknown_supplier: 'supplierKey' },
     ),
   )
 }
@@ -48,6 +48,7 @@ export async function applicationMunicipalitiesAction(formData: FormData): Promi
         signal,
       ),
       'Municipalities recorded.',
+      { unknown_municipality: 'abuttingKeys' },
     ),
   )
 }
