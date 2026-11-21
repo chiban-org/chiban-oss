@@ -7,7 +7,7 @@ const CITATION = {
   url: 'https://laws.example/vellmora/permit-act',
 }
 
-function courtWindow(
+export function courtWindow(
   key: string,
   label: string,
   days: number,

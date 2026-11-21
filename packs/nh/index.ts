@@ -47,6 +47,7 @@ export const NH_PACK: StatePack = {
     recordsRequest: 'Right-to-Know request',
     governingBody: 'selectmen',
     rehearing: { noun: 'rehearing', capitalised: 'Rehearing' },
+    significantDecisionHelp: null,
     citations: {
       exerciseFloorAuthority: 'RSA 674:33 I-a(a) and IV(b)',
       abutterListIssued: {

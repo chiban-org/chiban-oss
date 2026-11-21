@@ -8,6 +8,7 @@ import {
   type ProjectFinality,
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
+import { significanceForRoutes } from '@/features/appeals/routeSignificance'
 import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -19,10 +20,11 @@ import { err, ok, type Result } from '@/types/result'
 
 type NodeRow = typeof appealNodes.$inferSelect
 
-interface RouteFacts {
+export interface RouteFacts {
   outcome: 'granted' | 'denied' | null
   linkedComponent: boolean
   finalReviewBoard: BoardKind | null
+  significant: boolean | null
 }
 
 function routeSpecificity(when: AppealRoute['when']): number {
@@ -30,7 +32,8 @@ function routeSpecificity(when: AppealRoute['when']): number {
   return (
     (when.outcome === undefined ? 0 : 1) +
     (when.linkedComponent === undefined ? 0 : 1) +
-    (when.finalReviewBoard === undefined ? 0 : 1)
+    (when.finalReviewBoard === undefined ? 0 : 1) +
+    (when.significant === undefined ? 0 : 1)
   )
 }
 
@@ -38,6 +41,7 @@ function routeApplies(when: NonNullable<AppealRoute['when']>, facts: RouteFacts)
   if (when.outcome !== undefined && when.outcome !== facts.outcome) return false
   if (when.finalReviewBoard !== undefined && when.finalReviewBoard !== facts.finalReviewBoard)
     return false
+  if (when.significant !== undefined && when.significant !== facts.significant) return false
   return when.linkedComponent === undefined || when.linkedComponent === facts.linkedComponent
 }
 
@@ -94,12 +98,14 @@ export function routeFacts(
   parent: NodeRow,
   linkedComponent: boolean | undefined,
   finality: ProjectFinality | null,
+  significant: boolean | null,
 ): RouteFacts {
   const afterRehearing = parent.kind === 'rehearing_outcome'
   return {
     outcome: outcomeFact(parent),
     linkedComponent: afterRehearing ? parent.linkedPbNodeId !== null : linkedComponent === true,
     finalReviewBoard: finality?.finalReviewBoard ?? null,
+    significant,
   }
 }
 
@@ -112,14 +118,17 @@ export function mostSpecificRoute(
     .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
 }
 
-export function chooseRoute(
+export async function chooseRoute(
+  db: DbOrTx,
   parent: NodeRow,
-  input: { kind: AppealNodeKind; linkedComponent?: boolean },
-  finality: ProjectFinality | null,
-): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
+  input: { kind: AppealNodeKind; linkedComponent?: boolean; finality: ProjectFinality | null },
+  signal: AbortSignal,
+): Promise<Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'>> {
+  const routes = candidateRoutes(parent, input.kind)
+  const significant = await significanceForRoutes(db, parent, routes, signal)
   const hit = mostSpecificRoute(
-    candidateRoutes(parent, input.kind),
-    routeFacts(parent, input.linkedComponent, finality),
+    routes,
+    routeFacts(parent, input.linkedComponent, input.finality, significant),
   )
   return hit === undefined ? err('route_not_allowed') : ok(hit)
 }

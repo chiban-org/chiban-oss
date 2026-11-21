@@ -2,6 +2,7 @@ import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { DbOrTx } from '@/db/client'
 import type { GraphNodeRow } from '@/features/appeals/graphNodeRows'
 import { isApprovingOutcome, ruleWaitsForFinalApproval } from '@/features/appeals/projectFinality'
+import { significanceForRoutes } from '@/features/appeals/routeSignificance'
 import {
   clockedWindowDue,
   finalityForRoutes,
@@ -48,8 +49,9 @@ export async function nodeWindow(
 ): Promise<GraphNode['window']> {
   const routes = windowRoutesFrom(node)
   const finality = await finalityForRoutes(db, node, routes, signal)
+  const significant = await significanceForRoutes(db, node, routes, signal)
   const route = DECISION_KINDS.includes(node.kind)
-    ? mostSpecificRoute(routes, routeFacts(node, false, finality))
+    ? mostSpecificRoute(routes, routeFacts(node, false, finality, significant))
     : routes[0]
   if (route === undefined || route.windowRuleKey === null) return null
   const rule = ruleByKey(loadPack(), route.windowRuleKey)

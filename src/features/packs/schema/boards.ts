@@ -40,6 +40,7 @@ export const ProceedingClassificationSchema = z.object({
   directIssueAllowed: z.boolean(),
   hearing: z.enum(['required', 'optional']).default('required'),
   recordingRequired: z.boolean().default(false),
+  significanceApplies: z.boolean().optional(),
   appealRights: z.string(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>

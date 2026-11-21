@@ -62,6 +62,32 @@ describe('recording a decision without a hearing', () => {
     expect(screen.getByRole('checkbox', { name: LAST_APPROVAL })).toBeTruthy()
   })
 
+  it('asks whether the decision is significant when the classification asks it', () => {
+    renderPanel({
+      meetings: [{ id: 'm1', text: 'April 14, 2027' }],
+      seatedMembers: ['Avery Stone'],
+      today: '2027-04-20',
+      offerFinalApproval: false,
+      significanceQuestion: { help: 'Vellmora Land Act 30 lists the large projects.' },
+    })
+    fireEvent.click(screen.getByText('Record a decision without a hearing'))
+    const question = screen.getByRole('combobox', { name: /^Is this a significant land use/ })
+    expect(question.getAttribute('required')).not.toBeNull()
+    expect(screen.getByText('Vellmora Land Act 30 lists the large projects.')).toBeTruthy()
+  })
+
+  it('does not ask about significance otherwise', () => {
+    renderPanel({
+      meetings: [{ id: 'm1', text: 'April 14, 2027' }],
+      seatedMembers: ['Avery Stone'],
+      today: '2027-04-20',
+      offerFinalApproval: false,
+      significanceQuestion: null,
+    })
+    fireEvent.click(screen.getByText('Record a decision without a hearing'))
+    expect(screen.queryByRole('combobox', { name: /^Is this a significant land use/ })).toBeNull()
+  })
+
   it('offers nothing when the classification needs a hearing', () => {
     renderPanel(null)
     expect(screen.queryByText('Record a decision without a hearing')).toBeNull()

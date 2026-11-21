@@ -198,7 +198,7 @@ export async function addAppealNode(
   const [parent] = await db.select().from(appealNodes).where(eq(appealNodes.id, input.parentId))
   if (parent === undefined) return err('not_found')
   const finality = await finalityForRoute(db, parent, input.kind, signal)
-  const route = chooseRoute(parent, input, finality)
+  const route = await chooseRoute(db, parent, { ...input, finality }, signal)
   if (!route.ok) return route
   if (waitsForFinality(parent, input, route.value, finality)) return err('not_final')
   if (compareCivil(input.occurredOn, parent.occurredOn as CivilDate) < 0)

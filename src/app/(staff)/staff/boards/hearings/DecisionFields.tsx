@@ -1,5 +1,7 @@
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import type { SignificanceQuestion } from '@/features/decisions/significance'
 import { LastApprovalCheck } from './LastApprovalCheck'
+import { SignificanceSelect } from './SignificanceSelect'
 
 const OUTCOMES: [string, string][] = [
   ['approved', 'Approved'],
@@ -21,12 +23,14 @@ export function DecisionFields({
   defaultVotedOn,
   minVotedOn,
   offerFinalApproval = false,
+  significance = null,
 }: {
   seated: string[]
   today: string
   defaultVotedOn?: string
   minVotedOn?: string
   offerFinalApproval?: boolean
+  significance?: SignificanceQuestion | null
 }) {
   return (
     <>
@@ -49,6 +53,7 @@ export function DecisionFields({
         hint="One per line. Start a line with Before issuance: if it must be met first."
       />
       <AreaField label="Reasons for disapproval" name="reasons" hint="Required when denied." />
+      <SignificanceSelect question={significance} />
       <LastApprovalCheck offered={offerFinalApproval} />
     </>
   )

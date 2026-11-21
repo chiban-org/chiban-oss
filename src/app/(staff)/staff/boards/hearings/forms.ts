@@ -101,6 +101,11 @@ const DECISION_FIELDS = {
   ),
   reasons: optionalText('the reasons', { max: 10000 }),
   finalMunicipalApproval: checkbox(),
+  significant: choice('whether this is a significant land use decision', [
+    '',
+    'yes',
+    'no',
+  ] as const).transform((v) => (v === '' ? undefined : v === 'yes')),
 }
 
 export const RECORD_DECISION_FORM = z.object({ ...DECISION_FIELDS, hearingId: hearingId() })
