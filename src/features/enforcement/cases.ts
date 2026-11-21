@@ -19,6 +19,7 @@ import {
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { caseJustOpenedBy, lockCaseOpening } from '@/features/enforcement/openCaseReuse'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -172,6 +173,9 @@ export async function setCaseStatus(
         ...(input.to === 'closed' ? { closedOn: today, closureReason: reason } : {}),
       })
       .where(eq(enforcementCases.id, input.caseId))
+    if (input.to === 'closed') {
+      await recordSystemEvent(tx, { kind: 'case_closed', caseId: input.caseId }, today)
+    }
     await writeAudit(
       tx,
       {

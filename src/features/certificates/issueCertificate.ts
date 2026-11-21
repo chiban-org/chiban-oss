@@ -13,6 +13,7 @@ import { buildCertificatePdf } from '@/features/certificates/certificatePdf'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, civilYear } from '@/types/civilDate'
@@ -113,6 +114,11 @@ async function issueInTransaction(
     if (typeof closed.error === 'object') return err(closed.error)
     return err(closed.error === 'stale_version' ? 'stale_version' : 'forbidden')
   }
+  await recordSystemEvent(
+    tx,
+    { kind: 'occupancy_certificate_issued', applicationId: input.applicationId },
+    input.issuedOn,
+  )
   const number = await nextNumber(tx, CERTIFICATE_PREFIX, civilYear(input.issuedOn))
   const [inspector] = await tx
     .select({ name: users.displayName })

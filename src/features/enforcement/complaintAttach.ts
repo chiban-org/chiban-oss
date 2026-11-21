@@ -6,6 +6,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { untouchedShells } from '@/features/enforcement/complaintShells'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -66,6 +67,7 @@ async function closeShell(
       updatedAt: new Date(),
     })
     .where(eq(enforcementCases.id, shell.id))
+  await recordSystemEvent(tx, { kind: 'case_closed', caseId: shell.id }, today)
   await writeAudit(
     tx,
     {

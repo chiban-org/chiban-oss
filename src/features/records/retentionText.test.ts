@@ -27,4 +27,18 @@ describe('retentionText', () => {
     )
     expect(retentionText(null)).toBe('No record series assigned')
   })
+
+  it('words the system recorded events for staff', () => {
+    expect(
+      retentionText({
+        state: 'not_yet_triggered',
+        awaiting: ['permit_expired', 'occupancy_certificate_issued', 'final_inspection_passed'],
+      }),
+    ).toBe(
+      'Starts when the permit expires or the certificate of occupancy is issued or the final inspection passes',
+    )
+    expect(
+      retentionText({ state: 'not_yet_triggered', awaiting: ['case_closed', 'request_completed'] }),
+    ).toBe('Starts when the enforcement case is closed or the records request is completed')
+  })
 })

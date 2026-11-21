@@ -14,6 +14,7 @@ import { applyPassedFinal } from '@/features/inspections/closeOnFinal'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { recordsInspection } from '@/features/inspections/visibility'
 import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -159,6 +160,13 @@ async function recordInTransaction(
       ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
       : ok({ applicationState: appState as CoreState, closed: false })
   if (!outcome.ok) return err(outcome.error === 'forbidden' ? 'forbidden' : outcome.error)
+  if (input.result === 'passed' && locked.isFinal) {
+    await recordSystemEvent(
+      tx,
+      { kind: 'final_inspection_passed', applicationId: locked.applicationId },
+      today,
+    )
+  }
   await queueForParties(
     tx,
     {

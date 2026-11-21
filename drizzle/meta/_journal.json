@@ -841,6 +841,13 @@
       "when": 1795243629388,
       "tag": "0119_receipt_notice_list",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1795267947808,
+      "tag": "0120_retention_events",
+      "breakpoints": true
     }
   ]
 }

@@ -1,14 +1,15 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Db } from '@/db/client'
-import { enforcementCases, projects, recordEvents } from '@/db/schema'
+import type { Db, Tx } from '@/db/client'
+import { applications, enforcementCases, projects, recordEvents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { civilDateSchema } from '@/features/packs/schema'
+import { loadPack } from '@/features/packs/loadPack'
+import { civilDateSchema, type RecordEventKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
-import { daysBetween } from '@/types/civilDate'
+import { type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export const PROJECT_EVENT_KINDS = ['building_removed', 'septic_replaced_or_removed'] as const
@@ -81,4 +82,54 @@ export async function recordRetentionEvent(
     )
     return ok(undefined)
   })
+}
+
+export type SystemEvent =
+  | {
+      kind: 'permit_expired' | 'occupancy_certificate_issued' | 'final_inspection_passed'
+      applicationId: string
+    }
+  | { kind: 'case_closed'; caseId: string }
+  | { kind: 'request_completed'; rtkRequestId: string }
+
+function seriesStartFrom(kind: RecordEventKind): boolean {
+  return loadPack().recordSeries.some(
+    (s) => s.retention.kind === 'event' && s.retention.events.includes(kind),
+  )
+}
+
+async function targetColumns(tx: Tx, event: SystemEvent) {
+  if ('caseId' in event) return { caseId: event.caseId }
+  if ('rtkRequestId' in event) return { rtkRequestId: event.rtkRequestId }
+  const [app] = await tx
+    .select({ projectId: applications.projectId })
+    .from(applications)
+    .where(eq(applications.id, event.applicationId))
+  return app === undefined ? null : { projectId: app.projectId, applicationId: event.applicationId }
+}
+
+function sameTarget(event: SystemEvent) {
+  if ('caseId' in event) return eq(recordEvents.caseId, event.caseId)
+  if ('rtkRequestId' in event) return eq(recordEvents.rtkRequestId, event.rtkRequestId)
+  return eq(recordEvents.applicationId, event.applicationId)
+}
+
+export async function recordSystemEvent(
+  tx: Tx,
+  event: SystemEvent,
+  occurredOn: CivilDate,
+): Promise<boolean> {
+  if (!seriesStartFrom(event.kind)) return false
+  const [existing] = await tx
+    .select({ id: recordEvents.id })
+    .from(recordEvents)
+    .where(and(sameTarget(event), eq(recordEvents.kind, event.kind)))
+    .limit(1)
+  if (existing !== undefined) return false
+  const target = await targetColumns(tx, event)
+  if (target === null) return false
+  await tx
+    .insert(recordEvents)
+    .values({ ...target, kind: event.kind, occurredOn, recordedByKind: 'system' })
+  return true
 }

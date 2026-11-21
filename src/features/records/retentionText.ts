@@ -9,6 +9,11 @@ const EVENT_TEXT: ReadonlyMap<RecordEventKind, string> = new Map([
   ['registration_expired', 'the registration expires'],
   ['septic_replaced_or_removed', 'the septic system is replaced or removed'],
   ['appeal_period_expired', 'the appeal period ends'],
+  ['permit_expired', 'the permit expires'],
+  ['occupancy_certificate_issued', 'the certificate of occupancy is issued'],
+  ['final_inspection_passed', 'the final inspection passes'],
+  ['case_closed', 'the enforcement case is closed'],
+  ['request_completed', 'the records request is completed'],
 ])
 
 export function retentionText(status: RetentionStatus | null): string {

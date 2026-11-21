@@ -10,6 +10,8 @@ import {
   warnClocksDueSoon,
 } from '@/features/notifications/clockNotices'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 import { ok } from '@/types/result'
@@ -59,6 +61,10 @@ async function stillLapsed(
   )
 }
 
+function expiresPermit(rule: ClockRule): boolean {
+  return rule.consequence.kind === 'lapse' && rule.startEvent === 'permit_issued'
+}
+
 async function hasUnresolvedReliance(tx: Tx, applicationId: string): Promise<boolean> {
   const [open] = await tx
     .select({ id: relianceLinks.planningApplicationId })
@@ -104,6 +110,12 @@ export async function expireLapsedPermits(
     if (!moved.ok) {
       await tx.update(clocks).set({ status: 'running' }).where(eq(clocks.id, clock.id))
       failures.push(`${clock.applicationId}: ${JSON.stringify(moved.error)}`)
+    } else if (expiresPermit(rule)) {
+      await recordSystemEvent(
+        tx,
+        { kind: 'permit_expired', applicationId: clock.applicationId },
+        today,
+      )
     }
   }
   return failures

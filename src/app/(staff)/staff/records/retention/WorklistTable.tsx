@@ -23,6 +23,14 @@ const AUTOMATIC_EVENTS: ReadonlyMap<RecordEventKind, string> = new Map([
   ['registration_expired', 'Chiban records this when the registration expires.'],
   ['application_withdrawn', 'Chiban records this when the application is withdrawn.'],
   ['application_denied', 'Chiban records this when the application is denied.'],
+  ['permit_expired', 'Chiban records this when the permit expires.'],
+  [
+    'occupancy_certificate_issued',
+    'Chiban records this when the certificate of occupancy is issued.',
+  ],
+  ['final_inspection_passed', 'Chiban records this when the final inspection passes.'],
+  ['case_closed', 'Chiban records this when the enforcement case is closed.'],
+  ['request_completed', 'Chiban records this when the records request is closed.'],
 ])
 
 function eventChoices(row: WorklistRow): [string, string][] {
