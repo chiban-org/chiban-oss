@@ -37,11 +37,18 @@ async function dueTextFor(
   db: DbOrTx,
   applicationId: string,
   ruleKey: string,
+  startDate: string,
 ): Promise<string | null> {
   const [clock] = await db
     .select({ currentDue: clocks.currentDue })
     .from(clocks)
-    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, ruleKey)))
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        eq(clocks.ruleKey, ruleKey),
+        eq(clocks.startDate, startDate),
+      ),
+    )
     .orderBy(desc(clocks.createdAt))
     .limit(1)
   return clock === undefined ? null : formatCivilDate(clock.currentDue)
@@ -81,7 +88,7 @@ export async function loadDeliveryGroups(
         first.decisionId === null
           ? `Decision after appeal, ${formatCivilDate(resolved.happenedOn)}`
           : `Board decision, voted ${formatCivilDate(resolved.happenedOn)}`,
-      dueText: await dueTextFor(db, applicationId, rule.dueRuleKey),
+      dueText: await dueTextFor(db, applicationId, rule.dueRuleKey, resolved.happenedOn),
       methods: rule.methods.map((value) => ({ value, label: METHOD_LABELS[value] })),
       rows: members.map((m) => ({
         id: m.id,

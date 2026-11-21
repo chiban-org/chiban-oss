@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { appealNodes, clocks, projectParties } from '@/db/schema'
 import { addAppealNode } from '@/features/appeals/graph'
+import { startClocksFor } from '@/features/clocks/startClocks'
 import { planDeliveries } from '@/features/decisions/delivery'
 import { loadDeliveryGroups } from '@/features/decisions/deliveryView'
 import { setActivePackForTest } from '@/features/packs/registry'
@@ -15,6 +16,7 @@ import {
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
   addAgentParty,
+  DUE_KEY,
   decideUnderXx,
   deliver,
   deliveriesOf,
@@ -169,6 +171,90 @@ describe('two decisions on one application', () => {
       await handle.db.select().from(clocks).where(eq(clocks.applicationId, made.applicationId))
     ).find((c) => c.startDate === '2027-04-25' && c.ruleKey === base.ruleKey)
     expect(afterSecond).toMatchObject({ status: 'met', metOn: '2027-04-27' })
+  })
+})
+
+describe('an appeal decision during the original delivery period', () => {
+  it('starts its own delivery clock while the original one runs and meets each on its own rows', async () => {
+    const made = await decideUnderXx(handle.db, world)
+    const [pb] = await handle.db
+      .insert(appealNodes)
+      .values({
+        kind: 'pb_decision',
+        applicationId: made.applicationId,
+        occurredOn: '2027-04-01',
+        createdBy: world.staff.userId,
+      })
+      .returning({ id: appealNodes.id })
+    const [appeal] = await handle.db
+      .insert(appealNodes)
+      .values({
+        kind: 'zba_appeal',
+        applicationId: made.applicationId,
+        parentId: pb?.id,
+        linkedPbNodeId: pb?.id,
+        occurredOn: '2027-04-05',
+        createdBy: world.staff.userId,
+      })
+      .returning({ id: appealNodes.id })
+    const added = await addAppealNode(
+      handle.db,
+      world.staff,
+      {
+        parentId: appeal?.id ?? '',
+        kind: 'zba_decision',
+        occurredOn: d('2027-04-18'),
+        outcome: 'approved',
+      },
+      signal,
+      BOARD_FIXTURE_NOW,
+    )
+    if (!added.ok) throw new Error(`not added: ${added.error}`)
+    const dueClocks = async () =>
+      (await handle.db.select().from(clocks).where(eq(clocks.applicationId, made.applicationId)))
+        .filter((c) => c.ruleKey === DUE_KEY)
+        .map((c) => ({ startDate: c.startDate, status: c.status, currentDue: c.currentDue }))
+        .sort((a, b) => a.startDate.localeCompare(b.startDate))
+    expect(await dueClocks()).toEqual([
+      { startDate: HEARING_DATE, status: 'running', currentDue: '2027-04-22' },
+      { startDate: '2027-04-18', status: 'running', currentDue: '2027-04-25' },
+    ])
+    const groups = await loadDeliveryGroups(handle.db, made.applicationId, signal)
+    expect(groups.map((g) => [g.source, g.dueText])).toEqual([
+      ['decision', 'April 22, 2027'],
+      ['appeal', 'April 25, 2027'],
+    ])
+    const rows = await deliveriesOf(handle.db, made.applicationId)
+    for (const row of rows.filter((r) => r.appealNodeId === added.value.nodeId)) {
+      expect((await deliver(handle.db, world.staff, row.id, '2027-04-20')).ok).toBe(true)
+    }
+    expect(await dueClocks()).toEqual([
+      { startDate: HEARING_DATE, status: 'running', currentDue: '2027-04-22' },
+      { startDate: '2027-04-18', status: 'met', currentDue: '2027-04-25' },
+    ])
+  })
+})
+
+describe('a second board vote during the original delivery period', () => {
+  it('starts a delivery clock for the later vote and none twice for the same vote', async () => {
+    const made = await decideUnderXx(handle.db, world)
+    for (const on of ['2027-04-19', '2027-04-19', HEARING_DATE]) {
+      await handle.db.transaction((tx) =>
+        startClocksFor(tx, made.applicationId, 'board_vote', d(on), signal, undefined, undefined, {
+          outcome: 'approved',
+        }),
+      )
+    }
+    const starts = (
+      await handle.db.select().from(clocks).where(eq(clocks.applicationId, made.applicationId))
+    )
+      .filter((c) => c.ruleKey === DUE_KEY)
+      .map((c) => [c.startDate, c.status])
+      .sort()
+    expect(starts).toEqual([
+      [HEARING_DATE, 'running'],
+      ['2027-04-19', 'running'],
+    ])
   })
 })
 

@@ -3,7 +3,7 @@ import type { Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
-import { createClock } from '@/features/clocks/startClocks'
+import { clockStartedOn, createClock } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { DecisionOutcome } from '@/features/packs/schema'
@@ -49,18 +49,7 @@ export async function startDeliveryClock(
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return
   if (!effectiveBindings(app.typeBody, pack).includes(rule.key)) return
-  const [running] = await tx
-    .select({ id: clocks.id })
-    .from(clocks)
-    .where(
-      and(
-        eq(clocks.applicationId, input.applicationId),
-        eq(clocks.ruleKey, rule.key),
-        eq(clocks.status, 'running'),
-      ),
-    )
-    .limit(1)
-  if (running !== undefined) return
+  if (await clockStartedOn(tx, input.applicationId, rule.key, input.onDate)) return
   const facts = {
     ...(await factsWithDeterminations(tx, input.applicationId, app.facts)),
     outcome: input.outcome,

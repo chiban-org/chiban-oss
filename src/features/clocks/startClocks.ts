@@ -46,6 +46,31 @@ export async function resolveClockLength(
 
 const ONCE_PER_APPLICATION: readonly StartEvent[] = ['project_final_approval']
 
+function deliveryDueKeys(pack: Pack): ReadonlySet<string> {
+  return new Set(pack.rules.flatMap((r) => (r.kind === 'decision_delivery' ? [r.dueRuleKey] : [])))
+}
+
+export async function clockStartedOn(
+  tx: Tx,
+  applicationId: string,
+  ruleKey: string,
+  startDate: CivilDate,
+): Promise<boolean> {
+  const [found] = await tx
+    .select({ id: clocks.id })
+    .from(clocks)
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        eq(clocks.ruleKey, ruleKey),
+        eq(clocks.startDate, startDate),
+        ne(clocks.status, 'superseded'),
+      ),
+    )
+    .limit(1)
+  return found !== undefined
+}
+
 export async function startClocksFor(
   tx: Tx,
   applicationId: string,
@@ -74,8 +99,11 @@ export async function startClocksFor(
     .from(clocks)
     .where(and(eq(clocks.applicationId, applicationId), started))
   const existingKeys = new Set(existing.map((c) => c.ruleKey))
+  const perSource = deliveryDueKeys(pack)
   for (const rule of rules) {
-    if (existingKeys.has(rule.key)) continue
+    if (perSource.has(rule.key)) {
+      if (await clockStartedOn(tx, applicationId, rule.key, onDate)) continue
+    } else if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
 }
