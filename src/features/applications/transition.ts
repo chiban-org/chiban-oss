@@ -16,6 +16,7 @@ import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnClassification } from '@/features/authz/classificationScope'
 import { CLOSURE_GATE_KEY } from '@/features/gates/coreGates'
 import { DOCUMENT_GATE_KEYS } from '@/features/gates/documentGates'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
@@ -94,13 +95,14 @@ async function isAllowedActor(
   if (boardOf(app) !== null && BOARD_RECORD_STATES.includes(to)) {
     return await hasCapability(tx, actor.userId, 'board.record', signal)
   }
+  const classification = app.typeBody.classification
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
-    return await hasCapability(tx, actor.userId, 'permit.issue', signal)
+    return await mayActOnClassification(tx, actor, 'permit.issue', classification, signal)
   }
   if (to === 'closed') {
     return (
-      (await hasCapability(tx, actor.userId, 'permit.issue', signal)) ||
-      (await hasCapability(tx, actor.userId, 'inspection.record', signal))
+      (await mayActOnClassification(tx, actor, 'permit.issue', classification, signal)) ||
+      (await mayActOnClassification(tx, actor, 'inspection.record', classification, signal))
     )
   }
   if (to === 'withdrawn') {

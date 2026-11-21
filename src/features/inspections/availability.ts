@@ -1,10 +1,13 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { inspections, userRoles, users } from '@/db/schema'
+import { plumbingInspectorOwns } from '@/features/authz/classificationScope'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import { schedulingDates, slotStarts } from '@/features/inspections/slots'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import type { CivilDate } from '@/types/civilDate'
+
+const INSPECTOR_ROLES = ['inspector', 'plumbing_inspector']
 
 export interface DayAvailability {
   date: CivilDate
@@ -22,7 +25,22 @@ export async function listInspectors(
     .selectDistinct({ userId: users.id, name: users.displayName })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .where(and(eq(userRoles.role, 'inspector'), eq(users.isActive, true)))
+    .where(and(inArray(userRoles.role, INSPECTOR_ROLES), eq(users.isActive, true)))
+    .orderBy(users.displayName)
+}
+
+export async function listInspectorsFor(
+  db: DbOrTx,
+  classification: string | undefined,
+  signal: AbortSignal,
+): Promise<{ userId: string; name: string }[]> {
+  signal.throwIfAborted()
+  const role = plumbingInspectorOwns(classification) ? 'plumbing_inspector' : 'inspector'
+  return await db
+    .selectDistinct({ userId: users.id, name: users.displayName })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .where(and(eq(userRoles.role, role), eq(users.isActive, true)))
     .orderBy(users.displayName)
 }
 

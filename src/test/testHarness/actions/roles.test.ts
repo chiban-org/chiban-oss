@@ -6,6 +6,7 @@ describe('roles from the default grants', () => {
     expect(rolesLacking('config.edit')).toEqual([
       'staff',
       'inspector',
+      'plumbing_inspector',
       'finance',
       'records_custodian',
       'reviewer',

@@ -14,7 +14,11 @@ import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { Actor } from '@/features/auth/actor'
 import { getPublished } from '@/features/config/store'
-import { mayUseCounter } from '@/features/counter/counterAccess'
+import {
+  mayUseCounter,
+  mayUseCounterFor,
+  mayUseCounterForApplication,
+} from '@/features/counter/counterAccess'
 import {
   createCounterApplication,
   retryableApplication,
@@ -168,6 +172,7 @@ export async function quickIssue(
   const type = await getPublished(db, 'application_type', input.applicationTypeKey, signal)
   if (type === null) return err('not_published')
   const typeBody = type.body as ApplicationTypeBody
+  if (!(await mayUseCounterFor(db, actor, typeBody.classification, signal))) return err('forbidden')
   if (input.license === undefined && requiresTradeLicense(typeBody)) return err('license_required')
   if (input.license !== undefined && input.license.result !== 'active') {
     return err('license_not_active')
@@ -224,6 +229,9 @@ export async function completeQuickIssue(
 ): Promise<Result<QuickIssueResult, QuickIssueError>> {
   signal.throwIfAborted()
   if (!(await mayUseCounter(db, actor, signal))) return err('forbidden')
+  if (!(await mayUseCounterForApplication(db, actor, input.applicationId, signal))) {
+    return err('forbidden')
+  }
   const moved = await transactionResult(db, (tx) =>
     issueInTransaction(
       tx,

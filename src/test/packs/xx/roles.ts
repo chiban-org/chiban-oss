@@ -5,6 +5,7 @@ export const XX_ROLES: PackRoles = {
     buildingPermit: 'xx.building_permit',
     tradePermit: null,
     enforcement: [],
+    plumbingInspectorOwns: [],
   },
   rules: {
     buildingPermitDecision: 'xx.bp.decision',

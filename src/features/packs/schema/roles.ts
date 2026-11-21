@@ -7,6 +7,7 @@ export const ClassificationRolesSchema = z.object({
   buildingPermit: absentOr,
   tradePermit: absentOr,
   enforcement: z.array(key),
+  plumbingInspectorOwns: z.array(key),
 })
 
 export const RuleRolesSchema = z.object({

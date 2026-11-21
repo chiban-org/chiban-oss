@@ -73,6 +73,18 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'enforcement.issue_order',
     'enforcement.record_service',
   ],
+  plumbing_inspector: [
+    'permit.issue',
+    'payment.collect',
+    'project.manage_parties',
+    'application.amend_after_review',
+    'regional_impact.determine',
+    'inspection.schedule',
+    'inspection.record',
+    'enforcement.manage',
+    'enforcement.issue_order',
+    'enforcement.record_service',
+  ],
   finance: [
     'payment.refund_void_correct',
     'payment.collect',

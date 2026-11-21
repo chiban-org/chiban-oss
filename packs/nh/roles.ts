@@ -5,6 +5,7 @@ export const NH_ROLES: PackRoles = {
     buildingPermit: 'nh.building_permit',
     tradePermit: 'nh.trade_permit',
     enforcement: ['nh.enforcement_zoning', 'nh.enforcement_building_code'],
+    plumbingInspectorOwns: [],
   },
   rules: {
     buildingPermitDecision: 'nh.bp.decision',

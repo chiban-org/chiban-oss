@@ -5,6 +5,7 @@ export const FULL_RECORD_ROLES = [
   'admin',
   'staff',
   'inspector',
+  'plumbing_inspector',
   'finance',
   'records_custodian',
 ] as const satisfies readonly Role[]

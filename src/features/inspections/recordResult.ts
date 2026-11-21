@@ -6,7 +6,7 @@ import { isSuspended } from '@/features/appeals/suspension'
 import type { CoreState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { requireCapability } from '@/features/authz/capabilities'
+import { mayActOnInspection } from '@/features/authz/classificationScope'
 import { getVersion } from '@/features/config/store'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
@@ -195,8 +195,9 @@ export async function recordInspectionResult(
   deps: { now?: Date } = {},
 ): Promise<Result<RecordResultOutcome, RecordResultError>> {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'inspection.record', signal)
-  if (!allowed.ok) return err('forbidden')
+  if (!(await mayActOnInspection(db, actor, 'inspection.record', input.inspectionId, signal))) {
+    return err('forbidden')
+  }
   const today = await townToday(db, deps.now ?? new Date(), signal)
   return await transactionResult(db, (tx) => recordInTransaction(tx, actor, input, today, signal))
 }

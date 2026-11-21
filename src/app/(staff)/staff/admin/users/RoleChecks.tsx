@@ -1,5 +1,6 @@
 import { CheckField } from '@/components/staff/fields'
-import { type Role, STAFF_ROLES } from '@/constants/roles'
+import type { Role } from '@/constants/roles'
+import { packStaffRoles } from '@/features/authz/classificationScope'
 import { recordsLaw } from '@/features/packs/vocabulary'
 import { roleLabel } from '@/features/staffNav/roleLabels'
 
@@ -8,6 +9,7 @@ export function roleHints(): Readonly<Partial<Record<Role, string>>> {
     admin: 'Settings, exports, and these accounts',
     staff: 'Applications, permits, boards, and enforcement',
     inspector: 'Inspections and enforcement orders',
+    plumbing_inspector: 'Plumbing permits, their inspections, and enforcement orders',
     finance: 'Payments, refunds, and cash reports',
     records_custodian: `Holds, retention, and ${recordsLaw()}`,
     reviewer: 'Reviews assigned to them',
@@ -26,7 +28,7 @@ export function RoleChecks({
   return (
     <fieldset className="grid gap-3">
       <legend className={legendHidden ? 'sr-only' : 'mb-2 text-sm font-semibold'}>Roles</legend>
-      {STAFF_ROLES.map((role) => (
+      {packStaffRoles().map((role) => (
         <CheckField
           key={role}
           name="roles"
