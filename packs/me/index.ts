@@ -56,6 +56,8 @@ export const ME_PACK: StatePack = {
     recordsRequest: 'FOAA request',
     governingBody: 'municipal officers',
     rehearing: { noun: 'reconsideration', capitalised: 'Reconsideration' },
+    significantDecisionQuestion:
+      'Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?',
     significantDecisionHelp: SIGNIFICANT_DECISION_HELP,
     citations: {
       exerciseFloorAuthority: 'town ordinance',

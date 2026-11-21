@@ -60,6 +60,7 @@ export interface PackLabels {
   recordsRequest: string
   governingBody: string
   rehearing: { noun: string; capitalised: string }
+  significantDecisionQuestion: string | null
   significantDecisionHelp: string | null
   citations: PackCitations
 }

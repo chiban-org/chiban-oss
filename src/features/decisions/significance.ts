@@ -1,10 +1,8 @@
 import { activePack } from '@/features/packs/registry'
 import type { DecisionOutcome, ProceedingClassification } from '@/features/packs/schema'
 
-export const SIGNIFICANCE_QUESTION =
-  'Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?'
-
 export interface SignificanceQuestion {
+  question: string
   help: string | null
 }
 
@@ -15,15 +13,16 @@ export function significanceApplies(classification: ProceedingClassification | u
 export function significanceQuestion(
   classification: ProceedingClassification | undefined,
 ): SignificanceQuestion | null {
-  if (!significanceApplies(classification)) return null
-  return { help: activePack().labels.significantDecisionHelp }
+  const { significantDecisionQuestion, significantDecisionHelp } = activePack().labels
+  if (!significanceApplies(classification) || significantDecisionQuestion === null) return null
+  return { question: significantDecisionQuestion, help: significantDecisionHelp }
 }
 
 function asksSignificance(
   classification: ProceedingClassification | undefined,
   outcome: DecisionOutcome,
 ): boolean {
-  return significanceApplies(classification) && !outcome.startsWith('rehearing')
+  return significanceQuestion(classification) !== null && !outcome.startsWith('rehearing')
 }
 
 export function storedSignificance(

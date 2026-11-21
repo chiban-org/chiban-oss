@@ -331,7 +331,7 @@ A clock whose length is `fromSetting` was already started with the town's value.
 
 ### Significant decisions
 
-`significanceApplies: true` on a classification makes recording a decision require an answer to "Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?". The answer is stored on the decision, and the form shows `StatePack.labels.significantDecisionHelp` under the question, or nothing when the label is `null`. Other classifications are not asked.
+`significanceApplies: true` on a classification makes recording a decision require an answer to the question in `StatePack.labels.significantDecisionQuestion`. Maine asks "Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?". The answer is stored on the decision, and the form shows `StatePack.labels.significantDecisionHelp` under the question, or nothing when that label is `null`. When `significantDecisionQuestion` is `null`, no classification is asked and no answer is stored. Other classifications are not asked.
 
 `AppealRoute.when.significant` matches the decision's answer, or the answer on the decision a reconsideration started from, and it counts toward the route's specificity. Clock rules read the same answer through the `significantDecision` fact. Maine gives its Planning Board decisions four court routes and four windows: approval and denial, each with and without significance.
 
@@ -442,7 +442,7 @@ A starter is a complete application type in one object: the application type, it
 
 ## Labels, spatial reference and docs folder
 
-`StatePack.labels` holds the words and citations the engine shows on screen so that no state's names are written into engine code. Besides the environmental agency names and the license number label, it has `recordsLaw`, the short name of the public records law, `recordsRequest`, what a request under it is called, `governingBody`, the town's elected body, and `significantDecisionHelp`, the help text under the significance question, or `null`. A pack for a state with a different records law would write `recordsLaw: 'Open Records'`, `recordsRequest: 'open records request'` and `governingBody: 'town council'`. Its `citations` object has `exerciseFloorAuthority`, the statute for the minimum period a board approval stays valid, and `abutterListIssued`, a label and a URL, or `null` for the URL, for the authority behind the abutter list.
+`StatePack.labels` holds the words and citations the engine shows on screen so that no state's names are written into engine code. Besides the environmental agency names and the license number label, it has `recordsLaw`, the short name of the public records law, `recordsRequest`, what a request under it is called, `governingBody`, the town's elected body, `significantDecisionQuestion`, the significance question, or `null` when the state has none, and `significantDecisionHelp`, the help text under that question, or `null`. A pack for a state with a different records law would write `recordsLaw: 'Open Records'`, `recordsRequest: 'open records request'` and `governingBody: 'town council'`. Its `citations` object has `exerciseFloorAuthority`, the statute for the minimum period a board approval stays valid, and `abutterListIssued`, a label and a URL, or `null` for the URL, for the authority behind the abutter list.
 
 `StatePack.recordsRequests` holds `acknowledgement`, described under [Records request acknowledgement](#records-request-acknowledgement).
 

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { appealNodes, boardDecisions } from '@/db/schema'
 import { recordDecision } from '@/features/decisions/recordDecision'
-import { SIGNIFICANCE_QUESTION } from '@/features/decisions/significance'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { loadHearingView } from '@/features/hearings/views'
 import { activePack } from '@/features/packs/registry'
@@ -18,6 +17,7 @@ import {
   XX_SIGNIFICANT_COURT,
   XX_SIGNIFICANT_DENIAL,
   XX_SIGNIFICANT_HELP,
+  XX_SIGNIFICANT_QUESTION,
   XX_SIGNIFICANT_ROUTES,
   XX_SIGNIFICANT_WINDOWS,
 } from '@/test/packs/xx/significance'
@@ -135,10 +135,10 @@ describe('appeal routes for significant land use decisions', () => {
   it('asks the question with the pack help on the decision form', async () => {
     const plan = await underReview(SUB_TYPE_KEY)
     const panel = await loadApplicationHearingsPanel(fw.handle.db, fw.world.staff, plan, signal)
-    expect(panel?.noHearing?.significanceQuestion).toEqual({ help: XX_SIGNIFICANT_HELP })
-    expect(SIGNIFICANCE_QUESTION).toBe(
-      'Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?',
-    )
+    expect(panel?.noHearing?.significanceQuestion).toEqual({
+      question: XX_SIGNIFICANT_QUESTION,
+      help: XX_SIGNIFICANT_HELP,
+    })
   })
 
   it('does not ask or store the flag for another classification', async () => {

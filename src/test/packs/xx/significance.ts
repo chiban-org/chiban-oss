@@ -9,6 +9,7 @@ const CITATION = {
 }
 
 export const XX_SIGNIFICANT_HELP = 'Vellmora Land Act 30 lists the large projects.'
+export const XX_SIGNIFICANT_QUESTION = 'Is this a large project under Vellmora Land Act 30?'
 
 export const XX_BOARD_COURT = courtWindow('xx.appeal.board_court', 'Court appeal', 30, {
   startEvent: 'board_vote',
@@ -90,12 +91,18 @@ const CLASSIFICATIONS = withSignificantSubdivision(WINDOW_KEYS).map((c) =>
   c.key === 'xx.board_variance' ? { ...c, hearing: 'optional' as const, requiredSubsteps: [] } : c,
 )
 
+const SIGNIFICANT_LABELS = {
+  ...XX_PACK.labels,
+  significantDecisionQuestion: XX_SIGNIFICANT_QUESTION,
+  significantDecisionHelp: XX_SIGNIFICANT_HELP,
+}
+
 export const XX_SIGNIFICANT_ROUTES: StatePack = xxPackWith({
   manifest: { rules: RULES, classifications: CLASSIFICATIONS },
   pack: {
     ruleAreas: [{ title: 'All rules', rules: RULES }],
     appealRoutes: ROUTES,
-    labels: { ...XX_PACK.labels, significantDecisionHelp: XX_SIGNIFICANT_HELP },
+    labels: SIGNIFICANT_LABELS,
   },
 })
 
@@ -132,5 +139,5 @@ export const XX_SIGNIFICANT_WINDOWS: StatePack = xxPackWith({
     rules: DENIAL_RULES,
     classifications: withSignificantSubdivision(DENIAL_KEYS),
   },
-  pack: { ruleAreas: [{ title: 'All rules', rules: DENIAL_RULES }] },
+  pack: { ruleAreas: [{ title: 'All rules', rules: DENIAL_RULES }], labels: SIGNIFICANT_LABELS },
 })
