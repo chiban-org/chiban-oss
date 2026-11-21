@@ -88,23 +88,42 @@ export function computeRuleDue(
   })
 }
 
-export function rulesForEvent(
-  rules: readonly PackRule[],
-  event: StartEvent,
-  bound: ReadonlySet<string>,
-  facts?: ProjectFacts,
-  hearingScheduled = false,
-): ClockRule[] {
+interface EventSelection {
+  event: StartEvent
+  bound: ReadonlySet<string>
+  facts: ProjectFacts | undefined
+  hearingDependent: boolean
+}
+
+function selectRules(rules: readonly PackRule[], s: EventSelection): ClockRule[] {
   const best = new Map<string, ClockRule>()
   for (const r of rules) {
-    if (r.kind !== 'clock' || r.startEvent !== event || !bound.has(r.key)) continue
-    if (r.onlyIfHearingScheduled === true && !hearingScheduled) continue
-    if (r.onlyWhen !== undefined && (facts === undefined || !factMatches(r.onlyWhen, facts)))
+    if (r.kind !== 'clock' || r.startEvent !== s.event || !s.bound.has(r.key)) continue
+    if ((r.onlyIfHearingScheduled === true) !== s.hearingDependent) continue
+    if (r.onlyWhen !== undefined && (s.facts === undefined || !factMatches(r.onlyWhen, s.facts)))
       continue
     const held = best.get(r.key)
     if (held === undefined || r.version > held.version) best.set(r.key, r)
   }
   return [...best.values()]
+}
+
+export function rulesForEvent(
+  rules: readonly PackRule[],
+  event: StartEvent,
+  bound: ReadonlySet<string>,
+  facts?: ProjectFacts,
+): ClockRule[] {
+  return selectRules(rules, { event, bound, facts, hearingDependent: false })
+}
+
+export function hearingDependentRulesForEvent(
+  rules: readonly PackRule[],
+  event: StartEvent,
+  bound: ReadonlySet<string>,
+  facts?: ProjectFacts,
+): ClockRule[] {
+  return selectRules(rules, { event, bound, facts, hearingDependent: true })
 }
 
 export function eventMovesClocks(rules: readonly PackRule[], event: StartEvent): boolean {

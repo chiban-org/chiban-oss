@@ -2,9 +2,9 @@ import type { Tx } from '@/db/client'
 import { loadApplicationContext } from '@/features/applications/context'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import {
+  hearingDependentRulesForEvent,
   keysOnlyIfHearingScheduled,
   keysSatisfiedByInspection,
-  rulesForEvent,
 } from '@/features/clocks/ruleEngine'
 import { clockStartedOn, createClock, markClockMet } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
@@ -24,9 +24,7 @@ export async function startHearingScheduledClocks(
   if (app === null || acceptedOn === null) return
   const facts = await factsWithDeterminations(tx, applicationId, app.facts)
   const bound = new Set(effectiveBindings(app.typeBody, pack))
-  const rules = rulesForEvent(pack.rules, 'application_accepted', bound, facts, true).filter(
-    (r) => r.onlyIfHearingScheduled === true,
-  )
+  const rules = hearingDependentRulesForEvent(pack.rules, 'application_accepted', bound, facts)
   for (const rule of rules) {
     if (await clockStartedOn(tx, applicationId, rule.key, acceptedOn)) continue
     await createClock(

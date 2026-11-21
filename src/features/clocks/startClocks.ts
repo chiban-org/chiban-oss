@@ -13,6 +13,7 @@ import {
   computeRuleDue,
   eventMovesClocks,
   hasLocalBound,
+  hearingDependentRulesForEvent,
   keysCancelledBy,
   keysOnlyIfHearingScheduled,
   type ResolvedLength,
@@ -92,7 +93,10 @@ export async function startClocksFor(
   const hearingScheduled =
     keysOnlyIfHearingScheduled(pack.rules).length > 0 &&
     (await hasElectedHearing(tx, applicationId))
-  const rules = rulesForEvent(pack.rules, event, bound, facts, hearingScheduled)
+  const rules = [
+    ...rulesForEvent(pack.rules, event, bound, facts),
+    ...(hearingScheduled ? hearingDependentRulesForEvent(pack.rules, event, bound, facts) : []),
+  ]
   const started = ONCE_PER_APPLICATION.includes(event)
     ? ne(clocks.status, 'superseded')
     : eq(clocks.status, 'running')
