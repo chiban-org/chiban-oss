@@ -1,4 +1,9 @@
-import { doc, PUBLIC_SEWER, permitStarter } from '@packs/me/starters/permitParts'
+import {
+  doc,
+  PUBLIC_SEWER,
+  permitStarter,
+  startOfWorkChecklist,
+} from '@packs/me/starters/permitParts'
 
 export const SEASONAL_CONVERSION_STARTER = permitStarter({
   id: 'me.starter.seasonal_conversion',
@@ -32,6 +37,7 @@ export const SEASONAL_CONVERSION_STARTER = permitStarter({
       blocksIssuance: true,
     },
   ],
+  checklists: [startOfWorkChecklist('sc')],
   documents: [
     doc('wastewater_system_information', 'Information on the existing wastewater disposal system', {
       help: 'The local plumbing inspector will say what is needed for this lot.',

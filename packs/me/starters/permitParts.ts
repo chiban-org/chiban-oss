@@ -219,3 +219,13 @@ export function checklist(input: ChecklistInput): ChecklistBody {
     })),
   }
 }
+
+export function startOfWorkChecklist(slug: string): ChecklistBody {
+  return checklist({
+    slug,
+    inspectionType: 'start_of_work',
+    label: 'Start of work (Chiban starting checklist, the town can edit it)',
+    items: ['Work authorized by the permit has begun on site'],
+    final: true,
+  })
+}
