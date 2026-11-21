@@ -5,7 +5,7 @@ import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack, packById, withPackForTest } from '@/features/packs/registry'
 import { PackManifestSchema } from '@/features/packs/schema'
-import { addDays, type CivilDate } from '@/types/civilDate'
+import type { CivilDate } from '@/types/civilDate'
 import { ME_ABUTTER_PARAMS } from './abutters/params'
 import { ME_CODE_EDITIONS } from './codeEditions'
 import { ME_PACK } from './index'
@@ -149,7 +149,7 @@ describe('me pack', () => {
       'ASHRAE 90.1 2019',
     ])
     const previous = ME_CODE_EDITIONS.find((e) => e.key === 'me.edition.2018_01_23')
-    expect(previous?.enforcementFrom).toBe(addDays('2018-01-23' as CivilDate, 90))
+    expect(previous?.enforcementFrom).toBeNull()
     expect(previous?.amendmentPackages).toEqual([
       { effectiveFrom: '2021-05-10', label: 'IECC 2015 and IMC 2015 effective 2021-05-10' },
     ])

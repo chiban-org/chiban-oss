@@ -13,7 +13,7 @@ export const ME_CODE_EDITIONS: CodeEditionEntry[] = [
     label: 'IBC 2015, IEBC 2015, IRC 2015 (effective 2018-01-23)',
     status: 'verified',
     effectiveFrom: d('2018-01-23'),
-    enforcementFrom: d('2018-04-23'),
+    enforcementFrom: null,
     components: [
       { code: 'IBC', edition: '2015' },
       { code: 'IEBC', edition: '2015' },
