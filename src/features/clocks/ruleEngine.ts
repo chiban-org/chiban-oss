@@ -149,14 +149,31 @@ export function hearingDependentRulesForEvent(
   return selectRules(rules, { event, bound, facts, hearingDependent: true })
 }
 
+function cancelEvent(rule: ClockRule): StartEvent | undefined {
+  const by = rule.cancelledBy
+  return typeof by === 'object' ? by.event : by
+}
+
+function cancelsOn(rule: ClockRule, event: StartEvent, facts: ProjectFacts | undefined): boolean {
+  const by = rule.cancelledBy
+  if (typeof by !== 'object') return by === event
+  return by.event === event && facts !== undefined && onlyWhenMatches(by.onlyWhen, facts)
+}
+
 export function eventMovesClocks(rules: readonly PackRule[], event: StartEvent): boolean {
   return rules.some(
-    (r) => r.kind === 'clock' && (r.startEvent === event || r.cancelledBy === event),
+    (r) => r.kind === 'clock' && (r.startEvent === event || cancelEvent(r) === event),
   )
 }
 
-export function keysCancelledBy(rules: readonly PackRule[], event: StartEvent): string[] {
-  return rules.filter((r) => r.kind === 'clock' && r.cancelledBy === event).map((r) => r.key)
+export function keysCancelledBy(
+  rules: readonly PackRule[],
+  event: StartEvent,
+  facts?: ProjectFacts,
+): string[] {
+  return rules
+    .filter((r): r is ClockRule => r.kind === 'clock' && cancelsOn(r, event, facts))
+    .map((r) => r.key)
 }
 
 export function keysSatisfiedByDecision(rules: readonly PackRule[]): string[] {

@@ -8,6 +8,7 @@ import {
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
 import { significanceForRoutes } from '@/features/appeals/routeSignificance'
+import { windowAnchor } from '@/features/appeals/windowAnchor'
 import { WAITING_START_EVENTS } from '@/features/appeals/windowStart'
 import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
@@ -185,11 +186,12 @@ export async function ruleWindowDue(
   signal: AbortSignal,
 ): Promise<CivilDate> {
   const rule = ruleByKey(loadPack(), ruleKey)
+  const anchor = await windowAnchor(db, parent, ruleKey)
   const startOn =
     ruleWaitsForFinalApproval(ruleKey) && finality !== null
       ? finality.finalOn
-      : (parent.occurredOn as CivilDate)
-  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return parent.occurredOn as CivilDate
+      : (anchor.occurredOn as CivilDate)
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return anchor.occurredOn as CivilDate
   return computeRuleDue(
     rule,
     await resolvedLength(db, rule, signal),
@@ -227,12 +229,13 @@ export async function windowDue(
   signal: AbortSignal,
 ): Promise<CivilDate> {
   const { applicationId, ruleKey, finality } = window
+  const anchor = await windowAnchor(tx, parent, ruleKey)
   if (applicationId !== null) {
     const later = laterStartEvent(ruleKey)
     const started =
-      later === null ? eq(clocks.startDate, parent.occurredOn) : eq(clocks.startEvent, later)
+      later === null ? eq(clocks.startDate, anchor.occurredOn) : eq(clocks.startEvent, later)
     const due = await startedClockDue(tx, applicationId, ruleKey, started)
     if (due !== null) return due
   }
-  return await ruleWindowDue(tx, parent, ruleKey, finality, signal)
+  return await ruleWindowDue(tx, anchor, ruleKey, finality, signal)
 }

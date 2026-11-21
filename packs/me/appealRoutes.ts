@@ -55,6 +55,24 @@ export const ME_APPEAL_ROUTES: AppealRoute[] = [
     citation: SECTION_2691('(F), (H)'),
   },
   {
+    from: 'rehearing_outcome',
+    when: { outcome: 'denied', label: 'reconsideration refused' },
+    to: 'court_petition',
+    windowRuleKey: 'me.appeal.boa_court',
+    citation: SECTION_2691('(G), (H)'),
+  },
+  {
+    from: 'rehearing_outcome',
+    when: {
+      outcome: 'denied',
+      finalReviewBoard: 'planning_board',
+      label: 'reconsideration refused, the planning board gave the last municipal approval',
+    },
+    to: 'court_petition',
+    windowRuleKey: 'me.appeal.boa_court_after_planning_board',
+    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec4482A },
+  },
+  {
     from: 'pb_decision',
     when: { outcome: 'denied', label: 'denied' },
     to: 'court_petition',

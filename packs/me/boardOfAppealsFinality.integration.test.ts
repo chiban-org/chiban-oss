@@ -48,6 +48,31 @@ async function decisionNode(applicationId: string) {
   return node
 }
 
+async function addStep(
+  applicationId: string,
+  step: { parentId: string; kind: 'rehearing_motion' | 'rehearing_outcome' | 'court_petition' },
+  on: string,
+  outcome?: string,
+) {
+  const added = await addAppealNode(
+    handle.db,
+    world.staff,
+    {
+      ...step,
+      occurredOn: on as CivilDate,
+      appellantName: 'Fernhollow Lake Association',
+      ...(outcome === undefined ? {} : { outcome }),
+    },
+    signal,
+    BOARD_FIXTURE_NOW,
+  )
+  if (!added.ok) throw new Error(`${step.kind}: ${added.error}`)
+  const rows = await loadGraphNodeRows(handle.db, applicationId)
+  const row = rows.find((n) => n.id === added.value.nodeId)
+  if (row === undefined) throw new Error('no step row')
+  return row
+}
+
 async function petitionUntimely(applicationId: string, on: string) {
   const added = await addAppealNode(
     handle.db,
@@ -118,5 +143,38 @@ describe('a standalone approved Board of Appeals variance', () => {
     const deadlines = await portalDeadlines(variance.applicationId)
     expect(deadlines.filter((l) => l.includes('starts after'))).toEqual([])
     expect(deadlines).toContain(`${label(BOA_COURT)}, due June 1, 2027.`)
+  })
+})
+
+describe('a Board of Appeals variance whose reconsideration the board refuses late', () => {
+  it('keeps the 45-day window from the original vote', async () => {
+    const variance = await decidedBoa(handle.db, world)
+    const id = variance.applicationId
+    const decision = await decisionNode(id)
+    const motion = await addStep(
+      id,
+      { parentId: decision.id, kind: 'rehearing_motion' },
+      '2027-04-20',
+    )
+    const refused = await addStep(
+      id,
+      { parentId: motion.id, kind: 'rehearing_outcome' },
+      '2027-05-25',
+      'denied',
+    )
+    expect(await clocksOf(handle.db, id, BOA_COURT)).toMatchObject([
+      { status: 'running', startDate: '2027-04-15', currentDue: '2027-06-01' },
+    ])
+    expect(await clocksOf(handle.db, id, 'me.appeal.boa_court_after_reconsideration')).toEqual([])
+    expect(await nodeWindow(handle.db, refused, signal)).toMatchObject({
+      label: label(BOA_COURT),
+      dueText: formatCivilDate('2027-06-01'),
+    })
+    const petition = await addStep(
+      id,
+      { parentId: refused.id, kind: 'court_petition' },
+      '2027-06-05',
+    )
+    expect(petition.untimely).toBe(true)
   })
 })

@@ -15,6 +15,7 @@ import {
   ruleWindowDue,
   windowRoutesFrom,
 } from '@/features/appeals/routeWindow'
+import { windowAnchor } from '@/features/appeals/windowAnchor'
 import {
   AWAITING_FINAL_APPROVAL,
   WAITING_START_EVENTS,
@@ -51,8 +52,9 @@ async function dueText(
     finality === null &&
     isApprovingOutcome(node.outcome)
   if (waiting) return AWAITING_FINAL_APPROVAL
+  const anchor = await windowAnchor(db, node, ruleKey)
   const clocked =
-    node.applicationId === null ? null : clockedWindowDue(node.windowClocks ?? [], node, ruleKey)
+    node.applicationId === null ? null : clockedWindowDue(node.windowClocks ?? [], anchor, ruleKey)
   const startsLater = clocked === null ? notStartedText(node, ruleKey) : null
   if (startsLater !== null) return startsLater
   return formatCivilDate(clocked ?? (await ruleWindowDue(db, node, ruleKey, finality, signal)))
@@ -70,7 +72,8 @@ export async function nodeWindow(
     : null
   const bySpecificity =
     DECISION_KINDS.includes(node.kind) ||
-    (node.kind === 'rehearing_outcome' && (significant !== null || finality !== null))
+    (node.kind === 'rehearing_outcome' &&
+      (significant !== null || finality !== null || routes.some((r) => r.when === undefined)))
   const route = bySpecificity
     ? mostSpecificRoute(routes, routeFacts(node, false, finality, significant))
     : routes[0]

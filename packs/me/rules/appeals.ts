@@ -47,6 +47,8 @@ const COURT_ENLARGES_80B =
   'Only the court may enlarge this period, under M.R. Civ. P. 6(b) as Rule 80B(b) allows.'
 
 const PLANNING_BOARD_LAST: FactCondition = { fact: 'finalReviewBoard', in: ['planning_board'] }
+const RECONSIDERED: FactCondition = { fact: 'outcome', in: ['rehearing_granted'] }
+const CANCELLED_IF_RECONSIDERED = { event: 'rehearing_vote', onlyWhen: RECONSIDERED } as const
 const NOT_SIGNIFICANT: FactCondition = { fact: 'significantDecision', is: false }
 const SIGNIFICANT: FactCondition = { fact: 'significantDecision', is: true }
 const DENIED: FactCondition = { fact: 'outcome', in: ['denied'] }
@@ -94,7 +96,7 @@ export const APPEAL_RULES: PackRule[] = [
     key: 'me.appeal.boa_court',
     label: 'Court appeal of a Board of Appeals decision',
     startEvent: 'board_vote',
-    cancelledBy: 'rehearing_vote',
+    cancelledBy: CANCELLED_IF_RECONSIDERED,
     citation: SECTION_2691('(G), (H)'),
     days: 45,
     extension: COURT_EXTENDS_2691,
@@ -103,6 +105,7 @@ export const APPEAL_RULES: PackRule[] = [
     key: 'me.appeal.boa_court_after_reconsideration',
     label: 'Court appeal of a reconsidered Board of Appeals decision',
     startEvent: 'rehearing_vote',
+    onlyWhen: RECONSIDERED,
     citation: SECTION_2691('(F), (H)'),
     days: 15,
     extension: '30-A MRSA §2691(3)(F) and (H) provide no extension.',
@@ -112,7 +115,7 @@ export const APPEAL_RULES: PackRule[] = [
     label: 'Court appeal of a Board of Appeals approval after the planning board approves last',
     startEvent: 'project_final_approval',
     onlyWhen: PLANNING_BOARD_LAST,
-    cancelledBy: 'rehearing_vote',
+    cancelledBy: CANCELLED_IF_RECONSIDERED,
     citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec4482A },
     days: 30,
     extension: COURT_EXTENDS_4482_A,

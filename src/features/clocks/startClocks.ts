@@ -91,7 +91,7 @@ export async function startClocksFor(
     ...decisionFacts,
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
-  await cancelClocksFor(tx, applicationId, event, pack)
+  await cancelClocksFor(tx, applicationId, { event, facts }, pack)
   const hearing = await hearingDependentStart(tx, applicationId, { pack, event, bound, facts })
   const rules = [...rulesForEvent(pack.rules, event, bound, facts), ...hearing.rules]
   const started = ONCE_PER_APPLICATION.includes(event)
@@ -158,10 +158,10 @@ export async function startClocksWhenPackUses(
 async function cancelClocksFor(
   tx: Tx,
   applicationId: string,
-  event: StartEvent,
+  on: { event: StartEvent; facts: ProjectFacts },
   pack: Pack,
 ): Promise<void> {
-  const cancelledKeys = keysCancelledBy(pack.rules, event)
+  const cancelledKeys = keysCancelledBy(pack.rules, on.event, on.facts)
   if (cancelledKeys.length === 0) return
   await tx
     .update(clocks)

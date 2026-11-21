@@ -52,19 +52,26 @@ describe('Maine appeal routes', () => {
     expect(windowFor('zba_decision', 'rehearing_motion')).toBe('me.appeal.boa_reconsideration')
   })
 
-  it('gives a reconsidered decision 15 days whatever the outcome and final review board', () => {
-    for (const outcome of ['granted', 'denied'] as const) {
-      for (const finalReviewBoard of [null, 'zba', 'planning_board'] as const) {
-        expect(
-          windowFor('rehearing_outcome', 'court_petition', { outcome, finalReviewBoard }),
-        ).toBe('me.appeal.boa_court_after_reconsideration')
-      }
+  it('gives a reconsidered decision 15 days whatever the final review board', () => {
+    for (const finalReviewBoard of [null, 'zba', 'planning_board'] as const) {
+      expect(
+        windowFor('rehearing_outcome', 'court_petition', { outcome: 'granted', finalReviewBoard }),
+      ).toBe('me.appeal.boa_court_after_reconsideration')
+    }
+  })
+
+  it('keeps the original decision window when the board refuses to reconsider', () => {
+    for (const finalReviewBoard of [null, 'zba'] as const) {
+      expect(
+        windowFor('rehearing_outcome', 'court_petition', { outcome: 'denied', finalReviewBoard }),
+      ).toBe('me.appeal.boa_court')
     }
     expect(
-      ME_PACK.appealRoutes.filter(
-        (r) => r.from === 'rehearing_outcome' && r.to === 'court_petition',
-      ),
-    ).toHaveLength(1)
+      windowFor('rehearing_outcome', 'court_petition', {
+        outcome: 'denied',
+        finalReviewBoard: 'planning_board',
+      }),
+    ).toBe('me.appeal.boa_court_after_planning_board')
   })
 
   it('never returns a reconsideration to the board decision', () => {

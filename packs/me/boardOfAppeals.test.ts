@@ -63,7 +63,12 @@ describe('Board of Appeals windows', () => {
 
   it('takes a court appeal within 45 days, rolling past Memorial Day', () => {
     expect(clockDue('me.appeal.boa_court', '2027-04-15')).toBe('2027-06-01')
-    expect(rule('me.appeal.boa_court')).toMatchObject({ cancelledBy: 'rehearing_vote' })
+    expect(rule('me.appeal.boa_court')).toMatchObject({
+      cancelledBy: {
+        event: 'rehearing_vote',
+        onlyWhen: { fact: 'outcome', in: ['rehearing_granted'] },
+      },
+    })
   })
 
   it('takes a court appeal within 15 days of the reconsideration vote', () => {
@@ -79,7 +84,10 @@ describe('Board of Appeals windows', () => {
     expect(rule('me.appeal.boa_court_after_planning_board')).toMatchObject({
       startEvent: 'project_final_approval',
       onlyWhen: { fact: 'finalReviewBoard', in: ['planning_board'] },
-      cancelledBy: 'rehearing_vote',
+      cancelledBy: {
+        event: 'rehearing_vote',
+        onlyWhen: { fact: 'outcome', in: ['rehearing_granted'] },
+      },
       citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: SECTION_4482A },
     })
     expect(clockDue('me.appeal.significant_final', '2027-05-12')).toBe('2027-06-11')

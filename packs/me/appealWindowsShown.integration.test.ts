@@ -75,49 +75,66 @@ async function step(
   return nodes[0]
 }
 
-describe('a reconsidered Board of Appeals decision on a project the planning board approved last', () => {
-  for (const outcome of ['granted', 'denied'] as const) {
-    it(`shows and judges the 15-day window, reconsideration ${outcome}`, async () => {
-      const variance = await decidedBoa(handle.db, world)
-      const subdivision = await receivedSubdivision(handle.db, world, 'not_within')
-      await acceptAtMeeting(handle.db, world, subdivision)
-      await approvedLastSubdivision(handle.db, world, subdivision, '2027-04-28')
-      const decision = await nodeOf(variance.applicationId, 'zba_decision')
-      const motion = await step(decision.id, 'rehearing_motion', '2027-04-20')
-      await step(motion?.id ?? '', 'rehearing_outcome', '2027-05-05', outcome)
-      const reconsidered = await nodeOf(variance.applicationId, 'rehearing_outcome')
-      expect(
-        await clocksOf(handle.db, variance.applicationId, 'me.appeal.board_court_final'),
-      ).toEqual([])
-      expect(
-        await clocksOf(
-          handle.db,
-          variance.applicationId,
-          'me.appeal.boa_court_after_planning_board',
-        ),
-      ).toMatchObject([{ status: 'superseded', startDate: '2027-04-28' }])
-      expect(
-        await clocksOf(handle.db, variance.applicationId, 'me.appeal.boa_court'),
-      ).toMatchObject([{ status: 'superseded', startDate: '2027-04-15' }])
-      const running = await handle.db.query.clocks.findMany({
-        where: (c, { and: both, eq: same }) =>
-          both(same(c.applicationId, variance.applicationId), same(c.status, 'running')),
-      })
-      expect(running.map((c) => c.ruleKey).filter((k) => k.includes('court'))).toEqual([
-        'me.appeal.boa_court_after_reconsideration',
-      ])
-      const reconsiderationWindow = ruleByKey(
-        loadPack(),
-        'me.appeal.boa_court_after_reconsideration',
-      )
-      expect(await nodeWindow(handle.db, reconsidered, signal)).toMatchObject({
-        label: reconsiderationWindow.label,
-        dueText: formatCivilDate('2027-05-20'),
-      })
-      const petition = await step(reconsidered.id, 'court_petition', '2027-05-25')
-      expect(petition?.untimely).toBe(true)
-    })
+async function reconsideredOnPlanningLastProject(outcome: 'granted' | 'denied') {
+  const variance = await decidedBoa(handle.db, world)
+  const subdivision = await receivedSubdivision(handle.db, world, 'not_within')
+  await acceptAtMeeting(handle.db, world, subdivision)
+  await approvedLastSubdivision(handle.db, world, subdivision, '2027-04-28')
+  const decision = await nodeOf(variance.applicationId, 'zba_decision')
+  const motion = await step(decision.id, 'rehearing_motion', '2027-04-20')
+  await step(motion?.id ?? '', 'rehearing_outcome', '2027-05-05', outcome)
+  return {
+    applicationId: variance.applicationId,
+    reconsidered: await nodeOf(variance.applicationId, 'rehearing_outcome'),
   }
+}
+
+async function runningCourtClocks(applicationId: string) {
+  const running = await handle.db.query.clocks.findMany({
+    where: (c, { and: both, eq: same }) =>
+      both(same(c.applicationId, applicationId), same(c.status, 'running')),
+  })
+  return running
+    .map((c) => c.ruleKey)
+    .filter((k) => k.includes('court'))
+    .sort()
+}
+
+describe('a Board of Appeals decision on a project the planning board approved last', () => {
+  it('runs only the 15-day window once the board reconsiders', async () => {
+    const { applicationId, reconsidered } = await reconsideredOnPlanningLastProject('granted')
+    expect(await clocksOf(handle.db, applicationId, 'me.appeal.board_court_final')).toEqual([])
+    expect(
+      await clocksOf(handle.db, applicationId, 'me.appeal.boa_court_after_planning_board'),
+    ).toMatchObject([{ status: 'superseded', startDate: '2027-04-28' }])
+    expect(await clocksOf(handle.db, applicationId, 'me.appeal.boa_court')).toMatchObject([
+      { status: 'superseded', startDate: '2027-04-15' },
+    ])
+    expect(await runningCourtClocks(applicationId)).toEqual([
+      'me.appeal.boa_court_after_reconsideration',
+    ])
+    expect(await nodeWindow(handle.db, reconsidered, signal)).toMatchObject({
+      label: ruleByKey(loadPack(), 'me.appeal.boa_court_after_reconsideration').label,
+      dueText: formatCivilDate('2027-05-20'),
+    })
+    expect((await step(reconsidered.id, 'court_petition', '2027-05-25'))?.untimely).toBe(true)
+  })
+
+  it('keeps the planning board window when the board refuses to reconsider', async () => {
+    const { applicationId, reconsidered } = await reconsideredOnPlanningLastProject('denied')
+    expect(
+      await clocksOf(handle.db, applicationId, 'me.appeal.boa_court_after_reconsideration'),
+    ).toEqual([])
+    expect(await runningCourtClocks(applicationId)).toEqual([
+      'me.appeal.boa_court',
+      'me.appeal.boa_court_after_planning_board',
+    ])
+    expect(await nodeWindow(handle.db, reconsidered, signal)).toMatchObject({
+      label: ruleByKey(loadPack(), 'me.appeal.boa_court_after_planning_board').label,
+      dueText: formatCivilDate('2027-05-28'),
+    })
+    expect((await step(reconsidered.id, 'court_petition', '2027-05-25'))?.untimely).toBe(false)
+  })
 })
 
 describe('a significant Planning Board denial before its written decision is filed', () => {

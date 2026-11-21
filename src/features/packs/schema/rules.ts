@@ -145,7 +145,9 @@ export const ClockRuleSchema = z
     waivable: z.boolean(),
     onlyWhen: OnlyWhenSchema.optional(),
     relianceFloorMonths: z.number().int().positive().optional(),
-    cancelledBy: StartEventSchema.optional(),
+    cancelledBy: z
+      .union([StartEventSchema, z.object({ event: StartEventSchema, onlyWhen: OnlyWhenSchema })])
+      .optional(),
     satisfiedByDecision: z.boolean().optional(),
     satisfiedByInspection: z.literal(true).optional(),
     onlyIfHearingScheduled: z.literal(true).optional(),
