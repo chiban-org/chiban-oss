@@ -18,6 +18,7 @@ import {
 } from '@/test/maineBoardOfAppealsFixtures'
 import {
   acceptAtMeeting,
+  clocksOf,
   publishSubdivisionType,
   receivedSubdivision,
 } from '@/test/maineSubdivisionFixtures'
@@ -76,7 +77,7 @@ async function step(
 
 describe('a reconsidered Board of Appeals decision on a project the planning board approved last', () => {
   for (const outcome of ['granted', 'denied'] as const) {
-    it(`shows the window a petition is judged against, reconsideration ${outcome}`, async () => {
+    it(`shows and judges the 15-day window, reconsideration ${outcome}`, async () => {
       const variance = await decidedBoa(handle.db, world)
       const subdivision = await receivedSubdivision(handle.db, world, 'not_within')
       await acceptAtMeeting(handle.db, world, subdivision)
@@ -85,13 +86,19 @@ describe('a reconsidered Board of Appeals decision on a project the planning boa
       const motion = await step(decision.id, 'rehearing_motion', '2027-04-20')
       await step(motion?.id ?? '', 'rehearing_outcome', '2027-05-05', outcome)
       const reconsidered = await nodeOf(variance.applicationId, 'rehearing_outcome')
-      const finalWindow = ruleByKey(loadPack(), 'me.appeal.board_court_final')
+      expect(
+        await clocksOf(handle.db, variance.applicationId, 'me.appeal.board_court_final'),
+      ).toMatchObject([{ status: 'running', currentDue: '2027-05-28' }])
+      const reconsiderationWindow = ruleByKey(
+        loadPack(),
+        'me.appeal.boa_court_after_reconsideration',
+      )
       expect(await nodeWindow(handle.db, reconsidered, signal)).toMatchObject({
-        label: finalWindow.label,
-        dueText: formatCivilDate('2027-05-28'),
+        label: reconsiderationWindow.label,
+        dueText: formatCivilDate('2027-05-20'),
       })
       const petition = await step(reconsidered.id, 'court_petition', '2027-05-25')
-      expect(petition?.untimely).toBe(false)
+      expect(petition?.untimely).toBe(true)
     })
   }
 })

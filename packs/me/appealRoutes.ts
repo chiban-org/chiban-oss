@@ -52,14 +52,7 @@ export const ME_APPEAL_ROUTES: AppealRoute[] = [
     from: 'rehearing_outcome',
     to: 'court_petition',
     windowRuleKey: 'me.appeal.boa_court_after_reconsideration',
-    citation: SECTION_2691('(F)'),
-  },
-  {
-    from: 'rehearing_outcome',
-    when: { finalReviewBoard: 'planning_board', label: PLANNING_FINAL },
-    to: 'court_petition',
-    windowRuleKey: 'me.appeal.board_court_final',
-    citation: SECTION_2691('(F)'),
+    citation: SECTION_2691('(F), (H)'),
   },
   {
     from: 'pb_decision',

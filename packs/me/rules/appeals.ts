@@ -100,9 +100,9 @@ export const APPEAL_RULES: PackRule[] = [
     key: 'me.appeal.boa_court_after_reconsideration',
     label: 'Court appeal of a reconsidered Board of Appeals decision',
     startEvent: 'rehearing_vote',
-    citation: SECTION_2691('(F)'),
+    citation: SECTION_2691('(F), (H)'),
     days: 15,
-    extension: '30-A MRSA §2691(3)(F) provides no extension.',
+    extension: '30-A MRSA §2691(3)(F) and (H) provide no extension.',
   }),
   courtWindow({
     key: 'me.appeal.board_court_final',

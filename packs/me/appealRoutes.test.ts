@@ -52,18 +52,19 @@ describe('Maine appeal routes', () => {
     expect(windowFor('zba_decision', 'rehearing_motion')).toBe('me.appeal.boa_reconsideration')
   })
 
-  it('gives a reconsidered decision 15 days from the reconsideration vote in both outcomes', () => {
+  it('gives a reconsidered decision 15 days whatever the outcome and final review board', () => {
     for (const outcome of ['granted', 'denied'] as const) {
-      expect(windowFor('rehearing_outcome', 'court_petition', { outcome })).toBe(
-        'me.appeal.boa_court_after_reconsideration',
-      )
-      expect(
-        windowFor('rehearing_outcome', 'court_petition', {
-          outcome,
-          finalReviewBoard: 'planning_board',
-        }),
-      ).toBe('me.appeal.board_court_final')
+      for (const finalReviewBoard of [null, 'zba', 'planning_board'] as const) {
+        expect(
+          windowFor('rehearing_outcome', 'court_petition', { outcome, finalReviewBoard }),
+        ).toBe('me.appeal.boa_court_after_reconsideration')
+      }
     }
+    expect(
+      ME_PACK.appealRoutes.filter(
+        (r) => r.from === 'rehearing_outcome' && r.to === 'court_petition',
+      ),
+    ).toHaveLength(1)
   })
 
   it('never returns a reconsideration to the board decision', () => {
