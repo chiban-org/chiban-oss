@@ -82,12 +82,16 @@ export const RangeDailyPenaltySchema = z.object({
     )
     .min(1),
   aggravations: z.array(
-    z.object({
-      key: z.string().min(1),
-      label: z.string().min(1),
-      maxCentsPerDay: z.number().int().positive().optional(),
-      maxMultipleOfBenefit: z.number().positive().optional(),
-    }),
+    z
+      .object({
+        key: z.string().min(1),
+        label: z.string().min(1),
+        maxCentsPerDay: z.number().int().positive().optional(),
+        maxMultipleOfBenefit: z.number().positive().optional(),
+      })
+      .refine((a) => (a.maxCentsPerDay === undefined) !== (a.maxMultipleOfBenefit === undefined), {
+        message: 'An aggravation sets exactly one of maxCentsPerDay and maxMultipleOfBenefit',
+      }),
   ),
 })
 

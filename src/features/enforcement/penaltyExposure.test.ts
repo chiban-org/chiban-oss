@@ -123,4 +123,19 @@ describe('penaltyExposure with a range rule', () => {
     const parsed = CivilPenaltyRuleSchema.parse(bare)
     expect(parsed.model).toBe('fixed_daily')
   })
+
+  it('an aggravation must set exactly one of a daily cap and a benefit multiple', () => {
+    const ranged = XX_RANGE_PENALTY as Extract<CivilPenaltyRule, { model: 'range_daily' }>
+    const [first] = ranged.aggravations
+    if (first === undefined) throw new Error('aggravation')
+    const withAggravation = (a: object) => ({ ...XX_RANGE_PENALTY, aggravations: [a] })
+    const bare = { key: first.key, label: first.label }
+    expect(CivilPenaltyRuleSchema.safeParse(withAggravation(bare)).success).toBe(false)
+    const both = { ...bare, maxCentsPerDay: 4000, maxMultipleOfBenefit: 2 }
+    expect(CivilPenaltyRuleSchema.safeParse(withAggravation(both)).success).toBe(false)
+    const capped = { ...bare, maxCentsPerDay: 4000 }
+    expect(CivilPenaltyRuleSchema.safeParse(withAggravation(capped)).success).toBe(true)
+    const multiple = { ...bare, maxMultipleOfBenefit: 2 }
+    expect(CivilPenaltyRuleSchema.safeParse(withAggravation(multiple)).success).toBe(true)
+  })
 })
