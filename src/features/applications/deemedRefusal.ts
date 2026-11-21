@@ -11,7 +11,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { markClockMet } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
-import type { CivilDate } from '@/types/civilDate'
+import { addDays, type CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 const SYSTEM_ACTOR = { kind: 'system', job: JOB_NAMES.CLOCKS_DAILY } as const
@@ -25,6 +25,7 @@ export type DecisionNoticeError =
   | 'already_recorded'
   | 'future_date'
   | 'document_not_found'
+  | 'no_decision'
 
 function isDeemedRefused(ruleKey: string, ruleVersion: number): boolean {
   const rule = ruleByKey(loadPack(), ruleKey, ruleVersion)
@@ -43,11 +44,12 @@ export async function recordDecisionNotice(
   if (await isAfterTownToday(db, input.mailedOn, now, signal)) return err('future_date')
   return await transactionResult<void, DecisionNoticeError>(db, async (tx) => {
     const [app] = await tx
-      .select({ id: applications.id })
+      .select({ id: applications.id, state: applications.state })
       .from(applications)
       .where(eq(applications.id, input.applicationId))
       .for('update')
     if (app === undefined) return err('not_found')
+    if (REFUSABLE.includes(app.state)) return err('no_decision')
     const [doc] = await tx
       .select({ id: documents.id })
       .from(documents)
@@ -120,11 +122,11 @@ async function lockedCandidate(
 async function refuse(
   tx: Tx,
   found: { clock: typeof clocks.$inferSelect; app: typeof applications.$inferSelect },
-  today: CivilDate,
   signal: AbortSignal,
   move: typeof transitionApplication,
 ): Promise<string | null> {
   const { clock, app } = found
+  const refusedOn = addDays(clock.currentDue as CivilDate, 1)
   await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
   const moved = await move(
     tx,
@@ -133,7 +135,7 @@ async function refuse(
       applicationId: app.id,
       to: 'denied',
       expectedRowVersion: app.rowVersion,
-      onDate: today,
+      onDate: refusedOn,
       deemedRefusal: true,
     },
     signal,
@@ -147,7 +149,7 @@ async function refuse(
     ruleKey: clock.ruleKey,
     ruleVersion: clock.ruleVersion,
     dueOn: clock.currentDue,
-    firedOn: today,
+    firedOn: refusedOn,
   })
   await writeAudit(
     tx,
@@ -156,13 +158,13 @@ async function refuse(
       action: 'application.deemed_refusal',
       entityType: 'application',
       entityId: app.id,
-      after: { ruleKey: clock.ruleKey, dueOn: clock.currentDue, firedOn: today },
+      after: { ruleKey: clock.ruleKey, dueOn: clock.currentDue, firedOn: refusedOn },
     },
     signal,
   )
   await addAdministrativeDecisionTx(
     tx,
-    { applicationId: app.id, occurredOn: today, createdBy: null },
+    { applicationId: app.id, occurredOn: refusedOn, createdBy: null, outcome: 'denied' },
     signal,
   )
   return null
@@ -192,7 +194,7 @@ export async function refuseBySilence(
     if (!REFUSABLE.includes(state)) continue
     const found = await lockedCandidate(tx, clock.id, clock.applicationId, today)
     if (found === null || !REFUSABLE.includes(found.app.state)) continue
-    const failure = await refuse(tx, found, today, signal, move)
+    const failure = await refuse(tx, found, signal, move)
     if (failure === null) refused.push(clock.applicationId)
     else failures.push(failure)
   }

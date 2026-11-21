@@ -10,11 +10,14 @@ import {
   documents,
   notificationOutbox,
 } from '@/db/schema'
+import { loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
+import { nodeWindow } from '@/features/appeals/nodeWindow'
 import { recordDecisionNotice, refuseBySilence } from '@/features/applications/deemedRefusal'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { transitionApplication } from '@/features/applications/transition'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { setActivePackForTest } from '@/features/packs/registry'
+import type { AppealRoute, ClockRule } from '@/features/packs/schema'
 import { getPortalApplicationView } from '@/features/portal/portalView'
 import { clocksDailyJob } from '@/jobs/clocksDaily'
 import { runJob } from '@/jobs/defineJob'
@@ -146,19 +149,24 @@ describe('refusal by silence', () => {
   })
 
   it('a notice mailed on the due day meets the clock and nothing fires', async () => {
-    const { applicationId } = await clockedApp()
+    const { applicationId } = await clockedApp('decided')
     expect((await record(applicationId, DUE)).ok).toBe(true)
     expect(await sweep(DAY_AFTER)).toEqual({ refused: [], noticeOverdue: [] })
     const clock = await clockOf(applicationId)
     expect(clock).toMatchObject({ status: 'met', metOn: DUE })
-    expect((await appOf(applicationId))?.state).toBe('under_review')
+    expect((await appOf(applicationId))?.state).toBe('decided')
     const [notice] = await handle.db.select().from(decisionNotices)
     expect(notice).toMatchObject({ applicationId, mailedOn: DUE })
   })
 
   it('does not refuse an application that has a notice even when its clock was overwritten as overdue', async () => {
     const { applicationId } = await clockedApp()
-    expect((await record(applicationId, DUE)).ok).toBe(true)
+    await handle.db.insert(decisionNotices).values({
+      applicationId,
+      documentId: await noticeDocument(applicationId),
+      mailedOn: DUE,
+      recordedBy: world.staff.userId,
+    })
     await handle.db
       .update(clocks)
       .set({ status: 'overdue', metOn: null })
@@ -225,6 +233,19 @@ describe('refusal by silence', () => {
     expect((await appOf(applicationId))?.state).toBe('denied')
   })
 
+  it('queues no overdue email for a refused clock, while a clock still owed its notice gets one', async () => {
+    const refused = await clockedApp()
+    const owed = await clockedApp('decided')
+    const ran = await runJob(handle.db, clocksDailyJob, { today: DAY_AFTER }, signal)
+    expect(ran.ok).toBe(true)
+    expect((await appOf(refused.applicationId))?.state).toBe('denied')
+    const overdue = await handle.db
+      .selectDistinct({ applicationId: notificationOutbox.applicationId })
+      .from(notificationOutbox)
+      .where(eq(notificationOutbox.event, 'clock_overdue'))
+    expect(overdue).toEqual([{ applicationId: owed.applicationId }])
+  })
+
   it('opens the administrative appeal path on the refusal date with a system-created node', async () => {
     const { applicationId } = await clockedApp()
     await sweep(DAY_AFTER)
@@ -235,6 +256,7 @@ describe('refusal by silence', () => {
     expect(node).toMatchObject({
       kind: 'administrative_decision',
       occurredOn: DAY_AFTER,
+      outcome: 'denied',
       createdBy: null,
     })
     const [audit] = await handle.db
@@ -242,6 +264,24 @@ describe('refusal by silence', () => {
       .from(auditLog)
       .where(eq(auditLog.entityId, node?.id ?? ''))
     expect(audit).toMatchObject({ actorKind: 'system', action: 'appeal.node.add' })
+  })
+
+  it('dates the refusal and its appeal node the day after the clock ran out when the job missed days', async () => {
+    const { applicationId } = await clockedApp()
+    const late = addDays(DUE, 5)
+    expect((await sweep(late)).refused).toEqual([applicationId])
+    const [refusal] = await handle.db
+      .select()
+      .from(deemedRefusals)
+      .where(eq(deemedRefusals.applicationId, applicationId))
+    expect(refusal).toMatchObject({ dueOn: DUE, firedOn: DAY_AFTER })
+    const [node] = await handle.db
+      .select()
+      .from(appealNodes)
+      .where(eq(appealNodes.applicationId, applicationId))
+    expect(node?.occurredOn).toBe(DAY_AFTER)
+    const view = await getStaffApplicationView(handle.db, world.staff, applicationId, NOW, signal)
+    expect(view?.decisionNotice?.refusedOn).toBe(DAY_AFTER)
   })
 
   it('sends no denial notice by itself', async () => {
@@ -258,11 +298,20 @@ describe('refusal by silence', () => {
     expect((await appOf(applicationId))?.state).toBe('denied')
   })
 
+  it('refuses a notice while the application has no decision', async () => {
+    for (const state of ['submitted', 'under_review'] as const) {
+      const { applicationId } = await clockedApp(state)
+      expect(await record(applicationId, DUE)).toEqual({ ok: false, error: 'no_decision' })
+      expect(await handle.db.select().from(decisionNotices)).toEqual([])
+      expect((await clockOf(applicationId))?.status).toBe('running')
+    }
+  })
+
   it('refuses a second notice, a future date and a missing document', async () => {
-    const { applicationId } = await clockedApp()
+    const { applicationId } = await clockedApp('decided')
     expect((await record(applicationId, DUE)).ok).toBe(true)
     expect(await record(applicationId, DUE)).toEqual({ ok: false, error: 'already_recorded' })
-    const other = await clockedApp()
+    const other = await clockedApp('decided')
     expect(await record(other.applicationId, '2027-12-01')).toEqual({
       ok: false,
       error: 'future_date',
@@ -353,7 +402,7 @@ describe('the decision notice on the staff view and the portal', () => {
   })
 
   it('reports the mailed date once a notice is recorded', async () => {
-    const { applicationId } = await clockedApp()
+    const { applicationId } = await clockedApp('decided')
     await record(applicationId, '2027-03-15')
     const view = await staffView(applicationId)
     expect(view?.decisionNotice).toMatchObject({ mailedOn: '2027-03-15', refusedOn: null })
@@ -434,5 +483,63 @@ describe('under the New Hampshire pack', () => {
       signal,
     )
     expect(view?.decisionNotice).toBeNull()
+  })
+})
+
+const CITATION = {
+  label: 'Vellmora Permit Act 21',
+  url: 'https://laws.example/vellmora/permit-act',
+}
+
+function windowRule(key: string, label: string): ClockRule {
+  return {
+    kind: 'clock',
+    key,
+    version: 1,
+    label,
+    citation: CITATION,
+    clockType: 'filing_window',
+    whose: 'third_party',
+    startEvent: 'administrative_decision',
+    length: { unit: 'days', value: 30 },
+    direction: 'after',
+    consequence: { kind: 'appeal_untimely', text: 'The filing is late.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  }
+}
+
+describe('the appeal route after a refusal by silence', () => {
+  it('chooses the route for a denied administrative decision', async () => {
+    const general = windowRule('xx.appeal.admin_general', 'Appeal of an administrative decision')
+    const refused = windowRule('xx.appeal.admin_refused', 'Appeal of a refusal')
+    const routes: AppealRoute[] = [
+      {
+        from: 'administrative_decision',
+        to: 'zba_appeal',
+        windowRuleKey: general.key,
+        citation: CITATION,
+      },
+      {
+        from: 'administrative_decision',
+        when: { outcome: 'denied', label: 'refused' },
+        to: 'court_petition',
+        windowRuleKey: refused.key,
+        citation: CITATION,
+      },
+    ]
+    const rules = [...refusingRules, general, refused]
+    setActivePackForTest(
+      xxPackWith({
+        manifest: { rules },
+        pack: { ruleAreas: [{ title: 'All rules', rules }], appealRoutes: routes },
+      }),
+    )
+    const { applicationId } = await clockedApp()
+    expect((await sweep(DAY_AFTER)).refused).toEqual([applicationId])
+    const [node] = await loadGraphNodeRows(handle.db, applicationId)
+    if (node === undefined) throw new Error('missing refusal node')
+    expect((await nodeWindow(handle.db, node, signal))?.label).toBe('Appeal of a refusal')
   })
 })

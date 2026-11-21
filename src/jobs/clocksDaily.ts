@@ -143,11 +143,12 @@ export const clocksDailyJob = defineJob<DailyPayload>({
       : `clocks.daily:${p.today}`,
   handler: async (payload, ctx) => {
     const today = payload.today ?? (await townToday(ctx.db, new Date(), ctx.signal))
-    await noticeOverdueClocks(ctx.db, await markOverdue(ctx.db, today), ctx.signal)
+    const overdue = await markOverdue(ctx.db, today)
     const refusal = await refuseBySilence(ctx.db, today, ctx.signal)
+    await markUnrecordedVoid(ctx.db, today, ctx.signal)
+    await noticeOverdueClocks(ctx.db, overdue, ctx.signal)
     await warnClocksDueSoon(ctx.db, today, ctx.signal)
     const failures = await expireLapsedPermits(ctx.db, today, ctx.signal)
-    await markUnrecordedVoid(ctx.db, today, ctx.signal)
     if (refusal.failures.length > 0) {
       return failKeepingWrites(`refusal failed: ${refusal.failures.join('; ')}`)
     }

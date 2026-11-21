@@ -14,11 +14,13 @@ import {
   varianceValidity,
 } from '@/features/decisions/recording'
 import { setActivePackForTest } from '@/features/packs/registry'
-import { markUnrecordedVoid } from '@/jobs/clocksDaily'
+import type { PackRule } from '@/features/packs/schema'
+import { clocksDailyJob, markUnrecordedVoid } from '@/jobs/clocksDaily'
+import { runJob } from '@/jobs/defineJob'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decideUnderXx, HEARING_DATE } from '@/test/deliveryFixtures'
-import { XX_RECORDING, XX_VOID_KEY } from '@/test/packs/xx/variants'
+import { XX_RECORDING, XX_VOID_KEY, xxPackWith } from '@/test/packs/xx/variants'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -267,5 +269,50 @@ describe('the daily void step', () => {
     const made = await approved()
     await record(made, DUE)
     expect((await lapse(addDays(DUE, 30))).voided).toEqual([])
+  })
+})
+
+const EXERCISE_KEY = 'xx.zba.exercise'
+
+const EXERCISE_RULE: PackRule = {
+  kind: 'clock',
+  key: EXERCISE_KEY,
+  version: 1,
+  label: 'Variance exercise-by date',
+  citation: { label: 'Vellmora Permit Act 15', url: 'https://laws.example/vellmora/permit-act' },
+  clockType: 'exercise_by',
+  whose: 'applicant',
+  startEvent: 'board_vote',
+  length: { unit: 'days', value: 60 },
+  direction: 'after',
+  consequence: { kind: 'lapse', text: 'The variance lapses unless exercised.' },
+  extension: { allowed: false, note: 'The act provides no extension.' },
+  waivable: false,
+  overridePolicy: { policy: 'fixed' },
+}
+
+describe('the daily job when the variance also lapses', () => {
+  it('marks the variance void before its expiry stops the void clock', async () => {
+    const rules = [...XX_RECORDING.manifest.rules, EXERCISE_RULE]
+    setActivePackForTest(
+      xxPackWith({
+        manifest: { ...XX_RECORDING.manifest, rules },
+        pack: { ruleAreas: [{ title: 'All rules', rules }] },
+      }),
+    )
+    try {
+      const made = await approved()
+      const voidRow = await voidClock(made.applicationId)
+      if (voidRow === undefined) throw new Error('missing void clock')
+      const { id: _id, createdAt: _createdAt, ...copy } = voidRow
+      await handle.db.insert(clocks).values({ ...copy, ruleKey: EXERCISE_KEY, currentDue: DUE })
+      const ran = await runJob(handle.db, clocksDailyJob, { today: addDays(DUE, 1) }, signal)
+      expect(ran.ok).toBe(true)
+      expect(await stateOf(made.applicationId)).toBe('expired')
+      expect((await voidClock(made.applicationId))?.status).toBe('lapsed')
+      expect(await varianceValidity(handle.db, made.applicationId, signal)).toBe('void')
+    } finally {
+      setActivePackForTest(XX_RECORDING)
+    }
   })
 })

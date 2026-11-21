@@ -114,9 +114,24 @@ async function addDocument(title: string): Promise<string> {
   return doc?.id ?? ''
 }
 
+async function decide(): Promise<void> {
+  await handle.db
+    .update(applications)
+    .set({ state: 'decided' })
+    .where(eq(applications.id, applicationId))
+}
+
 describe('the written decision notice section', () => {
+  it('shows the due date and citation without a form before the decision', async () => {
+    await addDocument('Notice of decision letter')
+    const section = sectionOf(await page(), LABEL)
+    expect(section).toContain(`${LABEL} due March 22, 2099 (Vellmora Permit Act 4).`)
+    expect(section).not.toContain('name="documentId"')
+  })
+
   it('shows the due date and citation, and a form listing the documents and a mailed date', async () => {
     await addDocument('Notice of decision letter')
+    await decide()
     const section = sectionOf(await page(), LABEL)
     expect(section).toContain(`${LABEL} due March 22, 2099 (Vellmora Permit Act 4).`)
     expect(section).toContain('Notice of decision letter')
@@ -128,6 +143,7 @@ describe('the written decision notice section', () => {
 
   it('shows the mailed date once the notice is recorded and drops the form', async () => {
     const documentId = await addDocument('Notice of decision letter')
+    await decide()
     const recorded = await recordDecisionNotice(
       handle.db,
       world.staff,
@@ -141,10 +157,7 @@ describe('the written decision notice section', () => {
   })
 
   it('says the notice is not recorded once the day has passed on a decided application', async () => {
-    await handle.db
-      .update(applications)
-      .set({ state: 'decided' })
-      .where(eq(applications.id, applicationId))
+    await decide()
     await handle.db
       .update(clocks)
       .set({ currentDue: '2020-01-10' })

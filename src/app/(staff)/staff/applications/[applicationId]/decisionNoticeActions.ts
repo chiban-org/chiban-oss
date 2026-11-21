@@ -17,6 +17,7 @@ const REFUSALS: Readonly<Record<string, string>> = {
   already_recorded: 'A written decision notice is already recorded for this application.',
   document_not_found: 'Choose a document filed on this application.',
   not_found: 'This application is no longer on the list. Reload the page.',
+  no_decision: 'Record the decision before its written notice.',
 }
 
 export async function recordDecisionNoticeAction(formData: FormData): Promise<ActionResult> {

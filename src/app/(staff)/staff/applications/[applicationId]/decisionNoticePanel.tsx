@@ -8,6 +8,7 @@ import { recordDecisionNoticeAction } from './decisionNoticeActions'
 
 const LABEL = 'Written decision notice'
 const OWED_STATES: readonly string[] = ['decided', 'issued']
+const NOTICE_STATES: readonly string[] = ['decided', 'issued', 'denied']
 
 export interface NoticeDocument {
   documentId: string
@@ -86,7 +87,7 @@ export function DecisionNoticePanel({
 }) {
   const notice = view.decisionNotice
   if (notice == null) return null
-  const open = notice.mailedOn === null
+  const open = notice.mailedOn === null && NOTICE_STATES.includes(view.state)
   return (
     <section aria-label={LABEL} id="decision-notice">
       <h2>{LABEL}</h2>

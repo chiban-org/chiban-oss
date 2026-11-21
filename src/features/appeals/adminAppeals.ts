@@ -8,6 +8,7 @@ import type { AppealError } from '@/features/appeals/graph'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import type { DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -49,9 +50,15 @@ export async function addAdministrativeDecision(
 
 export async function addAdministrativeDecisionTx(
   tx: Tx,
-  input: { applicationId: string; occurredOn: CivilDate; createdBy: string | null },
+  input: {
+    applicationId: string
+    occurredOn: CivilDate
+    createdBy: string | null
+    outcome?: DecisionOutcome
+  },
   signal: AbortSignal,
 ): Promise<{ nodeId: string }> {
+  const outcome = input.outcome === undefined ? {} : { outcome: input.outcome }
   const [row] = await tx
     .insert(appealNodes)
     .values({
@@ -59,6 +66,7 @@ export async function addAdministrativeDecisionTx(
       applicationId: input.applicationId,
       occurredOn: input.occurredOn,
       createdBy: input.createdBy,
+      ...outcome,
     })
     .returning({ id: appealNodes.id })
   const nodeId = row?.id ?? ''
@@ -76,6 +84,7 @@ export async function addAdministrativeDecisionTx(
         kind: 'administrative_decision',
         applicationId: input.applicationId,
         occurredOn: input.occurredOn,
+        ...outcome,
       },
     },
     signal,
