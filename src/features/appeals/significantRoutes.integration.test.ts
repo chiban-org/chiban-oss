@@ -53,14 +53,20 @@ async function statusOf(applicationId: string, ruleKey: string): Promise<string[
   return (await clocksOf(applicationId, ruleKey)).map((c) => c.status)
 }
 
-async function windowLabelOf(applicationId: string): Promise<string | undefined> {
+async function windowLabelOf(
+  applicationId: string,
+  nodeId: string | null = null,
+): Promise<string | undefined> {
   const panel = await loadApplicationHearingsPanel(
     fw.handle.db,
     fw.world.staff,
     applicationId,
     signal,
   )
-  return panel?.graph.find((n) => n.parentId === null)?.window?.label
+  const node = panel?.graph.find((n) =>
+    nodeId === null ? n.parentId === null : n.nodeId === nodeId,
+  )
+  return node?.window?.label
 }
 
 async function reconsidered(applicationId: string): Promise<string> {
@@ -104,8 +110,16 @@ describe('appeal routes for significant land use decisions', () => {
     await decide(significant, 'planning_board', { significant: true })
     const ordinary = await underReview(SUB_TYPE_KEY)
     await decide(ordinary, 'planning_board', { significant: false })
-    expect(await petitionUntimely(await reconsidered(significant), '2027-06-09')).toBe(true)
-    expect(await petitionUntimely(await reconsidered(ordinary), '2027-06-09')).toBe(false)
+    const significantOutcome = await reconsidered(significant)
+    const ordinaryOutcome = await reconsidered(ordinary)
+    expect(await windowLabelOf(significant, significantOutcome)).toBe(
+      XX_SIGNIFICANT_AFTER_RECONSIDERATION.label,
+    )
+    expect(await windowLabelOf(ordinary, ordinaryOutcome)).toBe(
+      XX_COURT_AFTER_RECONSIDERATION.label,
+    )
+    expect(await petitionUntimely(significantOutcome, '2027-06-09')).toBe(true)
+    expect(await petitionUntimely(ordinaryOutcome, '2027-06-09')).toBe(false)
     expect(await statusOf(significant, XX_SIGNIFICANT_AFTER_RECONSIDERATION.key)).toContain('met')
     expect(await statusOf(ordinary, XX_COURT_AFTER_RECONSIDERATION.key)).toContain('met')
   })
@@ -140,11 +154,13 @@ describe('appeal routes for significant land use decisions', () => {
     expect(node?.kind).toBe('zba_decision')
   })
 
-  it('starts the windows of a vote on the same date', async () => {
+  it('starts both court windows on the date of the vote', async () => {
     const plan = await underReview(SUB_TYPE_KEY)
     await decide(plan, 'planning_board', { significant: true })
-    const started = await clocksOf(plan, XX_BOARD_COURT.key)
-    expect(started.map((c) => c.startDate)).toEqual([PB_VOTE])
+    for (const rule of [XX_BOARD_COURT, XX_SIGNIFICANT_COURT]) {
+      const started = await clocksOf(plan, rule.key)
+      expect(started.map((c) => c.startDate)).toEqual([PB_VOTE])
+    }
   })
 })
 

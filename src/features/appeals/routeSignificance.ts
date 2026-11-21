@@ -7,7 +7,7 @@ type NodeRow = typeof appealNodes.$inferSelect
 
 const RECONSIDERATION_STEPS: readonly AppealNodeKind[] = ['rehearing_outcome', 'rehearing_motion']
 
-function usesSignificance(routes: readonly AppealRoute[]): boolean {
+export function usesSignificance(routes: readonly AppealRoute[]): boolean {
   return routes.some((r) => r.when?.significant !== undefined)
 }
 

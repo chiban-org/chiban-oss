@@ -1,4 +1,4 @@
-import type { AppealRoute, StatePack } from '@/features/packs/schema'
+import type { AppealRoute, ProceedingClassification, StatePack } from '@/features/packs/schema'
 import { XX_PACK } from './index'
 import { courtWindow } from './projectFinality'
 import { XX_OPTIONAL_HEARING, XX_PB_SUBDIVISION_KEY, xxPackWith } from './variants'
@@ -74,17 +74,21 @@ const ROUTES: AppealRoute[] = [
   },
 ]
 
-const CLASSIFICATIONS = XX_OPTIONAL_HEARING.manifest.classifications.map((c) => {
-  if (c.key === 'xx.board_variance')
-    return { ...c, hearing: 'optional' as const, requiredSubsteps: [] }
-  if (c.key === XX_PB_SUBDIVISION_KEY)
-    return {
-      ...c,
-      significanceApplies: true,
-      mandatoryRuleKeys: [...c.mandatoryRuleKeys, ...WINDOW_KEYS],
-    }
-  return c
-})
+function withSignificantSubdivision(ruleKeys: readonly string[]): ProceedingClassification[] {
+  return XX_OPTIONAL_HEARING.manifest.classifications.map((c) =>
+    c.key === XX_PB_SUBDIVISION_KEY
+      ? {
+          ...c,
+          significanceApplies: true,
+          mandatoryRuleKeys: [...c.mandatoryRuleKeys, ...ruleKeys],
+        }
+      : c,
+  )
+}
+
+const CLASSIFICATIONS = withSignificantSubdivision(WINDOW_KEYS).map((c) =>
+  c.key === 'xx.board_variance' ? { ...c, hearing: 'optional' as const, requiredSubsteps: [] } : c,
+)
 
 export const XX_SIGNIFICANT_ROUTES: StatePack = xxPackWith({
   manifest: { rules: RULES, classifications: CLASSIFICATIONS },
@@ -126,15 +130,7 @@ const DENIAL_KEYS = [XX_GENERIC_DENIAL.key, XX_SIGNIFICANT_DENIAL.key]
 export const XX_SIGNIFICANT_WINDOWS: StatePack = xxPackWith({
   manifest: {
     rules: DENIAL_RULES,
-    classifications: XX_OPTIONAL_HEARING.manifest.classifications.map((c) =>
-      c.key === XX_PB_SUBDIVISION_KEY
-        ? {
-            ...c,
-            significanceApplies: true,
-            mandatoryRuleKeys: [...c.mandatoryRuleKeys, ...DENIAL_KEYS],
-          }
-        : c,
-    ),
+    classifications: withSignificantSubdivision(DENIAL_KEYS),
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: DENIAL_RULES }] },
 })

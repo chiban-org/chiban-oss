@@ -198,8 +198,8 @@ export async function recordDecision(
     if (!venue.ok) return err(venue.error)
     const { hearingId, meetingId, boardId } = venue.value
     const classification = classificationOfApplication(app)
-    const voters = boardOfApplication(app) === null ? null : boardId
-    const problem = await inputProblem(tx, voters, input, classification)
+    const seatingBoardId = boardOfApplication(app) === null ? null : boardId
+    const problem = await inputProblem(tx, seatingBoardId, input, classification)
     if (problem !== null) return err(problem)
     const moved = await transitionApplication(
       tx,
