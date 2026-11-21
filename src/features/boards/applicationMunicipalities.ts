@@ -13,6 +13,8 @@ import { err, ok, type Result } from '@/types/result'
 
 export type MunicipalityRelation = 'abutting' | 'includes'
 
+export const MUNICIPALITIES_CHANGED = 'the municipalities changed'
+
 export type ApplicationMunicipalitiesError =
   | 'forbidden'
   | 'not_found'
@@ -50,7 +52,7 @@ export async function setApplicationMunicipalities(
         })),
       )
     }
-    await flagIssuedListStale(tx, input.applicationId, signal)
+    await flagIssuedListStale(tx, input.applicationId, signal, MUNICIPALITIES_CHANGED)
     await writeAudit(
       tx,
       {
