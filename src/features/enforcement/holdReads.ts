@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationParcels,
@@ -109,6 +109,29 @@ export async function holdSuspends(
         eq(holdPermitActions.action, 'suspended'),
         isNull(holdPermitActions.reinstatedOn),
         isNull(developmentHolds.releasedOn),
+      ),
+    )
+    .limit(1)
+  return rows.length > 0
+}
+
+export async function holdActedAfter(
+  db: DbOrTx,
+  applicationId: string,
+  on: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  signal.throwIfAborted()
+  if (!holdsEnabled()) return false
+  const rows = await db
+    .select({ actedOn: holdPermitActions.actedOn })
+    .from(holdPermitActions)
+    .where(
+      and(
+        eq(holdPermitActions.applicationId, applicationId),
+        eq(holdPermitActions.action, 'suspended'),
+        isNull(holdPermitActions.reinstatedOn),
+        gt(holdPermitActions.actedOn, on),
       ),
     )
     .limit(1)

@@ -61,6 +61,8 @@ export const ERROR_COPY: Record<string, string> = {
   stale_version: 'This application changed since you opened it. Reload the page and try again.',
   invalid_transition: 'That step is not available from the current state.',
   parcel_held: HELD_PARCEL_COPY,
+  before_hold:
+    'The appeal cannot be resolved on a date before the permit was suspended under an enforcement hold.',
   held_suspension:
     'This permit is suspended under an enforcement hold. Revoke it from the enforcement case.',
   before_reinstatement:

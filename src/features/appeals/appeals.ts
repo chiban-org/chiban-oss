@@ -15,7 +15,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { effectiveBindings } from '@/features/config/bindings'
-import { holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
+import { holdActedAfter, holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -130,6 +130,7 @@ type ResolveError =
   | 'before_filing'
   | 'not_suspended'
   | 'future_date'
+  | 'before_hold'
 
 export async function resolveAppeal(
   db: Db,
@@ -152,6 +153,9 @@ export async function resolveAppeal(
       .where(and(eq(appeals.applicationId, input.applicationId), isNull(appeals.resolvedOn)))
     if (open === undefined) return err('no_open_appeal')
     if (input.resolvedOn < open.filedOn) return err('before_filing')
+    if (await holdActedAfter(tx, input.applicationId, input.resolvedOn, signal)) {
+      return err('before_hold')
+    }
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_suspended')
     await tx

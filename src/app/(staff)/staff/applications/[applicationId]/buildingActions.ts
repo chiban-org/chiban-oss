@@ -110,7 +110,10 @@ export async function resolveAppealAction(formData: FormData): Promise<ActionRes
     if (!resolved.ok && resolved.error === 'future_date') {
       return refuseField('resolvedOn', FUTURE_RESOLUTION)
     }
-    return outcome(resolved, 'Appeal resolved.', { before_filing: 'resolvedOn' })
+    return outcome(resolved, 'Appeal resolved.', {
+      before_filing: 'resolvedOn',
+      before_hold: 'resolvedOn',
+    })
   })
 }
 
