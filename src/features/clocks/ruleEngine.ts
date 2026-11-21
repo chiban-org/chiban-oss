@@ -105,6 +105,12 @@ export function rulesForEvent(
   return [...best.values()]
 }
 
+export function eventMovesClocks(rules: readonly PackRule[], event: StartEvent): boolean {
+  return rules.some(
+    (r) => r.kind === 'clock' && (r.startEvent === event || r.cancelledBy === event),
+  )
+}
+
 export function keysCancelledBy(rules: readonly PackRule[], event: StartEvent): string[] {
   return rules.filter((r) => r.kind === 'clock' && r.cancelledBy === event).map((r) => r.key)
 }

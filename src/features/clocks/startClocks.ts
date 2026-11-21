@@ -10,6 +10,7 @@ import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meet
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import {
   computeRuleDue,
+  eventMovesClocks,
   hasLocalBound,
   keysCancelledBy,
   type ResolvedLength,
@@ -77,6 +78,18 @@ export async function startClocksFor(
     if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
+}
+
+export async function startClocksWhenPackUses(
+  tx: Tx,
+  applicationId: string,
+  event: StartEvent,
+  onDate: CivilDate,
+  signal: AbortSignal,
+): Promise<void> {
+  const pack = loadPack()
+  if (!eventMovesClocks(pack.rules, event)) return
+  await startClocksFor(tx, applicationId, event, onDate, signal, pack)
 }
 
 async function cancelClocksFor(

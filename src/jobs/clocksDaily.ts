@@ -116,6 +116,10 @@ export async function markUnrecordedVoid(
 ): Promise<{ voided: string[] }> {
   signal.throwIfAborted()
   const pack = loadPack()
+  const voids = pack.rules.some(
+    (r) => r.kind === 'clock' && r.consequence.kind === 'void_unless_recorded',
+  )
+  if (!voids) return { voided: [] }
   const past = await tx
     .select()
     .from(clocks)

@@ -12,7 +12,11 @@ import { type AcceptanceError, setAcceptanceMeetingTx } from '@/features/boards/
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { getMeeting } from '@/features/boards/meetings'
 import { boardForKind } from '@/features/boards/townBoards'
-import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import {
+  markClockMet,
+  startClocksFor,
+  startClocksWhenPackUses,
+} from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
@@ -247,7 +251,7 @@ export async function markHearingHeld(
       await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
     }
     if (app?.state === 'under_review') {
-      await startClocksFor(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)
+      await startClocksWhenPackUses(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)
     }
     await writeAudit(
       tx,

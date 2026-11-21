@@ -27,6 +27,10 @@ export type DecisionNoticeError =
   | 'document_not_found'
   | 'no_decision'
 
+function packRefusesBySilence(): boolean {
+  return loadPack().rules.some((r) => r.kind === 'clock' && r.consequence.kind === 'deemed_refused')
+}
+
 function isDeemedRefused(ruleKey: string, ruleVersion: number): boolean {
   const rule = ruleByKey(loadPack(), ruleKey, ruleVersion)
   return rule.kind === 'clock' && rule.consequence.kind === 'deemed_refused'
@@ -177,6 +181,7 @@ export async function refuseBySilence(
   move: typeof transitionApplication = transitionApplication,
 ): Promise<{ refused: string[]; noticeOverdue: string[]; failures: string[] }> {
   signal.throwIfAborted()
+  if (!packRefusesBySilence()) return { refused: [], noticeOverdue: [], failures: [] }
   const past = await tx
     .select({ clock: clocks, state: applications.state })
     .from(clocks)

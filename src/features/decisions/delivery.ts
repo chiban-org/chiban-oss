@@ -60,6 +60,10 @@ export function deliveryRuleFor(
   )
 }
 
+export function packDeliversDecisions(pack: Pack = loadPack()): boolean {
+  return pack.rules.some((r) => r.kind === 'decision_delivery')
+}
+
 export function plannedRecipients(
   rule: DecisionDeliveryRule,
   parties: readonly PartyRecipient[],
@@ -129,6 +133,7 @@ export async function planDeliveries(
   signal: AbortSignal,
 ): Promise<void> {
   signal.throwIfAborted()
+  if (!packDeliversDecisions()) return
   const resolved = await resolveSource(tx, source, signal)
   if (resolved === null) return
   const rule = deliveryRuleFor(loadPack(), resolved.boardKind)

@@ -5,6 +5,7 @@ import {
   DELIVERY_ROLE_LABELS,
   type DeliverySource,
   deliveryRuleFor,
+  packDeliversDecisions,
   resolveSource,
 } from '@/features/decisions/delivery'
 import { loadPack } from '@/features/packs/loadPack'
@@ -52,6 +53,7 @@ export async function loadDeliveryGroups(
   signal: AbortSignal,
 ): Promise<DeliveryGroupView[]> {
   signal.throwIfAborted()
+  if (!packDeliversDecisions()) return []
   const rows = await db
     .select()
     .from(decisionDeliveries)
