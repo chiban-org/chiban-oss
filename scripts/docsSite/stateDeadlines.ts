@@ -1,5 +1,6 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { extensionPolicyText } from '@/features/clocks/explainClock'
+import { onlyWhenConditions } from '@/features/clocks/ruleEngine'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { activePack } from '@/features/packs/registry'
 import type {
@@ -7,6 +8,7 @@ import type {
   ClockRule,
   DecisionOutcome,
   FactCondition,
+  OnlyWhen,
   PackRule,
   StartEvent,
 } from '@/features/packs/schema'
@@ -80,7 +82,15 @@ function factText(fact: FactCondition): string {
       return 'the decision was filed late'
     case 'outcome':
       return `the outcome is ${listInWords(fact.in.map(outcomeText), 'or')}`
+    case 'significantDecision':
+      return fact.is
+        ? 'the decision is a significant land use decision'
+        : 'the decision is not a significant land use decision'
   }
+}
+
+function onlyWhenText(onlyWhen: OnlyWhen): string {
+  return listInWords(onlyWhenConditions(onlyWhen).map(factText), 'and')
 }
 
 function amount(value: number, unit: 'days' | 'months' | 'business_days'): string {
@@ -138,7 +148,7 @@ function clockBlock(rule: ClockRule): string {
   const counting = countingText(rule)
   const lines = [
     `- **How long:** ${escapeText(lengthText(rule))}`,
-    rule.onlyWhen === undefined ? '' : `- **Applies only when** ${factText(rule.onlyWhen)}.`,
+    rule.onlyWhen === undefined ? '' : `- **Applies only when** ${onlyWhenText(rule.onlyWhen)}.`,
     `- **Who acts:** ${WHOSE[rule.whose]}.`,
     counting === '' ? '' : `- **Counting:** ${counting}`,
     `- **If it is missed:** ${escapeText(rule.consequence.text)}`,

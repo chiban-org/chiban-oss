@@ -3,7 +3,14 @@ import { computeDue, type DueResult } from '@/features/clocks/computeDue'
 import type { HolidayCalendar } from '@/features/clocks/holidayCalendar'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
-import type { ClockLength, ClockRule, PackRule, StartEvent } from '@/features/packs/schema'
+import type {
+  ClockLength,
+  ClockRule,
+  FactCondition,
+  OnlyWhen,
+  PackRule,
+  StartEvent,
+} from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface ResolvedLength {
@@ -15,6 +22,15 @@ export interface ResolvedLength {
 
 type CaseCondition = Extract<ClockLength, { cases: unknown }>['cases'][number]['when']
 
+export function onlyWhenConditions(onlyWhen: OnlyWhen | undefined): readonly FactCondition[] {
+  if (onlyWhen === undefined) return []
+  return Array.isArray(onlyWhen) ? onlyWhen : [onlyWhen]
+}
+
+function onlyWhenMatches(onlyWhen: OnlyWhen, facts: ProjectFacts): boolean {
+  return onlyWhenConditions(onlyWhen).every((c) => factMatches(c, facts))
+}
+
 export function factMatches(when: CaseCondition, facts: ProjectFacts): boolean {
   if (when.fact === 'classification') {
     return facts.classification !== null && when.in.includes(facts.classification)
@@ -22,6 +38,7 @@ export function factMatches(when: CaseCondition, facts: ProjectFacts): boolean {
   if (when.fact === 'regionalImpact') return facts.regionalImpact === when.is
   if (when.fact === 'decisionFiledLate') return facts.decisionFiledLate === when.is
   if (when.fact === 'outcome') return facts.outcome !== undefined && when.in.includes(facts.outcome)
+  if (when.fact === 'significantDecision') return (facts.significantDecision ?? false) === when.is
   return evaluateCondition(
     { field: 'dwellingUnits', op: 'gt', value: when.gt },
     { dwellingUnits: facts.dwellingUnits ?? 0 },
@@ -100,7 +117,10 @@ function selectRules(rules: readonly PackRule[], s: EventSelection): ClockRule[]
   for (const r of rules) {
     if (r.kind !== 'clock' || r.startEvent !== s.event || !s.bound.has(r.key)) continue
     if ((r.onlyIfHearingScheduled === true) !== s.hearingDependent) continue
-    if (r.onlyWhen !== undefined && (s.facts === undefined || !factMatches(r.onlyWhen, s.facts)))
+    if (
+      r.onlyWhen !== undefined &&
+      (s.facts === undefined || !onlyWhenMatches(r.onlyWhen, s.facts))
+    )
       continue
     const held = best.get(r.key)
     if (held === undefined || r.version > held.version) best.set(r.key, r)

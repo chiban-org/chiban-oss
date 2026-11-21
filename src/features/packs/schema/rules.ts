@@ -72,8 +72,12 @@ export const FactConditionSchema = z.union([
   z.object({ fact: z.literal('regionalImpact'), is: z.literal(true) }),
   z.object({ fact: z.literal('decisionFiledLate'), is: z.literal(true) }),
   z.object({ fact: z.literal('outcome'), in: z.array(DecisionOutcomeSchema).min(1) }),
+  z.object({ fact: z.literal('significantDecision'), is: z.boolean() }),
 ])
 export type FactCondition = z.infer<typeof FactConditionSchema>
+
+const OnlyWhenSchema = z.union([FactConditionSchema, z.array(FactConditionSchema).min(1)])
+export type OnlyWhen = z.infer<typeof OnlyWhenSchema>
 
 const LengthSchema = z.union([
   z.object({
@@ -138,7 +142,7 @@ export const ClockRuleSchema = z
       }),
     ]),
     waivable: z.boolean(),
-    onlyWhen: FactConditionSchema.optional(),
+    onlyWhen: OnlyWhenSchema.optional(),
     relianceFloorMonths: z.number().int().positive().optional(),
     cancelledBy: StartEventSchema.optional(),
     satisfiedByDecision: z.boolean().optional(),

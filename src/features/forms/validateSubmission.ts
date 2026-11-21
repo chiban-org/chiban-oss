@@ -18,6 +18,7 @@ export interface ProjectFacts {
   regionalImpact?: boolean
   decisionFiledLate?: boolean
   outcome?: DecisionOutcome
+  significantDecision?: boolean
 }
 
 export type FieldErrorCode =

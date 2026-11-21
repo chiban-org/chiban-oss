@@ -94,3 +94,47 @@ export const XX_SIGNIFICANT_ROUTES: StatePack = xxPackWith({
     labels: { ...XX_PACK.labels, significantDecisionHelp: XX_SIGNIFICANT_HELP },
   },
 })
+
+export const XX_GENERIC_DENIAL = courtWindow(
+  'xx.appeal.generic_denial',
+  'Court appeal of a denial',
+  30,
+  {
+    startEvent: 'board_vote',
+    onlyWhen: [
+      { fact: 'outcome', in: ['denied'] },
+      { fact: 'significantDecision', is: false },
+    ],
+  },
+)
+export const XX_SIGNIFICANT_DENIAL = courtWindow(
+  'xx.appeal.significant_denial',
+  'Court appeal of a significant denial',
+  30,
+  {
+    startEvent: 'board_vote',
+    onlyWhen: [
+      { fact: 'outcome', in: ['denied'] },
+      { fact: 'significantDecision', is: true },
+    ],
+  },
+)
+
+const DENIAL_RULES = [...XX_PACK.manifest.rules, XX_GENERIC_DENIAL, XX_SIGNIFICANT_DENIAL]
+const DENIAL_KEYS = [XX_GENERIC_DENIAL.key, XX_SIGNIFICANT_DENIAL.key]
+
+export const XX_SIGNIFICANT_WINDOWS: StatePack = xxPackWith({
+  manifest: {
+    rules: DENIAL_RULES,
+    classifications: XX_OPTIONAL_HEARING.manifest.classifications.map((c) =>
+      c.key === XX_PB_SUBDIVISION_KEY
+        ? {
+            ...c,
+            significanceApplies: true,
+            mandatoryRuleKeys: [...c.mandatoryRuleKeys, ...DENIAL_KEYS],
+          }
+        : c,
+    ),
+  },
+  pack: { ruleAreas: [{ title: 'All rules', rules: DENIAL_RULES }] },
+})

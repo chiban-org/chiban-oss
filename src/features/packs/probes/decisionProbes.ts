@@ -83,7 +83,9 @@ const FACT_VARIANTS = [
   { regionalImpact: true },
   { decisionFiledLate: true },
   { dwellingUnits: 3 },
+  { significantDecision: true },
   ...OUTCOMES.map((outcome) => ({ outcome })),
+  ...OUTCOMES.map((outcome) => ({ outcome, significantDecision: true })),
 ]
 
 function gatedProbe(baseKey: string, mutate: (r: ClockRule) => ClockRule): FieldProbe {
@@ -163,6 +165,13 @@ export function decisionProbes(): Record<string, FieldProbe> {
     'clock.onlyWhen.gt': gatedProbe('nh.ri.transmittal', (r) => ({
       ...r,
       onlyWhen: { fact: 'dwellingUnits', gt: 0 },
+    })),
+    'clock.onlyWhen': gatedProbe('nh.appeal.zba_court', (r) => ({
+      ...r,
+      onlyWhen: [
+        { fact: 'outcome', in: ['denied'] },
+        { fact: 'significantDecision', is: true },
+      ],
     })),
     'required_record.conditionalFields.field': probe<RecordRule>({
       base: recordRule,

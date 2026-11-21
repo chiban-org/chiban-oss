@@ -20,6 +20,7 @@ import {
   resolveRuleLength,
   rulesForEvent,
 } from '@/features/clocks/ruleEngine'
+import { significanceFact } from '@/features/clocks/significanceFact'
 import { effectiveBindings } from '@/features/config/bindings'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { electedHearing } from '@/features/hearings/electedHearing'
@@ -86,6 +87,7 @@ export async function startClocksFor(
   if (app === null) return
   const facts = {
     ...(await factsWithDeterminations(tx, applicationId, app.facts)),
+    ...(await significanceFact(tx, applicationId, pack)),
     ...decisionFacts,
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))

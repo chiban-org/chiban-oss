@@ -13,10 +13,13 @@ import { FIXTURE_VOTES, heldZbaHearing } from '@/test/hearingFixtures'
 import {
   XX_BOARD_COURT,
   XX_COURT_AFTER_RECONSIDERATION,
+  XX_GENERIC_DENIAL,
   XX_SIGNIFICANT_AFTER_RECONSIDERATION,
   XX_SIGNIFICANT_COURT,
+  XX_SIGNIFICANT_DENIAL,
   XX_SIGNIFICANT_HELP,
   XX_SIGNIFICANT_ROUTES,
+  XX_SIGNIFICANT_WINDOWS,
 } from '@/test/packs/xx/significance'
 import {
   addStep,
@@ -175,5 +178,45 @@ describe('the NH pack', () => {
     )
     if (!recorded.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'decision refused')
     expect(await significantOf(recorded.value.decisionId)).toBeNull()
+  })
+})
+
+const DENIAL = {
+  outcome: 'denied' as const,
+  reasonsForDisapproval: 'The plan fails the road standard.',
+}
+
+async function startedDenialWindows(applicationId: string): Promise<string[]> {
+  const started: string[] = []
+  for (const rule of [XX_GENERIC_DENIAL, XX_SIGNIFICANT_DENIAL]) {
+    for (const clock of await clocksOf(applicationId, rule.key))
+      started.push(`${rule.key} ${clock.startDate} ${clock.status}`)
+  }
+  return started
+}
+
+describe('denial windows that depend on a significant land use decision', () => {
+  underPack(XX_SIGNIFICANT_WINDOWS)
+
+  it('starts only the significant window on a significant denial', async () => {
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(plan, 'planning_board', { ...DENIAL, significant: true })
+    expect(await startedDenialWindows(plan)).toEqual([
+      `${XX_SIGNIFICANT_DENIAL.key} ${PB_VOTE} running`,
+    ])
+  })
+
+  it('starts only the generic window on a denial that is not significant', async () => {
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(plan, 'planning_board', { ...DENIAL, significant: false })
+    expect(await startedDenialWindows(plan)).toEqual([
+      `${XX_GENERIC_DENIAL.key} ${PB_VOTE} running`,
+    ])
+  })
+
+  it('starts neither window on an approval', async () => {
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(plan, 'planning_board', { significant: true })
+    expect(await startedDenialWindows(plan)).toEqual([])
   })
 })

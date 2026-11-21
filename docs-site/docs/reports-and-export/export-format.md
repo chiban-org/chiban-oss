@@ -492,6 +492,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 - `reasons_for_disapproval`: text, nullable
 - `filed_on`: date, nullable
 - `final_written_approval_on`: date, nullable
+- `significant`: boolean, nullable
 - `minutes_document_id`: uuid, nullable
 - `written_decision_document_id`: uuid, nullable
 - `letter_document_id`: uuid, nullable
