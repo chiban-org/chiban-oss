@@ -41,6 +41,18 @@ export function cureLinks(
   return { cure, penalty }
 }
 
+export function curePenaltyFor(key: string | null): CivilPenaltyRule | null {
+  const rule = cureRuleByKey(key)
+  return rule === null ? null : cureLinks(loadPack(), rule).penalty
+}
+
+export function earliestReturnReceipt(
+  rows: readonly { returnReceiptOn: string | null }[],
+): CivilDate | null {
+  const dates = rows.flatMap((r) => (r.returnReceiptOn === null ? [] : [r.returnReceiptOn]))
+  return (dates.sort()[0] ?? null) as CivilDate | null
+}
+
 export function cureClockOf(rule: CureNoticeRule): ClockRule {
   return cureLinks(loadPack(), rule).cure
 }

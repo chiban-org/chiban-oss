@@ -1,4 +1,5 @@
 import type { PackRule, StatePack } from '@/features/packs/schema'
+import { XX_RANGE_PENALTY, XX_RANGE_PENALTY_KEY } from './enforcementRules'
 import { XX_PACK } from './index'
 import { xxPackWith } from './variants'
 
@@ -29,6 +30,7 @@ export function xxCureRule(
     developmentHold: true,
     civilAction: true,
   },
+  penaltyRuleKey = 'xx.enf.penalty',
 ): PackRule {
   return {
     kind: 'cure_notice',
@@ -39,7 +41,7 @@ export function xxCureRule(
     occupant: 'if_applicable',
     method: 'certified_mail_return_receipt',
     cureRuleKey: XX_CURE_CLOCK_KEY,
-    penaltyRuleKey: 'xx.enf.penalty',
+    penaltyRuleKey,
     remedies,
     overridePolicy: { policy: 'fixed' },
   }
@@ -50,4 +52,16 @@ const CURE_RULES: PackRule[] = [...XX_PACK.manifest.rules, XX_CURE_CLOCK, xxCure
 export const XX_CURE: StatePack = xxPackWith({
   manifest: { rules: CURE_RULES },
   pack: { ruleAreas: [{ title: 'All rules', rules: CURE_RULES }] },
+})
+
+const RANGE_RULES: PackRule[] = [
+  ...XX_PACK.manifest.rules,
+  XX_CURE_CLOCK,
+  xxCureRule(undefined, XX_RANGE_PENALTY_KEY),
+  XX_RANGE_PENALTY,
+]
+
+export const XX_CURE_RANGE: StatePack = xxPackWith({
+  manifest: { rules: RANGE_RULES },
+  pack: { ruleAreas: [{ title: 'All rules', rules: RANGE_RULES }] },
 })

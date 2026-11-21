@@ -3,18 +3,25 @@ import type { DbOrTx } from '@/db/client'
 import {
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   documents,
   enforcementAppeals,
+  enforcementCases,
   perilCertifications,
   violationFindings,
   violationNotices,
 } from '@/db/schema'
+import { curePenaltyFor, earliestReturnReceipt } from '@/features/enforcement/cureRules'
 import {
   APPEAL_OUTCOME_LABELS,
   APPEAL_TARGET_LABELS,
   PROVISION_KIND_LABELS,
 } from '@/features/enforcement/labels'
-import { PENALTY_EXPOSURE_LABEL, penaltyExposure } from '@/features/enforcement/penaltyExposure'
+import {
+  PENALTY_EXPOSURE_LABEL,
+  penaltyExposure,
+  penaltyRangeLines,
+} from '@/features/enforcement/penaltyExposure'
 import { stayBanner, stayFor } from '@/features/enforcement/stay'
 import type { CivilPenaltyRule } from '@/features/packs/schema'
 import { boardAbbrev } from '@/features/packs/vocabulary'
@@ -111,29 +118,60 @@ export async function exposureBlocks(
     today: CivilDate
   },
 ): Promise<PdfBlock[]> {
-  if (input.penaltyRule === null) return []
-  const rule = input.penaltyRule
-  const notices = await db
-    .select({ receivedOn: violationNotices.receivedOn })
-    .from(violationNotices)
-    .where(eq(violationNotices.caseId, input.caseId))
-  const received = notices.flatMap((n) => (n.receivedOn === null ? [] : [n.receivedOn])).sort()[0]
+  const [caseRow] = await db
+    .select({ cureRuleKey: enforcementCases.cureRuleKey })
+    .from(enforcementCases)
+    .where(eq(enforcementCases.id, input.caseId))
+  const rule = input.penaltyRule ?? curePenaltyFor(caseRow?.cureRuleKey ?? null)
+  if (rule === null) return []
+  const received =
+    input.penaltyRule === null
+      ? earliestReturnReceipt(
+          await db
+            .select({ returnReceiptOn: cureNotices.returnReceiptOn })
+            .from(cureNotices)
+            .where(eq(cureNotices.caseId, input.caseId)),
+        )
+      : ((
+          await db
+            .select({ receivedOn: violationNotices.receivedOn })
+            .from(violationNotices)
+            .where(eq(violationNotices.caseId, input.caseId))
+        )
+          .flatMap((n) => (n.receivedOn === null ? [] : [n.receivedOn]))
+          .sort()[0] ?? null)
   const exposure = penaltyExposure(rule, {
-    noticeReceivedOn: (received ?? null) as CivilDate | null,
+    noticeReceivedOn: received as CivilDate | null,
     convictedOn: input.convictedOn,
     through: input.today,
     offense: 'first',
   })
+  const accrual = {
+    label: 'Accrual began',
+    value: exposure.fromDate === null ? 'Not started' : formatCivilDate(exposure.fromDate),
+  }
+  if (exposure.kind === 'range') {
+    return [
+      { kind: 'heading', text: 'Penalty exposure' },
+      {
+        kind: 'fields',
+        rows: [
+          { label: 'Authority', value: rule.citation.label },
+          accrual,
+          { label: 'Days', value: String(exposure.days) },
+        ],
+      },
+      { kind: 'heading', text: exposure.label },
+      ...penaltyRangeLines(exposure).map((text): PdfBlock => ({ kind: 'paragraph', text })),
+    ]
+  }
   return [
     { kind: 'heading', text: 'Penalty exposure' },
     {
       kind: 'fields',
       rows: [
         { label: 'Authority', value: rule.citation.label },
-        {
-          label: 'Accrual began',
-          value: exposure.fromDate === null ? 'Not started' : formatCivilDate(exposure.fromDate),
-        },
+        accrual,
         { label: 'Days', value: String(exposure.days) },
         { label: 'Estimated exposure', value: formatCents(exposure.cents) },
       ],

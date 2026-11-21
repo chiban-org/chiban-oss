@@ -21,7 +21,12 @@ import { getCase, type StaffCaseView } from '@/features/enforcement/access'
 import { answerDueOf } from '@/features/enforcement/answers'
 import { type CaseRemedies, factsOf, loadCaseRemedies } from '@/features/enforcement/caseRemedies'
 import type { AttachableComplaint } from '@/features/enforcement/complaintCandidates'
-import { cureRuleByKey, cureRules } from '@/features/enforcement/cureRules'
+import {
+  curePenaltyFor,
+  cureRuleByKey,
+  cureRules,
+  earliestReturnReceipt,
+} from '@/features/enforcement/cureRules'
 import { fineBalance } from '@/features/enforcement/fines'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
 import { type PenaltyExposure, penaltyExposure } from '@/features/enforcement/penaltyExposure'
@@ -257,7 +262,12 @@ export async function loadCaseDetail(
       .map((n) => n.receivedOn)
       .filter((d): d is string => d !== null)
       .sort()[0] ?? null
-  const penalty = first === undefined ? null : enforcementRulesFor(first.rule).penalty
+  const penalty =
+    first === undefined
+      ? curePenaltyFor(view.value.row.cureRuleKey)
+      : enforcementRulesFor(first.rule).penalty
+  const penaltyNotice =
+    first === undefined ? earliestReturnReceipt(cureRows) : (notice as CivilDate | null)
   const judgment = orders
     .flatMap((o) => o.steps)
     .find((s) => s.kind === 'judgment' && s.judgmentOutcome !== 'annulled')
@@ -294,7 +304,7 @@ export async function loadCaseDetail(
       penalty === null
         ? null
         : penaltyExposure(penalty, {
-            noticeReceivedOn: notice as CivilDate | null,
+            noticeReceivedOn: penaltyNotice,
             convictedOn: earliestConviction(
               (judgment?.occurredOn ?? null) as CivilDate | null,
               outcomes,

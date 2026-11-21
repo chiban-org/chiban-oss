@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { penaltyExposure } from '@/features/enforcement/penaltyExposure'
+import { penaltyExposure, penaltyRangeLines } from '@/features/enforcement/penaltyExposure'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { type CivilPenaltyRule, CivilPenaltyRuleSchema } from '@/features/packs/schema'
+import { XX_RANGE_PENALTY } from '@/test/packs/xx/enforcementRules'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate
@@ -28,7 +30,7 @@ describe('penaltyExposure', () => {
       through: d('2027-02-20'),
       offense: 'subsequent',
     })
-    expect(result.cents).toBe(550000)
+    expect(result).toMatchObject({ cents: 550000 })
   })
 
   it('conviction earlier than notice starts accrual at conviction', () => {
@@ -71,5 +73,54 @@ describe('penaltyExposure', () => {
     expect(result.label).toBe(
       'Estimated statutory exposure for counsel. Nothing is owed unless a court imposes it.',
     )
+  })
+})
+
+describe('penaltyExposure with a range rule', () => {
+  const range = XX_RANGE_PENALTY as CivilPenaltyRule
+  const input = {
+    noticeReceivedOn: d('2027-02-10'),
+    convictedOn: null,
+    through: d('2027-02-20'),
+    offense: 'first' as const,
+  }
+
+  it('yields a range with the days and no computed amount', () => {
+    const result = penaltyExposure(range, input)
+    expect(result).toMatchObject({ kind: 'range', fromDate: '2027-02-10', days: 10 })
+    expect(result).not.toHaveProperty('cents')
+    expect(result.label).toBe('Statutory range, set by the court')
+  })
+
+  it('carries the categories and aggravations of the rule', () => {
+    const result = penaltyExposure(range, input)
+    if (result.kind !== 'range') throw new Error('kind')
+    expect(result.categories).toHaveLength(2)
+    expect(result.aggravations).toHaveLength(2)
+  })
+
+  it('writes each category and aggravation as range copy', () => {
+    const result = penaltyExposure(range, input)
+    expect(penaltyRangeLines(result)).toEqual([
+      'No permit: $100.00 to $2,500.00 per day',
+      'Specific violation: $50.00 to $1,000.00 per day',
+      'Prior conviction within 2 years: up to $500.00 per day',
+      'Economic benefit: up to 2 times the economic benefit',
+    ])
+  })
+
+  it('has no start date without a notice or conviction', () => {
+    const result = penaltyExposure(range, { ...input, noticeReceivedOn: null })
+    expect(result).toMatchObject({ kind: 'range', fromDate: null, days: 0 })
+  })
+
+  it('a fixed rule reports kind computed', () => {
+    expect(penaltyExposure(rule, input).kind).toBe('computed')
+  })
+
+  it('a rule with no model parses as fixed_daily', () => {
+    const { model: _model, ...bare } = rule
+    const parsed = CivilPenaltyRuleSchema.parse(bare)
+    expect(parsed.model).toBe('fixed_daily')
   })
 })

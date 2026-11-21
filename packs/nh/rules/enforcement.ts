@@ -101,6 +101,7 @@ function penalty(
     version: 1,
     label,
     citation,
+    model: 'fixed_daily',
     firstOffenseCentsPerDay: 27500,
     subsequentCentsPerDay: 55000,
     accrual: 'after_earlier_of_conviction_or_written_notice',

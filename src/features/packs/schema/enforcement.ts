@@ -53,15 +53,45 @@ export const CeaseAndDesistRuleSchema = z.object({
 })
 export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>
 
-export const CivilPenaltyRuleSchema = z.object({
+const penaltyBase = {
   ...base,
   kind: z.literal('civil_penalty'),
-  firstOffenseCentsPerDay: z.number().int().positive(),
-  subsequentCentsPerDay: z.number().int().positive(),
   accrual: z.literal('after_earlier_of_conviction_or_written_notice'),
   imposedBy: z.literal('court'),
   overridePolicy: z.object({ policy: z.literal('fixed') }),
+}
+
+export const FixedDailyPenaltySchema = z.object({
+  ...penaltyBase,
+  model: z.literal('fixed_daily').default('fixed_daily'),
+  firstOffenseCentsPerDay: z.number().int().positive(),
+  subsequentCentsPerDay: z.number().int().positive(),
 })
+
+export const RangeDailyPenaltySchema = z.object({
+  ...penaltyBase,
+  model: z.literal('range_daily'),
+  categories: z
+    .array(
+      z.object({
+        key: z.string().min(1),
+        label: z.string().min(1),
+        minCentsPerDay: z.number().int().positive(),
+        maxCentsPerDay: z.number().int().positive(),
+      }),
+    )
+    .min(1),
+  aggravations: z.array(
+    z.object({
+      key: z.string().min(1),
+      label: z.string().min(1),
+      maxCentsPerDay: z.number().int().positive().optional(),
+      maxMultipleOfBenefit: z.number().positive().optional(),
+    }),
+  ),
+})
+
+export const CivilPenaltyRuleSchema = z.union([FixedDailyPenaltySchema, RangeDailyPenaltySchema])
 export type CivilPenaltyRule = z.infer<typeof CivilPenaltyRuleSchema>
 
 export const CureNoticeRuleSchema = z.object({
