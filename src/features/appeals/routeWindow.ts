@@ -8,7 +8,7 @@ import {
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
 import { significanceForRoutes } from '@/features/appeals/routeSignificance'
-import { windowAnchor } from '@/features/appeals/windowAnchor'
+import { originalDecision, windowAnchor } from '@/features/appeals/windowAnchor'
 import { WAITING_START_EVENTS } from '@/features/appeals/windowStart'
 import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
@@ -26,6 +26,7 @@ export interface RouteFacts {
   linkedComponent: boolean
   finalReviewBoard: BoardKind | null
   significant: boolean | null
+  originalOutcome?: 'granted' | 'denied' | null
 }
 
 function routeSpecificity(when: AppealRoute['when']): number {
@@ -34,7 +35,8 @@ function routeSpecificity(when: AppealRoute['when']): number {
     (when.outcome === undefined ? 0 : 1) +
     (when.linkedComponent === undefined ? 0 : 1) +
     (when.finalReviewBoard === undefined ? 0 : 1) +
-    (when.significant === undefined ? 0 : 1)
+    (when.significant === undefined ? 0 : 1) +
+    (when.originalOutcome === undefined ? 0 : 1)
   )
 }
 
@@ -43,6 +45,8 @@ function routeApplies(when: NonNullable<AppealRoute['when']>, facts: RouteFacts)
   if (when.finalReviewBoard !== undefined && when.finalReviewBoard !== facts.finalReviewBoard)
     return false
   if (when.significant !== undefined && when.significant !== facts.significant) return false
+  if (when.originalOutcome !== undefined && when.originalOutcome !== facts.originalOutcome)
+    return false
   return when.linkedComponent === undefined || when.linkedComponent === facts.linkedComponent
 }
 
@@ -95,6 +99,20 @@ function outcomeFact(parent: NodeRow): RouteFacts['outcome'] {
   return parent.outcome === 'denied' ? 'denied' : null
 }
 
+export function usesOriginalOutcome(routes: readonly AppealRoute[]): boolean {
+  return routes.some((r) => r.when?.originalOutcome !== undefined)
+}
+
+export async function originalOutcomeFact(
+  db: DbOrTx,
+  node: NodeRow,
+  routes: readonly AppealRoute[],
+): Promise<Pick<RouteFacts, 'originalOutcome'>> {
+  if (!usesOriginalOutcome(routes)) return {}
+  const original = await originalDecision(db, node)
+  return { originalOutcome: original === null ? null : outcomeFact(original) }
+}
+
 export function routeFacts(
   parent: NodeRow,
   linkedComponent: boolean | undefined,
@@ -127,10 +145,10 @@ export async function chooseRoute(
 ): Promise<Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'>> {
   const routes = candidateRoutes(parent, input.kind)
   const significant = await significanceForRoutes(db, parent, routes, signal)
-  const hit = mostSpecificRoute(
-    routes,
-    routeFacts(parent, input.linkedComponent, input.finality, significant),
-  )
+  const hit = mostSpecificRoute(routes, {
+    ...routeFacts(parent, input.linkedComponent, input.finality, significant),
+    ...(await originalOutcomeFact(db, parent, routes)),
+  })
   return hit === undefined ? err('route_not_allowed') : ok(hit)
 }
 
@@ -180,13 +198,12 @@ export function clockedWindowDue(
 
 export async function ruleWindowDue(
   db: DbOrTx,
-  parent: NodeRow,
+  anchor: NodeRow,
   ruleKey: string,
   finality: ProjectFinality | null,
   signal: AbortSignal,
 ): Promise<CivilDate> {
   const rule = ruleByKey(loadPack(), ruleKey)
-  const anchor = await windowAnchor(db, parent, ruleKey)
   const startOn =
     ruleWaitsForFinalApproval(ruleKey) && finality !== null
       ? finality.finalOn

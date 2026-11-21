@@ -65,8 +65,10 @@ export const ME_APPEAL_ROUTES: AppealRoute[] = [
     from: 'rehearing_outcome',
     when: {
       outcome: 'denied',
+      originalOutcome: 'granted',
       finalReviewBoard: 'planning_board',
-      label: 'reconsideration refused, the planning board gave the last municipal approval',
+      label:
+        'reconsideration of an approval refused, the planning board gave the last municipal approval',
     },
     to: 'court_petition',
     windowRuleKey: 'me.appeal.boa_court_after_planning_board',

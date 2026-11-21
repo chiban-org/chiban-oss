@@ -178,3 +178,38 @@ describe('a Board of Appeals variance whose reconsideration the board refuses la
     expect(petition.untimely).toBe(true)
   })
 })
+
+describe('a refused reconsideration of a Board of Appeals denial on a project approved last later', () => {
+  it('keeps the 45-day window from the vote to deny', async () => {
+    const variance = await decidedBoa(handle.db, world, { outcome: 'denied' })
+    const id = variance.applicationId
+    const decision = await decisionNode(id)
+    const motion = await addStep(
+      id,
+      { parentId: decision.id, kind: 'rehearing_motion' },
+      '2027-04-20',
+    )
+    const refused = await addStep(
+      id,
+      { parentId: motion.id, kind: 'rehearing_outcome' },
+      '2027-05-05',
+      'denied',
+    )
+    const subdivision = await receivedSubdivision(handle.db, world, 'not_within')
+    await acceptAtMeeting(handle.db, world, subdivision)
+    await approvedLastSubdivision(handle.db, world, subdivision, '2027-05-26')
+    expect(await clocksOf(handle.db, id, AFTER_PLANNING_BOARD)).toEqual([])
+    const shown = (await loadGraphNodeRows(handle.db, id)).find((n) => n.id === refused.id)
+    if (shown === undefined) throw new Error('no refusal row')
+    expect(await nodeWindow(handle.db, shown, signal)).toMatchObject({
+      label: label(BOA_COURT),
+      dueText: formatCivilDate('2027-06-01'),
+    })
+    const petition = await addStep(
+      id,
+      { parentId: refused.id, kind: 'court_petition' },
+      '2027-06-10',
+    )
+    expect(petition.untimely).toBe(true)
+  })
+})

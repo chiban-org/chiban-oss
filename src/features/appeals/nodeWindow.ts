@@ -11,6 +11,7 @@ import {
   clockedWindowDue,
   finalityForRoutes,
   mostSpecificRoute,
+  originalOutcomeFact,
   routeFacts,
   ruleWindowDue,
   windowRoutesFrom,
@@ -57,7 +58,7 @@ async function dueText(
     node.applicationId === null ? null : clockedWindowDue(node.windowClocks ?? [], anchor, ruleKey)
   const startsLater = clocked === null ? notStartedText(node, ruleKey) : null
   if (startsLater !== null) return startsLater
-  return formatCivilDate(clocked ?? (await ruleWindowDue(db, node, ruleKey, finality, signal)))
+  return formatCivilDate(clocked ?? (await ruleWindowDue(db, anchor, ruleKey, finality, signal)))
 }
 
 export async function nodeWindow(
@@ -75,7 +76,10 @@ export async function nodeWindow(
     (node.kind === 'rehearing_outcome' &&
       (significant !== null || finality !== null || routes.some((r) => r.when === undefined)))
   const route = bySpecificity
-    ? mostSpecificRoute(routes, routeFacts(node, false, finality, significant))
+    ? mostSpecificRoute(routes, {
+        ...routeFacts(node, false, finality, significant),
+        ...(await originalOutcomeFact(db, node, routes)),
+      })
     : routes[0]
   if (route === undefined || route.windowRuleKey === null) return null
   const rule = ruleByKey(loadPack(), route.windowRuleKey)

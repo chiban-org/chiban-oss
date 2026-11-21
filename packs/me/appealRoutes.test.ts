@@ -8,6 +8,7 @@ const NO_FACTS: RouteFacts = {
   linkedComponent: false,
   finalReviewBoard: null,
   significant: null,
+  originalOutcome: null,
 }
 
 function windowFor(from: AppealNodeKind, to: AppealNodeKind, facts: Partial<RouteFacts> = {}) {
@@ -66,12 +67,18 @@ describe('Maine appeal routes', () => {
         windowFor('rehearing_outcome', 'court_petition', { outcome: 'denied', finalReviewBoard }),
       ).toBe('me.appeal.boa_court')
     }
+    const planningLast = { outcome: 'denied', finalReviewBoard: 'planning_board' } as const
     expect(
       windowFor('rehearing_outcome', 'court_petition', {
-        outcome: 'denied',
-        finalReviewBoard: 'planning_board',
+        ...planningLast,
+        originalOutcome: 'granted',
       }),
     ).toBe('me.appeal.boa_court_after_planning_board')
+    for (const originalOutcome of ['denied', null] as const) {
+      expect(
+        windowFor('rehearing_outcome', 'court_petition', { ...planningLast, originalOutcome }),
+      ).toBe('me.appeal.boa_court')
+    }
   })
 
   it('never returns a reconsideration to the board decision', () => {
