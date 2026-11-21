@@ -10,12 +10,13 @@ import { lockCase } from '@/features/enforcement/cases'
 import { cureStatus } from '@/features/enforcement/cureNotices'
 import { cureRuleByKey } from '@/features/enforcement/cureRules'
 import { holdsEnabled } from '@/features/enforcement/holdReads'
+import { stayFor } from '@/features/enforcement/stay'
 import { civilDateSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 type Remedy = 'developmentHold' | 'civilAction'
-export type RemedyError = 'not_found' | 'remedy_not_available' | 'cure_not_lapsed'
+export type RemedyError = 'not_found' | 'remedy_not_available' | 'cure_not_lapsed' | 'stayed'
 
 export async function lockedRemedyOpen(
   tx: Tx,
@@ -34,7 +35,8 @@ export async function lockedRemedyOpen(
       : rule?.remedies.civilAction === true
   if (!offered) return err('remedy_not_available')
   const status = await cureStatus(tx, caseId, on, signal)
-  return status.lapsedUncorrected ? ok(row) : err('cure_not_lapsed')
+  if (!status.lapsedUncorrected) return err('cure_not_lapsed')
+  return (await stayFor(tx, caseId, on, signal)).stayed ? err('stayed') : ok(row)
 }
 
 const CivilActionSchema = z.object({

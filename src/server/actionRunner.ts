@@ -67,6 +67,8 @@ export const ERROR_COPY: Record<string, string> = {
     'This permit is suspended under an enforcement hold. Revoke it from the enforcement case.',
   before_reinstatement:
     'The filing date cannot be before the permit last went back into force after an appeal or a hold.',
+  filed_during_hold:
+    'Record an appeal filed during a hold while the hold stands. This appeal is dated before the permit went back into force.',
   not_submitted: 'The application has not been submitted yet.',
   already_complete: 'The application is already marked complete.',
   already_signed_off: 'You have already signed off on this review.',

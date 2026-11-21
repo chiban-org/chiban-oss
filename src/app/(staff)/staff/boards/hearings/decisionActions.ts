@@ -166,6 +166,7 @@ export async function addAppealNodeAction(formData: FormData): Promise<ActionRes
         route_not_allowed: 'kind',
         not_final: 'kind',
         before_reinstatement: 'occurredOn',
+        filed_during_hold: 'occurredOn',
         already_final: 'finalMunicipalApproval',
         wrong_outcome: 'outcome',
       })

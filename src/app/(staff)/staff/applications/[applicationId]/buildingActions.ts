@@ -100,6 +100,7 @@ export async function recordAppealAction(formData: FormData): Promise<ActionResu
     }
     return outcome(recorded, 'Appeal recorded. The permit is suspended.', {
       before_reinstatement: 'filedOn',
+      filed_during_hold: 'filedOn',
     })
   })
 }

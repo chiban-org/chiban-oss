@@ -1,10 +1,11 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import { appeals, applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { appealOpen, appealSuspends } from '@/features/appeals/suspension'
 import {
   lastReturnToIssued,
+  pastHoldCovered,
   stopExerciseClocks,
   stoppedSince,
   tollStoppedClocks,
@@ -40,10 +41,10 @@ export async function recordAppeal(
   )
 }
 
-type FilingError = 'not_issued' | 'before_reinstatement'
+type FilingError = 'not_issued' | 'before_reinstatement' | 'filed_during_hold'
 
 export async function acceptsIssuanceAppeal(
-  tx: Tx,
+  tx: DbOrTx,
   app: Pick<ApplicationContext, 'id' | 'state'>,
   signal: AbortSignal,
 ): Promise<boolean> {
@@ -73,7 +74,10 @@ async function filingTarget(
   if (!(await acceptsIssuanceAppeal(tx, app, signal))) return err('not_issued')
   const held = app.state === 'suspended'
   const returned = holds ? await lastReturnToIssued(tx, app) : null
-  if (returned !== null && input.filedOn < returned) return err('before_reinstatement')
+  if (returned !== null && input.filedOn < returned) {
+    const during = await pastHoldCovered(tx, app.id, input.filedOn)
+    return err(during ? 'filed_during_hold' : 'before_reinstatement')
+  }
   return ok({ app, held })
 }
 

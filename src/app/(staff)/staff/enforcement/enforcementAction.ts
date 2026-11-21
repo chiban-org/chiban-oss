@@ -91,6 +91,8 @@ const COPY: Record<string, string> = {
   before_suspension: 'The date cannot be before the permit was suspended under the hold.',
   before_reinstatement:
     'The date cannot be before the permit last went back into force after an appeal or an earlier hold.',
+  before_appeal_resolution:
+    'The release date cannot be before an appeal on a permit this hold suspends was resolved.',
   findings_open: 'Mark every finding corrected or withdrawn before releasing the hold.',
   balance_due: 'Collect every fine and cost on this case before releasing the hold.',
   not_on_parcel: 'That permit is not on the held parcel.',

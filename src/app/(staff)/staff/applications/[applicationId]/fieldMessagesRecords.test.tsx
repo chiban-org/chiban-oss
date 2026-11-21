@@ -92,7 +92,7 @@ describe('record forms show a refusal beside its field', () => {
 
   it('the appellant name', async () => {
     refuseWith('appellantName', 'Enter the appellant name.')
-    inProvider(<AppealsPanel view={view({ state: 'issued' })} graph={[]} />)
+    inProvider(<AppealsPanel view={view({ state: 'issued', acceptsAppeal: true })} graph={[]} />)
     fireEvent.change(screen.getByLabelText(/Appellant/), { target: { value: ' ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Record appeal' }))
     await expectRefusalBeside(screen.getByLabelText(/Appellant/), 'Enter the appellant name.')

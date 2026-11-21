@@ -95,6 +95,8 @@ const COPY: Record<string, string> = {
     'The project already has its last municipal approval, recorded on another decision.',
   before_reinstatement:
     'The filing date cannot be before the permit last went back into force after an appeal or a hold.',
+  filed_during_hold:
+    'Record an appeal filed during a hold while the hold stands. This appeal is dated before the permit went back into force.',
   not_final:
     'The project did not have its last municipal approval on that date, so the appeal period had not started.',
   no_route: 'No Technical Review Committee route is set for this application type.',

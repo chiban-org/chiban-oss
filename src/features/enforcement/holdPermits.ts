@@ -19,7 +19,7 @@ import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { applicationParcelIds } from '@/features/enforcement/holdReads'
+import { applicationParcelIds, holdSuspends } from '@/features/enforcement/holdReads'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -51,6 +51,10 @@ async function appealAlreadySuspends(db: DbOrTx, app: ApplicationContext, signal
   return appealStops(app) && (await appealOpen(db, app.id, signal))
 }
 
+async function suspendedElsewhere(db: DbOrTx, app: ApplicationContext, signal: AbortSignal) {
+  return (await holdSuspends(db, app.id, signal)) || (await appealAlreadySuspends(db, app, signal))
+}
+
 async function suspendableUnderHold(
   db: DbOrTx,
   row: { id: string; state: string },
@@ -60,7 +64,7 @@ async function suspendableUnderHold(
   if (row.state === 'issued') return true
   if (actedHere) return false
   const app = await loadApplicationContext(db, row.id, signal)
-  return app !== null && (await appealAlreadySuspends(db, app, signal))
+  return app !== null && (await suspendedElsewhere(db, app, signal))
 }
 
 export async function permitsOnHeldParcel(
@@ -130,8 +134,9 @@ async function suspendedPermitCheck(
     if (input.actedOn < action.actedOn) return err('before_suspension')
     return ok({ rowVersion: app.rowVersion, move: true })
   }
-  const byAppeal = action === undefined && (await appealAlreadySuspends(tx, app, signal))
-  return byAppeal ? ok({ rowVersion: app.rowVersion, move: false }) : err('not_issued')
+  const actedHere = action !== undefined && action.reinstatedOn === null
+  const elsewhere = !actedHere && (await suspendedElsewhere(tx, app, signal))
+  return elsewhere ? ok({ rowVersion: app.rowVersion, move: false }) : err('not_issued')
 }
 
 async function checkPermit(

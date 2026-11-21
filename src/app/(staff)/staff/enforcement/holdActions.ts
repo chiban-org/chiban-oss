@@ -25,6 +25,7 @@ export async function releaseDevelopmentHoldAction(formData: FormData): Promise<
     settled(await releaseDevelopmentHold(db, actor, input, signal), 'Development hold released.', {
       before_placed: 'releasedOn',
       before_suspension: 'releasedOn',
+      before_appeal_resolution: 'releasedOn',
     }),
   )
 }

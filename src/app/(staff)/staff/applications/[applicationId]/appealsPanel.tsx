@@ -14,7 +14,7 @@ function appealLine(a: StaffApplicationView['appeals'][number]): string {
 }
 
 function RecordAppealForm({ view }: { view: StaffApplicationView }) {
-  if (view.state !== 'issued' || !view.permissions.canIssue) return null
+  if (!view.acceptsAppeal || !view.permissions.canIssue) return null
   return (
     <details>
       <summary>Record an appeal</summary>

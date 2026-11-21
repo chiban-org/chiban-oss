@@ -33,6 +33,7 @@ export type AppealError =
   | 'not_final'
   | 'already_final'
   | 'before_reinstatement'
+  | 'filed_during_hold'
 
 export interface AddNodeInput {
   parentId: string

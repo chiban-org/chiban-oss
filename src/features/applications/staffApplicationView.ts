@@ -12,6 +12,7 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
+import { acceptsIssuanceAppeal } from '@/features/appeals/appeals'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import {
   CORE_TRANSITIONS,
@@ -103,6 +104,7 @@ export interface StaffApplicationView {
     notices: (typeof regionalImpactNotices.$inferSelect)[]
   }
   appeals: (typeof appeals.$inferSelect)[]
+  acceptsAppeal: boolean
   varianceValidity: VarianceValidity
   reliance: RelianceView | null
   decisionNotice: DecisionNoticeView | null
@@ -282,6 +284,7 @@ export async function getStaffApplicationView(
       .from(appeals)
       .where(eq(appeals.applicationId, applicationId))
       .orderBy(asc(appeals.filedOn)),
+    acceptsAppeal: await acceptsIssuanceAppeal(db, app, signal),
     varianceValidity: await varianceValidity(db, app.id, signal),
     reliance: await loadRelianceView(db, app.id, project.parcelId, signal),
     decisionNotice: await loadDecisionNotice(db, app),

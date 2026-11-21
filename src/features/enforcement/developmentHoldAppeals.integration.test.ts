@@ -218,7 +218,7 @@ describe('an appeal of issuance on a permit suspended by a hold', () => {
     })
     expect(await appeal(permitId, d('2027-03-15'))).toEqual({
       ok: false,
-      error: 'before_reinstatement',
+      error: 'filed_during_hold',
     })
     expect(await appeal(permitId, d('2027-03-20'))).toEqual(DONE)
   })

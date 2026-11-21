@@ -1,7 +1,8 @@
-import { and, eq, gt, isNull } from 'drizzle-orm'
+import { and, eq, gt, gte, isNull } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
+  appeals,
   developmentHolds,
   enforcementFines,
   holdPermitActions,
@@ -114,6 +115,28 @@ async function suspendedAfter(tx: Tx, holdId: string, releasedOn: CivilDate): Pr
   return later.length > 0
 }
 
+async function appealResolvedAfter(
+  tx: Tx,
+  holdId: string,
+  releasedOn: CivilDate,
+): Promise<boolean> {
+  const later = await tx
+    .select({ resolvedOn: appeals.resolvedOn })
+    .from(holdPermitActions)
+    .innerJoin(appeals, eq(appeals.applicationId, holdPermitActions.applicationId))
+    .where(
+      and(
+        eq(holdPermitActions.holdId, holdId),
+        eq(holdPermitActions.action, 'suspended'),
+        isNull(holdPermitActions.reinstatedOn),
+        gte(appeals.resolvedOn, holdPermitActions.actedOn),
+        gt(appeals.resolvedOn, releasedOn),
+      ),
+    )
+    .limit(1)
+  return later.length > 0
+}
+
 async function stillSuspended(tx: Tx, app: ApplicationContext, signal: AbortSignal) {
   if (await holdSuspends(tx, app.id, signal)) return true
   return appealStops(app) && (await appealOpen(tx, app.id, signal))
@@ -188,6 +211,7 @@ export async function releaseDevelopmentHold(
     | 'already_released'
     | 'before_placed'
     | 'before_suspension'
+    | 'before_appeal_resolution'
     | 'findings_open'
     | 'balance_due'
   >
@@ -201,6 +225,9 @@ export async function releaseDevelopmentHold(
     if (hold.releasedOn !== null) return err('already_released')
     if (input.releasedOn < hold.placedOn) return err('before_placed')
     if (await suspendedAfter(tx, hold.id, input.releasedOn)) return err('before_suspension')
+    if (await appealResolvedAfter(tx, hold.id, input.releasedOn)) {
+      return err('before_appeal_resolution')
+    }
     const open = await tx
       .select({ id: violationFindings.id })
       .from(violationFindings)

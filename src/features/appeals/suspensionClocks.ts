@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, gt, isNotNull, lte } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { appeals, clocks, holdPermitActions } from '@/db/schema'
 import { appealSuspends } from '@/features/appeals/suspension'
@@ -75,19 +75,41 @@ export async function lastReturnToIssued(
       .from(appeals)
       .where(and(eq(appeals.applicationId, app.id), isNotNull(appeals.resolvedOn))),
     tx
-      .select({ on: holdPermitActions.reinstatedOn })
+      .select({ start: holdPermitActions.actedOn, end: holdPermitActions.reinstatedOn })
       .from(holdPermitActions)
       .where(
-        and(eq(holdPermitActions.applicationId, app.id), isNotNull(holdPermitActions.reinstatedOn)),
+        and(eq(holdPermitActions.applicationId, app.id), eq(holdPermitActions.action, 'suspended')),
       ),
   ])
-  const dates = [app.issuedOn, ...appealRows.map((r) => r.on), ...holdRows.map((r) => r.on)]
+  const heldAcross = (on: string) =>
+    holdRows.some((h) => h.start < on && (h.end === null || h.end > on))
+  const dates = [app.issuedOn, ...appealRows.map((r) => r.on), ...holdRows.map((r) => r.end)]
   return (
     dates
-      .filter((x): x is string => x !== null)
+      .filter((x): x is string => x !== null && !heldAcross(x))
       .sort()
       .at(-1) ?? null
   )
+}
+
+export async function pastHoldCovered(
+  tx: Tx,
+  applicationId: string,
+  on: CivilDate,
+): Promise<boolean> {
+  const [row] = await tx
+    .select({ actedOn: holdPermitActions.actedOn })
+    .from(holdPermitActions)
+    .where(
+      and(
+        eq(holdPermitActions.applicationId, applicationId),
+        eq(holdPermitActions.action, 'suspended'),
+        lte(holdPermitActions.actedOn, on),
+        gt(holdPermitActions.reinstatedOn, on),
+      ),
+    )
+    .limit(1)
+  return row !== undefined
 }
 
 export async function stoppedSince(
