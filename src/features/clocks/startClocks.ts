@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -43,6 +43,8 @@ export async function resolveClockLength(
   return resolveRuleLength(rule, facts, setting, townValue)
 }
 
+const ONCE_PER_APPLICATION: readonly StartEvent[] = ['project_final_approval']
+
 export async function startClocksFor(
   tx: Tx,
   applicationId: string,
@@ -63,13 +65,16 @@ export async function startClocksFor(
   const bound = new Set(effectiveBindings(app.typeBody, pack))
   await cancelClocksFor(tx, applicationId, event, pack)
   const rules = rulesForEvent(pack.rules, event, bound, facts)
-  const running = await tx
+  const started = ONCE_PER_APPLICATION.includes(event)
+    ? ne(clocks.status, 'superseded')
+    : eq(clocks.status, 'running')
+  const existing = await tx
     .select({ ruleKey: clocks.ruleKey })
     .from(clocks)
-    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.status, 'running')))
-  const runningKeys = new Set(running.map((c) => c.ruleKey))
+    .where(and(eq(clocks.applicationId, applicationId), started))
+  const existingKeys = new Set(existing.map((c) => c.ruleKey))
   for (const rule of rules) {
-    if (runningKeys.has(rule.key)) continue
+    if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
 }

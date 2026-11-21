@@ -168,6 +168,20 @@ describe('board decisions on an appeal', () => {
     })
   })
 
+  it('starts no second approval window on a later approval once the first was met', async () => {
+    const variance = await underReview(fw.world.zbaTypeKey)
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(variance, 'zba')
+    await decide(plan, 'planning_board', { finalMunicipalApproval: true })
+    expect(await petitionUntimely(await decisionNodeOf(variance), '2027-05-10')).toBe(false)
+    const added = await addStep(await appealNode(variance), 'zba_decision', '2027-05-12', {
+      outcome: 'approved',
+    })
+    expect(added.ok).toBe(true)
+    const windows = await clocksOf(variance, XX_FINAL_APPROVAL_WINDOW.key)
+    expect(windows.map((c) => [c.startDate, c.status])).toEqual([[PB_VOTE, 'met']])
+  })
+
   it('counts the window from the decision when the appeal has no application', async () => {
     const timely = await addStep(await appealNode(null), 'zba_decision', '2027-04-20', {
       outcome: 'approved',
