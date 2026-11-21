@@ -3,8 +3,7 @@ import { ME_URLS, TOWN_RULE } from '@packs/me/rules/urls'
 import type { ClockRule, PackRule } from '@/features/packs/schema'
 
 const SECTION_4403_5 = { label: '30-A MRSA §4403(5)', url: ME_URLS.title30Asec4403 } as const
-const AGREED_LIMIT =
-  'or within any other time limit mutually agreed to by the board and the applicant'
+const AGREED_LIMIT = 'or within any other time limit that is otherwise mutually agreed to'
 
 function decision(
   fields: Pick<ClockRule, 'key' | 'label' | 'startEvent'> & { days: number },
@@ -114,12 +113,52 @@ const SITE_PLAN_RULES: PackRule[] = [
     direction: 'after',
     consequence: {
       kind: 'none_stated',
-      text: 'The town site plan ordinance sets this date. Maine law states no consequence for a late site plan decision.',
+      text: 'The town site plan ordinance sets this date. A late decision shows as overdue.',
     },
     extension: { allowed: true, by: 'applicant_consent' },
     waivable: false,
     satisfiedByDecision: true,
     overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'town_setting',
+    key: 'town.sp.hearing_notice_days',
+    version: 1,
+    label: 'Days before a site plan hearing to give public notice (Chiban starting value)',
+    citation: TOWN_RULE,
+    unit: 'days',
+    overridePolicy: { policy: 'delegated_choice', default: 7 },
+  },
+  {
+    kind: 'clock',
+    key: 'town.sp.hearing_notice',
+    version: 1,
+    label: 'Site plan hearing public notice',
+    citation: TOWN_RULE,
+    clockType: 'notice_lead',
+    whose: 'board',
+    startEvent: 'acceptance_meeting_set',
+    length: { unit: 'days', fromSetting: 'town.sp.hearing_notice_days' },
+    direction: 'before',
+    consequence: {
+      kind: 'none_stated',
+      text: 'The town site plan ordinance sets the notice for a site plan hearing.',
+    },
+    extension: { allowed: false, note: 'The town rule sets the notice period.' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'notice_requirement',
+    key: 'town.sp.notice.hearing',
+    version: 1,
+    label: 'Site plan hearing public notice',
+    citation: TOWN_RULE,
+    channel: { townChoice: ['public_posting', 'newspaper'] },
+    recipients: { public: true },
+    leadRuleKey: 'town.sp.hearing_notice',
+    stage: 'before_hearing',
+    overridePolicy: { policy: 'delegated_choice', default: 0 },
   },
 ]
 
@@ -133,4 +172,8 @@ export const SUBDIVISION_RULE_KEYS = [...SUBDIVISION_CLOCKS, ...PLANNING_BOARD_N
   .filter((r) => r.kind !== 'notice_requirement')
   .map((r) => r.key)
 
-export const SITE_PLAN_RULE_KEYS = SITE_PLAN_RULES.map((r) => r.key)
+export const SITE_PLAN_RULE_KEYS = SITE_PLAN_RULES.filter(
+  (r) => r.kind !== 'notice_requirement',
+).map((r) => r.key)
+
+export const SITE_PLAN_NOTICE_REQUIREMENTS = ['town.sp.notice.hearing']

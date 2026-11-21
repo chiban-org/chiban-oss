@@ -24,6 +24,7 @@ const signal = new AbortController().signal
 const d = (s: string) => s as CivilDate
 
 export const SUBDIVISION_TYPE = 'SUB'
+export const SITE_PLAN_TYPE = 'SPL'
 export const RECEIVED = '2027-03-02'
 export const ACCEPTANCE_MEETING = '2027-03-24'
 export const HEARING_MEETING = '2027-04-14'
@@ -37,6 +38,19 @@ export async function publishSubdivisionType(db: Db, world: BoardWorld): Promise
     SUBDIVISION_TYPE,
     boardTypeBody('me.pb_subdivision', SUBDIVISION_TYPE, 'SUB', {}, ME_PACK),
   )
+  await saveAndPublish(
+    db,
+    world.admin,
+    'application_type',
+    SITE_PLAN_TYPE,
+    boardTypeBody('me.pb_site_plan', SITE_PLAN_TYPE, 'SPL', {}, ME_PACK),
+  )
+}
+
+export async function receivedSitePlan(db: Db, world: BoardWorld): Promise<string> {
+  const id = await submitBoardApplication(db, world, SITE_PLAN_TYPE, RECEIVED)
+  await issueListWithRecipients(db, world, id, [recipient(1), recipient(5, ['applicant'])])
+  return id
 }
 
 export async function pbMeetingOn(db: Db, date: string): Promise<string> {

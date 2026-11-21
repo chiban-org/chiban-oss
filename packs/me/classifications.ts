@@ -1,4 +1,8 @@
-import { SITE_PLAN_RULE_KEYS, SUBDIVISION_RULE_KEYS } from '@packs/me/rules/planningBoard'
+import {
+  SITE_PLAN_NOTICE_REQUIREMENTS,
+  SITE_PLAN_RULE_KEYS,
+  SUBDIVISION_RULE_KEYS,
+} from '@packs/me/rules/planningBoard'
 import { SUBDIVISION_NOTICE_REQUIREMENTS } from '@packs/me/rules/planningBoardNotices'
 import type { ProceedingClassification } from '@/features/packs/schema'
 
@@ -18,10 +22,26 @@ function direct(key: string, label: string, mandatoryRuleKeys: string[]): Procee
   }
 }
 
+type AbuttersSpec = NonNullable<ProceedingClassification['abutters']>
+
+const SUBDIVISION_RECIPIENTS: Pick<AbuttersSpec, 'roles' | 'conditionalRoles'> = {
+  roles: ['applicant', 'abutter_owner', 'municipal_clerk', 'municipal_reviewing_authority'],
+  conditionalRoles: [{ role: 'water_supplier', when: 'source_water_area' }],
+}
+
+const SITE_PLAN_RECIPIENTS: Pick<AbuttersSpec, 'roles' | 'conditionalRoles'> = {
+  roles: ['applicant', 'abutter_owner'],
+  conditionalRoles: [],
+}
+
 function planningBoard(
   key: string,
   label: string,
-  rules: { mandatory: string[]; notices: string[] },
+  rules: {
+    mandatory: string[]
+    notices: string[]
+    recipients: Pick<AbuttersSpec, 'roles' | 'conditionalRoles'>
+  },
 ): ProceedingClassification {
   return {
     key,
@@ -31,8 +51,7 @@ function planningBoard(
     abutters: {
       strategyKey: 'me.adjacent_buffer.v1',
       resolverKey: 'me.recipients.v1',
-      roles: ['applicant', 'abutter_owner', 'municipal_clerk', 'municipal_reviewing_authority'],
-      conditionalRoles: [{ role: 'water_supplier', when: 'source_water_area' }],
+      ...rules.recipients,
     },
     noticeRequirementKeys: rules.notices,
     requiredSubsteps: [],
@@ -85,9 +104,11 @@ export const ME_CLASSIFICATIONS: ProceedingClassification[] = [
   planningBoard('me.pb_subdivision', 'Subdivision', {
     mandatory: SUBDIVISION_RULE_KEYS,
     notices: SUBDIVISION_NOTICE_REQUIREMENTS,
+    recipients: SUBDIVISION_RECIPIENTS,
   }),
   planningBoard('me.pb_site_plan', 'Site plan review', {
     mandatory: SITE_PLAN_RULE_KEYS,
-    notices: [],
+    notices: SITE_PLAN_NOTICE_REQUIREMENTS,
+    recipients: SITE_PLAN_RECIPIENTS,
   }),
 ]

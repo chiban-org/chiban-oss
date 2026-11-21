@@ -15,6 +15,7 @@ import {
   proveReceipt,
   publishSubdivisionType,
   RECEIVED,
+  receivedSitePlan,
   receivedSubdivision,
   scheduleSubdivisionHearing,
 } from '@/test/maineSubdivisionFixtures'
@@ -172,6 +173,47 @@ describe('a Maine subdivision with a hearing', () => {
     ])
     expect((await decideSubdivision(handle.db, world, id, hearing.hearingId)).ok).toBe(true)
     expect(await clock(id, 'me.pb.decision_after_hearing')).toMatchObject([
+      { status: 'met', metOn: HEARING_MEETING },
+    ])
+  })
+})
+
+describe('a Maine site plan review', () => {
+  it('starts no subdivision clock and meets the town decision date without a hearing', async () => {
+    const id = await receivedSitePlan(handle.db, world)
+    expect(await clock(id, 'me.pb.completeness')).toEqual([])
+    expect(await clock(id, 'me.pb.receipt_notice')).toEqual([])
+    await acceptAtMeeting(handle.db, world, id)
+    expect(await clock(id, 'town.sp.decision')).toMatchObject([
+      { status: 'running', startDate: ACCEPTANCE_MEETING, currentDue: '2027-05-23' },
+    ])
+    expect((await decideSubdivision(handle.db, world, id, null)).ok).toBe(true)
+    expect(await clock(id, 'town.sp.decision')).toMatchObject([
+      { status: 'met', metOn: HEARING_MEETING },
+    ])
+  })
+
+  it('holds and decides a hearing after the town public notice', async () => {
+    const id = await receivedSitePlan(handle.db, world)
+    await acceptAtMeeting(handle.db, world, id)
+    const hearing = await scheduleSubdivisionHearing(handle.db, world, id)
+    const items = await itemsOf(handle.db, hearing.noticeSetId)
+    expect(
+      items.map((i) => [i.requirementKey, i.channel, i.recipientName, i.dueOn]).sort(),
+    ).toEqual([
+      ['town.notice.bulletin_board', 'bulletin_board', 'Alder Pond Public Library', '2027-04-07'],
+      [
+        'town.notice.bulletin_board',
+        'bulletin_board',
+        'Alder Pond Town Hall bulletin board',
+        '2027-04-07',
+      ],
+      ['town.sp.notice.hearing', 'public_posting', null, '2027-04-07'],
+    ])
+    await holdSubdivisionHearing(handle.db, world, id, hearing)
+    expect(await clock(id, 'me.pb.hearing_window')).toEqual([])
+    expect((await decideSubdivision(handle.db, world, id, hearing.hearingId)).ok).toBe(true)
+    expect(await clock(id, 'town.sp.decision')).toMatchObject([
       { status: 'met', metOn: HEARING_MEETING },
     ])
   })

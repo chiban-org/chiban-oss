@@ -23,8 +23,9 @@ function hearingLead(fields: {
   label: string
   fromSetting: string
   paragraph: string
+  notice: string
 }): ClockRule {
-  const { key, label, fromSetting, paragraph } = fields
+  const { key, label, fromSetting, paragraph, notice } = fields
   return {
     kind: 'clock',
     key,
@@ -37,8 +38,8 @@ function hearingLead(fields: {
     length: { unit: 'days', fromSetting },
     direction: 'before',
     consequence: {
-      kind: 'notice_defective',
-      text: `30-A MRSA §4403${paragraph} requires this notice and sets no day count. The town sets this date.`,
+      kind: 'none_stated',
+      text: `30-A MRSA §4403${paragraph} requires ${notice} and sets no day count for it. The town sets this date.`,
     },
     extension: { allowed: false, note: 'The town rule sets the notice period.' },
     waivable: false,
@@ -125,6 +126,7 @@ export const PLANNING_BOARD_NOTICE_RULES: PackRule[] = [
     label: 'Second newspaper publication of the subdivision hearing',
     fromSetting: 'town.pb.second_publication_days',
     paragraph: '(4)(B)',
+    notice: 'a second publication',
   }),
   setting('town.pb.applicant_notice_days', 'Days before the hearing to notify the applicant', 7),
   hearingLead({
@@ -132,6 +134,7 @@ export const PLANNING_BOARD_NOTICE_RULES: PackRule[] = [
     label: 'Hearing notice to the subdivision applicant',
     fromSetting: 'town.pb.applicant_notice_days',
     paragraph: '(4)(A)',
+    notice: 'hearing notice to the applicant',
   }),
   requirement({
     key: 'me.pb.notice.hearing_first',

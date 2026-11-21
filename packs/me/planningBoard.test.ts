@@ -133,7 +133,7 @@ describe('Planning Board due dates under 30-A MRSA §4403', () => {
       extension: { allowed: true, by: 'applicant_consent' },
     })
     expect(clock('me.pb.decision_no_hearing').consequence.text).toContain(
-      'any other time limit mutually agreed to',
+      'or within any other time limit that is otherwise mutually agreed to',
     )
   })
 
@@ -159,6 +159,7 @@ describe('Planning Board due dates under 30-A MRSA §4403', () => {
       'town.pb.second_publication_days': 1,
       'town.pb.applicant_notice_days': 7,
       'town.sp.decision_days': 60,
+      'town.sp.hearing_notice_days': 7,
     }
     for (const [key, value] of Object.entries(settings)) {
       const rule = ME_PACK.manifest.rules.find((r) => r.key === key)
@@ -224,6 +225,23 @@ describe('the Planning Board classifications', () => {
       directIssueAllowed: false,
       requiredSubsteps: [],
       abutters: { strategyKey: 'me.adjacent_buffer.v1', resolverKey: 'me.recipients.v1' },
+    })
+  })
+
+  it('notices the subdivision receipt recipients but not on a site plan', () => {
+    expect(classification('me.pb_subdivision').abutters).toMatchObject({
+      roles: ['applicant', 'abutter_owner', 'municipal_clerk', 'municipal_reviewing_authority'],
+      conditionalRoles: [{ role: 'water_supplier', when: 'source_water_area' }],
+    })
+    expect(classification('me.pb_site_plan')).toMatchObject({
+      abutters: { roles: ['applicant', 'abutter_owner'], conditionalRoles: [] },
+      noticeRequirementKeys: ['town.sp.notice.hearing'],
+      mandatoryRuleKeys: [
+        'town.sp.decision_days',
+        'town.sp.decision',
+        'town.sp.hearing_notice_days',
+        'town.sp.hearing_notice',
+      ],
     })
   })
 
