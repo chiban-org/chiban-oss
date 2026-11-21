@@ -8,6 +8,7 @@ import {
   type ProjectFinality,
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
+import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -160,21 +161,22 @@ export function clockedWindowDue(
   return clock === undefined ? null : (clock.currentDue as CivilDate)
 }
 
-export function ruleWindowDue(
+export async function ruleWindowDue(
+  db: DbOrTx,
   parent: NodeRow,
   ruleKey: string,
   finality: ProjectFinality | null,
-): CivilDate {
+  signal: AbortSignal,
+): Promise<CivilDate> {
   const rule = ruleByKey(loadPack(), ruleKey)
   const startOn =
     ruleWaitsForFinalApproval(ruleKey) && finality !== null
       ? finality.finalOn
       : (parent.occurredOn as CivilDate)
-  const length = rule.kind === 'clock' && 'value' in rule.length ? rule.length : null
-  if (rule.kind !== 'clock' || length === null) return parent.occurredOn as CivilDate
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return parent.occurredOn as CivilDate
   return computeRuleDue(
     rule,
-    { unit: length.unit, value: length.value },
+    await resolvedLength(db, rule, signal),
     startOn,
     packHolidayCalendar(),
   ).due
@@ -206,6 +208,7 @@ export async function windowDue(
   tx: DbOrTx,
   parent: NodeRow,
   window: { applicationId: string | null; ruleKey: string; finality: ProjectFinality | null },
+  signal: AbortSignal,
 ): Promise<CivilDate> {
   const { applicationId, ruleKey, finality } = window
   if (applicationId !== null) {
@@ -215,5 +218,5 @@ export async function windowDue(
     const due = await startedClockDue(tx, applicationId, ruleKey, started)
     if (due !== null) return due
   }
-  return ruleWindowDue(parent, ruleKey, finality)
+  return await ruleWindowDue(tx, parent, ruleKey, finality, signal)
 }

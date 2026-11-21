@@ -12,6 +12,7 @@ import { currentIssuedList } from '@/features/abutters/queries'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { BoardSettingsBody } from '@/features/boards/boardSettingsSchema'
 import { boardForKind } from '@/features/boards/townBoards'
+import { townSettingValue } from '@/features/clocks/resolvedLength'
 import { getPublished } from '@/features/config/store'
 import type { NoticeChannel } from '@/features/notices/channels'
 import {
@@ -21,7 +22,7 @@ import {
   type RequirementFlags,
 } from '@/features/notices/requirementPlan'
 import { requirementsFor } from '@/features/notices/requirementsFor'
-import { loadPack } from '@/features/packs/loadPack'
+import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
@@ -53,9 +54,12 @@ export async function townLeads(
   signal: AbortSignal,
 ): Promise<Record<string, number>> {
   const out: Record<string, number> = {}
+  const pack = loadPack()
   for (const key of new Set(requirements.map((r) => r.leadRuleKey))) {
-    const published = await getPublished(tx, 'town_rule_setting', key, signal)
-    const value = (published?.body as { value: number } | undefined)?.value
+    const lead = ruleByKey(pack, key)
+    const settingKey =
+      lead.kind === 'clock' && 'fromSetting' in lead.length ? lead.length.fromSetting : key
+    const value = await townSettingValue(tx, settingKey, signal)
     if (value !== undefined) out[key] = value
   }
   return out

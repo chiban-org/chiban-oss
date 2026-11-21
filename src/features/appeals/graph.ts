@@ -231,11 +231,16 @@ export async function addAppealNode(
     }
     let untimely = false
     if (route.value.windowRuleKey !== null) {
-      const due = await windowDue(tx, parent, {
-        applicationId: clockApplicationId,
-        ruleKey: route.value.windowRuleKey,
-        finality,
-      })
+      const due = await windowDue(
+        tx,
+        parent,
+        {
+          applicationId: clockApplicationId,
+          ruleKey: route.value.windowRuleKey,
+          finality,
+        },
+        signal,
+      )
       untimely = compareCivil(input.occurredOn, due) > 0
       if (clockApplicationId !== null) {
         await markClockMet(
