@@ -1,3 +1,4 @@
+import { ME_PACK } from '@packs/me'
 import { NH_PACK } from '@packs/nh'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { buildingCodeIssues } from '@/features/packs/buildingCodeChecks'
@@ -5,7 +6,7 @@ import type { StatePack } from '@/features/packs/schema'
 
 export const DEFAULT_PACK_ID = 'nh'
 
-const PACKS: Readonly<Record<string, StatePack>> = { nh: NH_PACK }
+const PACKS: Readonly<Record<string, StatePack>> = { nh: NH_PACK, me: ME_PACK }
 
 let selected: StatePack | null = null
 let testOverride: StatePack | null = null
