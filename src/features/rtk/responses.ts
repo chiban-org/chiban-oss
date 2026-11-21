@@ -51,6 +51,7 @@ export type FirstResponseError =
   | 'not_found'
   | 'future_date'
   | 'before_received'
+  | 'before_acknowledged'
   | 'already_responded'
   | 'acknowledgement_unavailable'
   | 'withholding_required'
@@ -80,6 +81,11 @@ async function countFor(
 ): Promise<number> {
   const [row] = await tx.select({ n: count() }).from(table).where(eq(table.requestId, requestId))
   return row?.n ?? 0
+}
+
+function acknowledgedAfter(request: typeof rtkRequests.$inferSelect, on: CivilDate): boolean {
+  const acknowledgedOn = request.acknowledgedOn as CivilDate | null
+  return acknowledgedOn !== null && daysBetween(acknowledgedOn, on) < 0
 }
 
 async function kindPrecondition(
@@ -163,6 +169,9 @@ export async function recordFirstResponse(
       if (daysBetween(today, value.respondedOn) > 0) return err('future_date')
       if (daysBetween(request.receivedOn as CivilDate, value.respondedOn) < 0) {
         return err('before_received')
+      }
+      if (followUp && acknowledgedAfter(request, value.respondedOn)) {
+        return err('before_acknowledged')
       }
       const refused = await kindPrecondition(tx, request.id, value)
       if (refused !== null) return err(refused)

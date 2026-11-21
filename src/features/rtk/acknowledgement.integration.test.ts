@@ -127,6 +127,16 @@ describe('under a pack that accepts an acknowledgement', () => {
     expect(row?.openDueOn).toBe('2027-07-30')
   })
 
+  it('refuses a follow-up dated before the acknowledgement and accepts one the same day', async () => {
+    const requestId = await logged()
+    await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })
+    const follow = (on: string) =>
+      respond({ requestId, kind: 'time_statement', respondedOn: d(on), timeStatement: statement })
+    expect(await follow('2027-07-04')).toEqual({ ok: false, error: 'before_acknowledged' })
+    expect((await rowOf(requestId))?.firstResponseKind).toBe('acknowledged')
+    expect((await follow('2027-07-05')).ok).toBe(true)
+  })
+
   it('a later website reference records after the acknowledgement', async () => {
     const requestId = await logged()
     await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })

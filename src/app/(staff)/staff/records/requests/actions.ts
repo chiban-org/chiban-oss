@@ -85,6 +85,7 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
           fieldOf: {
             future_date: 'respondedOn',
             before_received: 'respondedOn',
+            before_acknowledged: 'respondedOn',
             website_url_required: 'websiteUrl',
             stated_date_required: 'statedDate',
           },
@@ -167,6 +168,7 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
     const fieldOf = {
       future_date: 'releasedOn',
       before_received: 'releasedOn',
+      before_acknowledged: 'releasedOn',
       recipient_required: 'recipientEmail',
       approval_missing: 'items',
       approval_revoked: 'items',

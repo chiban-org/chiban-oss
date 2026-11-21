@@ -45,6 +45,7 @@ export type ReleaseError =
   | 'not_open'
   | 'future_date'
   | 'before_received'
+  | 'before_acknowledged'
   | 'approval_missing'
   | 'approval_revoked'
   | 'duplicate_document'
@@ -71,6 +72,15 @@ async function checkReleaseDate(
 }
 
 type RequestRow = typeof rtkRequests.$inferSelect
+
+function releasedBeforeAcknowledgement(request: RequestRow, releasedOn: CivilDate): boolean {
+  const acknowledgedOn = request.acknowledgedOn as CivilDate | null
+  return (
+    request.firstResponseKind === 'acknowledged' &&
+    acknowledgedOn !== null &&
+    daysBetween(acknowledgedOn, releasedOn) < 0
+  )
+}
 
 function responseFieldsAfterRelease(request: RequestRow, releasedOn: CivilDate) {
   if (request.firstResponseKind === 'acknowledged') {
@@ -123,6 +133,9 @@ export async function createRelease(
       signal,
     )
     if (dated !== null) return err(dated)
+    if (releasedBeforeAcknowledgement(request, value.releasedOn)) {
+      return err('before_acknowledged')
+    }
     const items = await resolveItems(tx, value.requestId, value.items)
     if (!items.ok) return err(items.error)
     const [last] = await tx
