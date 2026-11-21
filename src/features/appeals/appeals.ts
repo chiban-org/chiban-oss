@@ -10,6 +10,7 @@ import {
   tollStoppedClocks,
 } from '@/features/appeals/suspensionClocks'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -147,6 +148,7 @@ export async function resolveAppeal(
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.resolvedOn, now, signal)) return err('future_date')
   return await transactionResult<void, ResolveError>(db, async (tx) => {
+    if (holdsEnabled()) await lockApplication(tx, input.applicationId)
     const [open] = await tx
       .select()
       .from(appeals)

@@ -11,6 +11,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { appealOpen } from '@/features/appeals/suspension'
 import { appealStops, stoppedSince, tollStoppedClocks } from '@/features/appeals/suspensionClocks'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -140,6 +141,7 @@ async function reinstatePermits(
       actedOn: holdPermitActions.actedOn,
     })
   for (const { applicationId, actedOn } of suspended) {
+    await lockApplication(tx, applicationId)
     const app = await loadApplicationContext(tx, applicationId, signal)
     if (app?.state !== 'suspended' || (await stillSuspended(tx, app, signal))) continue
     const moved = await applyTransition(
