@@ -5,7 +5,7 @@ import {
   OWNER_AUTHORIZATION,
   permitStarter,
   setYourFeeLine,
-  startOfWorkChecklist,
+  startAndFinalChecklists,
 } from '@packs/me/starters/permitParts'
 
 export const SHORELAND_STARTER = permitStarter({
@@ -75,7 +75,7 @@ export const SHORELAND_STARTER = permitStarter({
       blocksIssuance: false,
     },
   ],
-  checklists: [startOfWorkChecklist('slz')],
+  checklists: startAndFinalChecklists('slz'),
   documents: [
     doc('shoreland_site_plan', 'Site plan', {
       help: 'Show the normal high-water line, setbacks, existing and proposed structures, and any clearing.',

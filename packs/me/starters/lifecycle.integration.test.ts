@@ -102,9 +102,9 @@ async function issuedPermit(prefix: string, plumbing: boolean): Promise<string> 
   return made.applicationId
 }
 
-async function recordStartOfWork(applicationId: string, inspector: Actor) {
-  const id = await scheduledInspection(handle.db, inspector, applicationId, 'start_of_work', {
-    isFinal: true,
+async function recordPassed(applicationId: string, inspector: Actor, inspectionType: string) {
+  const id = await scheduledInspection(handle.db, inspector, applicationId, inspectionType, {
+    isFinal: inspectionType === 'final',
   })
   const [row] = await handle.db.select().from(inspections).where(eq(inspections.id, id))
   const recorded = await recordInspectionResult(
@@ -114,7 +114,7 @@ async function recordStartOfWork(applicationId: string, inspector: Actor) {
       inspectionId: id,
       expectedRowVersion: row?.rowVersion ?? 0,
       result: 'passed',
-      items: await passingItems(handle.db, applicationId, 'start_of_work'),
+      items: await passingItems(handle.db, applicationId, inspectionType),
     },
     signal,
     { now: RESULT_NOW },
@@ -135,16 +135,19 @@ describe('Maine permits that carry a lapse clock', () => {
   }
 })
 
-describe('the start of work inspection', () => {
+describe('the start of work and final inspections', () => {
   for (const { prefix, clock, plumbing } of LAPSING.filter((l) =>
     ['SLZ', 'SC'].includes(l.prefix),
   )) {
-    it(`meets the ${prefix} lapse clock, so the permit does not expire at the lapse date`, async () => {
+    it(`start of work meets the ${prefix} lapse clock and leaves the permit issued, and the final inspection closes it`, async () => {
       const applicationId = await issuedPermit(prefix, plumbing)
-      await recordStartOfWork(applicationId, plumbing ? plumber : inspector)
+      const by = plumbing ? plumber : inspector
+      await recordPassed(applicationId, by, 'start_of_work')
       expect(await clockStatus(applicationId, clock)).toBe('met')
+      expect(await stateOf(applicationId)).toBe('issued')
       await handle.db.transaction((tx) => expireLapsedPermits(tx, AFTER_LAPSE, signal))
-      expect(await stateOf(applicationId)).not.toBe('expired')
+      expect(await stateOf(applicationId)).toBe('issued')
+      await recordPassed(applicationId, by, 'final')
       expect(await stateOf(applicationId)).toBe('closed')
     })
   }
