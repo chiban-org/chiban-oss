@@ -145,7 +145,7 @@ Contract 0.8.0 adds features that New Hampshire does not use. A pack for another
 
 A clock's `consequence.kind` has two more values. Both require `clockType: 'action_due'`, and the manifest refuses the pack otherwise.
 
-`deemed_refused` is for a law that treats an application as refused when the board does not act by the date. The clock is met only when staff record a written decision notice for the application, with a mailing date and the notice document. The daily job refuses an application that is still undecided after the due date, with a system decision on the refusal date, and the applicant's portal says "Refused by operation of law". An application that was already decided or issued is not changed. It is flagged on the application page as owing a notice. A clock with this consequence no longer counts as an ordinary decision deadline for the workflow, but the portal still shows its date.
+`deemed_refused` is for a law that treats an application as refused when the board does not act by the date. The clock is met only when staff record a written decision notice for the application, with a mailing date and the notice document. A notice can be recorded only once the application is decided, issued or denied, a refusal by silence included. Before that the application page shows no form and recording is refused. The daily job refuses an application that is still undecided after the due date, and the applicant's portal says "Refused by operation of law". The refusal is dated the day after the due date, even when the job runs later. It adds a system administrative decision on that date with the outcome `denied`, so an appeal route with `when.outcome: 'denied'` applies to it. An application that was already decided or issued is not changed. It is flagged on the application page as owing a notice. A clock with this consequence no longer counts as an ordinary decision deadline for the workflow, but the portal still shows its date.
 
 `void_unless_recorded` is for an approval that lapses unless its certificate is recorded at the registry. The clock starts when staff record the final written approval, and recording on or before the due date meets it. After the due date the daily job lapses the clock. It does not change the application's state.
 
@@ -202,7 +202,7 @@ A `decision_delivery` rule makes the engine track who receives a board's decisio
 }
 ```
 
-`recipients` come from `applicant`, `agent`, `planning_board` and `municipal_officers`. `methods` are `mail` and `hand`. `dueRuleKey` names an `action_due` clock that starts on `board_vote`. The decision page lists each recipient with a method and a date. The clock is met when every recipient has a recorded delivery. A decision in an appeal chain gets its own group in the same list.
+`recipients` come from `applicant`, `agent`, `planning_board` and `municipal_officers`. `methods` are `mail` and `hand`. `dueRuleKey` names an `action_due` clock that starts on `board_vote`. The decision page lists each recipient with a method and a date. The clock is met when every recipient has a recorded delivery. A decision in an appeal chain gets its own group in the same list. Each decision starts its own due clock, keyed by its vote or decision date, even while an earlier decision's delivery clock is still running, and each group shows the due date of its own clock.
 
 ### Hearing optional and recording
 
@@ -212,7 +212,7 @@ A classification's `hearing` is `required` or `optional`, and defaults to `requi
 
 ### Notices due on receipt
 
-A notice requirement's `stage` is `before_hearing` (the default) or `on_receipt`. A receipt notice is prepared when the application arrives, not when a hearing is scheduled. Its lead clock must count `after` from `application_received`, or the manifest refuses the pack. Staff prepare the set from a panel on the application, and the lead clock is met when every item is proved on time.
+A notice requirement's `stage` is `before_hearing` (the default) or `on_receipt`. A receipt notice is prepared when the application arrives, not when a hearing is scheduled. Its lead clock must count `after` from `application_received`, or the manifest refuses the pack. Staff prepare the set from a panel on the application, and the lead clock is met when every item is proved on time. The set remembers the abutter list it came from. When a different list is issued later, for example after staff change the municipalities or the water supplier, the panel says the notices are out of date and offers to prepare them again. The old set stays on the record with its proofs, the new set starts with none, and the lead clock runs again until the new set is proved.
 
 The `onlyWhen` condition has a third value, `source_water_area`. It holds when staff record that the project is inside a source water protection area, along with the water supplier to notify. Until a determination is recorded, a before-hearing rule with this condition cannot be derived, and the checklist says so.
 
@@ -220,11 +220,11 @@ Three recipient roles come with it: `municipal_clerk`, `municipal_reviewing_auth
 
 ### Variances and dependent permits
 
-The role `gates.varianceRecorded` names a gate rule. A permit that relies on a variance whose certificate is not yet recorded, or whose recording window has lapsed, is blocked from issue by that gate. Staff link a permit to the variance it relies on from the application page, and the link is accepted only for a variance on the same parcel. Leave the role `null` if the state has no such rule. The lot conditions then show "Approved, not valid until recorded" or "Void, not recorded in time" for the variance.
+The role `gates.varianceRecorded` names a gate rule. A permit that relies on a variance whose certificate is not yet recorded, or whose recording window has lapsed, is blocked from issue by that gate. Staff link a permit to the variance it relies on from the application page, and the link is accepted only for a variance on the same parcel. Anyone who records board actions can take a wrong link off with "Remove this link" on the dependent application. The removal is audited, and the gate no longer waits on that variance. Leave the role `null` if the state has no such rule. The lot conditions then show "Approved, not valid until recorded" or "Void, not recorded in time" for the variance.
 
 ### Plumbing inspectors
 
-`classifications.plumbingInspectorOwns` lists the classification keys that belong to a plumbing inspector. For each, only a user with the `plumbing_inspector` staff role may issue, decide, correct or inspect, and the plumbing inspector may not act on any other classification. An empty list turns the feature off, and the role is then hidden from the role pages.
+`classifications.plumbingInspectorOwns` lists the classification keys that belong to a plumbing inspector. For each, only a user with the `plumbing_inspector` staff role may issue, decide, correct or inspect, and the plumbing inspector may not act on any other classification. The same holds for the steps that need the issue capability on one application: the certificate of occupancy, the code edition, a renewal, the written decision notice, a license check and conditions. An appeal on an owned classification may be recorded and resolved by the plumbing inspector or by any other role that issues permits. On every other classification, only a role other than the plumbing inspector may record or resolve one. An empty list turns the feature off, and the role is then hidden from the role pages.
 
 ### Cure notices and civil penalties
 
@@ -270,7 +270,11 @@ The numbers are placeholders. Each aggravation sets exactly one of `maxCentsPerD
 
 When a cure notice rule has `remedies.developmentHold: true`, a case whose cure period has lapsed with the violation uncorrected may place a hold on the parcel. A hold blocks new applications and submissions on that parcel, which show a message instead. Staff can suspend or revoke the parcel's issued permits under the hold, and release it once no finding is open and no fine has a balance. Release reinstates the permits that the hold suspended. With `remedies.civilAction: true`, staff may record that a civil action was filed.
 
-A hold and an appeal can overlap on one permit. The permit stays suspended until both are done, and each suspends only once. When the appeal resolves with the permit upheld while the hold stands, the permit stays suspended, and the appeal's tolling of the permit's clocks is counted once for the whole suspended span.
+A hold cannot be placed, and a civil action cannot be recorded, while an appeal stays enforcement on the case under the pack's `stay_enforcement_on_appeal` effect.
+
+A hold and an appeal can overlap on one permit. The permit stays suspended until both are done, and each suspends only once. An appeal of a permit the hold suspends can be recorded while the hold stands, and the application page offers the form for it. After the release, an appeal dated inside the hold is refused, so record such an appeal while the hold stands. When the appeal resolves with the permit upheld while the hold stands, the permit stays suspended, and the appeal's tolling of the permit's clocks is counted once for the whole suspended span. The hold's release cannot be dated before the resolution of an appeal that was resolved while the hold suspended one of its permits.
+
+A permit can sit on two held parcels. Each hold may suspend it: the second records its action without changing the permit's state. Releasing one hold leaves the permit suspended while the other stands, and the permit goes back into force only when no hold and no suspending appeal is left. Its clocks are tolled once, from the first suspension to the last release.
 
 ### Appeal routes and rehearing wording
 
