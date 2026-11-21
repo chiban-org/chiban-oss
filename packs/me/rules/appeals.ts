@@ -113,7 +113,7 @@ export const APPEAL_RULES: PackRule[] = [
     startEvent: 'project_final_approval',
     onlyWhen: PLANNING_BOARD_LAST,
     cancelledBy: 'rehearing_vote',
-    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec2691 },
+    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec4482A },
     days: 30,
     extension: COURT_EXTENDS_4482_A,
   }),

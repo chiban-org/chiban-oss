@@ -14,6 +14,7 @@ import { ME_ROLES } from './roles'
 const d = (s: string) => s as CivilDate
 const SECTION_2691 = 'https://legislature.maine.gov/statutes/30-A/title30-Asec2691.html'
 const SECTION_4353 = 'https://legislature.maine.gov/statutes/30-A/title30-Asec4353.html'
+const SECTION_4482A = 'https://legislature.maine.gov/statutes/30-A/title30-Asec4482-A.html'
 const EMPTY_FACTS = { classification: null, dwellingUnits: null, afterTheFact: false }
 const BOA_KEYS = ['me.boa_variance', 'me.boa_admin_appeal']
 const PB_KEYS = ['me.pb_subdivision', 'me.pb_site_plan']
@@ -79,7 +80,7 @@ describe('Board of Appeals windows', () => {
       startEvent: 'project_final_approval',
       onlyWhen: { fact: 'finalReviewBoard', in: ['planning_board'] },
       cancelledBy: 'rehearing_vote',
-      citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: SECTION_2691 },
+      citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: SECTION_4482A },
     })
     expect(clockDue('me.appeal.significant_final', '2027-05-12')).toBe('2027-06-11')
     expect(clockDue('me.appeal.board_court_denial', '2027-04-15')).toBe('2027-05-17')

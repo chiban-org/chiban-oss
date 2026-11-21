@@ -34,7 +34,7 @@ export const ME_APPEAL_ROUTES: AppealRoute[] = [
     when: { outcome: 'granted', finalReviewBoard: 'planning_board', label: PLANNING_FINAL },
     to: 'court_petition',
     windowRuleKey: 'me.appeal.boa_court_after_planning_board',
-    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec2691 },
+    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec4482A },
   },
   {
     from: 'zba_decision',
