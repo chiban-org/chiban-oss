@@ -7,6 +7,7 @@ import { getStaffApplicationView } from '@/features/applications/staffApplicatio
 import type { CoreState } from '@/features/applications/states'
 import { transitionApplication } from '@/features/applications/transition'
 import { planWork } from '@/features/applications/workPlan'
+import type { Actor } from '@/features/auth/actor'
 import { markComplete, markedCompleteMessage } from '@/features/building/completeness'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { adoptStarter } from '@/features/config/adoptStarter'
@@ -14,6 +15,7 @@ import { setActivePackForTest } from '@/features/packs/registry'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { signedOffReview } from '@/test/reviewFixtures'
+import { staffWith } from '@/test/staffUsers'
 import { clockRows } from '@/test/triggerClockFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -24,6 +26,7 @@ const COMPLETED = '2027-03-03' as CivilDate
 const DECIDED = '2027-03-08' as CivilDate
 let handle: TestDb
 let world: PermitWorld
+let plumber: Actor
 
 async function received(prefix: string): Promise<string> {
   const made = await makeApplication(
@@ -44,8 +47,8 @@ async function receivedWastewater(): Promise<string> {
   return applicationId
 }
 
-async function completenessTask(applicationId: string) {
-  const view = await getStaffApplicationView(handle.db, world.staff, applicationId, NOW, signal)
+async function completenessTask(applicationId: string, actor: Actor = world.staff) {
+  const view = await getStaffApplicationView(handle.db, actor, applicationId, NOW, signal)
   if (view === null) throw new Error('missing view')
   const plan = planWork(view, null, {
     reviewers: 0,
@@ -55,10 +58,10 @@ async function completenessTask(applicationId: string) {
   return plan.groups.flatMap((g) => g.rows).find((r) => r.key === 'completeness')
 }
 
-async function complete(applicationId: string) {
+async function complete(applicationId: string, actor: Actor = world.staff) {
   const done = await markComplete(
     handle.db,
-    world.staff,
+    actor,
     { applicationId, completedDate: COMPLETED },
     signal,
     NOW,
@@ -95,6 +98,7 @@ beforeAll(async () => {
     const adopted = await adoptStarter(handle.db, world.admin, starter.id, signal)
     expect(adopted.ok ? 'ok' : adopted.error, starter.id).toBe('ok')
   }
+  plumber = await staffWith(handle.db, ['plumbing_inspector'])
 })
 beforeEach(() => {
   setActivePackForTest(ME_PACK)
@@ -147,19 +151,19 @@ describe('the shoreland decision date', () => {
 })
 
 describe('the subsurface wastewater completeness date', () => {
-  it('runs from receipt and offers staff the completeness step', async () => {
+  it('runs from receipt and offers the plumbing inspector the completeness step', async () => {
     const applicationId = await receivedWastewater()
     expect(await clockOf(applicationId, 'me.ssw.completeness')).toMatchObject({
       status: 'running',
     })
-    const task = await completenessTask(applicationId)
+    const task = await completenessTask(applicationId, plumber)
     expect(task).toMatchObject({ action: { kind: 'mark_complete' } })
     expect(task?.detail).not.toContain('decision clock')
   })
 
-  it('is met when staff mark the application complete', async () => {
+  it('is met when the plumbing inspector marks the application complete', async () => {
     const applicationId = await receivedWastewater()
-    await complete(applicationId)
+    await complete(applicationId, plumber)
     expect(await clockOf(applicationId, 'me.ssw.completeness')).toMatchObject({
       status: 'met',
       metOn: COMPLETED,
