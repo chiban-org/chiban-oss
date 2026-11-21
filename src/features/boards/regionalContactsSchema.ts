@@ -13,7 +13,12 @@ export const RegionalContactsBodySchema = z.object({
     }),
   ),
   nhDes: ContactSchema.nullable(),
-  waterSuppliers: z.array(ContactSchema.extend({ key: z.string().min(1) })).default([]),
+  waterSuppliers: z
+    .array(ContactSchema.extend({ key: z.string().min(1) }))
+    .default([])
+    .refine((list) => new Set(list.map((w) => w.key)).size === list.length, {
+      message: 'water supplier keys must be unique',
+    }),
 })
 export type RegionalContactsBody = z.infer<typeof RegionalContactsBodySchema>
 export type Contact = z.infer<typeof ContactSchema>

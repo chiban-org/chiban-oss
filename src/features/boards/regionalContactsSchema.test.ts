@@ -44,4 +44,15 @@ describe('RegionalContactsBodySchema', () => {
     })
     expect(parsed.success).toBe(false)
   })
+
+  it('rejects two water suppliers with the same key', () => {
+    const parsed = RegionalContactsBodySchema.safeParse({
+      ...OLD_BODY,
+      waterSuppliers: [
+        { key: 'water_supplier_1', name: 'Lakeside Water District', mailingAddress: '2 Pump Road' },
+        { key: 'water_supplier_1', name: 'Hilltop Water Company', mailingAddress: '8 Tank Lane' },
+      ],
+    })
+    expect(parsed.success).toBe(false)
+  })
 })

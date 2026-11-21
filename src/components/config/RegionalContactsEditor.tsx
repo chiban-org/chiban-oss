@@ -54,14 +54,19 @@ function withOffice(
   contact: Contact | null,
 ): Municipality {
   const { clerk, reviewingAuthority, ...rest } = municipality
-  const next = { clerk, reviewingAuthority, [office]: contact ?? undefined }
+  const nextClerk = office === 'clerk' ? contact : (clerk ?? null)
+  const nextAuthority = office === 'reviewingAuthority' ? contact : (reviewingAuthority ?? null)
   return {
     ...rest,
-    ...(next.clerk === undefined ? {} : { clerk: next.clerk }),
-    ...(next.reviewingAuthority === undefined
-      ? {}
-      : { reviewingAuthority: next.reviewingAuthority }),
+    ...(nextClerk === null ? {} : { clerk: nextClerk }),
+    ...(nextAuthority === null ? {} : { reviewingAuthority: nextAuthority }),
   }
+}
+
+function nextSupplierKey(body: RegionalContactsBody): string {
+  const used = body.waterSuppliers.map((w) => Number(w.key.replace('water_supplier_', '')))
+  const highest = used.filter((n) => Number.isInteger(n)).reduce((a, n) => Math.max(a, n), 0)
+  return `water_supplier_${highest + 1}`
 }
 
 function WaterSuppliers({ body, onChange }: Props) {
@@ -75,7 +80,7 @@ function WaterSuppliers({ body, onChange }: Props) {
               ...body,
               waterSuppliers: [
                 {
-                  key: `water_supplier_${body.waterSuppliers.length + 1}`,
+                  key: nextSupplierKey(body),
                   name: '',
                   mailingAddress: '',
                 },
@@ -96,13 +101,7 @@ function WaterSuppliers({ body, onChange }: Props) {
               onChange({
                 ...body,
                 waterSuppliers: body.waterSuppliers.map((x, n) =>
-                  n === i
-                    ? {
-                        ...x,
-                        name: e.target.value,
-                        key: e.target.value.toLowerCase().replaceAll(' ', '_'),
-                      }
-                    : x,
+                  n === i ? { ...x, name: e.target.value } : x,
                 ),
               })
             }
