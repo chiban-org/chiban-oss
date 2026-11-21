@@ -11,21 +11,71 @@ import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 
 const TABLE_4A = '10-144 CMR ch 241 Table 4A minimum'
 
-const COMPONENTS = [
-  ['non_engineered_system', 'non_engineered_systems', 'Complete non-engineered system', 25000],
-  ['engineered_system', 'engineered_systems', 'Complete engineered system', 20000],
-  ['primitive_system', 'primitive_systems', 'Primitive system', 10000],
-  ['grey_waste_field', 'grey_waste_fields', 'Separate grey waste disposal field', 3500],
-  ['alternative_toilet', 'alternative_toilets', 'Alternative toilet', 5000],
-  ['holding_tank', 'holding_tanks', 'Holding tank', 10000],
-  ['first_time_variance', 'first_time_variances', 'First-time system variance', 2000],
-] as const
+interface Component {
+  code: string
+  field: string
+  label: string
+  countLabel: string
+  cents: number
+}
 
-const FEE_LINES: FeeScheduleBody['lines'] = COMPONENTS.map(([code, field, label, cents]) => ({
-  code,
-  label: `${label} (${TABLE_4A})`,
+const COMPONENTS: readonly Component[] = [
+  {
+    code: 'non_engineered_system',
+    field: 'non_engineered_systems',
+    label: 'Complete non-engineered system',
+    countLabel: 'Complete non-engineered systems',
+    cents: 25000,
+  },
+  {
+    code: 'engineered_system',
+    field: 'engineered_systems',
+    label: 'Complete engineered system',
+    countLabel: 'Complete engineered systems',
+    cents: 20000,
+  },
+  {
+    code: 'primitive_system',
+    field: 'primitive_systems',
+    label: 'Primitive system, includes one alternative toilet',
+    countLabel: 'Primitive systems, each including one alternative toilet',
+    cents: 10000,
+  },
+  {
+    code: 'grey_waste_field',
+    field: 'grey_waste_fields',
+    label: 'Separate grey waste disposal field',
+    countLabel: 'Separate grey waste disposal fields',
+    cents: 3500,
+  },
+  {
+    code: 'alternative_toilet',
+    field: 'alternative_toilets',
+    label: 'Alternative toilet only',
+    countLabel: 'Alternative toilets not part of a primitive system',
+    cents: 5000,
+  },
+  {
+    code: 'holding_tank',
+    field: 'holding_tanks',
+    label: 'Holding tank',
+    countLabel: 'Holding tanks',
+    cents: 10000,
+  },
+  {
+    code: 'first_time_variance',
+    field: 'first_time_variances',
+    label: 'First-time system variance',
+    countLabel: 'First-time system variances',
+    cents: 2000,
+  },
+]
+
+const FEE_LINES: FeeScheduleBody['lines'] = COMPONENTS.map((c) => ({
+  code: c.code,
+  label: `${c.label} (${TABLE_4A})`,
   due: 'at_approval',
-  expr: lateDoubled(perCount(field, cents)),
+  expr: lateDoubled(perCount(c.field, c.cents)),
 }))
 
 export const SUBSURFACE_WASTEWATER_STARTER = permitStarter({
@@ -39,11 +89,11 @@ export const SUBSURFACE_WASTEWATER_STARTER = permitStarter({
   fields: [
     {
       key: 'contractor_license_number',
-      label: 'Installer license number, when a licensed installer does the work',
+      label: 'Maine plumbing license number of the person doing the work',
       type: 'text',
       required: false,
     },
-    ...COMPONENTS.map(([, field, label]) => countField(field, `${label}s`)),
+    ...COMPONENTS.map((c) => countField(c.field, c.countLabel)),
     AFTER_THE_FACT,
   ],
   feeLines: FEE_LINES,
@@ -96,5 +146,5 @@ export const SUBSURFACE_WASTEWATER_STARTER = permitStarter({
   ],
   closesOn: 'final_inspection_passed',
   permitDetails:
-    'Installer {{permit.contractorWithLicense}}. Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}.',
+    'Licensee {{permit.contractorWithLicense}}. Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}.',
 })

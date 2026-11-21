@@ -117,7 +117,7 @@ export function denialLetter(slug: string, label: string) {
     key: `${slug}-denial`,
     label: `${label} denial letter`,
     kind: 'letter' as const,
-    body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nYour application for a ${label.toLowerCase()}, {{application.number}}, for parcel {{parcel.displayId}}, {{parcel.siteAddress}}, is denied.\n\nThe reasons for the denial are: ____\n\nPlease ask the town office how this decision may be appealed and the time allowed to appeal.`,
+    body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nYour application {{application.number}}, ${label.toLowerCase()}, for parcel {{parcel.displayId}}, {{parcel.siteAddress}}, is denied.\n\nThe reasons for the denial are: ____\n\nPlease ask the town office how this decision may be appealed and the time allowed to appeal.`,
   }
 }
 
