@@ -1,6 +1,10 @@
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { desProximityDeterminations, regionalImpactDeterminations } from '@/db/schema'
+import {
+  desProximityDeterminations,
+  regionalImpactDeterminations,
+  sourceWaterDeterminations,
+} from '@/db/schema'
 import type { ApplicationContext } from '@/features/applications/context'
 import { townLeads } from '@/features/notices/deriveItems'
 import { planRequirement, type RequirementFlags } from '@/features/notices/requirementPlan'
@@ -10,7 +14,7 @@ import { packRoles } from '@/features/packs/roles'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
 async function strictestFlags(db: DbOrTx, applicationId: string): Promise<RequirementFlags> {
-  const [[ri], [des]] = await Promise.all([
+  const [[ri], [des], [sourceWater]] = await Promise.all([
     db
       .select({ determination: regionalImpactDeterminations.determination })
       .from(regionalImpactDeterminations)
@@ -19,11 +23,16 @@ async function strictestFlags(db: DbOrTx, applicationId: string): Promise<Requir
       .select({ determination: desProximityDeterminations.determination })
       .from(desProximityDeterminations)
       .where(eq(desProximityDeterminations.applicationId, applicationId)),
+    db
+      .select({ determination: sourceWaterDeterminations.determination })
+      .from(sourceWaterDeterminations)
+      .where(eq(sourceWaterDeterminations.applicationId, applicationId)),
   ])
   const hasRegionalImpact = packRoles().rules.regionalImpactDetermination !== null
   return {
     regionalImpact: hasRegionalImpact && (ri === undefined || ri.determination === 'yes'),
     desWithin: des === undefined || des.determination === 'within_500ft',
+    sourceWaterArea: sourceWater === undefined || sourceWater.determination === 'within',
   }
 }
 

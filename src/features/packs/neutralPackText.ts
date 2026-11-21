@@ -17,6 +17,7 @@ export const NEUTRAL_PACK_TEXT: PackText = {
   signerRoleLabels: {},
   lockedTexts: {},
   environmentalAgency: 'State environmental agency',
+  receiptNotices: false,
   vocabulary: {
     recordsLaw: 'Public Records',
     recordsRequest: 'Public Records request',

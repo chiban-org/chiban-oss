@@ -14,6 +14,7 @@ const EMPTY_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, a
 export interface RequirementFlags {
   regionalImpact: boolean
   desWithin: boolean
+  sourceWaterArea?: boolean | null
 }
 
 export interface PlannedRequirement {

@@ -68,6 +68,22 @@ function deliveryIssues(rules: PackRule[]): string[] {
   })
 }
 
+function receiptStageIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'notice_requirement' || r.stage !== 'on_receipt') return []
+    const lead = clockByKey.get(r.leadRuleKey)
+    const valid = lead?.direction === 'after' && lead.startEvent === 'application_received'
+    return valid
+      ? []
+      : [
+          `notice_requirement ${r.key} is on_receipt and its lead clock ${r.leadRuleKey} must count after application_received`,
+        ]
+  })
+}
+
 function settingClockIssues(rules: PackRule[]): string[] {
   const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
   const issues: string[] = []
@@ -129,6 +145,7 @@ export const PackManifestSchema = z
       ...roleIssues(m.roles, targets),
       ...settingClockIssues(m.rules),
       ...deliveryIssues(m.rules),
+      ...receiptStageIssues(m.rules),
     ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })

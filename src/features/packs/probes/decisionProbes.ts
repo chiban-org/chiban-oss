@@ -205,6 +205,7 @@ export function decisionProbes(): Record<string, FieldProbe> {
       ...r,
       leadRuleKey: 'nh.pb.notice.mail',
     })),
+    'notice_requirement.stage': noticeProbe(ZBA_MAIL, (r) => ({ ...r, stage: 'on_receipt' })),
     'notice_requirement.onlyWhen': noticeProbe(ZBA_MAIL, (r) => ({
       ...r,
       onlyWhen: 'regional_impact_yes',

@@ -216,7 +216,8 @@ export const NoticeRequirementRuleSchema = z.object({
     z.object({ public: z.literal(true) }),
   ]),
   leadRuleKey: z.string().min(1),
-  onlyWhen: z.enum(['regional_impact_yes', 'des_within_500ft']).optional(),
+  onlyWhen: z.enum(['regional_impact_yes', 'des_within_500ft', 'source_water_area']).optional(),
+  stage: z.enum(['before_hearing', 'on_receipt']).default('before_hearing'),
   overridePolicy: OverridePolicySchema,
 })
 export type NoticeRequirementRule = z.infer<typeof NoticeRequirementRuleSchema>

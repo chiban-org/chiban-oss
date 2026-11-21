@@ -5,6 +5,18 @@ import { demoSeedDeps } from '@/test/demoSeedDeps'
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'source_water_determinations',
+    statement: sql`insert into source_water_determinations (application_id, determination, supplier_key, determined_by, determined_on)
+      select a.id, 'within', 'lakeside_water', u.id, '2027-03-24'
+      from applications a cross join (select id from users order by email limit 1) u
+      order by a.id limit 1`,
+  },
+  {
+    table: 'application_municipalities',
+    statement: sql`insert into application_municipalities (application_id, municipality_key, relation)
+      select id, 'pine_river', 'abutting' from applications order by id limit 1`,
+  },
+  {
     table: 'account_profiles',
     statement: sql`insert into account_profiles (user_id, phone, mailing_address)
       select id, '603-555-0142', '12 Mill Road' from users where kind = 'public' order by email limit 1`,

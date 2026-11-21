@@ -6,6 +6,7 @@ import {
 } from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import type { Provenance } from '@/features/abutters/resolution'
+import type { ConditionalRoleTrigger } from '@/features/abutters/roles'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { professionalsFor } from '@/features/rosters/professionals'
 import { isDue } from '@/features/rosters/recheck'
@@ -117,7 +118,7 @@ function contactProvenance(ctx: Context, ref: string) {
   return rosterProvenance('regional_contacts', ref, null, ctx.today, 'entered')
 }
 
-function asks(ctx: Context, when: 'regional_impact_yes' | 'des_within_500ft'): boolean {
+function asks(ctx: Context, when: ConditionalRoleTrigger): boolean {
   return ctx.input.conditionalRoles.some((c) => c.when === when)
 }
 

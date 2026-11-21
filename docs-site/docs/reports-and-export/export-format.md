@@ -320,6 +320,17 @@ References:
 - `application_id` refers to `applications`
 - `document_id` refers to `documents`
 
+### application_municipalities
+
+File: `data/application_municipalities.ndjson`. Ordered by application_id, municipality_key.
+
+- `application_id`: uuid
+- `municipality_key`: text
+- `relation`: text
+
+References:
+- `application_id` refers to `applications`
+
 ### application_notes
 
 File: `data/application_notes.ndjson`. Ordered by id.
@@ -2540,6 +2551,19 @@ File: `data/selectmen_certifications.ndjson`. Ordered by id.
 - `decided_on`: date, nullable
 - `recorded_by`: uuid
 - `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
+### source_water_determinations
+
+File: `data/source_water_determinations.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `determination`: text
+- `supplier_key`: text, nullable
+- `determined_by`: uuid
+- `determined_on`: date
 
 References:
 - `application_id` refers to `applications`

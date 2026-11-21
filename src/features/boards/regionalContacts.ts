@@ -12,5 +12,7 @@ export async function getRegionalContacts(
   signal: AbortSignal,
 ): Promise<RegionalContactsBody> {
   const published = await getPublished(db, 'regional_contacts', 'default', signal)
-  return published === null ? EMPTY_REGIONAL_CONTACTS : (published.body as RegionalContactsBody)
+  return published === null
+    ? EMPTY_REGIONAL_CONTACTS
+    : { ...EMPTY_REGIONAL_CONTACTS, ...(published.body as Partial<RegionalContactsBody>) }
 }

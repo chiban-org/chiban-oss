@@ -24,7 +24,7 @@ export const AbuttersSpecSchema = z.object({
   conditionalRoles: z.array(
     z.object({
       role: RecipientRoleSchema,
-      when: z.enum(['regional_impact_yes', 'des_within_500ft']),
+      when: z.enum(['regional_impact_yes', 'des_within_500ft', 'source_water_area']),
     }),
   ),
 })

@@ -116,4 +116,72 @@ describe('pack roles', () => {
       'clock xx.bad fromSetting xx.bp.decision is not a town_setting',
     )
   })
+
+  function withReceiptRule(clock: Record<string, unknown>, rule: Record<string, unknown> = {}) {
+    const lead = {
+      ...XX_PACK_MANIFEST.rules.find((r) => r.key === 'xx.bp.decision'),
+      key: 'xx.receipt.lead',
+      clockType: 'notice_lead',
+      startEvent: 'application_received',
+      direction: 'after',
+      consequence: { kind: 'notice_defective', text: 'Notice later than this is defective.' },
+      length: { unit: 'days', value: 7 },
+      overridePolicy: { policy: 'fixed' },
+      ...clock,
+    }
+    const notice = {
+      ...XX_PACK_MANIFEST.rules.find((r) => r.key === 'xx.zba.notice.mail'),
+      key: 'xx.receipt.notice',
+      leadRuleKey: 'xx.receipt.lead',
+      stage: 'on_receipt',
+      ...rule,
+    }
+    return { ...XX_PACK_MANIFEST, rules: [...XX_PACK_MANIFEST.rules, lead, notice] }
+  }
+
+  it('defaults a notice requirement to before_hearing', () => {
+    const parsed = PackManifestSchema.parse(XX_PACK_MANIFEST)
+    const notice = parsed.rules.find((r) => r.key === 'xx.zba.notice.mail')
+    expect(notice?.kind === 'notice_requirement' && notice.stage).toBe('before_hearing')
+  })
+
+  it('accepts an on_receipt requirement led by an after clock started at receipt', () => {
+    expect(issuesOf(withReceiptRule({}))).toEqual([])
+  })
+
+  it('rejects an on_receipt requirement whose lead clock counts before', () => {
+    expect(issuesOf(withReceiptRule({ direction: 'before' }))).toContain(
+      'notice_requirement xx.receipt.notice is on_receipt and its lead clock xx.receipt.lead must count after application_received',
+    )
+  })
+
+  it('rejects an on_receipt requirement whose lead clock starts at another event', () => {
+    expect(issuesOf(withReceiptRule({ startEvent: 'acceptance_meeting_set' }))).toContain(
+      'notice_requirement xx.receipt.notice is on_receipt and its lead clock xx.receipt.lead must count after application_received',
+    )
+  })
+
+  it('rejects an on_receipt requirement whose lead rule is not a clock', () => {
+    expect(issuesOf(withReceiptRule({}, { leadRuleKey: 'xx.nope' }))).toContain(
+      'notice_requirement xx.receipt.notice is on_receipt and its lead clock xx.nope must count after application_received',
+    )
+  })
+
+  it('accepts the receipt recipient roles and the source water condition', () => {
+    const manifest = withReceiptRule(
+      {},
+      {
+        recipients: {
+          roles: [
+            'abutter_owner',
+            'municipal_clerk',
+            'municipal_reviewing_authority',
+            'water_supplier',
+          ],
+        },
+        onlyWhen: 'source_water_area',
+      },
+    )
+    expect(issuesOf(manifest)).toEqual([])
+  })
 })

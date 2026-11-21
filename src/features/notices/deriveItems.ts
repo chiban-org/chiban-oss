@@ -5,6 +5,7 @@ import {
   noticeItems,
   noticeSets,
   regionalImpactDeterminations,
+  sourceWaterDeterminations,
 } from '@/db/schema'
 import { drawnForCurrentParcels } from '@/features/abutters/listCurrency'
 import { currentIssuedList } from '@/features/abutters/queries'
@@ -62,7 +63,7 @@ export async function townLeads(
 async function flagsFor(
   tx: Tx,
   applicationId: string,
-  needsDes: boolean,
+  needs: { des: boolean; sourceWater: boolean },
 ): Promise<RequirementFlags | null> {
   const [ri] = await tx
     .select({ determination: regionalImpactDeterminations.determination })
@@ -74,10 +75,16 @@ async function flagsFor(
     .select({ determination: desProximityDeterminations.determination })
     .from(desProximityDeterminations)
     .where(eq(desProximityDeterminations.applicationId, applicationId))
-  if (needsDes && des === undefined) return null
+  if (needs.des && des === undefined) return null
+  const [sourceWater] = await tx
+    .select({ determination: sourceWaterDeterminations.determination })
+    .from(sourceWaterDeterminations)
+    .where(eq(sourceWaterDeterminations.applicationId, applicationId))
+  if (needs.sourceWater && sourceWater === undefined) return null
   return {
     regionalImpact: ri?.determination === 'yes',
     desWithin: des?.determination === 'within_500ft',
+    sourceWaterArea: sourceWater === undefined ? null : sourceWater.determination === 'within',
   }
 }
 
@@ -138,11 +145,11 @@ async function loadContext(
     const rule = pack.rules.find((r) => r.key === key)
     return rule?.kind === 'notice_requirement' ? [rule] : []
   })
-  const flags = await flagsFor(
-    tx,
-    applicationId,
-    all.some((r) => r.onlyWhen === 'des_within_500ft'),
-  )
+  const beforeHearing = all.filter((r) => r.stage === 'before_hearing')
+  const flags = await flagsFor(tx, applicationId, {
+    des: beforeHearing.some((r) => r.onlyWhen === 'des_within_500ft'),
+    sourceWater: beforeHearing.some((r) => r.onlyWhen === 'source_water_area'),
+  })
   if (flags === null) return err('determination_missing')
   const settings = await getPublished(tx, 'board_settings', 'default', signal)
   const entries = (settings?.body as BoardSettingsBody | undefined)?.boards ?? []

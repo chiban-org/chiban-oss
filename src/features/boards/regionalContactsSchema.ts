@@ -5,8 +5,15 @@ const ContactSchema = z.object({ name: z.string().min(1), mailingAddress: z.stri
 export const RegionalContactsBodySchema = z.object({
   key: z.literal('default'),
   commission: ContactSchema.nullable(),
-  municipalities: z.array(ContactSchema.extend({ key: z.string().min(1) })),
+  municipalities: z.array(
+    ContactSchema.extend({
+      key: z.string().min(1),
+      clerk: ContactSchema.optional(),
+      reviewingAuthority: ContactSchema.optional(),
+    }),
+  ),
   nhDes: ContactSchema.nullable(),
+  waterSuppliers: z.array(ContactSchema.extend({ key: z.string().min(1) })).default([]),
 })
 export type RegionalContactsBody = z.infer<typeof RegionalContactsBodySchema>
 export type Contact = z.infer<typeof ContactSchema>
@@ -16,4 +23,5 @@ export const EMPTY_REGIONAL_CONTACTS: RegionalContactsBody = {
   commission: null,
   municipalities: [],
   nhDes: null,
+  waterSuppliers: [],
 }
