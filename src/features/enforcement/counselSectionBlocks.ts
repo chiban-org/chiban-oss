@@ -11,7 +11,7 @@ import {
   violationFindings,
   violationNotices,
 } from '@/db/schema'
-import { curePenaltyFor, earliestReturnReceipt } from '@/features/enforcement/cureRules'
+import { curePenaltyFor, cureRules, earliestReturnReceipt } from '@/features/enforcement/cureRules'
 import {
   APPEAL_OUTCOME_LABELS,
   APPEAL_TARGET_LABELS,
@@ -109,6 +109,15 @@ export async function appealBlocks(
   return blocks
 }
 
+async function casePenaltyRule(db: DbOrTx, caseId: string): Promise<CivilPenaltyRule | null> {
+  if (cureRules().length === 0) return null
+  const [caseRow] = await db
+    .select({ cureRuleKey: enforcementCases.cureRuleKey })
+    .from(enforcementCases)
+    .where(eq(enforcementCases.id, caseId))
+  return curePenaltyFor(caseRow?.cureRuleKey ?? null)
+}
+
 export async function exposureBlocks(
   db: DbOrTx,
   input: {
@@ -118,11 +127,7 @@ export async function exposureBlocks(
     today: CivilDate
   },
 ): Promise<PdfBlock[]> {
-  const [caseRow] = await db
-    .select({ cureRuleKey: enforcementCases.cureRuleKey })
-    .from(enforcementCases)
-    .where(eq(enforcementCases.id, input.caseId))
-  const rule = input.penaltyRule ?? curePenaltyFor(caseRow?.cureRuleKey ?? null)
+  const rule = input.penaltyRule ?? (await casePenaltyRule(db, input.caseId))
   if (rule === null) return []
   const received =
     input.penaltyRule === null
