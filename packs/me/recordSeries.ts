@@ -2,7 +2,7 @@ import { ME_URLS } from '@packs/me/rules/urls'
 import type { RecordSeries } from '@/features/packs/schema'
 
 const SCHEDULES = 'Local Government Record Retention Schedules (2024)'
-export const UNSCHEDULED = 'me.rs.unscheduled_permanent'
+const UNSCHEDULED = 'me.rs.unscheduled_permanent'
 
 function sectionA(series: string): RecordSeries['citation'] {
   return { label: `${SCHEDULES}, ${series}`, url: ME_URLS.retentionSectionA }
@@ -23,7 +23,6 @@ export const ME_RECORD_SERIES: RecordSeries[] = [
     outcomes: {
       withdrawn: 'me.rs.building_never_built',
       denied: 'me.rs.building_never_built',
-      expired: 'me.rs.building_never_built',
     },
   },
   {

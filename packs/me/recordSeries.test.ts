@@ -96,6 +96,7 @@ describe('ME record series', () => {
     const outcomes = seriesOf('me.rs.building_permits').outcomes
     expect(outcomes?.withdrawn).toBe('me.rs.building_never_built')
     expect(outcomes?.denied).toBe('me.rs.building_never_built')
+    expect(outcomes?.expired).toBeUndefined()
     expect(seriesOf('me.rs.building_never_built').retention).toEqual({
       kind: 'event',
       events: ['application_withdrawn', 'application_denied', 'permit_expired'],
@@ -132,6 +133,37 @@ describe('ME record series', () => {
         events: [{ kind: 'occupancy_certificate_issued', occurredOn: d('2028-03-15') }],
       }),
     ).toEqual({ state: 'eligible_on', date: '2034-03-15' })
+  })
+
+  it('pins the retention of every series', () => {
+    const ev = (events: string[], plusYears: number) => ({ kind: 'event', events, plusYears })
+    const permanent = { kind: 'permanent' }
+    const expected: Record<string, unknown> = {
+      'me.rs.building_permits': ev(['building_removed'], 1),
+      'me.rs.building_plans': ev(['occupancy_certificate_issued'], 6),
+      'me.rs.building_never_built': ev(
+        ['application_withdrawn', 'application_denied', 'permit_expired'],
+        6,
+      ),
+      'me.rs.seasonal_conversion': ev(['building_removed'], 0),
+      'me.rs.plumbing_external': permanent,
+      'me.rs.plumbing_internal': ev(['final_inspection_passed'], 4),
+      'me.rs.subdivision_permits': ev(['permit_expired'], 3),
+      'me.rs.subdivision_plans': permanent,
+      'me.rs.site_plans_approved': permanent,
+      'me.rs.board_of_appeals_files': permanent,
+      'me.rs.board_minutes': permanent,
+      'me.rs.zoning_permits': ev(['permit_expired'], 3),
+      'me.rs.inspections_order': ev(['case_closed'], 3),
+      'me.rs.inspections_no_order': { kind: 'duration', years: 3 },
+      'me.rs.citizen_complaints': ev(['case_closed'], 3),
+      'me.rs.foaa_requests': ev(['request_completed'], 1),
+      'me.rs.driveway_permits': permanent,
+      'me.rs.enforcement_files': permanent,
+      'me.rs.unscheduled_permanent': permanent,
+    }
+    expect(Object.keys(expected).sort()).toEqual(ME_RECORD_SERIES.map((s) => s.key).sort())
+    for (const series of ME_RECORD_SERIES) expect(series.retention).toEqual(expected[series.key])
   })
 
   it('only inspections_no_order uses duration', () => {
