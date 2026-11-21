@@ -63,6 +63,21 @@ export async function mayActOnClassification(
   return await userMayActOnClassification(db, actor.userId, capability, classification, signal)
 }
 
+export async function mayRecordAppealOn(
+  db: DbOrTx,
+  actor: Actor,
+  classification: string | undefined,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (!packHasPlumbingScope()) return await hasCapability(db, actor.userId, 'permit.issue', signal)
+  const plumbing =
+    plumbingInspectorOwns(classification) &&
+    actor.roles.includes(PLUMBING_INSPECTOR) &&
+    (await userMayActOnClassification(db, actor.userId, 'permit.issue', classification, signal))
+  if (plumbing) return true
+  return await userMayActOnClassification(db, actor.userId, 'permit.issue', undefined, signal)
+}
+
 export async function classificationOfApplication(
   db: DbOrTx,
   applicationId: string,

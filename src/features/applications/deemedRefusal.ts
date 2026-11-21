@@ -7,7 +7,7 @@ import { addAdministrativeDecisionTx } from '@/features/appeals/adminAppeals'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { markClockMet } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
@@ -44,7 +44,9 @@ export async function recordDecisionNotice(
   now: Date = new Date(),
 ): Promise<Result<void, DecisionNoticeError>> {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (!(await mayActOnApplication(db, actor, 'permit.issue', input.applicationId, signal))) {
+    return err('forbidden')
+  }
   if (await isAfterTownToday(db, input.mailedOn, now, signal)) return err('future_date')
   return await transactionResult<void, DecisionNoticeError>(db, async (tx) => {
     const [app] = await tx
@@ -174,14 +176,29 @@ async function refuse(
   return null
 }
 
+interface RefusalSweep {
+  refused: string[]
+  noticeOverdue: string[]
+  failures: string[]
+}
+
 export async function refuseBySilence(
   tx: Tx,
   today: CivilDate,
   signal: AbortSignal,
   move: typeof transitionApplication = transitionApplication,
-): Promise<{ refused: string[]; noticeOverdue: string[]; failures: string[] }> {
+): Promise<RefusalSweep> {
   signal.throwIfAborted()
   if (!packRefusesBySilence()) return { refused: [], noticeOverdue: [], failures: [] }
+  return await sweepRefusals(tx, today, signal, move)
+}
+
+async function sweepRefusals(
+  tx: Tx,
+  today: CivilDate,
+  signal: AbortSignal,
+  move: typeof transitionApplication,
+): Promise<RefusalSweep> {
   const past = await tx
     .select({ clock: clocks, state: applications.state })
     .from(clocks)

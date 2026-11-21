@@ -5,7 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { amendmentsInForce } from '@/features/config/bindings'
 import { loadPack } from '@/features/packs/loadPack'
 import type { CodeEditionEntry } from '@/features/packs/schema'
@@ -53,7 +53,9 @@ export async function recordCodeEdition(
   Result<{ editionKey: string }, 'forbidden' | 'not_found' | 'not_submitted' | EditionError>
 > {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (!(await mayActOnApplication(db, actor, 'permit.issue', input.applicationId, signal))) {
+    return err('forbidden')
+  }
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (app.receivedDate === null) return err('not_submitted')

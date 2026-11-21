@@ -57,7 +57,7 @@ function view(overrides: Record<string, unknown>): StaffApplicationView {
     state: 'under_review',
     today: '2026-11-06',
     substeps: [],
-    permissions: { canIssue: true, canDetermineRegionalImpact: true },
+    permissions: { canIssue: true, canRecordAppeal: true, canDetermineRegionalImpact: true },
     appeals: [],
     varianceValidity: 'not_required',
     reliance: null,

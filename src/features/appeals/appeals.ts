@@ -15,7 +15,10 @@ import { lockApplication } from '@/features/applications/lockApplication'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import {
+  classificationOfApplication,
+  mayRecordAppealOn,
+} from '@/features/authz/classificationScope'
 import { effectiveBindings } from '@/features/config/bindings'
 import { holdActedOnOrAfter, holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
@@ -24,6 +27,16 @@ import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 type AppealInput = { applicationId: string; filedOn: CivilDate; appellantName: string }
+
+async function mayRecordAppeal(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  const classification = await classificationOfApplication(db, applicationId, signal)
+  return await mayRecordAppealOn(db, actor, classification, signal)
+}
 type AppealOptions = { pack?: Pack; now?: Date }
 
 export async function recordAppeal(
@@ -34,7 +47,7 @@ export async function recordAppeal(
   { pack = loadPack(), now = new Date() }: AppealOptions = {},
 ): Promise<Result<void, 'forbidden' | FilingError | 'future_date'>> {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (!(await mayRecordAppeal(db, actor, input.applicationId, signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.filedOn, now, signal)) return err('future_date')
   return await transactionResult(db, (tx) =>
     recordAppealAuthorizedByCaller(tx, actor, input, signal, pack),
@@ -149,7 +162,7 @@ export async function resolveAppeal(
   now: Date = new Date(),
 ): Promise<Result<void, ResolveError>> {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (!(await mayRecordAppeal(db, actor, input.applicationId, signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.resolvedOn, now, signal)) return err('future_date')
   return await transactionResult<void, ResolveError>(db, async (tx) => {
     if (holdsEnabled()) await lockApplication(tx, input.applicationId)

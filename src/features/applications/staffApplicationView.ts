@@ -22,6 +22,11 @@ import {
 import { actorMayMove, needsBoardVote } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import {
+  mayActOnClassification,
+  mayRecordAppealOn,
+  packHasPlumbingScope,
+} from '@/features/authz/classificationScope'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
 import { codeEditionApplies } from '@/features/building/codeEditionApplies'
@@ -110,6 +115,7 @@ export interface StaffApplicationView {
   decisionNotice: DecisionNoticeView | null
   permissions: {
     canIssue: boolean
+    canRecordAppeal: boolean
     canAdjustClock: boolean
     canOverrideGate: boolean
     canRecordStatutoryException: boolean
@@ -120,10 +126,19 @@ export interface StaffApplicationView {
   }
 }
 
-async function permissionsOf(db: Db, actor: Actor, signal: AbortSignal) {
+async function permissionsOf(
+  db: Db,
+  actor: Actor,
+  classification: string | undefined,
+  signal: AbortSignal,
+) {
   const has = (c: Parameters<typeof hasCapability>[2]) => hasCapability(db, actor.userId, c, signal)
+  const canIssue = await mayActOnClassification(db, actor, 'permit.issue', classification, signal)
   return {
-    canIssue: await has('permit.issue'),
+    canIssue,
+    canRecordAppeal: packHasPlumbingScope()
+      ? await mayRecordAppealOn(db, actor, classification, signal)
+      : canIssue,
     canAdjustClock: await has('clock.adjust'),
     canOverrideGate: await has('gate.override_admin'),
     canRecordStatutoryException: await has('gate.record_statutory_exception'),
@@ -288,6 +303,6 @@ export async function getStaffApplicationView(
     varianceValidity: await varianceValidity(db, app.id, signal),
     reliance: await loadRelianceView(db, app.id, project.parcelId, signal),
     decisionNotice: await loadDecisionNotice(db, app),
-    permissions: await permissionsOf(db, actor, signal),
+    permissions: await permissionsOf(db, actor, app.typeBody.classification, signal),
   }
 }

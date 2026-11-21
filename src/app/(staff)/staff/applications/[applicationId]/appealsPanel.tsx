@@ -14,7 +14,7 @@ function appealLine(a: StaffApplicationView['appeals'][number]): string {
 }
 
 function RecordAppealForm({ view }: { view: StaffApplicationView }) {
-  if (!view.acceptsAppeal || !view.permissions.canIssue) return null
+  if (!view.acceptsAppeal || !view.permissions.canRecordAppeal) return null
   return (
     <details>
       <summary>Record an appeal</summary>
@@ -29,7 +29,7 @@ function RecordAppealForm({ view }: { view: StaffApplicationView }) {
 
 function ResolveAppealForm({ view }: { view: StaffApplicationView }) {
   const open = view.appeals.some((a) => a.resolvedOn === null)
-  if (!open || !view.permissions.canIssue) return null
+  if (!open || !view.permissions.canRecordAppeal) return null
   return (
     <details>
       <summary>Resolve the appeal</summary>

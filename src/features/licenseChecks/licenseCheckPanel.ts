@@ -5,7 +5,7 @@ import type { LicenseResult } from '@/db/schema/licenseChecks'
 import { loadApplicationContext } from '@/features/applications/context'
 import { isTerminalState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnClassification } from '@/features/authz/classificationScope'
 import { defaultLicenseType } from '@/features/licenseChecks/packLicenses'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townTimeZone } from '@/features/town/timeZone'
@@ -72,7 +72,7 @@ export async function loadLicenseCheckPanel(
   }
   const [latest, issues] = await Promise.all([
     describeLatest(db, applicationId, signal),
-    hasCapability(db, actor.userId, 'permit.issue', signal),
+    mayActOnClassification(db, actor, 'permit.issue', app.typeBody.classification, signal),
   ])
   return {
     applicationId,
