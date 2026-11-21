@@ -6,10 +6,15 @@ import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { lockedAndFinished } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { activeHoldsOn } from '@/features/enforcement/holdReads'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
 
-export type ApplicantParcelError = 'forbidden' | 'parcel_required' | 'application_closed'
+export type ApplicantParcelError =
+  | 'forbidden'
+  | 'parcel_required'
+  | 'application_closed'
+  | 'parcel_held'
 
 const PARCELS_CHANGED = 'the applicant parcels changed'
 
@@ -35,12 +40,14 @@ export function sameParcels(first: readonly string[], second: readonly string[])
 async function replaceParcels(
   tx: Tx,
   actor: Actor,
-  applicationId: string,
-  parcelIds: string[],
+  change: { applicationId: string; parcelIds: string[] },
   signal: AbortSignal,
-): Promise<void> {
+): Promise<Result<void, 'parcel_held'>> {
+  const { applicationId, parcelIds } = change
   const before = await applicantParcelIds(tx, applicationId, signal)
-  if (sameParcels(before, parcelIds)) return
+  if (sameParcels(before, parcelIds)) return ok(undefined)
+  const added = parcelIds.filter((id) => !before.includes(id))
+  if ((await activeHoldsOn(tx, added, signal)).length > 0) return err('parcel_held')
   await tx.delete(applicationParcels).where(eq(applicationParcels.applicationId, applicationId))
   await tx
     .insert(applicationParcels)
@@ -62,6 +69,7 @@ async function replaceParcels(
     },
     signal,
   )
+  return ok(undefined)
 }
 
 export async function setApplicantParcels(
@@ -76,8 +84,12 @@ export async function setApplicantParcels(
   if (parcelIds.length === 0) return err('parcel_required')
   return await transactionResult<void, ApplicantParcelError>(db, async (tx) => {
     if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
-    await replaceParcels(tx, actor, input.applicationId, parcelIds, signal)
-    return ok(undefined)
+    return await replaceParcels(
+      tx,
+      actor,
+      { applicationId: input.applicationId, parcelIds },
+      signal,
+    )
   })
 }
 
@@ -93,7 +105,11 @@ export async function addApplicantParcel(
     if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
     const existing = await applicantParcelIds(tx, input.applicationId, signal)
     const parcelIds = [...new Set([...existing, input.parcelId])]
-    await replaceParcels(tx, actor, input.applicationId, parcelIds, signal)
-    return ok(undefined)
+    return await replaceParcels(
+      tx,
+      actor,
+      { applicationId: input.applicationId, parcelIds },
+      signal,
+    )
   })
 }

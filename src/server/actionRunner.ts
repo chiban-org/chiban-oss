@@ -4,6 +4,7 @@ import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import { DEMO_REFUSAL, isDemoMode } from '@/features/demo/demoMode'
+import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { UNKNOWN_FORMAT_COPY } from '@/features/parcels/idFormatCopy'
 import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
@@ -59,6 +60,7 @@ export const ERROR_COPY: Record<string, string> = {
   fees_incomplete: 'The fees cannot be worked out yet because a count they depend on is not known.',
   stale_version: 'This application changed since you opened it. Reload the page and try again.',
   invalid_transition: 'That step is not available from the current state.',
+  parcel_held: HELD_PARCEL_COPY,
   not_submitted: 'The application has not been submitted yet.',
   already_complete: 'The application is already marked complete.',
   already_signed_off: 'You have already signed off on this review.',

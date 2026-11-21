@@ -11,6 +11,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
+import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { choice, civilDate, optionalText, requiredText } from '@/features/input/schemas'
 import { issueApplication } from '@/features/issuance/issueApplication'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
@@ -64,6 +65,7 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
             transitionApplication(tx, actor, { applicationId, to, expectedRowVersion }, signal),
           )
     if (result.ok) return { ok: true, message: `Moved to ${to.replaceAll('_', ' ')}.` }
+    if (result.error === 'parcel_held') return { ok: false, error: HELD_ISSUE_COPY }
     if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
     const reasons = result.error.gateBlocked
       .filter((g) => g.effective === 'blocked' && g.outcome.status !== 'pass')

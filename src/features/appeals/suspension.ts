@@ -1,6 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { appeals } from '@/db/schema'
+import { holdSuspends } from '@/features/enforcement/holdReads'
 import { type GateDefinition, registerGate } from '@/features/gates/registry'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
@@ -13,7 +14,7 @@ export function appealSuspends(pack: Pack, bindings: ReadonlySet<string>): boole
   )
 }
 
-export async function isSuspended(
+export async function appealOpen(
   db: DbOrTx,
   applicationId: string,
   signal: AbortSignal,
@@ -25,6 +26,16 @@ export async function isSuspended(
     .where(and(eq(appeals.applicationId, applicationId), isNull(appeals.resolvedOn)))
     .limit(1)
   return open.length > 0
+}
+
+export async function isSuspended(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  return (
+    (await appealOpen(db, applicationId, signal)) || (await holdSuspends(db, applicationId, signal))
+  )
 }
 
 export function suspensionGateDefinitions(): GateDefinition[] {
@@ -40,7 +51,7 @@ export function suspensionGateDefinitions(): GateDefinition[] {
       appliesTo: ['closed'],
       boundBy: effect.key,
       evaluate: async (tx, app, _today, signal) =>
-        (await isSuspended(tx, app.id, signal))
+        (await appealOpen(tx, app.id, signal))
           ? { status: 'blocked', reason: `${effect.label}. Resolve the appeal first.` }
           : { status: 'pass' },
     },

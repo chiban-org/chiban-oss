@@ -8,6 +8,8 @@ import type { CivilDate } from '@/types/civilDate'
 export interface CasePlanCure {
   rule: Pick<CureNoticeRule, 'label' | 'remedies'> | null
   notices: readonly CureNoticeFact[]
+  holdPlaced?: boolean
+  civilActionFiled?: boolean
 }
 
 export function cureRules(): CureNoticeRule[] {

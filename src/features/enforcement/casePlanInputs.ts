@@ -16,6 +16,7 @@ import {
   violationNotices,
 } from '@/db/schema'
 import { buildOrderDetail } from '@/features/enforcement/caseDetail'
+import { remedyFactsFor, withRemedyFacts } from '@/features/enforcement/caseRemedies'
 import { casePlanCure, packHasCureRules } from '@/features/enforcement/cureRules'
 import { serviceStateOf } from '@/features/enforcement/service'
 import { staysFor } from '@/features/enforcement/stay'
@@ -120,6 +121,10 @@ export async function loadCasePlanInputs(
       fines.map((f) => f.id),
     ),
   ])
+  const remedyFacts = await remedyFactsFor(
+    db,
+    caseRows.filter((r) => r.cureRuleKey !== null).map((r) => r.id),
+  )
   const findingsBy = groupBy(findings, (f) => f.caseId)
   const noticesBy = groupBy(notices, (n) => n.caseId)
   const ordersBy = groupBy(orders, (o) => o.caseId)
@@ -158,7 +163,10 @@ export async function loadCasePlanInputs(
       referrals: (referralsBy.get(caseId) ?? []).map((row) => ({
         outcomes: outcomesBy.get(row.id) ?? [],
       })),
-      cure: casePlanCure(cureKeyBy.get(caseId) ?? null, cureBy.get(caseId) ?? []),
+      cure: withRemedyFacts(
+        casePlanCure(cureKeyBy.get(caseId) ?? null, cureBy.get(caseId) ?? []),
+        remedyFacts.get(caseId),
+      ),
     })
   }
   return inputs

@@ -19,6 +19,7 @@ import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPanelDocuments, type PanelDocument } from '@/features/documents/panelData'
 import { getCase, type StaffCaseView } from '@/features/enforcement/access'
 import { answerDueOf } from '@/features/enforcement/answers'
+import { type CaseRemedies, factsOf, loadCaseRemedies } from '@/features/enforcement/caseRemedies'
 import type { AttachableComplaint } from '@/features/enforcement/complaintCandidates'
 import { cureRuleByKey, cureRules } from '@/features/enforcement/cureRules'
 import { fineBalance } from '@/features/enforcement/fines'
@@ -60,6 +61,8 @@ export interface CureDetail {
   choices: { key: string; label: string }[]
   rule: CureNoticeRule | null
   notices: (typeof cureNotices.$inferSelect & { due: CivilDate })[]
+  holdPlaced?: boolean
+  civilActionFiled?: boolean
 }
 
 export interface CaseDetail {
@@ -84,6 +87,7 @@ export interface CaseDetail {
   buildingCodeOffered?: boolean
   attachable?: AttachableComplaint[]
   payments?: CasePayments | null
+  remedies?: CaseRemedies
 }
 
 export function buildOrderDetail(
@@ -246,6 +250,7 @@ export async function loadCaseDetail(
             ),
           )
           .orderBy(asc(counselOutcomes.occurredOn))
+  const remedies = await loadCaseRemedies(db, view.value.row, signal)
   const first = orders.find((o) => o.row.status !== 'draft')
   const notice =
     notices
@@ -275,7 +280,9 @@ export async function loadCaseDetail(
       choices: cureRules().map((r) => ({ key: r.key, label: r.label })),
       rule: cureRuleByKey(view.value.row.cureRuleKey),
       notices: cureRows.map((row) => ({ ...row, due: row.cureDue.due })),
+      ...factsOf(remedies),
     },
+    remedies,
     orders,
     appeals,
     fines,

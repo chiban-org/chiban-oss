@@ -157,7 +157,11 @@ async function createRecord(
   const made = await createApplication(
     tx,
     actor,
-    { projectId: project.value.projectId, applicationTypeKey: row.applicationTypeKey },
+    {
+      projectId: project.value.projectId,
+      applicationTypeKey: row.applicationTypeKey,
+      bypassHold: true,
+    },
     signal,
     new Date(`${row.receivedDate}T17:00:00Z`),
   )

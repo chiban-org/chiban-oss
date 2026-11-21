@@ -11,6 +11,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { effectiveBindings } from '@/features/config/bindings'
+import { holdSuspends } from '@/features/enforcement/holdReads'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
@@ -134,19 +135,22 @@ export async function resolveAppeal(
       .where(eq(appeals.id, open.id))
     if (app.state !== 'suspended') return ok(undefined)
     const to = input.outcome === 'permit_upheld' ? 'issued' : 'closed'
-    const moved = await applyTransition(
-      tx,
-      actor,
-      {
-        applicationId: input.applicationId,
-        to,
-        expectedRowVersion: app.rowVersion,
-        onDate: input.resolvedOn,
-        ...(to === 'closed' ? { closureReason: 'revoked_on_appeal' as const } : {}),
-      },
-      signal,
-    )
-    if (!moved.ok) return err('not_suspended')
+    const held = to === 'issued' && (await holdSuspends(tx, app.id, signal))
+    if (!held) {
+      const moved = await applyTransition(
+        tx,
+        actor,
+        {
+          applicationId: input.applicationId,
+          to,
+          expectedRowVersion: app.rowVersion,
+          onDate: input.resolvedOn,
+          ...(to === 'closed' ? { closureReason: 'revoked_on_appeal' as const } : {}),
+        },
+        signal,
+      )
+      if (!moved.ok) return err('not_suspended')
+    }
     if (input.outcome !== 'permit_revoked') {
       await tollStoppedClocks(
         tx,

@@ -10,6 +10,7 @@ import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { pinCurrent } from '@/features/config/bindings'
 import { checkApplicationType } from '@/features/config/publishChecks'
 import { getVersion } from '@/features/config/store'
+import { activeHoldFor } from '@/features/enforcement/holdReads'
 import { loadPack } from '@/features/packs/loadPack'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
@@ -40,13 +41,13 @@ function isBoardType(typeBody: ApplicationTypeBody): boolean {
 export async function createApplication(
   db: DbOrTx,
   actor: Actor,
-  input: { projectId: string; applicationTypeKey: string },
+  input: { projectId: string; applicationTypeKey: string; bypassHold?: true },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
   Result<
     { applicationId: string; number: string },
-    'forbidden' | 'not_published' | 'config_inconsistent'
+    'forbidden' | 'not_published' | 'config_inconsistent' | 'parcel_held'
   >
 > {
   signal.throwIfAborted()
@@ -59,6 +60,9 @@ export async function createApplication(
   return await transactionResult(db, async (tx) => {
     const [project] = await tx.select().from(projects).where(eq(projects.id, input.projectId))
     if (project === undefined) return err('forbidden')
+    if (input.bypassHold !== true && (await activeHoldFor(tx, project.parcelId, signal)) !== null) {
+      return err('parcel_held')
+    }
     const pins = await pinCurrent(tx, input.applicationTypeKey, signal)
     if (!pins.ok) return err('not_published')
     const typeVersion = await getVersion(tx, pins.value.applicationType, signal)

@@ -9,6 +9,7 @@ import { intakeHref } from '@/features/counter/intake/intakeHref'
 import { type StartIntakeError, startCounterIntake } from '@/features/counter/intake/startIntake'
 import { submitCounterIntake } from '@/features/counter/intake/submitIntake'
 import { discardCounterIntake } from '@/features/counter/intake/unfinished'
+import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { optionalEmail } from '@/features/input/optionalEmail'
 import { checkbox, optionalText, recordId, requiredText } from '@/features/input/schemas'
@@ -32,6 +33,7 @@ const NAME_REQUIRED = 'Enter the applicant name.'
 
 const START_COPY: Record<Exclude<StartIntakeError, 'name_required' | 'forbidden'>, string> = {
   retired_parcel: 'That parcel was retired and takes no new applications.',
+  parcel_held: HELD_PARCEL_COPY,
   unknown_parcel: 'That parcel is not on file.',
   not_published: 'That application type is not in use.',
   config_inconsistent: 'That application type is not set up completely yet.',

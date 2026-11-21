@@ -80,6 +80,17 @@ const COPY: Record<string, string> = {
   notice_sent: 'A cure notice was already sent, so the procedure cannot be changed.',
   before_sent: 'The return receipt cannot be dated before the notice was mailed.',
   future_date: 'The date cannot be in the future.',
+  no_parcel: 'Link this case to a parcel before placing a development hold.',
+  remedy_not_available: 'The cure procedure for this case does not provide that remedy.',
+  cure_not_lapsed:
+    'The cure period has not run out on that date, or every noticed violation was corrected.',
+  already_held: 'This parcel already has an enforcement hold.',
+  already_released: 'This hold was already released.',
+  hold_released: 'This hold was released, so it no longer acts on permits.',
+  findings_open: 'Mark every finding corrected or withdrawn before releasing the hold.',
+  balance_due: 'Collect every fine and cost on this case before releasing the hold.',
+  not_on_parcel: 'That permit is not on the held parcel.',
+  not_issued: 'Only an issued permit can be suspended or revoked under the hold.',
   verification_required:
     'Anonymous intake needs a passing retention check for the version that is running.',
 }

@@ -12,8 +12,12 @@ export function remedyActions(input: CasePlanInput): CaseAction[] {
   }
   if (!cureStanding(input.findings, cure.notices, input.today).lapsedUncorrected) return []
   return [
-    ...(cure.rule.remedies.developmentHold ? [{ kind: 'place_hold' as const }] : []),
-    ...(cure.rule.remedies.civilAction ? [{ kind: 'file_civil_action' as const }] : []),
+    ...(cure.rule.remedies.developmentHold && cure.holdPlaced !== true
+      ? [{ kind: 'place_hold' as const }]
+      : []),
+    ...(cure.rule.remedies.civilAction && cure.civilActionFiled !== true
+      ? [{ kind: 'file_civil_action' as const }]
+      : []),
     ...(draftOrderOf(input) === null ? [{ kind: 'draft_order' as const }] : []),
   ]
 }

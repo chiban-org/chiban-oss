@@ -1053,6 +1053,23 @@ File: `data/des_proximity_determinations.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 
+### development_holds
+
+File: `data/development_holds.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `parcel_id`: uuid
+- `case_id`: uuid
+- `placed_on`: date
+- `placed_by`: uuid
+- `released_on`: date, nullable
+- `released_by`: uuid, nullable
+- `created_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+- `case_id` refers to `enforcement_cases`
+
 ### disposition_batches
 
 File: `data/disposition_batches.ndjson`. Ordered by id.
@@ -1207,6 +1224,21 @@ File: `data/enforcement_cases.ndjson`. Ordered by id.
 
 References:
 - `parcel_id` refers to `parcels`
+
+### enforcement_civil_actions
+
+File: `data/enforcement_civil_actions.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `filed_on`: date
+- `court`: text
+- `docket`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
 
 ### enforcement_designations
 
@@ -1436,6 +1468,21 @@ File: `data/historical_records.ndjson`. Ordered by id.
 - `source_row`: integer
 - `imported_by`: uuid
 - `imported_at`: timestamp with time zone
+
+### hold_permit_actions
+
+File: `data/hold_permit_actions.ndjson`. Ordered by hold_id, application_id.
+
+- `hold_id`: uuid
+- `application_id`: uuid
+- `action`: text
+- `acted_on`: date
+- `acted_by`: uuid
+- `reinstated_on`: date, nullable
+
+References:
+- `hold_id` refers to `development_holds`
+- `application_id` refers to `applications`
 
 ### import_exceptions
 

@@ -6,6 +6,7 @@ import { SendCureNoticeForm } from './CureSection'
 import { ReceiptForm, RecordFindingForm, SendNoticeForm } from './FindingsSection'
 import { FinePaymentForm } from './MoneySection'
 import { DraftOrderForm, IssueOrderForm } from './OrdersSection'
+import { CivilActionForm, PlaceHoldForm } from './RemedySection'
 import { AddRecipientForm, RecordServiceForm, RoleCheckForm } from './ServiceForms'
 
 const variant = 'default'
@@ -59,8 +60,9 @@ export function CasePlanForm({ action, detail }: { action: CaseAction; detail: C
     case 'send_cure_notice':
       return <SendCureNoticeForm detail={detail} variant={variant} />
     case 'place_hold':
+      return <PlaceHoldForm detail={detail} variant={variant} />
     case 'file_civil_action':
-      return null
+      return <CivilActionForm detail={detail} variant={variant} />
     case 'record_notice_receipt':
       return <ReceiptForm detail={detail} noticeId={action.noticeId} variant={variant} />
     case 'draft_order':

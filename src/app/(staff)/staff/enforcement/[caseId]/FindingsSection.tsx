@@ -19,6 +19,7 @@ import { CureSection } from './CureSection'
 import type { Can } from './can'
 import { FindingChoices } from './FindingChoices'
 import { FindingRow } from './FindingRow'
+import { RemedySection } from './RemedySection'
 import { Hidden, Section } from './Section'
 
 const METHODS = Object.entries(NOTICE_METHOD_LABELS) as [string, string][]
@@ -200,6 +201,7 @@ export function FindingsSection({
         </details>
       ) : null}
       <CureSection detail={detail} can={can} hosted={hosted} />
+      <RemedySection detail={detail} can={can} hosted={hosted} />
     </Section>
   )
 }

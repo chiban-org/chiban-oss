@@ -1,4 +1,5 @@
 import { missingBoardMessage } from '@/features/boards/townBoards'
+import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { channelLabel } from '@/features/notices/channels'
 import type { BoardKind } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -55,6 +56,7 @@ const COPY: Record<string, string> = {
   fees_incomplete: 'The notice cost could not be worked out from the issued list.',
   invalid_state: 'That step is not available from the current state.',
   unknown_parcel: 'That parcel ID was not found.',
+  parcel_held: HELD_PARCEL_COPY,
   no_issued_list: 'Issue the abutter list before scheduling a hearing.',
   list_out_of_date:
     'The abutter list was issued before the regional impact or water proximity finding. Draw and issue a new list first.',

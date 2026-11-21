@@ -12,6 +12,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { captureApplicability } from '@/features/buildingProgram/applicability'
 import { getVersion } from '@/features/config/store'
+import { holdBlocksApplication } from '@/features/enforcement/holdReads'
 import type { FormBody } from '@/features/forms/formSchema'
 import {
   extractFacts,
@@ -71,6 +72,7 @@ export type SubmitError =
   | 'attestation_mismatch'
   | 'invalid_transition'
   | 'not_found'
+  | 'parcel_held'
   | { fieldErrors: FieldError[] }
   | { gateBlocked: GateResult[] }
 
@@ -98,6 +100,9 @@ export async function submitApplication(
   if (!(await mayEdit(db, actor, app.projectId))) return err('forbidden')
   if (app.state !== 'draft') return err('invalid_transition')
   const cutover = input.cutover
+  if (cutover === undefined && (await holdBlocksApplication(db, app.id, signal))) {
+    return err('parcel_held')
+  }
   if (!(await mayUseAttestationRoute(db, actor, input, signal))) return err('forbidden')
   const { statement, statementSha256 } = statementFor(app.typeBody.attestationText, input)
   if (statementSha256 !== attestationHash(statement)) return err('attestation_mismatch')

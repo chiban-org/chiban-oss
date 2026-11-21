@@ -122,6 +122,21 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       select c.id, '{}'::uuid[], 'owner', 'Export Coverage', '1 Coverage Road', '2027-03-20', '{"due":"2027-03-30"}'::jsonb, gen_random_uuid() from enforcement_cases c limit 1`,
   },
   {
+    table: 'development_holds',
+    statement: sql`insert into development_holds (parcel_id, case_id, placed_on, placed_by)
+      select (select id from parcels limit 1), c.id, '2027-03-21', gen_random_uuid() from enforcement_cases c limit 1`,
+  },
+  {
+    table: 'hold_permit_actions',
+    statement: sql`insert into hold_permit_actions (hold_id, application_id, action, acted_on, acted_by)
+      select h.id, (select id from applications limit 1), 'suspended', '2027-03-22', gen_random_uuid() from development_holds h limit 1`,
+  },
+  {
+    table: 'enforcement_civil_actions',
+    statement: sql`insert into enforcement_civil_actions (case_id, filed_on, court, recorded_by)
+      select c.id, '2027-03-21', 'Export Coverage Court', gen_random_uuid() from enforcement_cases c limit 1`,
+  },
+  {
     table: 'decision_notices',
     statement: sql`insert into decision_notices (application_id, document_id, mailed_on, recorded_by)
       select a.id, (select id from documents limit 1), '2027-03-20', gen_random_uuid() from applications a limit 1`,
