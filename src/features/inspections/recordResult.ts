@@ -3,7 +3,6 @@ import type { Db, Tx } from '@/db/client'
 import { inspectionItemResults, inspections } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { isSuspended } from '@/features/appeals/suspension'
-import { lockApplication } from '@/features/applications/lockApplication'
 import type { CoreState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -13,6 +12,7 @@ import { getVersion } from '@/features/config/store'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { applyPassedFinal } from '@/features/inspections/closeOnFinal'
+import { lockInspectionAfterApplication } from '@/features/inspections/lockInspection'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { recordsInspection } from '@/features/inspections/visibility'
 import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
@@ -107,18 +107,9 @@ async function prepare(
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<Result<Prepared, RecordResultError>> {
-  const [owner] = await tx
-    .select({ applicationId: inspections.applicationId })
-    .from(inspections)
-    .where(eq(inspections.id, input.inspectionId))
-  if (owner === undefined) return err('not_found')
-  const appState = await lockApplication(tx, owner.applicationId)
-  const [locked] = await tx
-    .select()
-    .from(inspections)
-    .where(eq(inspections.id, input.inspectionId))
-    .for('update')
-  if (locked === undefined) return err('not_found')
+  const found = await lockInspectionAfterApplication(tx, input.inspectionId)
+  if (found === null) return err('not_found')
+  const { inspection: locked, appState } = found
   if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
   if (locked.status !== 'scheduled') return err('not_scheduled')
   if (!recordsInspection(actor, locked.inspectorUserId)) return err('not_assigned')
