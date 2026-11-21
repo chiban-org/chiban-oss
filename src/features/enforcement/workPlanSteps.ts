@@ -5,6 +5,7 @@ import { boardAbbrev } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
+import { cureStep } from './workPlanCure'
 import {
   type CasePlanInput,
   type CasePlanOrder,
@@ -81,6 +82,8 @@ function violationStep(input: CasePlanInput): Step {
   const standing = findingStanding(input)
   if (standing === 'corrected') return resolveStep()
   if (standing === 'withdrawn') return noViolationStep()
+  const cure = cureStep(input)
+  if (cure !== null) return cure
   if (!noticeOfViolationSent(input.notices)) {
     return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
   }

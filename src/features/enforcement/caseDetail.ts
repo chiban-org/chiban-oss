@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import {
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   enforcementAppeals,
   enforcementFines,
   enforcementOrders,
@@ -19,6 +20,7 @@ import { loadPanelDocuments, type PanelDocument } from '@/features/documents/pan
 import { getCase, type StaffCaseView } from '@/features/enforcement/access'
 import { answerDueOf } from '@/features/enforcement/answers'
 import type { AttachableComplaint } from '@/features/enforcement/complaintCandidates'
+import { cureRuleByKey, cureRules } from '@/features/enforcement/cureRules'
 import { fineBalance } from '@/features/enforcement/fines'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
 import { type PenaltyExposure, penaltyExposure } from '@/features/enforcement/penaltyExposure'
@@ -32,7 +34,7 @@ import {
 } from '@/features/enforcement/service'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import { type StayState, stayBanner, stayFor } from '@/features/enforcement/stay'
-import type { CeaseAndDesistRule } from '@/features/packs/schema'
+import type { CeaseAndDesistRule, CureNoticeRule } from '@/features/packs/schema'
 import type { CasePayments } from '@/features/payments/casePayments'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -54,6 +56,12 @@ export interface AppealDetail {
   restraints: (typeof restrainingOrders.$inferSelect)[]
 }
 
+export interface CureDetail {
+  choices: { key: string; label: string }[]
+  rule: CureNoticeRule | null
+  notices: (typeof cureNotices.$inferSelect & { due: CivilDate })[]
+}
+
 export interface CaseDetail {
   staff: StaffCaseView
   today: CivilDate
@@ -61,6 +69,7 @@ export interface CaseDetail {
   banner: string | null
   findings: (typeof violationFindings.$inferSelect)[]
   notices: (typeof violationNotices.$inferSelect)[]
+  cure: CureDetail
   orders: OrderDetail[]
   appeals: AppealDetail[]
   fines: { row: typeof enforcementFines.$inferSelect; dueCents: number; paidCents: number }[]
@@ -163,38 +172,44 @@ export async function loadCaseDetail(
   const view = await getCase(db, actor, caseId, signal)
   if (!view.ok || view.value.kind !== 'staff') return err('not_found')
   const stay = await stayFor(db, caseId, today, signal)
-  const [findings, notices, orderRows, appealRows, fineRows, referralRows] = await Promise.all([
-    db
-      .select()
-      .from(violationFindings)
-      .where(eq(violationFindings.caseId, caseId))
-      .orderBy(asc(violationFindings.foundOn)),
-    db
-      .select()
-      .from(violationNotices)
-      .where(eq(violationNotices.caseId, caseId))
-      .orderBy(asc(violationNotices.sentOn)),
-    db
-      .select()
-      .from(enforcementOrders)
-      .where(eq(enforcementOrders.caseId, caseId))
-      .orderBy(asc(enforcementOrders.number)),
-    db
-      .select()
-      .from(enforcementAppeals)
-      .where(eq(enforcementAppeals.caseId, caseId))
-      .orderBy(asc(enforcementAppeals.filedOn)),
-    db
-      .select()
-      .from(enforcementFines)
-      .where(eq(enforcementFines.caseId, caseId))
-      .orderBy(asc(enforcementFines.imposedOn)),
-    db
-      .select()
-      .from(counselReferrals)
-      .where(eq(counselReferrals.caseId, caseId))
-      .orderBy(asc(counselReferrals.referredOn)),
-  ])
+  const [findings, notices, cureRows, orderRows, appealRows, fineRows, referralRows] =
+    await Promise.all([
+      db
+        .select()
+        .from(violationFindings)
+        .where(eq(violationFindings.caseId, caseId))
+        .orderBy(asc(violationFindings.foundOn)),
+      db
+        .select()
+        .from(violationNotices)
+        .where(eq(violationNotices.caseId, caseId))
+        .orderBy(asc(violationNotices.sentOn)),
+      db
+        .select()
+        .from(cureNotices)
+        .where(eq(cureNotices.caseId, caseId))
+        .orderBy(asc(cureNotices.sentOn), asc(cureNotices.recipientRole)),
+      db
+        .select()
+        .from(enforcementOrders)
+        .where(eq(enforcementOrders.caseId, caseId))
+        .orderBy(asc(enforcementOrders.number)),
+      db
+        .select()
+        .from(enforcementAppeals)
+        .where(eq(enforcementAppeals.caseId, caseId))
+        .orderBy(asc(enforcementAppeals.filedOn)),
+      db
+        .select()
+        .from(enforcementFines)
+        .where(eq(enforcementFines.caseId, caseId))
+        .orderBy(asc(enforcementFines.imposedOn)),
+      db
+        .select()
+        .from(counselReferrals)
+        .where(eq(counselReferrals.caseId, caseId))
+        .orderBy(asc(counselReferrals.referredOn)),
+    ])
   const orders = await Promise.all(orderRows.map((o) => orderDetail(db, o, stay, today, signal)))
   const appealIds = appealRows.map((a) => a.id)
   const [certs, restraints] =
@@ -256,6 +271,11 @@ export async function loadCaseDetail(
     ),
     findings,
     notices,
+    cure: {
+      choices: cureRules().map((r) => ({ key: r.key, label: r.label })),
+      rule: cureRuleByKey(view.value.row.cureRuleKey),
+      notices: cureRows.map((row) => ({ ...row, due: row.cureDue.due })),
+    },
     orders,
     appeals,
     fines,

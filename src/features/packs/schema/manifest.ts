@@ -5,7 +5,11 @@ import {
   type ProceedingClassification,
   ProceedingClassificationSchema,
 } from './boards'
-import { CeaseAndDesistRuleSchema, CivilPenaltyRuleSchema } from './enforcement'
+import {
+  CeaseAndDesistRuleSchema,
+  CivilPenaltyRuleSchema,
+  CureNoticeRuleSchema,
+} from './enforcement'
 import {
   type CodeEditionEntry,
   CodeEditionEntrySchema,
@@ -39,6 +43,7 @@ export const PackRuleSchema = z
     DecisionDeliveryRuleSchema,
     CeaseAndDesistRuleSchema,
     CivilPenaltyRuleSchema,
+    CureNoticeRuleSchema,
   ])
   .refine(
     (r) =>
@@ -81,6 +86,30 @@ function receiptStageIssues(rules: PackRule[]): string[] {
       : [
           `notice_requirement ${r.key} is on_receipt and its lead clock ${r.leadRuleKey} must count after application_received`,
         ]
+  })
+}
+
+function cureIssues(rules: PackRule[]): string[] {
+  const byKey = new Map(rules.map((r) => [r.key, r] as const))
+  return rules.flatMap((r) => {
+    if (r.kind !== 'cure_notice') return []
+    const issues: string[] = []
+    const cure = byKey.get(r.cureRuleKey)
+    if (
+      cure?.kind !== 'clock' ||
+      cure.clockType !== 'action_due' ||
+      cure.startEvent !== 'cure_notice_sent'
+    ) {
+      issues.push(
+        `cure_notice ${r.key} cureRuleKey ${r.cureRuleKey} must be an action_due clock started by cure_notice_sent`,
+      )
+    }
+    if (r.penaltyRuleKey !== null && byKey.get(r.penaltyRuleKey)?.kind !== 'civil_penalty') {
+      issues.push(
+        `cure_notice ${r.key} penaltyRuleKey ${r.penaltyRuleKey} must be a civil_penalty rule`,
+      )
+    }
+    return issues
   })
 }
 
@@ -149,6 +178,7 @@ export const PackManifestSchema = z
       ...settingClockIssues(m.rules),
       ...deliveryIssues(m.rules),
       ...receiptStageIssues(m.rules),
+      ...cureIssues(m.rules),
     ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })

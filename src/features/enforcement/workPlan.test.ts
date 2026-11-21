@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_CASE_ABILITIES, OPEN_FINDING, planFor, planInput, planOrder } from '@/test/casePlan'
+import type { CivilDate } from '@/types/civilDate'
 import { hostedActions } from './workPlanTypes'
 
 const SENT = [{ id: 'n1', receivedOn: '2026-11-02' }]
@@ -114,5 +115,85 @@ describe('the case work plan before an order is issued', () => {
     expect(p.now?.action).toBeNull()
     expect(p.now?.note).toBe('Your role cannot take this step.')
     expect(p.moves).toEqual([])
+  })
+})
+
+const CURE_RULE = {
+  label: 'Cure procedure',
+  remedies: { developmentHold: true, civilAction: true },
+}
+const NOTICED = { findingIds: ['f1'], due: '2026-11-10' as CivilDate }
+
+function cureInput(overrides: Parameters<typeof planInput>[1] = {}, notices = [NOTICED]) {
+  return planInput('violation_found', {
+    findings: OPEN_FINDING,
+    cure: { rule: CURE_RULE, notices },
+    ...overrides,
+  })
+}
+
+describe('the case work plan under a cure procedure', () => {
+  it('asks for the cure notice instead of a notice of violation', () => {
+    const p = planFor(cureInput({}, []))
+    expect(p.now?.action).toEqual({ kind: 'send_cure_notice' })
+    expect(p.sentence).toBe('Waiting on: Town (Sam Clerk). Send the cure notice.')
+    expect(p.remedies).toEqual([])
+  })
+
+  it('waits on the respondent while the cure period runs and counts it down', () => {
+    const p = planFor(cureInput({ today: '2026-11-07' as CivilDate }))
+    expect(p.now?.action).toBeNull()
+    expect(p.now?.actor).toBe('respondent')
+    expect(p.due).toMatchObject({ key: 'cure', daysLeft: 3 })
+    expect(p.remedies).toEqual([])
+  })
+
+  it('offers no remedy on the due date itself', () => {
+    const p = planFor(cureInput({ today: '2026-11-10' as CivilDate }))
+    expect(p.remedies).toEqual([])
+  })
+
+  it('offers both remedies the day after the due date with a noticed finding open', () => {
+    const p = planFor(cureInput({ today: '2026-11-11' as CivilDate }))
+    expect(p.now?.action).toEqual({ kind: 'place_hold' })
+    expect(p.remedies).toEqual([{ kind: 'place_hold' }, { kind: 'file_civil_action' }])
+  })
+
+  it('offers only the remedies the rule allows', () => {
+    const rule = { ...CURE_RULE, remedies: { developmentHold: false, civilAction: true } }
+    const p = planFor(
+      cureInput({ today: '2026-11-11' as CivilDate, cure: { rule, notices: [NOTICED] } }),
+    )
+    expect(p.remedies).toEqual([{ kind: 'file_civil_action' }])
+    expect(p.now?.action).toEqual({ kind: 'file_civil_action' })
+  })
+
+  it('offers no remedy for a finding the notice did not name once the named one is corrected', () => {
+    const p = planFor(
+      cureInput({
+        today: '2026-11-11' as CivilDate,
+        findings: [
+          { id: 'f1', status: 'corrected' as const },
+          { id: 'f2', status: 'open' as const },
+        ],
+      }),
+    )
+    expect(p.remedies).toEqual([])
+    expect(p.now?.action).toEqual({ kind: 'send_cure_notice' })
+  })
+
+  it('hides remedies from staff whose role cannot take them', () => {
+    const p = planFor(cureInput({ today: '2026-11-11' as CivilDate }), {
+      abilities: new Set(['move']),
+      responsible: null,
+    })
+    expect(p.remedies).toEqual([])
+  })
+
+  it('shows no cure step on a case without a procedure', () => {
+    const p = planFor(planInput('violation_found', { findings: OPEN_FINDING }))
+    expect(p.now?.action).toEqual({ kind: 'send_notice' })
+    expect(p.remedies).toEqual([])
+    expect(p.due).toBeNull()
   })
 })

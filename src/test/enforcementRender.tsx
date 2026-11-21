@@ -48,6 +48,7 @@ export function stubDetail(overrides: Record<string, unknown> = {}): CaseDetail 
     banner: null,
     findings: [],
     notices: [],
+    cure: { choices: [], rule: null, notices: [] },
     orders: [],
     appeals: [],
     varianceValidity: 'not_required',

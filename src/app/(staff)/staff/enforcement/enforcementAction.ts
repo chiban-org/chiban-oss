@@ -74,6 +74,12 @@ const COPY: Record<string, string> = {
     'This case is shown on the public site. Write the public text for that complaint on its own case first.',
   complaint_text_unreviewed:
     'Write the public text for every complaint before showing the case on the public site.',
+  no_cure_procedure: 'Choose the cure procedure for this case before sending a cure notice.',
+  no_open_findings: 'Choose at least one open finding for the cure notice.',
+  unknown_rule: 'This town has no such cure procedure.',
+  notice_sent: 'A cure notice was already sent, so the procedure cannot be changed.',
+  before_sent: 'The return receipt cannot be dated before the notice was mailed.',
+  future_date: 'The date cannot be in the future.',
   verification_required:
     'Anonymous intake needs a passing retention check for the version that is running.',
 }

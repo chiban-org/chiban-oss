@@ -4,6 +4,7 @@ import { boardLabel } from '@/features/packs/vocabulary'
 import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
+import { cureDue, remedyActions } from './workPlanCure'
 import {
   type CasePlanExtras,
   type CasePlanInput,
@@ -49,7 +50,9 @@ function correctiveDue(order: CasePlanOrder | null, today: CivilDate): CaseDue |
 }
 
 export function caseDue(input: CasePlanInput): CaseDue | null {
-  if (input.stay.stayed || !DUE_STATUSES.includes(input.staff.row.status)) return null
+  if (input.stay.stayed) return null
+  if (input.staff.row.status === 'violation_found') return cureDue(input)
+  if (!DUE_STATUSES.includes(input.staff.row.status)) return null
   const order = liveOrder(input)
   const answer = soonestAnswer(input)
   if (answer !== undefined) return dueAt('answer', 'Answer due', answer.due.due, input.today)
@@ -125,6 +128,7 @@ export function planCaseWork(input: CasePlanInput, extras: CasePlanExtras): Case
     sentence: sentenceOf(status, step, due, extras.responsible),
     now,
     due,
+    remedies: remedyActions(input).filter((a) => extras.abilities.has(a.kind)),
     groups: requirementGroups(input),
     moves: movesOf(input, now, extras),
   }

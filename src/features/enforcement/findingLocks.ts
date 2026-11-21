@@ -1,6 +1,7 @@
 import { type AnyColumn, and, asc, eq, sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import {
+  cureNotices,
   enforcementCases,
   enforcementOrders,
   violationFindings,
@@ -18,6 +19,12 @@ export async function findingInUse(tx: Tx, finding: FindingRow): Promise<boolean
     .where(and(eq(violationNotices.caseId, finding.caseId), contains(violationNotices.findingIds)))
     .limit(1)
   if (notice !== undefined) return true
+  const [cure] = await tx
+    .select({ id: cureNotices.id })
+    .from(cureNotices)
+    .where(and(eq(cureNotices.caseId, finding.caseId), contains(cureNotices.findingIds)))
+    .limit(1)
+  if (cure !== undefined) return true
   const [order] = await tx
     .select({ id: enforcementOrders.id })
     .from(enforcementOrders)

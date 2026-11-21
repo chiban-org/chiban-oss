@@ -48,6 +48,7 @@ const START_EVENTS: Record<StartEvent, string> = {
   rehearing_vote: 'the board votes on the rehearing',
   administrative_decision: 'the administrative decision',
   order_served: 'the order is served',
+  cure_notice_sent: 'the cure notice is sent',
   judgment_entered: 'the court enters judgment',
   rtk_request_received: 'the request is received',
   rtk_time_statement: 'the town states the time it needs',

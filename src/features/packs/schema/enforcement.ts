@@ -63,3 +63,15 @@ export const CivilPenaltyRuleSchema = z.object({
   overridePolicy: z.object({ policy: z.literal('fixed') }),
 })
 export type CivilPenaltyRule = z.infer<typeof CivilPenaltyRuleSchema>
+
+export const CureNoticeRuleSchema = z.object({
+  ...base,
+  kind: z.literal('cure_notice'),
+  occupant: z.literal('if_applicable'),
+  method: z.literal('certified_mail_return_receipt'),
+  cureRuleKey: z.string().min(1),
+  penaltyRuleKey: z.string().min(1).nullable(),
+  remedies: z.object({ developmentHold: z.boolean(), civilAction: z.boolean() }),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CureNoticeRule = z.infer<typeof CureNoticeRuleSchema>

@@ -7,6 +7,7 @@ import type {
   violationNotices,
 } from '@/db/schema'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
+import type { CasePlanCure } from '@/features/enforcement/cureRules'
 import type { MotionBlock } from '@/features/enforcement/motionGate'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
@@ -47,6 +48,7 @@ export interface CasePlanInput {
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]
   referrals: readonly { outcomes: readonly { kind: string }[] }[]
+  cure?: CasePlanCure | null
 }
 
 export interface CasePlanExtras {

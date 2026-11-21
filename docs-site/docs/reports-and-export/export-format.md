@@ -926,6 +926,27 @@ References:
 - `application_id` refers to `applications`
 - `applicant_party_id` refers to `project_parties`
 
+### cure_notices
+
+File: `data/cure_notices.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `finding_ids`: uuid[]
+- `recipient_role`: text
+- `recipient_name`: text
+- `mailing_address`: text
+- `sent_on`: date
+- `return_receipt_on`: date, nullable
+- `document_id`: uuid, nullable
+- `cure_due`: jsonb
+- `sent_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`
+
 ### cutover_reconciliations
 
 File: `data/cutover_reconciliations.ndjson`. Ordered by id.
@@ -1179,6 +1200,7 @@ File: `data/enforcement_cases.ndjson`. Ordered by id.
 - `assigned_to`: uuid, nullable
 - `is_public`: boolean
 - `public_summary`: text, nullable
+- `cure_rule_key`: text, nullable
 - `row_version`: integer
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone

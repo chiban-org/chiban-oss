@@ -3,7 +3,9 @@ import type { DbOrTx } from '@/db/client'
 import {
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   type EnforcementStatus,
+  enforcementCases,
   enforcementFines,
   enforcementOrders,
   orderCourtSteps,
@@ -14,6 +16,7 @@ import {
   violationNotices,
 } from '@/db/schema'
 import { buildOrderDetail } from '@/features/enforcement/caseDetail'
+import { casePlanCure } from '@/features/enforcement/cureRules'
 import { serviceStateOf } from '@/features/enforcement/service'
 import { staysFor } from '@/features/enforcement/stay'
 import type { CasePlanInput } from '@/features/enforcement/workPlan'
@@ -40,34 +43,40 @@ export async function loadCasePlanInputs(
   const inputs = new Map<string, CasePlanInput>()
   if (cases.length === 0) return inputs
   const caseIds = cases.map((c) => c.caseId)
-  const [stays, findings, notices, orders, fines, referrals] = await Promise.all([
-    staysFor(db, caseIds, today, signal),
-    db
-      .select()
-      .from(violationFindings)
-      .where(inArray(violationFindings.caseId, caseIds))
-      .orderBy(asc(violationFindings.foundOn)),
-    db
-      .select()
-      .from(violationNotices)
-      .where(inArray(violationNotices.caseId, caseIds))
-      .orderBy(asc(violationNotices.sentOn)),
-    db
-      .select()
-      .from(enforcementOrders)
-      .where(inArray(enforcementOrders.caseId, caseIds))
-      .orderBy(asc(enforcementOrders.number)),
-    db
-      .select()
-      .from(enforcementFines)
-      .where(inArray(enforcementFines.caseId, caseIds))
-      .orderBy(asc(enforcementFines.imposedOn)),
-    db
-      .select()
-      .from(counselReferrals)
-      .where(inArray(counselReferrals.caseId, caseIds))
-      .orderBy(asc(counselReferrals.referredOn)),
-  ])
+  const [stays, findings, notices, orders, fines, referrals, cureRows, caseRows] =
+    await Promise.all([
+      staysFor(db, caseIds, today, signal),
+      db
+        .select()
+        .from(violationFindings)
+        .where(inArray(violationFindings.caseId, caseIds))
+        .orderBy(asc(violationFindings.foundOn)),
+      db
+        .select()
+        .from(violationNotices)
+        .where(inArray(violationNotices.caseId, caseIds))
+        .orderBy(asc(violationNotices.sentOn)),
+      db
+        .select()
+        .from(enforcementOrders)
+        .where(inArray(enforcementOrders.caseId, caseIds))
+        .orderBy(asc(enforcementOrders.number)),
+      db
+        .select()
+        .from(enforcementFines)
+        .where(inArray(enforcementFines.caseId, caseIds))
+        .orderBy(asc(enforcementFines.imposedOn)),
+      db
+        .select()
+        .from(counselReferrals)
+        .where(inArray(counselReferrals.caseId, caseIds))
+        .orderBy(asc(counselReferrals.referredOn)),
+      db.select().from(cureNotices).where(inArray(cureNotices.caseId, caseIds)),
+      db
+        .select({ id: enforcementCases.id, cureRuleKey: enforcementCases.cureRuleKey })
+        .from(enforcementCases)
+        .where(inArray(enforcementCases.id, caseIds)),
+    ])
   const orderIds = orders.map((o) => o.id)
   const referralIds = referrals.map((r) => r.id)
   const [steps, checks, recipients, events, outcomes, dues] = await Promise.all([
@@ -106,6 +115,8 @@ export async function loadCasePlanInputs(
   const ordersBy = groupBy(orders, (o) => o.caseId)
   const finesBy = groupBy(fines, (f) => f.caseId)
   const referralsBy = groupBy(referrals, (r) => r.caseId)
+  const cureBy = groupBy(cureRows, (r) => r.caseId)
+  const cureKeyBy = new Map(caseRows.map((r) => [r.id, r.cureRuleKey]))
   const stepsBy = groupBy(steps, (s) => s.orderId)
   const checksBy = groupBy(checks, (c) => c.orderId)
   const recipientsBy = groupBy(recipients, (r) => r.orderId)
@@ -137,6 +148,7 @@ export async function loadCasePlanInputs(
       referrals: (referralsBy.get(caseId) ?? []).map((row) => ({
         outcomes: outcomesBy.get(row.id) ?? [],
       })),
+      cure: casePlanCure(cureKeyBy.get(caseId) ?? null, cureBy.get(caseId) ?? []),
     })
   }
   return inputs

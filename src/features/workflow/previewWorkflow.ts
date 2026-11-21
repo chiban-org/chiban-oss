@@ -80,6 +80,7 @@ function eventPlacement(
     case 'rehearing_vote':
       return { state: 'decided', on: meeting }
     case 'order_served':
+    case 'cure_notice_sent':
     case 'judgment_entered':
     case 'rtk_request_received':
     case 'rtk_time_statement':

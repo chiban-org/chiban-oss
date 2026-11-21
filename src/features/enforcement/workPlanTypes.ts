@@ -12,6 +12,9 @@ export type CaseAction =
   | { kind: 'move'; to: CaseMove }
   | { kind: 'record_finding' }
   | { kind: 'send_notice' }
+  | { kind: 'send_cure_notice' }
+  | { kind: 'place_hold' }
+  | { kind: 'file_civil_action' }
   | { kind: 'record_notice_receipt'; noticeId: string }
   | { kind: 'draft_order' }
   | { kind: 'issue_order'; orderId: string }
@@ -54,7 +57,7 @@ export interface CaseNowStep {
 }
 
 export interface CaseDue {
-  key: 'answer' | 'judgment_appeal' | 'corrective_action'
+  key: 'answer' | 'judgment_appeal' | 'corrective_action' | 'cure'
   label: string
   date: CivilDate
   daysLeft: number
@@ -66,6 +69,7 @@ export interface CaseWorkPlan {
   sentence: string
   now: CaseNowStep | null
   due: CaseDue | null
+  remedies: CaseAction[]
   groups: CaseRequirementGroup[]
   moves: CaseMove[]
 }
@@ -86,6 +90,9 @@ export function actionKey(action: CaseAction): string {
       return `${action.kind}:${action.fineId}`
     case 'record_finding':
     case 'send_notice':
+    case 'send_cure_notice':
+    case 'place_hold':
+    case 'file_civil_action':
     case 'draft_order':
       return action.kind
   }

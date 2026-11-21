@@ -21,6 +21,7 @@ export const START_EVENT_LABELS: Record<string, string> = {
   rehearing_vote: 'Rehearing vote',
   administrative_decision: 'Administrative decision',
   order_served: 'Order served',
+  cure_notice_sent: 'Cure notice sent',
   judgment_entered: 'Judgment entered',
   rtk_request_received: 'Request received',
   rtk_time_statement: 'Time statement made',

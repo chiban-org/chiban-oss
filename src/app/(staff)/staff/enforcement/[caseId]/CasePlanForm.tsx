@@ -2,6 +2,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import type { CaseAction } from '@/features/enforcement/workPlanTypes'
 import { CloseForm, MoveForm } from './CaseStatusForm'
 import { CourtStepForm } from './CourtForms'
+import { SendCureNoticeForm } from './CureSection'
 import { ReceiptForm, RecordFindingForm, SendNoticeForm } from './FindingsSection'
 import { FinePaymentForm } from './MoneySection'
 import { DraftOrderForm, IssueOrderForm } from './OrdersSection'
@@ -55,6 +56,11 @@ export function CasePlanForm({ action, detail }: { action: CaseAction; detail: C
       return <RecordFindingForm detail={detail} variant={variant} />
     case 'send_notice':
       return <SendNoticeForm detail={detail} variant={variant} />
+    case 'send_cure_notice':
+      return <SendCureNoticeForm detail={detail} variant={variant} />
+    case 'place_hold':
+    case 'file_civil_action':
+      return null
     case 'record_notice_receipt':
       return <ReceiptForm detail={detail} noticeId={action.noticeId} variant={variant} />
     case 'draft_order':

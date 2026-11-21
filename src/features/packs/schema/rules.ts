@@ -45,6 +45,7 @@ export const StartEventSchema = z.enum([
   'rehearing_vote',
   'administrative_decision',
   'order_served',
+  'cure_notice_sent',
   'judgment_entered',
   'rtk_request_received',
   'rtk_time_statement',

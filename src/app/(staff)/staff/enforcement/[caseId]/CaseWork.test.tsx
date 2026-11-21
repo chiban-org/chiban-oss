@@ -57,6 +57,7 @@ function planWith(now: Partial<NonNullable<CaseWorkPlan['now']>>): CaseWorkPlan 
     stayed: false,
     sentence: '',
     due: null,
+    remedies: [],
     groups: [],
     moves: [],
     now: {
