@@ -1,7 +1,7 @@
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
-import { settingDefault } from '@/features/clocks/ruleEngine'
+import { resolveRuleLength } from '@/features/clocks/ruleEngine'
 import { getPublished } from '@/features/config/store'
+import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { ClockRule } from '@/features/packs/schema'
 
@@ -19,21 +19,19 @@ export async function townSettingValue(
   return (published?.body as { value: number } | undefined)?.value
 }
 
+const NO_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, afterTheFact: false }
+
 export async function resolvedLength(
   tx: DbOrTx,
   rule: ClockRule,
   signal: AbortSignal,
 ): Promise<LengthOf> {
   const length = rule.length
-  if ('fromSetting' in length) {
-    const setting = ruleByKey(loadPack(), length.fromSetting)
-    const town = await townSettingValue(tx, length.fromSetting, signal)
-    return { unit: length.unit, value: town ?? settingDefault(setting) }
-  }
-  if ('value' in length) {
-    return { unit: length.unit, value: length.value }
-  }
-  throw new AppError(ErrorIds.PACK_INVALID, 'The rule has no length to resolve', { key: rule.key })
+  const settingKey = 'fromSetting' in length ? length.fromSetting : null
+  const setting = settingKey === null ? null : ruleByKey(loadPack(), settingKey)
+  const town = settingKey === null ? undefined : await townSettingValue(tx, settingKey, signal)
+  const { unit, value } = resolveRuleLength(rule, NO_FACTS, setting, town)
+  return { unit, value }
 }
 
 export function hasWindowLength(rule: ClockRule): boolean {

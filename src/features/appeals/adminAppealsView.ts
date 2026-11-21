@@ -38,21 +38,15 @@ export interface ApplicationAppeals {
   offerFinalApproval: boolean
 }
 
-async function appealWindowEnds(
-  db: Db,
-  decidedOn: CivilDate,
-  signal: AbortSignal,
-): Promise<CivilDate | null> {
+type WindowEnds = (decidedOn: CivilDate) => CivilDate | null
+
+async function appealWindowEnds(db: Db, signal: AbortSignal): Promise<WindowEnds> {
   const key = packRoles().rules.adminAppealToZba
-  if (key === null) return null
+  if (key === null) return () => null
   const rule = ruleByKey(loadPack(), key)
-  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return decidedOn
-  return computeRuleDue(
-    rule,
-    await resolvedLength(db, rule, signal),
-    decidedOn,
-    packHolidayCalendar(),
-  ).due
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return (decidedOn) => decidedOn
+  const length = await resolvedLength(db, rule, signal)
+  return (decidedOn) => computeRuleDue(rule, length, decidedOn, packHolidayCalendar()).due
 }
 
 export function appealStatusText(
@@ -93,6 +87,7 @@ export async function loadAdministrativeAppeals(
           .where(and(inArray(appealNodes.parentId, ids), eq(appealNodes.kind, 'zba_appeal')))
   const today = await townToday(db, now, signal)
   const lines: AdministrativeAppealLine[] = []
+  const endsFor = await appealWindowEnds(db, signal)
   for (const { node, number } of decisions) {
     const app = await loadApplicationContext(db, node.applicationId ?? '', signal)
     const appeal = appeals.find((a) => a.parentId === node.id)
@@ -105,9 +100,7 @@ export async function loadAdministrativeAppeals(
         node,
         appeal,
         today,
-        appeal === undefined
-          ? await appealWindowEnds(db, node.occurredOn as CivilDate, signal)
-          : null,
+        appeal === undefined ? endsFor(node.occurredOn as CivilDate) : null,
       ),
     })
   }

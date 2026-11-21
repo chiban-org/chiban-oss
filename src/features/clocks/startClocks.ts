@@ -8,6 +8,7 @@ import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
+import { townSettingValue } from '@/features/clocks/resolvedLength'
 import {
   computeRuleDue,
   eventMovesClocks,
@@ -18,7 +19,6 @@ import {
   rulesForEvent,
 } from '@/features/clocks/ruleEngine'
 import { effectiveBindings } from '@/features/config/bindings'
-import { getPublished } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
@@ -34,13 +34,10 @@ export async function resolveClockLength(
 ): Promise<ResolvedLength> {
   if (!('fromSetting' in rule.length)) {
     if (!hasLocalBound(rule)) return resolveRuleLength(rule, facts, null, undefined)
-    const published = await getPublished(tx, 'town_rule_setting', rule.key, signal)
-    const townValue = (published?.body as { value: number } | undefined)?.value
-    return resolveRuleLength(rule, facts, null, townValue)
+    return resolveRuleLength(rule, facts, null, await townSettingValue(tx, rule.key, signal))
   }
   const setting = ruleByKey(pack, rule.length.fromSetting)
-  const published = await getPublished(tx, 'town_rule_setting', rule.length.fromSetting, signal)
-  const townValue = (published?.body as { value: number } | undefined)?.value
+  const townValue = await townSettingValue(tx, rule.length.fromSetting, signal)
   return resolveRuleLength(rule, facts, setting, townValue)
 }
 
