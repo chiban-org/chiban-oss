@@ -168,3 +168,18 @@ describe('request requirements', () => {
     expect(plan.groups[0]?.items[0]?.detail).toBe('Sent on time, November 3, 2026.')
   })
 })
+
+describe('after an acknowledgement', () => {
+  const acknowledged = input({
+    status: 'responded',
+    firstResponseKind: 'acknowledged',
+    firstResponseOn: d('2026-11-03'),
+    current: null,
+  })
+
+  it('asks for the estimate or the records as a response, not for closing', () => {
+    const plan = planRequestWork(acknowledged)
+    expect(plan.now?.kind).toBe('respond')
+    expect(plan.sentence).toBe('Waiting on: Town. Send the time estimate or the records.')
+  })
+})

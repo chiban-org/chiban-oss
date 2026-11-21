@@ -33,6 +33,7 @@ const WEB_ADDRESS_MAX = 500
 const CHARGE_ONLY_WITH_MORE_TIME =
   'A charge can only be stated with a response that asks for more time. Clear it or choose that response.'
 const ONLY_WITH_MORE_TIME = 'Leave this blank unless the response asks for more time.'
+const ONLY_WITH_ACKNOWLEDGEMENT = 'Leave this blank unless you are acknowledging the request.'
 const ONLY_WITH_WEBSITE = 'Leave this blank unless the records are posted online.'
 
 export const requestIdField = () => recordId('a request')
@@ -50,6 +51,7 @@ type FirstResponse = {
   kind: string
   respondedOn: CivilDate
   websiteUrl: string | null
+  clarification: string | null
   statedDate: CivilDate | null
   delayReason: string | null
   costLabel: string | null
@@ -79,6 +81,8 @@ function refuseMisplacedResponseFields(v: FirstResponse, ctx: z.RefinementCtx): 
   const posted = v.kind === 'website_reference'
   if (posted && v.websiteUrl === null) refuse('websiteUrl', RECORDS_COPY.website_url_required ?? '')
   if (!posted && v.websiteUrl !== null) refuse('websiteUrl', ONLY_WITH_WEBSITE)
+  if (v.kind !== 'acknowledged' && v.clarification !== null)
+    refuse('clarification', ONLY_WITH_ACKNOWLEDGEMENT)
   if (v.kind === 'time_statement') refuseIncompleteTimeStatement(v, refuse)
   else refuseOutsideTimeStatement(v, refuse)
 }
@@ -90,6 +94,7 @@ export const firstResponseForm = (today: CivilDate) =>
       kind: choice('a response', RTK_RESPONSE_KINDS),
       respondedOn: civilDate('the date of the response', { latest: today }),
       websiteUrl: optionalWebAddress('the web address', WEB_ADDRESS_MAX),
+      clarification: optionalText('a question for the requester', { max: 2000 }),
       statedDate: optionalCivilDate('the date the town will respond by'),
       delayReason: optionalText('a reason', { max: 2000 }),
       costLabel: optionalText('a charge description', { max: 200 }),

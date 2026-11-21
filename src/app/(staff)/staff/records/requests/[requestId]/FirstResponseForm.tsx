@@ -7,7 +7,12 @@ import { RequiredMark } from '@/components/ui/required-mark'
 import type { CivilDate } from '@/types/civilDate'
 import { firstResponseAction } from '../actions'
 
-type Choice = '' | 'release' | 'time_statement' | 'website_reference' | 'denied'
+type Choice = '' | 'acknowledged' | 'release' | 'time_statement' | 'website_reference' | 'denied'
+
+const ACKNOWLEDGE_CHOICE = {
+  value: 'acknowledged',
+  label: 'Acknowledge receipt of the request',
+} as const
 
 const CHOICES: readonly { value: Exclude<Choice, ''>; label: string }[] = [
   { value: 'release', label: 'Release the records now' },
@@ -19,6 +24,15 @@ const CHOICES: readonly { value: Exclude<Choice, ''>; label: string }[] = [
 export const DENY_REASON = 'Record a withheld record with its exemption and explanation first.'
 
 function KindFields({ kind }: { kind: Choice }) {
+  if (kind === 'acknowledged') {
+    return (
+      <AreaField
+        label="Question for the requester, if the request needs clarifying"
+        name="clarification"
+        rows={2}
+      />
+    )
+  }
   if (kind === 'website_reference') {
     return <TextField label="Web address where the records are posted" name="websiteUrl" required />
   }
@@ -36,10 +50,12 @@ function KindFields({ kind }: { kind: Choice }) {
 function ChoiceList({
   kind,
   canDeny,
+  acknowledgement,
   onChoose,
 }: {
   kind: Choice
   canDeny: boolean
+  acknowledgement: boolean
   onChoose: (next: Choice) => void
 }) {
   const reasonId = useId()
@@ -49,7 +65,7 @@ function ChoiceList({
         Response
         <RequiredMark />
       </legend>
-      {CHOICES.map((c) => {
+      {(acknowledgement ? [ACKNOWLEDGE_CHOICE, ...CHOICES] : CHOICES).map((c) => {
         const blocked = c.value === 'denied' && !canDeny
         return (
           <label key={c.value} className="flex items-start gap-2">
@@ -91,6 +107,7 @@ export function FirstResponseForm({
   startOnRelease,
   releaseStep,
   letterNote,
+  acknowledgement = false,
 }: {
   requestId: string
   today: CivilDate
@@ -98,11 +115,17 @@ export function FirstResponseForm({
   startOnRelease: boolean
   releaseStep: ReactNode
   letterNote: string
+  acknowledgement?: boolean
 }) {
   const [kind, setKind] = useState<Choice>(startOnRelease ? 'release' : '')
   return (
     <div className="flex flex-col gap-4">
-      <ChoiceList kind={kind} canDeny={canDeny} onChoose={setKind} />
+      <ChoiceList
+        kind={kind}
+        canDeny={canDeny}
+        acknowledgement={acknowledgement}
+        onChoose={setKind}
+      />
       {kind === 'release' ? (
         <div data-slot="release-step" className="flex flex-col gap-4">
           <p className="m-0 text-ink-secondary">

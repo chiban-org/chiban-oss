@@ -93,6 +93,7 @@ export const XX_PACK: StatePack = {
     noticeOfViolationRequest: 'Please call the town.',
   },
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
+  recordsRequests: { acknowledgement: false },
   labels: {
     environmentalAgency: 'Vellmora Water Office',
     environmentalAgencyShort: 'the Water Office',

@@ -63,6 +63,10 @@ export interface PackLabels {
   citations: PackCitations
 }
 
+export interface PackRecordsRequests {
+  acknowledgement: boolean
+}
+
 export interface PackSpatial {
   projectedSrid: number
   label: string
@@ -98,5 +102,6 @@ export interface StatePack {
   ruleAreas: readonly RuleArea[]
   orderTexts: OrderTexts
   labels: PackLabels
+  recordsRequests: PackRecordsRequests
   spatial: PackSpatial
 }

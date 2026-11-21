@@ -848,6 +848,13 @@
       "when": 1795267947808,
       "tag": "0120_retention_events",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1795271951448,
+      "tag": "0121_rtk_acknowledgement",
+      "breakpoints": true
     }
   ]
 }

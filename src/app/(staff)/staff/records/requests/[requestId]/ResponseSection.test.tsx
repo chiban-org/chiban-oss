@@ -110,6 +110,8 @@ describe('recorded first response', () => {
       firstResponseKind: 'time_statement',
       firstResponseOn: '2026-11-05',
       deniedOn: null,
+      acknowledgedOn: null,
+      clarificationQuestion: null,
       timeliness: { kind: 'responded_on_time' },
       timeStatements: [],
       ...patch,

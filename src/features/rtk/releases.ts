@@ -149,13 +149,16 @@ export async function createRelease(
         position,
       })),
     )
-    if (request.status !== 'responded') {
+    if (request.status !== 'responded' || request.firstResponseKind === 'acknowledged') {
       await tx
         .update(rtkRequests)
         .set({
           status: 'responded',
           firstResponseOn: request.firstResponseOn ?? value.releasedOn,
-          firstResponseKind: request.firstResponseKind ?? 'made_available',
+          firstResponseKind:
+            request.firstResponseKind === 'acknowledged'
+              ? 'made_available'
+              : (request.firstResponseKind ?? 'made_available'),
           openDueOn: null,
           rowVersion: request.rowVersion + 1,
         })

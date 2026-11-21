@@ -18,6 +18,7 @@ export const RTK_VIA_LABELS = {
 } as const
 
 export const RTK_RESPONSE_LABELS: Record<RtkResponseKind, string> = {
+  acknowledged: 'Receipt acknowledged',
   made_available: 'Records made available',
   website_reference: 'Records are posted on the town website',
   denied: 'Denied, with the exemption cited',

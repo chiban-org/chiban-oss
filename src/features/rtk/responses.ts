@@ -17,6 +17,7 @@ import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
+import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { rtkDueContext } from '@/features/rtk/dueContext'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -29,6 +30,7 @@ const ResponseSchema = z.object({
   kind: z.enum(RTK_RESPONSE_KINDS),
   respondedOn: civilDateSchema,
   websiteUrl: z.string().trim().url().max(500).optional(),
+  clarification: z.string().trim().min(1).max(2000).optional(),
   timeStatement: z
     .object({
       statedDate: civilDateSchema,
@@ -49,6 +51,7 @@ export type FirstResponseError =
   | 'future_date'
   | 'before_received'
   | 'already_responded'
+  | 'acknowledgement_unavailable'
   | 'withholding_required'
   | 'stated_date_required'
   | 'website_url_required'
@@ -78,12 +81,18 @@ async function countFor(
   return row?.n ?? 0
 }
 
+function awaitsFollowUp(request: typeof rtkRequests.$inferSelect): boolean {
+  return request.status === 'responded' && request.firstResponseKind === 'acknowledged'
+}
+
 async function kindPrecondition(
   tx: Tx,
   requestId: string,
   value: z.output<typeof ResponseSchema>,
 ): Promise<FirstResponseError | null> {
   switch (value.kind) {
+    case 'acknowledged':
+      return null
     case 'made_available':
       return (await countFor(tx, rtkReleases, requestId)) === 0 ? 'release_required' : null
     case 'website_reference':
@@ -113,6 +122,9 @@ export async function recordFirstResponse(
   const parsed = ResponseSchema.safeParse(input)
   if (!parsed.success) return err('invalid')
   const value = parsed.data
+  if (value.kind === 'acknowledged' && !acknowledgementEnabled()) {
+    return err('acknowledgement_unavailable')
+  }
   return await transactionResult<{ letterDocumentId: string }, FirstResponseError>(
     db,
     async (tx) => {
@@ -122,7 +134,9 @@ export async function recordFirstResponse(
         .where(eq(rtkRequests.id, value.requestId))
         .for('update')
       if (request === undefined) return err('not_found')
-      if (request.status !== 'open') return err('already_responded')
+      const followUp = awaitsFollowUp(request)
+      if (request.status !== 'open' && !followUp) return err('already_responded')
+      if (followUp && value.kind === 'acknowledged') return err('already_responded')
       const today = await townToday(tx, now, signal)
       if (daysBetween(today, value.respondedOn) > 0) return err('future_date')
       if (daysBetween(request.receivedOn as CivilDate, value.respondedOn) < 0) {
@@ -146,9 +160,15 @@ export async function recordFirstResponse(
         .update(rtkRequests)
         .set({
           status: value.kind === 'time_statement' ? 'awaiting_decision' : 'responded',
-          firstResponseOn: value.respondedOn,
+          firstResponseOn: followUp ? request.firstResponseOn : value.respondedOn,
           firstResponseKind: value.kind,
           firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
+          ...(value.kind === 'acknowledged'
+            ? {
+                acknowledgedOn: value.respondedOn,
+                clarificationQuestion: value.clarification ?? null,
+              }
+            : {}),
           statedDue,
           openDueOn: statedDue === null ? null : statedDue.due,
           rowVersion: request.rowVersion + 1,

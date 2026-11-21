@@ -63,6 +63,7 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
               kind: input.kind,
               respondedOn: input.respondedOn,
               ...(input.websiteUrl === null ? {} : { websiteUrl: input.websiteUrl }),
+              ...(input.clarification === null ? {} : { clarification: input.clarification }),
               ...(input.statedDate === null || input.delayReason === null
                 ? {}
                 : {

@@ -8,6 +8,7 @@ export const RECORDS_COPY: Record<string, string> = {
   not_found: errorCopy('not_found'),
   future_date: 'The date cannot be in the future.',
   before_received: 'The response date cannot be before the request was received.',
+  acknowledgement_unavailable: 'This town does not record an acknowledgement as a response.',
   already_responded: 'This request already has a first response.',
   withholding_required:
     'Record at least one withheld record with its exemption before denying a request.',

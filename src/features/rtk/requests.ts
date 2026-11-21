@@ -135,6 +135,8 @@ export interface RtkRequestView {
   firstResponseOn: CivilDate | null
   firstResponseKind: string | null
   firstResponseUrl: string | null
+  acknowledgedOn: CivilDate | null
+  clarificationQuestion: string | null
   deniedOn: CivilDate | null
   rowVersion: number
   timeliness: RtkTimeliness
@@ -187,6 +189,8 @@ export async function rtkRequestView(
     firstResponseOn,
     firstResponseKind: row.firstResponseKind,
     firstResponseUrl: row.firstResponseUrl,
+    acknowledgedOn: row.acknowledgedOn as CivilDate | null,
+    clarificationQuestion: row.clarificationQuestion,
     deniedOn: row.deniedOn as CivilDate | null,
     rowVersion: row.rowVersion,
     timeliness,
