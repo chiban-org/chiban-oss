@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
+import { CHECK_ONLY_FIELD } from '@/constants/formCheck'
 import type { RelianceView } from '@/features/decisions/relianceView'
 
 vi.mock('./relianceActions', () => ({
@@ -15,6 +16,13 @@ const { unlinkRelianceAction } = await import('./relianceActions')
 const RELIANCE: RelianceView = {
   choices: [],
   linked: [{ id: 'v1', number: 'ZB-2027-0001', validity: 'void' }],
+}
+
+function sentForms(): FormData[] {
+  return vi
+    .mocked(unlinkRelianceAction)
+    .mock.calls.map(([formData]) => formData)
+    .filter((f) => !f.has(CHECK_ONLY_FIELD))
 }
 
 afterEach(() => {
@@ -40,8 +48,11 @@ describe('the reliance panel', () => {
     vi.mocked(unlinkRelianceAction).mockResolvedValue({ ok: true, message: 'Removed.' })
     show(true)
     fireEvent.click(screen.getByRole('button', { name: 'Remove this link' }))
-    await waitFor(() => expect(unlinkRelianceAction).toHaveBeenCalledTimes(1))
-    const sent = vi.mocked(unlinkRelianceAction).mock.calls[0]?.[0]
+    await screen.findByRole('dialog')
+    expect(sentForms()).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the link' }))
+    await waitFor(() => expect(sentForms()).toHaveLength(1))
+    const sent = sentForms()[0]
     expect(sent?.get('applicationId')).toBe('p1')
     expect(sent?.get('varianceApplicationId')).toBe('v1')
   })

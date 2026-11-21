@@ -35,6 +35,11 @@ export function ReliancePanel({ applicationId, validity, reliance, canLink }: Pr
                       action={unlinkRelianceAction}
                       submitLabel="Remove this link"
                       variant="outline"
+                      confirm={{
+                        title: `Remove the link to ${l.number}?`,
+                        body: 'This application will no longer wait on that variance before it can be issued.',
+                        confirmLabel: 'Remove the link',
+                      }}
                     >
                       <input type="hidden" name="applicationId" value={applicationId} />
                       <input type="hidden" name="varianceApplicationId" value={l.id} />
