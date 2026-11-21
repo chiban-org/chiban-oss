@@ -30,7 +30,10 @@ async function markOverdue(tx: Tx, today: CivilDate): Promise<string[]> {
     .where(and(eq(clocks.status, 'running'), lt(clocks.currentDue, today)))
   const flipped = past.filter(isActionDue).map((clock) => clock.id)
   if (flipped.length > 0) {
-    await tx.update(clocks).set({ status: 'overdue' }).where(inArray(clocks.id, flipped))
+    await tx
+      .update(clocks)
+      .set({ status: 'overdue' })
+      .where(and(inArray(clocks.id, flipped), eq(clocks.status, 'running')))
   }
   return flipped
 }

@@ -109,7 +109,12 @@ async function lockedCandidate(
   const [app] = await tx.select().from(applications).where(eq(applications.id, applicationId))
   if (clock === undefined || app === undefined) return null
   const open = OPEN_CLOCK.some((s) => s === clock.status)
-  return open && clock.currentDue < today ? { clock, app } : null
+  if (!open || clock.currentDue >= today) return null
+  const [notice] = await tx
+    .select({ id: decisionNotices.applicationId })
+    .from(decisionNotices)
+    .where(eq(decisionNotices.applicationId, applicationId))
+  return notice === undefined ? { clock, app } : null
 }
 
 async function refuse(

@@ -156,6 +156,22 @@ describe('refusal by silence', () => {
     expect(notice).toMatchObject({ applicationId, mailedOn: DUE })
   })
 
+  it('does not refuse an application that has a notice even when its clock was overwritten as overdue', async () => {
+    const { applicationId } = await clockedApp()
+    expect((await record(applicationId, DUE)).ok).toBe(true)
+    await handle.db
+      .update(clocks)
+      .set({ status: 'overdue', metOn: null })
+      .where(eq(clocks.applicationId, applicationId))
+    expect(await sweep(DAY_AFTER)).toEqual({ refused: [], noticeOverdue: [] })
+    expect((await appOf(applicationId))?.state).toBe('under_review')
+    const refusals = await handle.db
+      .select()
+      .from(deemedRefusals)
+      .where(eq(deemedRefusals.applicationId, applicationId))
+    expect(refusals).toEqual([])
+  })
+
   it('issuing without a notice leaves the clock running and lists it as notice overdue, without refusing', async () => {
     const { applicationId } = await clockedApp('under_review')
     await signedOffReview(handle.db, world, applicationId, signal)

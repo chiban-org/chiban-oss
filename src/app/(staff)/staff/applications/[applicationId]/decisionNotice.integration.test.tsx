@@ -163,6 +163,25 @@ describe('the written decision notice section', () => {
     expect(section).not.toContain('name="documentId"')
   })
 
+  it('keeps the form open after a refusal and shows a notice mailed afterwards', async () => {
+    await handle.db.transaction((tx) => refuseBySilence(tx, addDays(DUE, 1), signal))
+    const documentId = await addDocument('Notice of decision letter')
+    const open = sectionOf(await page(), LABEL)
+    expect(open).toContain('name="documentId"')
+    const recorded = await recordDecisionNotice(
+      handle.db,
+      world.staff,
+      { applicationId, documentId, mailedOn: '2026-03-15' as CivilDate },
+      signal,
+    )
+    expect(recorded.ok).toBe(true)
+    const section = sectionOf(await page(), LABEL)
+    expect(section).toContain(
+      'Refused by operation of law on March 23, 2099 (Vellmora Permit Act 4). Written decision notice mailed to the applicant on March 15, 2026.',
+    )
+    expect(section).not.toContain('name="documentId"')
+  })
+
   it('does not appear under a pack with no refusal consequence', async () => {
     setActivePackForTest(XX_PACK)
     expect(sectionOf(await page(), LABEL)).toBeNull()

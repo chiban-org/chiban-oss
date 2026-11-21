@@ -31,3 +31,12 @@ describe('the panel priority for each stage', () => {
     expect(historyPanels('draft', false)).toEqual(['activity', 'records'])
   })
 })
+
+describe('the decision notice panel', () => {
+  it('joins a lead list only when the application has a decision notice', () => {
+    expect(panelPriority('decided', false)).not.toContain('decisionNotice')
+    expect(panelPriority('decided', false, true)).toContain('decisionNotice')
+    expect(panelPriority('under_review', false, true)).toContain('decisionNotice')
+    expect(panelPriority('issued', true, true)).toContain('decisionNotice')
+  })
+})

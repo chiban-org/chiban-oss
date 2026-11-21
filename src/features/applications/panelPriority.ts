@@ -68,11 +68,13 @@ const HISTORY: readonly PanelKey[] = ['activity', 'records', 'parties']
 const PERMIT_ORDER = new Map(Object.entries(PERMIT_PRIORITY))
 const BOARD_ORDER = new Map(Object.entries(BOARD_PRIORITY))
 
-export function panelPriority(state: CoreState, board: boolean): PanelKey[] {
-  return [...((board ? BOARD_ORDER : PERMIT_ORDER).get(state) ?? [])]
+export function panelPriority(state: CoreState, board: boolean, hasNotice = false): PanelKey[] {
+  return [...((board ? BOARD_ORDER : PERMIT_ORDER).get(state) ?? [])].filter(
+    (key) => hasNotice || key !== 'decisionNotice',
+  )
 }
 
-export function historyPanels(state: CoreState, board: boolean): PanelKey[] {
-  const lead = panelPriority(state, board)
+export function historyPanels(state: CoreState, board: boolean, hasNotice = false): PanelKey[] {
+  const lead = panelPriority(state, board, hasNotice)
   return HISTORY.filter((key) => !lead.includes(key))
 }

@@ -22,7 +22,10 @@ export function noticeStatusText(
 ): string {
   const cited = notice.citation === null ? '' : ` (${notice.citation})`
   if (notice.refusedOn !== null) {
-    return `Refused by operation of law on ${formatCivilDate(notice.refusedOn)}${cited}.`
+    const refusal = `Refused by operation of law on ${formatCivilDate(notice.refusedOn)}${cited}.`
+    return notice.mailedOn === null
+      ? refusal
+      : `${refusal} Written decision notice mailed to the applicant on ${formatCivilDate(notice.mailedOn)}.`
   }
   if (notice.mailedOn !== null) return `${LABEL} mailed on ${formatCivilDate(notice.mailedOn)}.`
   if (notice.dueOn === null) return `${LABEL} required${cited}.`
@@ -83,7 +86,7 @@ export function DecisionNoticePanel({
 }) {
   const notice = view.decisionNotice
   if (notice == null) return null
-  const open = notice.mailedOn === null && notice.refusedOn === null
+  const open = notice.mailedOn === null
   return (
     <section aria-label={LABEL} id="decision-notice">
       <h2>{LABEL}</h2>
