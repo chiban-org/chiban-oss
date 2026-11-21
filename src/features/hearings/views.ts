@@ -2,6 +2,7 @@ import { asc, desc, eq } from 'drizzle-orm'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
 import type { Db } from '@/db/client'
 import { appealNodes, boardDecisions, boardMeetings, documents, hearings } from '@/db/schema'
+import { loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
 import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
@@ -193,11 +194,7 @@ export async function loadHearingView(
 }
 
 export async function loadApplicationAppealNodes(db: Db, applicationId: string) {
-  return await db
-    .select()
-    .from(appealNodes)
-    .where(eq(appealNodes.applicationId, applicationId))
-    .orderBy(asc(appealNodes.occurredOn), asc(appealNodes.createdAt))
+  return await loadGraphNodeRows(db, applicationId)
 }
 
 export async function parcelDisplayFor(db: Db, parcelId: string): Promise<string> {

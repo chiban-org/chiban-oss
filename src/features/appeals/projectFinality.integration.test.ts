@@ -2,10 +2,12 @@ import { eq } from 'drizzle-orm'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { clocks, projects } from '@/db/schema'
 import { projectFinality } from '@/features/appeals/projectFinality'
+import { adjustClock } from '@/features/clocks/adjustClock'
 import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { loadHearingView } from '@/features/hearings/views'
+import { formatCivilDate } from '@/lib/formatDate'
 import { BOARD_FIXTURE_NOW, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
 import { makeTestDb } from '@/test/db'
 import { FIXTURE_VOTES, heldZbaHearing } from '@/test/hearingFixtures'
@@ -15,6 +17,7 @@ import {
   XX_PB_FINAL_WINDOW,
   XX_PROJECT_FINALITY,
   XX_PROJECT_FINALITY_BY_BOARD,
+  XX_PROJECT_FINALITY_BY_OUTCOME,
 } from '@/test/packs/xx/projectFinality'
 import {
   clocksOf,
@@ -32,6 +35,7 @@ import {
   underReview,
   ZBA_VOTE,
 } from '@/test/projectFinalityFixtures'
+import { err } from '@/types/result'
 
 dropAfterEach()
 
@@ -170,5 +174,73 @@ describe('the NH pack', () => {
     const started = await fw.handle.db.select().from(clocks)
     expect(started.filter((c) => c.startEvent === 'project_final_approval')).toEqual([])
     expect(await projectFinality(fw.handle.db, fw.world.projectId, signal)).toBeNull()
+  })
+})
+
+async function windowShown(applicationId: string) {
+  const panel = await loadApplicationHearingsPanel(
+    fw.handle.db,
+    fw.world.staff,
+    applicationId,
+    signal,
+  )
+  return panel?.graph[0]?.window ?? null
+}
+
+describe('a project that is already final', () => {
+  underPack(XX_PROJECT_FINALITY)
+
+  it('refuses a petition dated before the last approval, even once it is entered', async () => {
+    const variance = await underReview(fw.world.zbaTypeKey)
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(variance, 'zba')
+    await decide(plan, 'planning_board', { finalMunicipalApproval: true })
+    const node = await decisionNodeOf(variance)
+    expect(await petition(node, '2027-04-20')).toEqual(err('not_final'))
+    expect(await petitionUntimely(node, PB_VOTE)).toBe(false)
+  })
+
+  it('starts the approval window from the final date on an approval recorded later', async () => {
+    const variance = await underReview(fw.world.zbaTypeKey)
+    const plan = await underReview(SUB_TYPE_KEY)
+    await decide(plan, 'planning_board', { finalMunicipalApproval: true })
+    await decide(variance, 'zba')
+    const started = await clocksOf(variance, XX_FINAL_APPROVAL_WINDOW.key)
+    expect(started.map((c) => [c.startEvent, c.startDate, c.currentDue])).toEqual([
+      ['project_final_approval', PB_VOTE, '2027-05-28'],
+    ])
+    expect(await petitionUntimely(await decisionNodeOf(variance), '2027-05-28')).toBe(false)
+  })
+})
+
+describe('the graph window of a denial', () => {
+  underPack(XX_PROJECT_FINALITY_BY_OUTCOME)
+
+  it('shows the due date of the denial clock after an adjustment', async () => {
+    const variance = await underReview(fw.world.zbaTypeKey)
+    await decide(variance, 'zba', {
+      outcome: 'denied',
+      reasonsForDisapproval: 'The hardship is self-created.',
+    })
+    const [clock] = await clocksOf(variance, XX_DENIAL_WINDOW.key)
+    expect(clock?.currentDue).toBe('2027-05-17')
+    const adjusted = await adjustClock(
+      fw.handle.db,
+      fw.world.admin,
+      {
+        clockId: clock?.id ?? '',
+        kind: 'statutory_exception',
+        days: 5,
+        reason: 'The town office was closed by emergency order.',
+        legalAuthority: {
+          citation: 'Vellmora Permit Act 31',
+          explanation: 'A filing window runs on while the town office is closed.',
+        },
+      },
+      signal,
+    )
+    expect(adjusted).toEqual({ ok: true, value: { newDue: '2027-05-22' } })
+    expect((await windowShown(variance))?.dueText).toBe(formatCivilDate('2027-05-22'))
+    expect(await petitionUntimely(await decisionNodeOf(variance), '2027-05-21')).toBe(false)
   })
 })

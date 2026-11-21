@@ -99,6 +99,18 @@ describe('declaring the last approval', () => {
     })
   })
 
+  it('lets only one of two declarations made at once stand', async () => {
+    const variance = await underReview(fw.world.zbaTypeKey)
+    const plan = await underReview(SUB_TYPE_KEY)
+    const results = await Promise.all([
+      tryDecide(variance, 'zba', { finalMunicipalApproval: true }),
+      tryDecide(plan, 'planning_board', { finalMunicipalApproval: true }),
+    ])
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.filter((r) => !r.ok)).toEqual([err('already_final')])
+    expect(await finalityAudits()).toHaveLength(1)
+  })
+
   it('writes an audit entry on the project', async () => {
     const plan = await underReview(SUB_TYPE_KEY)
     const decisionId = await decide(plan, 'planning_board', { finalMunicipalApproval: true })

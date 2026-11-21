@@ -16,6 +16,7 @@ import {
   motionForRehearing,
   rehearingDecision,
 } from '@/features/appeals/appealWords'
+import { type GraphNodeRow, loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
 import { nodeWindow } from '@/features/appeals/nodeWindow'
 import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -101,7 +102,7 @@ async function filingDue(db: Db, applicationId: string, today: string): Promise<
 
 export async function toGraphNodes(
   db: DbOrTx,
-  rows: (typeof appealNodes.$inferSelect)[],
+  rows: GraphNodeRow[],
   signal: AbortSignal,
 ): Promise<GraphNode[]> {
   const labels = nodeLabels()
@@ -172,11 +173,7 @@ export async function loadDecisionView(
     db,
     docs.map((d) => d.id),
   )
-  const nodes = await db
-    .select()
-    .from(appealNodes)
-    .where(eq(appealNodes.applicationId, decision.applicationId))
-    .orderBy(asc(appealNodes.occurredOn), asc(appealNodes.createdAt))
+  const nodes = await loadGraphNodeRows(db, decision.applicationId)
   const [regional] = await db
     .select({ determination: regionalImpactDeterminations.determination })
     .from(regionalImpactDeterminations)

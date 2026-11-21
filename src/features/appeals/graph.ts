@@ -199,7 +199,7 @@ export async function addAppealNode(
   const finality = await finalityForRoute(db, parent, input.kind, signal)
   const route = chooseRoute(parent, input, finality)
   if (!route.ok) return route
-  if (waitsForFinality(parent, input.kind, route.value, finality)) return err('not_final')
+  if (waitsForFinality(parent, input, route.value, finality)) return err('not_final')
   if (compareCivil(input.occurredOn, parent.occurredOn as CivilDate) < 0)
     return err('before_parent')
   if (

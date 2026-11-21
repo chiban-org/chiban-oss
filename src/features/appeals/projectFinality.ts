@@ -85,17 +85,35 @@ export interface FinalApprovalDeclaration {
   appealNodeId?: string
 }
 
-export function declarationApplies(input: {
-  declared: boolean | undefined
+function joinsFinalProject(input: {
+  applicationId: string | null
   boardKind: BoardKind | null
   outcome: string | null
-}): boolean {
+}): input is { applicationId: string; boardKind: BoardKind; outcome: string } {
   return (
-    input.declared === true &&
+    input.applicationId !== null &&
     input.boardKind !== null &&
     isApprovingOutcome(input.outcome) &&
     packWaitsForFinalApproval()
   )
+}
+
+async function lockedProjectOf(tx: Tx, applicationId: string) {
+  const [member] = await tx
+    .select({ projectId: applications.projectId })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+  if (member === undefined) return undefined
+  const [row] = await tx
+    .select({
+      id: projects.id,
+      finalApprovalOn: projects.finalApprovalOn,
+      finalReviewBoard: projects.finalReviewBoard,
+    })
+    .from(projects)
+    .where(eq(projects.id, member.projectId))
+    .for('update')
+  return row
 }
 
 async function approvedMembers(tx: Tx, projectId: string): Promise<string[]> {
@@ -126,20 +144,22 @@ export async function declareFinalApproval(
   input: FinalApprovalDeclaration,
   signal: AbortSignal,
 ): Promise<Result<void, 'already_final'>> {
-  if (!declarationApplies(input) || input.boardKind === null || input.applicationId === null)
-    return ok(undefined)
+  if (!joinsFinalProject(input)) return ok(undefined)
   signal.throwIfAborted()
-  const [member] = await tx
-    .select({ projectId: applications.projectId })
-    .from(applications)
-    .where(eq(applications.id, input.applicationId))
-  if (member === undefined) return ok(undefined)
-  if ((await projectFinality(tx, member.projectId, signal)) !== null) return err('already_final')
+  const project = await lockedProjectOf(tx, input.applicationId)
+  if (project === undefined) return ok(undefined)
+  const finality = finalityOf(project)
+  if (input.declared !== true) {
+    if (finality === null) return ok(undefined)
+    await startClocksFor(tx, input.applicationId, PROJECT_FINAL_APPROVAL, finality.finalOn, signal)
+    return ok(undefined)
+  }
+  if (finality !== null) return err('already_final')
   await tx
     .update(projects)
     .set({ finalApprovalOn: input.votedOn, finalReviewBoard: input.boardKind })
-    .where(eq(projects.id, member.projectId))
-  for (const applicationId of await approvedMembers(tx, member.projectId)) {
+    .where(eq(projects.id, project.id))
+  for (const applicationId of await approvedMembers(tx, project.id)) {
     await startClocksFor(tx, applicationId, PROJECT_FINAL_APPROVAL, input.votedOn, signal)
   }
   await writeAudit(
@@ -148,7 +168,7 @@ export async function declareFinalApproval(
       actor: { kind: 'user', userId: input.actorUserId },
       action: 'project.final_approval',
       entityType: 'project',
-      entityId: member.projectId,
+      entityId: project.id,
       after: {
         finalApprovalOn: input.votedOn,
         finalReviewBoard: input.boardKind,
