@@ -73,6 +73,7 @@ export const FactConditionSchema = z.union([
   z.object({ fact: z.literal('decisionFiledLate'), is: z.literal(true) }),
   z.object({ fact: z.literal('outcome'), in: z.array(DecisionOutcomeSchema).min(1) }),
   z.object({ fact: z.literal('significantDecision'), is: z.boolean() }),
+  z.object({ fact: z.literal('finalReviewBoard'), in: z.array(BoardKindSchema).min(1) }),
 ])
 export type FactCondition = z.infer<typeof FactConditionSchema>
 

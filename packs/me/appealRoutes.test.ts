@@ -42,7 +42,7 @@ describe('Maine appeal routes', () => {
         outcome: 'granted',
         finalReviewBoard: 'planning_board',
       }),
-    ).toBe('me.appeal.board_court_final')
+    ).toBe('me.appeal.boa_court_after_planning_board')
     expect(
       windowFor('zba_decision', 'court_petition', {
         outcome: 'denied',

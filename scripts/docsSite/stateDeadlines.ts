@@ -86,6 +86,8 @@ function factText(fact: FactCondition): string {
       return fact.is
         ? 'the decision is a significant land use decision'
         : 'the decision is not a significant land use decision'
+    case 'finalReviewBoard':
+      return `the ${listInWords(fact.in.map(boardLabel), 'or')} gives the last municipal approval`
   }
 }
 

@@ -151,7 +151,16 @@ export async function declareFinalApproval(
   const finality = finalityOf(project)
   if (input.declared !== true) {
     if (finality === null) return ok(undefined)
-    await startClocksFor(tx, input.applicationId, PROJECT_FINAL_APPROVAL, finality.finalOn, signal)
+    await startClocksFor(
+      tx,
+      input.applicationId,
+      PROJECT_FINAL_APPROVAL,
+      finality.finalOn,
+      signal,
+      undefined,
+      undefined,
+      { finalReviewBoard: finality.finalReviewBoard },
+    )
     return ok(undefined)
   }
   if (finality !== null) return err('already_final')
@@ -160,7 +169,16 @@ export async function declareFinalApproval(
     .set({ finalApprovalOn: input.votedOn, finalReviewBoard: input.boardKind })
     .where(eq(projects.id, project.id))
   for (const applicationId of await approvedMembers(tx, project.id)) {
-    await startClocksFor(tx, applicationId, PROJECT_FINAL_APPROVAL, input.votedOn, signal)
+    await startClocksFor(
+      tx,
+      applicationId,
+      PROJECT_FINAL_APPROVAL,
+      input.votedOn,
+      signal,
+      undefined,
+      undefined,
+      { finalReviewBoard: input.boardKind },
+    )
   }
   await writeAudit(
     tx,

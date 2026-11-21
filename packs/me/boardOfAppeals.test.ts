@@ -73,6 +73,13 @@ describe('Board of Appeals windows', () => {
 
   it('runs 30 days from the final approval or a denial for other board decisions', () => {
     expect(clockDue('me.appeal.board_court_final', '2027-05-12')).toBe('2027-06-11')
+    expect(clockDue('me.appeal.boa_court_after_planning_board', '2027-04-28')).toBe('2027-05-28')
+    expect(rule('me.appeal.boa_court_after_planning_board')).toMatchObject({
+      startEvent: 'project_final_approval',
+      onlyWhen: { fact: 'finalReviewBoard', in: ['planning_board'] },
+      cancelledBy: 'rehearing_vote',
+      citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: SECTION_2691 },
+    })
     expect(clockDue('me.appeal.significant_final', '2027-05-12')).toBe('2027-06-11')
     expect(clockDue('me.appeal.board_court_denial', '2027-04-15')).toBe('2027-05-17')
     expect(clockDue('me.appeal.significant_denial', '2027-04-20')).toBe('2027-05-20')
@@ -203,9 +210,10 @@ describe('Board of Appeals classifications and roles', () => {
           'me.appeal.boa_reconsideration',
           'me.appeal.boa_court',
           'me.appeal.boa_court_after_reconsideration',
-          'me.appeal.board_court_final',
+          'me.appeal.boa_court_after_planning_board',
         ]),
       )
+      expect(classification(key).mandatoryRuleKeys).not.toContain('me.appeal.board_court_final')
     }
     for (const key of PB_KEYS) {
       expect(classification(key).mandatoryRuleKeys).toEqual(

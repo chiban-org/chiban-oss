@@ -1,7 +1,11 @@
 import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { DbOrTx } from '@/db/client'
 import type { GraphNodeRow } from '@/features/appeals/graphNodeRows'
-import { isApprovingOutcome, ruleWaitsForFinalApproval } from '@/features/appeals/projectFinality'
+import {
+  isApprovingOutcome,
+  PROJECT_FINAL_APPROVAL,
+  ruleWaitsForFinalApproval,
+} from '@/features/appeals/projectFinality'
 import { significanceForRoutes, usesSignificance } from '@/features/appeals/routeSignificance'
 import {
   clockedWindowDue,
@@ -11,7 +15,11 @@ import {
   ruleWindowDue,
   windowRoutesFrom,
 } from '@/features/appeals/routeWindow'
-import { AWAITING_DECISION_FILED, AWAITING_FINAL_APPROVAL } from '@/features/appeals/windowStart'
+import {
+  AWAITING_FINAL_APPROVAL,
+  WAITING_START_EVENTS,
+  waitingText,
+} from '@/features/appeals/windowStart'
 import { hasWindowLength } from '@/features/clocks/resolvedLength'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { AppealNodeKind } from '@/features/packs/schema'
@@ -22,6 +30,13 @@ const DECISION_KINDS: readonly AppealNodeKind[] = [
   'pb_decision',
   'administrative_decision',
 ]
+
+function notStartedText(node: GraphNodeRow, ruleKey: string): string | null {
+  const rule = ruleByKey(loadPack(), ruleKey)
+  if (node.applicationId === null || rule.kind !== 'clock') return null
+  if (rule.startEvent === PROJECT_FINAL_APPROVAL) return null
+  return WAITING_START_EVENTS.includes(rule.startEvent) ? waitingText(rule.startEvent) : null
+}
 
 async function dueText(
   db: DbOrTx,
@@ -38,13 +53,8 @@ async function dueText(
   if (waiting) return AWAITING_FINAL_APPROVAL
   const clocked =
     node.applicationId === null ? null : clockedWindowDue(node.windowClocks ?? [], node, ruleKey)
-  const rule = ruleByKey(loadPack(), ruleKey)
-  const unfiled =
-    node.applicationId !== null &&
-    clocked === null &&
-    rule.kind === 'clock' &&
-    rule.startEvent === 'decision_filed'
-  if (unfiled) return AWAITING_DECISION_FILED
+  const startsLater = clocked === null ? notStartedText(node, ruleKey) : null
+  if (startsLater !== null) return startsLater
   return formatCivilDate(clocked ?? (await ruleWindowDue(db, node, ruleKey, finality, signal)))
 }
 

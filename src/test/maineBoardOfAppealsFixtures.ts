@@ -110,7 +110,7 @@ export async function scheduledBoaHearing(db: Db, world: BoardWorld, typeKey: st
 export async function decidedBoa(
   db: Db,
   world: BoardWorld,
-  options: { typeKey?: string; outcome?: 'approved' | 'denied' } = {},
+  options: { typeKey?: string; outcome?: 'approved' | 'denied'; last?: boolean } = {},
 ) {
   const hearing = await scheduledBoaHearing(db, world, options.typeKey ?? BOA_VARIANCE_TYPE)
   const now = new Date(`${BOA_HEARING}T16:00:00Z`)
@@ -136,6 +136,7 @@ export async function decidedBoa(
       motion: 'Move to grant the variance as presented.',
       votes: FIXTURE_VOTES,
       findings: 'Strict application of the ordinance would cause undue hardship.',
+      ...(options.last === true ? { finalMunicipalApproval: true } : {}),
     },
     signal,
     BOARD_FIXTURE_NOW,

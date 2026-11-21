@@ -8,6 +8,8 @@ const WAITING = new Map<StartEvent, string>([
   ['decision_filed', AWAITING_DECISION_FILED],
 ])
 
+export const WAITING_START_EVENTS: readonly StartEvent[] = [...WAITING.keys()]
+
 export function waitingText(event: StartEvent): string | null {
   return WAITING.get(event) ?? null
 }

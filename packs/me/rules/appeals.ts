@@ -2,14 +2,14 @@ import { ME_URLS, TOWN_RULE } from '@packs/me/rules/urls'
 import type { ClockRule, FactCondition, PackRule } from '@/features/packs/schema'
 
 type WindowOptions = Pick<ClockRule, 'key' | 'label' | 'startEvent' | 'citation'> &
-  Partial<Pick<ClockRule, 'onlyWhen'>> & {
+  Partial<Pick<ClockRule, 'onlyWhen' | 'cancelledBy'>> & {
     days: number
     extension: string
     filing?: string
   }
 
 function courtWindow(options: WindowOptions): ClockRule {
-  const { key, label, startEvent, citation, onlyWhen, days, extension } = options
+  const { key, label, startEvent, citation, onlyWhen, cancelledBy, days, extension } = options
   const filing = options.filing ?? 'An appeal'
   return {
     kind: 'clock',
@@ -23,6 +23,7 @@ function courtWindow(options: WindowOptions): ClockRule {
     length: { unit: 'days', value: days },
     direction: 'after',
     ...(onlyWhen === undefined ? {} : { onlyWhen }),
+    ...(cancelledBy === undefined ? {} : { cancelledBy }),
     consequence: {
       kind: 'appeal_untimely',
       text: `${filing} filed after this date is untimely (${citation.label}).`,
@@ -45,6 +46,7 @@ const COURT_EXTENDS_4482_A =
 const COURT_ENLARGES_80B =
   'Only the court may enlarge this period, under M.R. Civ. P. 6(b) as Rule 80B(b) allows.'
 
+const PLANNING_BOARD_LAST: FactCondition = { fact: 'finalReviewBoard', in: ['planning_board'] }
 const NOT_SIGNIFICANT: FactCondition = { fact: 'significantDecision', is: false }
 const SIGNIFICANT: FactCondition = { fact: 'significantDecision', is: true }
 const DENIED: FactCondition = { fact: 'outcome', in: ['denied'] }
@@ -105,6 +107,16 @@ export const APPEAL_RULES: PackRule[] = [
     extension: '30-A MRSA §2691(3)(F) and (H) provide no extension.',
   }),
   courtWindow({
+    key: 'me.appeal.boa_court_after_planning_board',
+    label: 'Court appeal of a Board of Appeals approval after the planning board approves last',
+    startEvent: 'project_final_approval',
+    onlyWhen: PLANNING_BOARD_LAST,
+    cancelledBy: 'rehearing_vote',
+    citation: { label: '30-A MRSA §2691(3); §4482-A(1)', url: ME_URLS.title30Asec2691 },
+    days: 30,
+    extension: COURT_EXTENDS_4482_A,
+  }),
+  courtWindow({
     key: 'me.appeal.board_court_final',
     label: 'Court appeal of an approval',
     startEvent: 'project_final_approval',
@@ -149,7 +161,7 @@ export const BOA_APPEAL_KEYS = [
   'me.appeal.boa_reconsideration',
   'me.appeal.boa_court',
   'me.appeal.boa_court_after_reconsideration',
-  'me.appeal.board_court_final',
+  'me.appeal.boa_court_after_planning_board',
 ]
 
 export const PB_APPEAL_KEYS = [

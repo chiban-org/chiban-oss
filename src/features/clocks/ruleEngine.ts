@@ -39,6 +39,9 @@ export function factMatches(when: CaseCondition, facts: ProjectFacts): boolean {
   if (when.fact === 'decisionFiledLate') return facts.decisionFiledLate === when.is
   if (when.fact === 'outcome') return facts.outcome !== undefined && when.in.includes(facts.outcome)
   if (when.fact === 'significantDecision') return (facts.significantDecision ?? false) === when.is
+  if (when.fact === 'finalReviewBoard') {
+    return facts.finalReviewBoard !== undefined && when.in.includes(facts.finalReviewBoard)
+  }
   return evaluateCondition(
     { field: 'dwellingUnits', op: 'gt', value: when.gt },
     { dwellingUnits: facts.dwellingUnits ?? 0 },

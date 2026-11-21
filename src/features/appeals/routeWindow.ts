@@ -4,11 +4,11 @@ import { type appealNodes, clocks } from '@/db/schema'
 import {
   applicationProjectFinality,
   isApprovingOutcome,
-  PROJECT_FINAL_APPROVAL,
   type ProjectFinality,
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
 import { significanceForRoutes } from '@/features/appeals/routeSignificance'
+import { WAITING_START_EVENTS } from '@/features/appeals/windowStart'
 import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -156,11 +156,9 @@ export interface WindowClock {
   currentDue: string
 }
 
-const STARTS_AFTER_THE_NODE: readonly string[] = [PROJECT_FINAL_APPROVAL, 'decision_filed']
-
 function laterStartEvent(ruleKey: string): string | null {
   const rule = loadPack().rules.find((r) => r.kind === 'clock' && r.key === ruleKey)
-  return rule?.kind === 'clock' && STARTS_AFTER_THE_NODE.includes(rule.startEvent)
+  return rule?.kind === 'clock' && WAITING_START_EVENTS.includes(rule.startEvent)
     ? rule.startEvent
     : null
 }

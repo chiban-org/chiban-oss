@@ -88,7 +88,14 @@ describe('a reconsidered Board of Appeals decision on a project the planning boa
       const reconsidered = await nodeOf(variance.applicationId, 'rehearing_outcome')
       expect(
         await clocksOf(handle.db, variance.applicationId, 'me.appeal.board_court_final'),
-      ).toMatchObject([{ status: 'running', currentDue: '2027-05-28' }])
+      ).toEqual([])
+      expect(
+        await clocksOf(
+          handle.db,
+          variance.applicationId,
+          'me.appeal.boa_court_after_planning_board',
+        ),
+      ).toMatchObject([{ status: 'superseded', startDate: '2027-04-28' }])
       const reconsiderationWindow = ruleByKey(
         loadPack(),
         'me.appeal.boa_court_after_reconsideration',

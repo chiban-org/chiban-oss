@@ -80,7 +80,7 @@ export async function startClocksFor(
   signal: AbortSignal,
   pack: Pack = loadPack(),
   calendar: MeetingCalendar = boardMeetingCalendar(tx),
-  decisionFacts: Pick<ProjectFacts, 'outcome' | 'decisionFiledLate'> = {},
+  decisionFacts: Pick<ProjectFacts, 'outcome' | 'decisionFiledLate' | 'finalReviewBoard'> = {},
 ): Promise<void> {
   signal.throwIfAborted()
   const app = await loadApplicationContext(tx, applicationId, signal)
