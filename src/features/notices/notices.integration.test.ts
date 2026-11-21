@@ -58,7 +58,13 @@ async function derive(applicationId: string, anchor: string) {
   return await handle.db.transaction((tx) =>
     deriveNoticeItems(
       tx,
-      { subjectKind: 'hearing', subjectId: randomUUID(), applicationId, anchorDate: d(anchor) },
+      {
+        subjectKind: 'hearing',
+        subjectId: randomUUID(),
+        applicationId,
+        anchorDate: d(anchor),
+        stage: 'before_hearing',
+      },
       signal,
     ),
   )

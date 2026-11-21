@@ -132,12 +132,13 @@ function noticesFor(body: ApplicationTypeBody, facts: ProjectFacts, dates: Dates
   const meeting = dates.meeting
   if (classification === undefined || meeting === undefined) return []
   const flags = { regionalImpact: facts.regionalImpact === true, desWithin: false }
-  return requirementsFor(classification, flags).flatMap((rule) => {
+  return requirementsFor(classification, flags, 'before_hearing').flatMap((rule) => {
     const plan = planRequirement(rule, {
       hearingDate: meeting,
       flags,
       townLeadDays: {},
       publicChoice: null,
+      stage: 'before_hearing',
     })
     return plan === null
       ? []

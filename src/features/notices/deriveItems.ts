@@ -32,6 +32,7 @@ export interface DeriveInput {
   subjectId: string
   applicationId: string
   anchorDate: CivilDate
+  stage: NoticeRequirementRule['stage']
 }
 
 export type DeriveError =
@@ -63,14 +64,14 @@ export async function townLeads(
 async function flagsFor(
   tx: Tx,
   applicationId: string,
-  needs: { des: boolean; sourceWater: boolean },
+  needs: { regionalImpact: boolean; des: boolean; sourceWater: boolean },
 ): Promise<RequirementFlags | null> {
   const [ri] = await tx
     .select({ determination: regionalImpactDeterminations.determination })
     .from(regionalImpactDeterminations)
     .where(eq(regionalImpactDeterminations.applicationId, applicationId))
   const hasRegionalImpact = packRoles().rules.regionalImpactDetermination !== null
-  if (ri === undefined && hasRegionalImpact) return null
+  if (ri === undefined && hasRegionalImpact && needs.regionalImpact) return null
   const [des] = await tx
     .select({ determination: desProximityDeterminations.determination })
     .from(desProximityDeterminations)
@@ -131,6 +132,7 @@ interface Context {
 async function loadContext(
   tx: Tx,
   applicationId: string,
+  stage: NoticeRequirementRule['stage'],
   signal: AbortSignal,
 ): Promise<Result<Context, DeriveError>> {
   const app = await loadApplicationContext(tx, applicationId, signal)
@@ -145,10 +147,12 @@ async function loadContext(
     const rule = pack.rules.find((r) => r.key === key)
     return rule?.kind === 'notice_requirement' ? [rule] : []
   })
-  const beforeHearing = all.filter((r) => r.stage === 'before_hearing')
+  const staged = all.filter((r) => r.stage === stage)
   const flags = await flagsFor(tx, applicationId, {
-    des: beforeHearing.some((r) => r.onlyWhen === 'des_within_500ft'),
-    sourceWater: beforeHearing.some((r) => r.onlyWhen === 'source_water_area'),
+    regionalImpact:
+      stage === 'before_hearing' || staged.some((r) => r.onlyWhen === 'regional_impact_yes'),
+    des: staged.some((r) => r.onlyWhen === 'des_within_500ft'),
+    sourceWater: staged.some((r) => r.onlyWhen === 'source_water_area'),
   })
   if (flags === null) return err('determination_missing')
   const settings = await getPublished(tx, 'board_settings', 'default', signal)
@@ -176,6 +180,7 @@ function rowsForRequirement(
       flags: ctx.flags,
       townLeadDays: ctx.leads,
       publicChoice,
+      stage: input.stage,
     })
     if (plan === null) continue
     if ('public' in rule.recipients) {
@@ -246,12 +251,12 @@ export async function deriveNoticeItems(
   signal: AbortSignal,
 ): Promise<Result<{ setId: string; items: number }, DeriveError>> {
   signal.throwIfAborted()
-  const loaded = await loadContext(tx, input.applicationId, signal)
+  const loaded = await loadContext(tx, input.applicationId, input.stage, signal)
   if (!loaded.ok) return loaded
   const ctx = loaded.value
   const rows: ItemRow[] = []
   let publicPlan: PlannedRequirement | null = null
-  for (const rule of requirementsFor(ctx.classification, ctx.flags)) {
+  for (const rule of requirementsFor(ctx.classification, ctx.flags, input.stage)) {
     const made = rowsForRequirement(rule, ctx, input, '')
     if (rule.onlyWhen !== undefined && 'roles' in rule.recipients && made.rows.length === 0) {
       return err('list_out_of_date')

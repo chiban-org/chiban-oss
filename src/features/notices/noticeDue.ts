@@ -46,12 +46,18 @@ export async function earliestNoticeDue(
   )
   if (classification === undefined) return () => null
   const flags = await strictestFlags(db, app.id)
-  const rules = requirementsFor(classification, flags)
+  const rules = requirementsFor(classification, flags, 'before_hearing')
   const leads = await townLeads(db, rules, signal)
   return (hearingDate) =>
     rules
       .map((rule) =>
-        planRequirement(rule, { hearingDate, flags, townLeadDays: leads, publicChoice: null }),
+        planRequirement(rule, {
+          hearingDate,
+          flags,
+          townLeadDays: leads,
+          publicChoice: null,
+          stage: 'before_hearing',
+        }),
       )
       .flatMap((plan) => (plan === null ? [] : [plan.dueOn]))
       .reduce<CivilDate | null>(

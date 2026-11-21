@@ -41,6 +41,11 @@ describe('loadBoardPanel', () => {
     })
   })
 
+  it('an NH classification has no receipt notices section', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+    expect((await loadBoardPanel(handle.db, world.staff, id, signal))?.receipt).toBeNull()
+  })
+
   it('a reviewer gets nothing', async () => {
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
     expect(await loadBoardPanel(handle.db, world.reviewer, id, signal)).toBeNull()

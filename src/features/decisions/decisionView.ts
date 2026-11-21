@@ -126,7 +126,11 @@ export function toGraphNodes(rows: (typeof appealNodes.$inferSelect)[]): GraphNo
   }))
 }
 
-async function checklistFor(db: Db, setId: string, signal: AbortSignal): Promise<ChecklistItem[]> {
+export async function checklistFor(
+  db: Db,
+  setId: string,
+  signal: AbortSignal,
+): Promise<ChecklistItem[]> {
   const status = await noticeStatus(db, setId, signal)
   return status.items.map((i) => ({
     itemId: i.itemId,

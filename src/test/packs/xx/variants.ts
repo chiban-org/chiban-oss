@@ -124,3 +124,89 @@ export const XX_HEARING_CLOCKS: StatePack = xxPackWith({
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: HEARING_CLOCK_PACK_RULES }] },
 })
+
+export const XX_RECEIPT_LEAD_KEY = 'xx.pb.receipt_notice_lead'
+export const XX_RECEIPT_MAIL_KEY = 'xx.pb.notice.receipt_mail'
+export const XX_HEARING_MAIL_KEY = 'xx.pb.notice.hearing_mail'
+
+const RECEIPT_CITATION = {
+  label: 'Vellmora Permit Act 6',
+  url: 'https://laws.example/vellmora/permit-act',
+}
+
+export const XX_RECEIPT_RULES: PackRule[] = [
+  {
+    kind: 'clock',
+    key: XX_RECEIPT_LEAD_KEY,
+    version: 1,
+    label: 'Notice on receipt of an application',
+    citation: RECEIPT_CITATION,
+    clockType: 'notice_lead',
+    whose: 'board',
+    startEvent: 'application_received',
+    length: { unit: 'days', value: 7 },
+    direction: 'after',
+    consequence: { kind: 'notice_defective', text: 'Notice later than this is defective.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'clock',
+    key: 'xx.pb.hearing_notice_lead',
+    version: 1,
+    label: 'Hearing notice lead',
+    citation: RECEIPT_CITATION,
+    clockType: 'notice_lead',
+    whose: 'board',
+    startEvent: 'acceptance_meeting_set',
+    length: { unit: 'days', value: 10 },
+    direction: 'before',
+    consequence: { kind: 'notice_defective', text: 'Notice later than this is defective.' },
+    extension: { allowed: false, note: 'The act sets the minimum notice period.' },
+    waivable: false,
+    overridePolicy: { policy: 'minimum', floor: 10 },
+  },
+  {
+    kind: 'notice_requirement',
+    key: XX_RECEIPT_MAIL_KEY,
+    version: 1,
+    label: 'Mailed notice on receipt',
+    citation: RECEIPT_CITATION,
+    channel: 'verified_mail',
+    recipients: { roles: ['abutter_owner', 'municipal_clerk'] },
+    leadRuleKey: XX_RECEIPT_LEAD_KEY,
+    stage: 'on_receipt',
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'notice_requirement',
+    key: XX_HEARING_MAIL_KEY,
+    version: 1,
+    label: 'Mailed hearing notice',
+    citation: RECEIPT_CITATION,
+    channel: 'verified_mail',
+    recipients: { roles: ['abutter_owner'] },
+    leadRuleKey: 'xx.pb.hearing_notice_lead',
+    stage: 'before_hearing',
+    overridePolicy: { policy: 'fixed' },
+  },
+]
+
+const RECEIPT_PACK_RULES = [...XX_PACK.manifest.rules, ...XX_RECEIPT_RULES]
+
+export const XX_RECEIPT_NOTICES: StatePack = xxPackWith({
+  manifest: {
+    rules: RECEIPT_PACK_RULES,
+    classifications: XX_OPTIONAL_HEARING.manifest.classifications.map((c) =>
+      c.key === XX_PB_SUBDIVISION_KEY
+        ? {
+            ...c,
+            mandatoryRuleKeys: [XX_RECEIPT_LEAD_KEY],
+            noticeRequirementKeys: [XX_RECEIPT_MAIL_KEY, XX_HEARING_MAIL_KEY],
+          }
+        : c,
+    ),
+  },
+  pack: { ruleAreas: [{ title: 'All rules', rules: RECEIPT_PACK_RULES }] },
+})

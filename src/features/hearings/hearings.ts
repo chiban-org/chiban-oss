@@ -133,6 +133,7 @@ export async function scheduleHearing(
         subjectId: hearingId,
         applicationId: app.id,
         anchorDate: meeting.meetingDate as CivilDate,
+        stage: 'before_hearing',
       },
       signal,
     )

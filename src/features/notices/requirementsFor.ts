@@ -31,3 +31,11 @@ export function requirementsFor(
       : []
   })
 }
+
+export function hasReceiptNotices(classification: ProceedingClassification): boolean {
+  const rules = loadPack().rules
+  return classification.noticeRequirementKeys.some((key) => {
+    const rule = rules.find((r) => r.key === key)
+    return rule !== undefined && rule.kind === 'notice_requirement' && rule.stage === 'on_receipt'
+  })
+}
