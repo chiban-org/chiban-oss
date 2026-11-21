@@ -115,18 +115,33 @@ export async function proveReceipt(db: Db, world: BoardWorld, id: string, setId:
   await proveEverything(db, world, id, setId, d('2027-03-08'), new Date('2027-03-08T16:00:00Z'))
 }
 
-export async function acceptAtMeeting(db: Db, world: BoardWorld, id: string): Promise<void> {
-  const meetingId = await pbMeetingOn(db, ACCEPTANCE_MEETING)
+export async function voteAtMeeting(
+  db: Db,
+  world: BoardWorld,
+  id: string,
+  vote: { on: string; outcome: 'accepted' | 'not_accepted'; reason?: string },
+): Promise<void> {
+  const meetingId = await pbMeetingOn(db, vote.on)
   const set = await setAcceptanceMeeting(db, world.staff, { applicationId: id, meetingId }, signal)
   if (!set.ok) throw new AppError(ErrorIds.DB_INVARIANT, `acceptance: ${JSON.stringify(set.error)}`)
   const voted = await recordCompletenessVote(
     db,
     world.staff,
-    { applicationId: id, meetingId, votedOn: d(ACCEPTANCE_MEETING), outcome: 'accepted' },
+    {
+      applicationId: id,
+      meetingId,
+      votedOn: d(vote.on),
+      outcome: vote.outcome,
+      reason: vote.reason,
+    },
     signal,
-    new Date(`${ACCEPTANCE_MEETING}T16:00:00Z`),
+    new Date(`${vote.on}T16:00:00Z`),
   )
   if (!voted.ok) throw new AppError(ErrorIds.DB_INVARIANT, `vote: ${JSON.stringify(voted.error)}`)
+}
+
+export async function acceptAtMeeting(db: Db, world: BoardWorld, id: string): Promise<void> {
+  await voteAtMeeting(db, world, id, { on: ACCEPTANCE_MEETING, outcome: 'accepted' })
 }
 
 export async function scheduleSubdivisionHearing(db: Db, world: BoardWorld, id: string) {
@@ -143,7 +158,8 @@ export async function scheduleSubdivisionHearing(db: Db, world: BoardWorld, id: 
   const [hearing] = await db.query.hearings.findMany({
     where: (h, { eq: same }) => same(h.id, scheduled.value.hearingId),
   })
-  return { hearingId: scheduled.value.hearingId, noticeSetId: hearing?.noticeSetId ?? '' }
+  if (hearing === undefined) throw new AppError(ErrorIds.DB_INVARIANT, 'no hearing row')
+  return { hearingId: scheduled.value.hearingId, noticeSetId: hearing.noticeSetId }
 }
 
 export async function holdSubdivisionHearing(

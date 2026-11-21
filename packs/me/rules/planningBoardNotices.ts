@@ -168,7 +168,7 @@ export const PLANNING_BOARD_NOTICE_RULES: PackRule[] = [
 export const SUBDIVISION_NOTICE_REQUIREMENTS = [
   'me.pb.notice.receipt_mail',
   'me.pb.notice.receipt_water',
-  'me.pb.notice.hearing_second',
   'me.pb.notice.hearing_first',
+  'me.pb.notice.hearing_second',
   'me.pb.notice.applicant',
 ]

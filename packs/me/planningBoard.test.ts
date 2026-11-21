@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { recipientRolesFor } from '@/features/abutters/roles'
+import { offersCertification } from '@/features/boards/certificationClock'
+import { incompleteVoteDenies } from '@/features/boards/completenessVote'
 import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
 import { boardDecisionDeadlineKeys } from '@/features/decisions/decisionClocks'
 import { planRequirement } from '@/features/notices/requirementPlan'
@@ -209,8 +211,8 @@ describe('the subdivision receipt set', () => {
       requirementsFor(subdivision(), flags(false), 'before_hearing').map((r) => r.key),
     )
     expect(hearing).toEqual([
-      'me.pb.notice.hearing_second',
       'me.pb.notice.hearing_first',
+      'me.pb.notice.hearing_second',
       'me.pb.notice.applicant',
     ])
   })
@@ -258,5 +260,21 @@ describe('the Planning Board classifications', () => {
     expect(ME_ROLES.rules.planningBoardCompleteness).toBe('me.pb.completeness')
     expect(ME_ROLES.rules.planningBoardDecision).toBe('me.pb.decision_no_hearing')
     expect(ME_ROLES.ruleGroups.board).toEqual(['me.pb.'])
+  })
+})
+
+describe('board follow-up that only the NH pack models', () => {
+  it('offers selectmen certification only for an NH decision clock', () => {
+    expect(offersCertification({ ruleKey: 'nh.pb.decision', ruleVersion: 1 })).toBe(true)
+    expect(
+      withPackForTest(ME_PACK, () =>
+        offersCertification({ ruleKey: 'me.pb.decision_no_hearing', ruleVersion: 1 }),
+      ),
+    ).toBe(false)
+  })
+
+  it('closes an incomplete application at the vote only under the NH pack', () => {
+    expect(incompleteVoteDenies()).toBe(true)
+    expect(withPackForTest(ME_PACK, () => incompleteVoteDenies())).toBe(false)
   })
 })

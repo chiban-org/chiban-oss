@@ -25,7 +25,7 @@ import { requirementsFor } from '@/features/notices/requirementsFor'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
-import type { CivilDate } from '@/types/civilDate'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export interface DeriveInput {
@@ -249,6 +249,15 @@ function townExtras(setId: string, plan: PlannedRequirement, notice: PublicNotic
   return [...boards, ...website]
 }
 
+function earlierPlan(
+  current: PlannedRequirement | null,
+  next: PlannedRequirement | null,
+): PlannedRequirement | null {
+  if (current === null) return next
+  if (next === null) return current
+  return compareCivil(next.dueOn, current.dueOn) < 0 ? next : current
+}
+
 export async function deriveNoticeItems(
   tx: Tx,
   input: DeriveInput,
@@ -266,7 +275,7 @@ export async function deriveNoticeItems(
       return err('list_out_of_date')
     }
     rows.push(...made.rows)
-    publicPlan = made.publicPlan ?? publicPlan
+    publicPlan = earlierPlan(publicPlan, made.publicPlan)
   }
   const [set] = await tx
     .insert(noticeSets)

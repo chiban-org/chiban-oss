@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { setActivePackForTest } from '@/features/packs/registry'
+import type { StatePack } from '@/features/packs/schema'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
@@ -26,6 +27,15 @@ const RECEIPT_MAIL = 'me.pb.notice.receipt_mail'
 const RECEIPT_WATER = 'me.pb.notice.receipt_water'
 let handle: TestDb
 let world: BoardWorld
+
+function withReversedHearingNotices(): StatePack {
+  const classifications = ME_PACK.manifest.classifications.map((c) =>
+    c.key === 'me.pb_subdivision'
+      ? { ...c, noticeRequirementKeys: [...c.noticeRequirementKeys].reverse() }
+      : c,
+  )
+  return { ...ME_PACK, manifest: { ...ME_PACK.manifest, classifications } }
+}
 
 beforeEach(async () => {
   handle = await makeTestDb()
@@ -133,24 +143,34 @@ describe('a Maine subdivision with a hearing', () => {
     ])
   })
 
+  const HEARING_ROWS = [
+    ['me.pb.notice.applicant', 'first_class_mail', 'Recipient 5', '2027-04-07'],
+    ['me.pb.notice.hearing_first', 'newspaper', null, '2027-04-07'],
+    ['me.pb.notice.hearing_second', 'newspaper', null, '2027-04-13'],
+    ['town.notice.bulletin_board', 'bulletin_board', 'Alder Pond Public Library', '2027-04-07'],
+    [
+      'town.notice.bulletin_board',
+      'bulletin_board',
+      'Alder Pond Town Hall bulletin board',
+      '2027-04-07',
+    ],
+  ]
+
+  async function hearingRows(id: string) {
+    const hearing = await scheduleSubdivisionHearing(handle.db, world, id)
+    const items = await itemsOf(handle.db, hearing.noticeSetId)
+    return items.map((i) => [i.requirementKey, i.channel, i.recipientName, i.dueOn]).sort()
+  }
+
   it('notices the hearing twice in the newspaper, once to the applicant, and posts with the first', async () => {
     const { id } = await acceptedWithReceiptProved()
-    const hearing = await scheduleSubdivisionHearing(handle.db, world, id)
-    const items = (await itemsOf(handle.db, hearing.noticeSetId)).filter(
-      (i) => i.source === 'pack_rule',
-    )
-    expect(
-      items.map((i) => [i.requirementKey, i.channel, i.recipientName, i.dueOn]).sort(),
-    ).toEqual([
-      ['me.pb.notice.applicant', 'first_class_mail', 'Recipient 5', '2027-04-07'],
-      ['me.pb.notice.hearing_first', 'newspaper', null, '2027-04-07'],
-      ['me.pb.notice.hearing_second', 'newspaper', null, '2027-04-13'],
-    ])
-    const postings = (await itemsOf(handle.db, hearing.noticeSetId)).filter(
-      (i) => i.source === 'town_setting',
-    )
-    expect(postings.length).toBeGreaterThan(0)
-    expect(postings.every((i) => i.dueOn === '2027-04-07')).toBe(true)
+    expect(await hearingRows(id)).toEqual(HEARING_ROWS)
+  })
+
+  it('dates the postings from the earliest publication whatever the requirement order', async () => {
+    const { id } = await acceptedWithReceiptProved()
+    setActivePackForTest(withReversedHearingNotices())
+    expect(await hearingRows(id)).toEqual(HEARING_ROWS)
   })
 
   it('cancels the 60-day clock and starts the 30-day clock when the hearing is held', async () => {
