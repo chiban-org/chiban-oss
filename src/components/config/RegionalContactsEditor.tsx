@@ -4,12 +4,22 @@ import { AddressAreaField } from '@/components/address/AddressAreaField'
 import { Input, RowButton, rowKey } from '@/components/config/primitives'
 import { usePackText } from '@/components/PackTextProvider'
 import { Legend } from '@/components/ui/legend'
-import type { Contact, RegionalContactsBody } from '@/features/boards/regionalContacts'
+import {
+  type Contact,
+  type RegionalContactsBody,
+  type StoredRegionalContacts,
+  withContactDefaults,
+} from '@/features/boards/regionalContactsSchema'
 
 type Municipality = RegionalContactsBody['municipalities'][number]
 
 interface Props {
   body: RegionalContactsBody
+  onChange: (next: RegionalContactsBody) => void
+}
+
+interface EditorProps {
+  body: StoredRegionalContacts
   onChange: (next: RegionalContactsBody) => void
 }
 
@@ -63,10 +73,16 @@ function withOffice(
   }
 }
 
+function randomSupplierKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(4))
+  return `water_supplier_${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')}`
+}
+
 function nextSupplierKey(body: RegionalContactsBody): string {
-  const used = body.waterSuppliers.map((w) => Number(w.key.replace('water_supplier_', '')))
-  const highest = used.filter((n) => Number.isInteger(n)).reduce((a, n) => Math.max(a, n), 0)
-  return `water_supplier_${highest + 1}`
+  const used = new Set(body.waterSuppliers.map((w) => w.key))
+  let key = randomSupplierKey()
+  while (used.has(key)) key = randomSupplierKey()
+  return key
 }
 
 function WaterSuppliers({ body, onChange }: Props) {
@@ -137,8 +153,9 @@ function WaterSuppliers({ body, onChange }: Props) {
   )
 }
 
-export function RegionalContactsEditor({ body, onChange }: Props) {
+export function RegionalContactsEditor({ body: stored, onChange }: EditorProps) {
   const { environmentalAgency, receiptNotices } = usePackText()
+  const body = withContactDefaults(stored)
   const showReceipt = receiptNotices || hasReceiptContacts(body)
   return (
     <div className="space-y-4">

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { clocks, noticeSets } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { loadApplicationContext } from '@/features/applications/context'
 import { lockApplication } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -9,7 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { markClockMet } from '@/features/clocks/startClocks'
 import { type DeriveError, deriveNoticeItems } from '@/features/notices/deriveItems'
-import { noticeStatus } from '@/features/notices/noticeStatus'
+import { type NoticeStatus, noticeStatus } from '@/features/notices/noticeStatus'
 import { hasReceiptNotices } from '@/features/notices/requirementsFor'
 import { loadPack } from '@/features/packs/loadPack'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -47,6 +48,7 @@ export async function prepareReceiptNotices(
       .from(noticeSets)
       .where(and(eq(noticeSets.subjectKind, RECEIPT_SUBJECT), eq(noticeSets.subjectId, app.id)))
     if (existing !== undefined) return err('already_prepared')
+    if (await hasOpenRegeneration(tx, app.id)) return err('list_out_of_date')
     const derived = await deriveNoticeItems(
       tx,
       {
@@ -79,9 +81,21 @@ function leadKeyOf(requirementKey: string): string | null {
   return rule?.kind === 'notice_requirement' ? rule.leadRuleKey : null
 }
 
+async function lockReceiptSet(tx: Tx, setId: string) {
+  const [set] = await tx.select().from(noticeSets).where(eq(noticeSets.id, setId)).for('update')
+  return set
+}
+
+function latestProofDate(items: NoticeStatus['items']): CivilDate | undefined {
+  return items
+    .flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
+    .sort((x, y) => compareCivil(x, y))
+    .at(-1)
+}
+
 export async function syncReceiptClocks(tx: Tx, setId: string, signal: AbortSignal) {
+  const set = await lockReceiptSet(tx, setId)
   const status = await noticeStatus(tx, setId, signal)
-  const [set] = await tx.select().from(noticeSets).where(eq(noticeSets.id, setId))
   if (set?.subjectKind !== RECEIPT_SUBJECT || set.applicationId === null) return status
   const leadKeys = new Set(
     status.items.flatMap((i) => {
@@ -99,18 +113,12 @@ export async function syncReceiptClocks(tx: Tx, setId: string, signal: AbortSign
       .where(and(eq(clocks.applicationId, set.applicationId), eq(clocks.ruleKey, leadKey)))
     if (clock === undefined) continue
     const noticed = items.every((i) => i.state === 'proved_on_time')
+    const last = latestProofDate(items) ?? (clock.currentDue as CivilDate)
     if (noticed && clock.status !== 'met') {
-      const last = items
-        .flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
-        .sort((x, y) => compareCivil(x, y))
-        .at(-1)
-      await markClockMet(
-        tx,
-        set.applicationId,
-        leadKey,
-        last ?? (clock.currentDue as CivilDate),
-        signal,
-      )
+      await markClockMet(tx, set.applicationId, leadKey, last, signal)
+    }
+    if (noticed && clock.status === 'met' && clock.metOn !== last) {
+      await tx.update(clocks).set({ metOn: last }).where(eq(clocks.id, clock.id))
     }
     if (!noticed && clock.status === 'met') {
       await tx.update(clocks).set({ status: 'running', metOn: null }).where(eq(clocks.id, clock.id))

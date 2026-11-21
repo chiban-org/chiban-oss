@@ -21,6 +21,7 @@ export const RegionalContactsBodySchema = z.object({
     }),
 })
 export type RegionalContactsBody = z.infer<typeof RegionalContactsBodySchema>
+export type StoredRegionalContacts = Partial<RegionalContactsBody>
 export type Contact = z.infer<typeof ContactSchema>
 
 export const EMPTY_REGIONAL_CONTACTS: RegionalContactsBody = {
@@ -29,4 +30,8 @@ export const EMPTY_REGIONAL_CONTACTS: RegionalContactsBody = {
   municipalities: [],
   nhDes: null,
   waterSuppliers: [],
+}
+
+export function withContactDefaults(stored: StoredRegionalContacts): RegionalContactsBody {
+  return { ...EMPTY_REGIONAL_CONTACTS, ...stored }
 }

@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applicationMunicipalities } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { lockApplication } from '@/features/applications/lockApplication'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -49,6 +50,7 @@ export async function setApplicationMunicipalities(
         })),
       )
     }
+    await flagIssuedListStale(tx, input.applicationId, signal)
     await writeAudit(
       tx,
       {
