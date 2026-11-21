@@ -2,7 +2,7 @@ import { consequenceText, DueRule } from '@/components/enforcement/DueLine'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
 import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
-import { RTK_VIA_LABELS, responseLabel } from '@/features/rtk/labels'
+import { RTK_VIA_LABELS, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { duePhrase } from '@/features/rtk/workPlan'
 import type { RequestWorkPlan } from '@/features/rtk/workPlanTypes'
@@ -25,7 +25,8 @@ function liveClock(request: RtkRequestView): SubjectDue | null {
 function responseFact(request: RtkRequestView): Fact[] {
   const label = responseLabel(request.firstResponseKind)
   if (label === null) return []
-  const on = request.firstResponseOn === null ? '' : `, ${formatCivilDate(request.firstResponseOn)}`
+  const date = responseDateOf(request)
+  const on = date === null ? '' : `, ${formatCivilDate(date)}`
   return [{ label: 'First response', value: `${label}${on}` }]
 }
 

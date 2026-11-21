@@ -1,6 +1,6 @@
 import { NEW_TAB } from '@/components/newTab'
 import type { RtkLetterOutcome } from '@/db/schema'
-import { costTotal, responseLabel } from '@/features/rtk/labels'
+import { costTotal, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
@@ -14,7 +14,7 @@ function timelinessText(request: RtkRequestView): string | null {
 
 function recordedLine(request: RtkRequestView): string {
   const label = responseLabel(request.firstResponseKind) ?? 'Response recorded'
-  const on = request.acknowledgedOn === null ? request.firstResponseOn : request.followUpOn
+  const on = responseDateOf(request)
   return on === null ? `${label}.` : `${label}, ${formatCivilDate(on)}.`
 }
 
