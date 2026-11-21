@@ -13,7 +13,7 @@ const EVENT_TEXT: ReadonlyMap<RecordEventKind, string> = new Map([
   ['occupancy_certificate_issued', 'the certificate of occupancy is issued'],
   ['final_inspection_passed', 'the final inspection passes'],
   ['case_closed', 'the enforcement case is closed'],
-  ['request_completed', 'the records request is completed'],
+  ['request_completed', 'the records request is closed or withdrawn'],
 ])
 
 export function retentionText(status: RetentionStatus | null): string {

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { enforcementCases, inspections, recordEvents } from '@/db/schema'
+import { applications, enforcementCases, inspections, recordEvents } from '@/db/schema'
 import { issueCertificateOfOccupancy } from '@/features/certificates/issueCertificate'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { setCaseStatus } from '@/features/enforcement/cases'
@@ -49,14 +49,12 @@ afterEach(async () => {
   await handle.drop()
 })
 
-const TARGET_COLUMNS = {
-  application: recordEvents.applicationId,
-  case: recordEvents.caseId,
-  request: recordEvents.rtkRequestId,
-}
+type EventTargetColumn =
+  | typeof recordEvents.applicationId
+  | typeof recordEvents.caseId
+  | typeof recordEvents.rtkRequestId
 
-async function eventsOf(target: keyof typeof TARGET_COLUMNS, id: string) {
-  const column = TARGET_COLUMNS[target]
+async function eventsOf(column: EventTargetColumn, id: string) {
   const rows = await handle.db.select().from(recordEvents).where(eq(column, id))
   return rows.map((e) => [e.kind, e.occurredOn, e.recordedByKind])
 }
@@ -76,7 +74,7 @@ describe('the permit expiry event', () => {
     )
     await handle.db.transaction((tx) => expireLapsedPermits(tx, d('2028-05-02'), signal))
     await handle.db.transaction((tx) => expireLapsedPermits(tx, d('2028-05-03'), signal))
-    const events = await eventsOf('application', app.applicationId)
+    const events = await eventsOf(recordEvents.applicationId, app.applicationId)
     expect(events.filter(([kind]) => kind === 'permit_expired')).toEqual([
       ['permit_expired', '2028-05-02', 'system'],
     ])
@@ -109,7 +107,6 @@ describe('the inspection and certificate events', () => {
   }
 
   async function issueCertificate(applicationId: string) {
-    const { applications } = await import('@/db/schema')
     const [app] = await handle.db
       .select()
       .from(applications)
@@ -127,7 +124,7 @@ describe('the inspection and certificate events', () => {
   it('a passed final on a trade permit writes one final_inspection_passed dated by the result', async () => {
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     await passFinal(permit.applicationId)
-    expect(await eventsOf('application', permit.applicationId)).toEqual([
+    expect(await eventsOf(recordEvents.applicationId, permit.applicationId)).toEqual([
       ['final_inspection_passed', '2027-07-07', 'system'],
     ])
   })
@@ -136,7 +133,7 @@ describe('the inspection and certificate events', () => {
     const permit = await newIssuedPermit(handle.db, w, 'BP')
     await passFinal(permit.applicationId)
     await passFinal(permit.applicationId)
-    expect(await eventsOf('application', permit.applicationId)).toEqual([
+    expect(await eventsOf(recordEvents.applicationId, permit.applicationId)).toEqual([
       ['final_inspection_passed', '2027-07-07', 'system'],
     ])
   })
@@ -146,7 +143,7 @@ describe('the inspection and certificate events', () => {
     await passFinal(permit.applicationId)
     expect((await issueCertificate(permit.applicationId)).ok).toBe(true)
     expect(await issueCertificate(permit.applicationId)).toEqual({ ok: false, error: 'not_issued' })
-    const events = await eventsOf('application', permit.applicationId)
+    const events = await eventsOf(recordEvents.applicationId, permit.applicationId)
     expect(events.filter(([kind]) => kind === 'occupancy_certificate_issued')).toEqual([
       ['occupancy_certificate_issued', '2027-07-15', 'system'],
     ])
@@ -174,7 +171,9 @@ describe('the case closed event', () => {
       now,
     )
     expect(again.ok).toBe(false)
-    expect(await eventsOf('case', caseId)).toEqual([['case_closed', '2027-03-10', 'system']])
+    expect(await eventsOf(recordEvents.caseId, caseId)).toEqual([
+      ['case_closed', '2027-03-10', 'system'],
+    ])
   })
 
   it('a complaint moved off its untouched case closes that case with one case_closed', async () => {
@@ -197,10 +196,10 @@ describe('the case closed event', () => {
       .select()
       .from(enforcementCases)
       .where(eq(enforcementCases.id, moved.caseId))
-    expect(await eventsOf('case', moved.caseId)).toEqual([
+    expect(await eventsOf(recordEvents.caseId, moved.caseId)).toEqual([
       ['case_closed', shell?.closedOn, 'system'],
     ])
-    expect(await eventsOf('case', kept.caseId)).toEqual([])
+    expect(await eventsOf(recordEvents.caseId, kept.caseId)).toEqual([])
   })
 
   it('a pack whose series never start from case_closed records nothing', async () => {
@@ -216,7 +215,7 @@ describe('the case closed event', () => {
           true,
         )
       }
-      expect(await eventsOf('case', caseId)).toEqual([])
+      expect(await eventsOf(recordEvents.caseId, caseId)).toEqual([])
     } finally {
       setActivePackForTest(RETENTION_EVENTS_PACK)
     }
@@ -273,7 +272,7 @@ describe('the request completed event', () => {
       ok: false,
       error: 'already_closed',
     })
-    expect(await eventsOf('request', requestId)).toEqual([
+    expect(await eventsOf(recordEvents.rtkRequestId, requestId)).toEqual([
       ['request_completed', '2026-11-10', 'system'],
     ])
     expect(await ids('awaiting_event', '2027-11-09')).not.toContain(documentId)
@@ -284,9 +283,15 @@ describe('the request completed event', () => {
     expect((await checkDisposition(handle.db, ref, d('2027-11-10'), signal)).ok).toBe(true)
   })
 
-  it('a withdrawn request writes no request_completed', async () => {
+  it('withdrawing the request writes one request_completed dated by the withdrawal', async () => {
     const { custodian, requestId } = await requestWithLetter()
     expect((await close(custodian, requestId, 'withdrawn', 1)).ok).toBe(true)
-    expect(await eventsOf('request', requestId)).toEqual([])
+    expect(await close(custodian, requestId, 'withdrawn', 2)).toEqual({
+      ok: false,
+      error: 'already_closed',
+    })
+    expect(await eventsOf(recordEvents.rtkRequestId, requestId)).toEqual([
+      ['request_completed', '2026-11-10', 'system'],
+    ])
   })
 })

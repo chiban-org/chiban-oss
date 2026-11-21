@@ -219,10 +219,8 @@ export async function closeRequest(
       .update(rtkRequests)
       .set({ status: input.to, openDueOn: null, rowVersion: row.rowVersion + 1 })
       .where(eq(rtkRequests.id, row.id))
-    if (input.to === 'closed') {
-      const today = await townToday(tx, now, signal)
-      await recordSystemEvent(tx, { kind: 'request_completed', rtkRequestId: row.id }, today)
-    }
+    const today = await townToday(tx, now, signal)
+    await recordSystemEvent(tx, { kind: 'request_completed', rtkRequestId: row.id }, today)
     await writeAudit(
       tx,
       {

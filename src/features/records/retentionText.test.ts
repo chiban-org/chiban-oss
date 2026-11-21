@@ -39,6 +39,8 @@ describe('retentionText', () => {
     )
     expect(
       retentionText({ state: 'not_yet_triggered', awaiting: ['case_closed', 'request_completed'] }),
-    ).toBe('Starts when the enforcement case is closed or the records request is completed')
+    ).toBe(
+      'Starts when the enforcement case is closed or the records request is closed or withdrawn',
+    )
   })
 })

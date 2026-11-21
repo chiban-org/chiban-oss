@@ -155,12 +155,12 @@ async function recordInTransaction(
       updatedAt: new Date(),
     })
     .where(eq(inspections.id, locked.id))
-  const outcome =
-    input.result === 'passed' && locked.isFinal
-      ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
-      : ok({ applicationState: appState as CoreState, closed: false })
+  const passedFinal = input.result === 'passed' && locked.isFinal
+  const outcome = passedFinal
+    ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
+    : ok({ applicationState: appState as CoreState, closed: false })
   if (!outcome.ok) return err(outcome.error === 'forbidden' ? 'forbidden' : outcome.error)
-  if (input.result === 'passed' && locked.isFinal) {
+  if (passedFinal) {
     await recordSystemEvent(
       tx,
       { kind: 'final_inspection_passed', applicationId: locked.applicationId },
