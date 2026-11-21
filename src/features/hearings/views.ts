@@ -2,6 +2,7 @@ import { asc, desc, eq } from 'drizzle-orm'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
 import type { Db } from '@/db/client'
 import { appealNodes, boardDecisions, boardMeetings, documents, hearings } from '@/db/schema'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -64,6 +65,7 @@ export interface HearingView {
   defaultHeldOn: string
   defaultVotedOn: string
   seatedMembers: string[]
+  offerFinalApproval: boolean
 }
 
 export async function timeZoneOf(db: Db, signal: AbortSignal): Promise<string> {
@@ -186,6 +188,7 @@ export async function loadHearingView(
       row.meeting.boardId,
       (row.hearing.heldOn ?? row.meeting.meetingDate) as CivilDate,
     ),
+    offerFinalApproval: packWaitsForFinalApproval(),
   }
 }
 

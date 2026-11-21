@@ -2,6 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { Db } from '@/db/client'
 import { boardDecisions, boardMeetings, hearings } from '@/db/schema'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
@@ -27,6 +28,7 @@ export interface NoHearingDecisionForm {
   meetings: { id: string; text: string }[]
   seatedMembers: string[]
   today: string
+  offerFinalApproval: boolean
 }
 
 export interface ApplicationHearingsPanel {
@@ -63,6 +65,7 @@ async function noHearingForm(
     meetings: past.map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })).reverse(),
     seatedMembers: await seatedMemberNames(db, ctx.boardId, ctx.today),
     today: ctx.today,
+    offerFinalApproval: packWaitsForFinalApproval(),
   }
 }
 

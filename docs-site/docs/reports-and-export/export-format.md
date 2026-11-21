@@ -2154,6 +2154,8 @@ File: `data/projects.ndjson`. Ordered by id.
 - `id`: uuid
 - `parcel_id`: uuid
 - `title`: text
+- `final_approval_on`: date, nullable
+- `final_review_board`: text, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 

@@ -84,7 +84,11 @@ export function HearingsPanel({
               name="meetingId"
               options={data.noHearing.meetings.map((m): [string, string] => [m.id, m.text])}
             />
-            <DecisionFields seated={data.noHearing.seatedMembers} today={data.noHearing.today} />
+            <DecisionFields
+              seated={data.noHearing.seatedMembers}
+              today={data.noHearing.today}
+              offerFinalApproval={data.noHearing.offerFinalApproval}
+            />
           </ActionForm>
         </details>
       ) : null}

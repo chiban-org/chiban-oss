@@ -12,6 +12,7 @@ import {
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { recordDecisionNode } from '@/features/appeals/graph'
+import { declareFinalApproval } from '@/features/appeals/projectFinality'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -43,6 +44,7 @@ export interface RecordDecisionInput {
   findings: string
   conditions?: DecisionCondition[]
   reasonsForDisapproval?: string
+  finalMunicipalApproval?: boolean
 }
 
 export type DecisionError =
@@ -243,6 +245,17 @@ export async function recordDecision(
     await startClocksFor(tx, app.id, 'board_vote', input.votedOn, signal, undefined, undefined, {
       outcome: input.outcome,
     })
+    await declareFinalApproval(
+      tx,
+      {
+        declared: input.finalMunicipalApproval,
+        projectId: app.projectId,
+        outcome: input.outcome,
+        votedOn: input.votedOn,
+        boardKind,
+      },
+      signal,
+    )
     await planDeliveries(tx, { decisionId: row?.id ?? '' }, signal)
     await writeAudit(
       tx,

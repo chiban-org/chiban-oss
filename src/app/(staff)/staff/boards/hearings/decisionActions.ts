@@ -162,6 +162,7 @@ export async function addAppealNodeAction(formData: FormData): Promise<ActionRes
         before_parent: 'occurredOn',
         duplicate_step: 'kind',
         route_not_allowed: 'kind',
+        not_final: 'kind',
         wrong_outcome: 'outcome',
       })
     },

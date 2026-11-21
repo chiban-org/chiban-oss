@@ -16,6 +16,8 @@ const { HearingsPanel } = await import('./hearingsPanel')
 
 afterEach(cleanup)
 
+const LAST_APPROVAL = 'This is the last municipal approval the project needs'
+
 const base = {
   applicationId: 'a1',
   hearings: [],
@@ -41,10 +43,23 @@ describe('recording a decision without a hearing', () => {
       meetings: [{ id: 'm1', text: 'April 14, 2027' }],
       seatedMembers: ['Avery Stone'],
       today: '2027-04-20',
+      offerFinalApproval: false,
     })
     fireEvent.click(screen.getByText('Record a decision without a hearing'))
     expect(screen.getByRole('option', { name: 'April 14, 2027' })).toBeTruthy()
     expect(screen.getByLabelText(/^Findings of fact/)).toBeTruthy()
+    expect(screen.queryByLabelText(LAST_APPROVAL)).toBeNull()
+  })
+
+  it('asks whether this is the last approval when the pack waits for one', () => {
+    renderPanel({
+      meetings: [{ id: 'm1', text: 'April 14, 2027' }],
+      seatedMembers: ['Avery Stone'],
+      today: '2027-04-20',
+      offerFinalApproval: true,
+    })
+    fireEvent.click(screen.getByText('Record a decision without a hearing'))
+    expect(screen.getByRole('checkbox', { name: LAST_APPROVAL })).toBeTruthy()
   })
 
   it('offers nothing when the classification needs a hearing', () => {

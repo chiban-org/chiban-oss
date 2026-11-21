@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { parseConditions, parseVotes } from '@/features/decisions/formParsing'
 import {
+  checkbox,
   choice,
   civilDate,
   inputField,
@@ -99,6 +100,7 @@ const DECISION_FIELDS = {
     parseConditions(v ?? ''),
   ),
   reasons: optionalText('the reasons', { max: 10000 }),
+  finalMunicipalApproval: checkbox(),
 }
 
 export const RECORD_DECISION_FORM = z.object({ ...DECISION_FIELDS, hearingId: hearingId() })

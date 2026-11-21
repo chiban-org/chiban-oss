@@ -43,6 +43,7 @@ export const StartEventSchema = z.enum([
   'board_vote',
   'decision_filed',
   'rehearing_vote',
+  'project_final_approval',
   'administrative_decision',
   'order_served',
   'cure_notice_sent',

@@ -1,24 +1,21 @@
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { appealNodes, clocks } from '@/db/schema'
+import { appealNodes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { recordAppealAuthorizedByCaller } from '@/features/appeals/appeals'
+import {
+  chooseRoute,
+  finalityForRoute,
+  waitsForFinality,
+  windowDue,
+} from '@/features/appeals/routeWindow'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { planAppealDecisionDelivery } from '@/features/decisions/appealDelivery'
-import { packHolidayCalendar } from '@/features/packs/holidays'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { activePack } from '@/features/packs/registry'
-import type {
-  AppealNodeKind,
-  AppealRoute,
-  BoardKind,
-  DecisionOutcome,
-} from '@/features/packs/schema'
+import type { AppealNodeKind, BoardKind, DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -32,6 +29,7 @@ export type AppealError =
   | 'future_date'
   | 'before_parent'
   | 'duplicate_step'
+  | 'not_final'
 
 export interface AddNodeInput {
   parentId: string
@@ -64,78 +62,6 @@ export async function recordDecisionNode(
     outcome: input.outcome,
     createdBy: input.createdBy,
   })
-}
-
-function routeSpecificity(when: AppealRoute['when']): number {
-  if (when === undefined) return 0
-  return (
-    (when.outcome === undefined ? 0 : 1) +
-    (when.linkedComponent === undefined ? 0 : 1) +
-    (when.finalReviewBoard === undefined ? 0 : 1)
-  )
-}
-
-function routeApplies(
-  when: NonNullable<AppealRoute['when']>,
-  facts: { outcome: 'granted' | 'denied' | null; linkedComponent: boolean },
-): boolean {
-  if (when.outcome !== undefined && when.outcome !== facts.outcome) return false
-  return when.linkedComponent === undefined || when.linkedComponent === facts.linkedComponent
-}
-
-function chooseRoute(
-  parent: NodeRow,
-  input: AddNodeInput,
-): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
-  const afterRehearing = parent.kind === 'rehearing_outcome'
-  const facts = {
-    outcome: afterRehearing
-      ? parent.outcome === 'granted'
-        ? ('granted' as const)
-        : ('denied' as const)
-      : null,
-    linkedComponent: afterRehearing
-      ? parent.linkedPbNodeId !== null
-      : input.linkedComponent === true,
-  }
-  const hit = activePack()
-    .appealRoutes.filter((r) => r.from === parent.kind && r.to === input.kind)
-    .filter((r) => r.when === undefined || routeApplies(r.when, facts))
-    .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
-  return hit === undefined ? err('route_not_allowed') : ok(hit)
-}
-
-async function windowDue(
-  tx: Tx,
-  parent: NodeRow,
-  applicationId: string | null,
-  ruleKey: string,
-): Promise<CivilDate> {
-  if (applicationId !== null) {
-    const [clock] = await tx
-      .select({ currentDue: clocks.currentDue })
-      .from(clocks)
-      .where(
-        and(
-          eq(clocks.applicationId, applicationId),
-          eq(clocks.ruleKey, ruleKey),
-          eq(clocks.startDate, parent.occurredOn),
-          ne(clocks.status, 'superseded'),
-        ),
-      )
-      .orderBy(desc(clocks.createdAt))
-      .limit(1)
-    if (clock !== undefined) return clock.currentDue as CivilDate
-  }
-  const rule = ruleByKey(loadPack(), ruleKey)
-  const length = rule.kind === 'clock' && 'value' in rule.length ? rule.length : null
-  if (rule.kind !== 'clock' || length === null) return parent.occurredOn as CivilDate
-  return computeRuleDue(
-    rule,
-    { unit: length.unit, value: length.value },
-    parent.occurredOn as CivilDate,
-    packHolidayCalendar(),
-  ).due
 }
 
 function linkedNodeFor(parent: NodeRow, input: AddNodeInput): string | null {
@@ -236,8 +162,10 @@ export async function addAppealNode(
   if (await isAfterTownToday(db, input.occurredOn, now, signal)) return err('future_date')
   const [parent] = await db.select().from(appealNodes).where(eq(appealNodes.id, input.parentId))
   if (parent === undefined) return err('not_found')
-  const route = chooseRoute(parent, input)
+  const finality = await finalityForRoute(db, parent, input.kind, signal)
+  const route = chooseRoute(parent, input, finality)
   if (!route.ok) return route
+  if (waitsForFinality(parent, input.kind, route.value, finality)) return err('not_final')
   if (compareCivil(input.occurredOn, parent.occurredOn as CivilDate) < 0)
     return err('before_parent')
   if (
@@ -268,7 +196,11 @@ export async function addAppealNode(
     }
     let untimely = false
     if (route.value.windowRuleKey !== null) {
-      const due = await windowDue(tx, parent, clockApplicationId, route.value.windowRuleKey)
+      const due = await windowDue(tx, parent, {
+        applicationId: clockApplicationId,
+        ruleKey: route.value.windowRuleKey,
+        finality,
+      })
       untimely = compareCivil(input.occurredOn, due) > 0
       if (clockApplicationId !== null) {
         await markClockMet(

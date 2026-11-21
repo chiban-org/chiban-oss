@@ -48,6 +48,7 @@ const START_EVENTS: Record<StartEvent, string> = {
   get rehearing_vote() {
     return `the board votes on the ${rehearingWords().noun}`
   },
+  project_final_approval: 'the project has its final municipal approval',
   administrative_decision: 'the administrative decision',
   order_served: 'the order is served',
   cure_notice_sent: 'the cure notice is sent',

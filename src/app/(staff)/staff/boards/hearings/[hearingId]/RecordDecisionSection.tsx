@@ -26,6 +26,7 @@ export function RecordDecisionSection({ view, today }: { view: HearingView; toda
           today={today}
           defaultVotedOn={view.defaultVotedOn}
           minVotedOn={view.defaultVotedOn}
+          offerFinalApproval={view.offerFinalApproval}
         />
       </ActionForm>
     </section>

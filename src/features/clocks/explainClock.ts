@@ -22,6 +22,7 @@ export const START_EVENT_LABELS: Record<string, string> = {
   get rehearing_vote() {
     return `${rehearingWords().capitalised} vote`
   },
+  project_final_approval: 'Final municipal approval of the project',
   administrative_decision: 'Administrative decision',
   order_served: 'Order served',
   cure_notice_sent: 'Cure notice sent',

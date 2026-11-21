@@ -1,4 +1,4 @@
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 
 const OUTCOMES: [string, string][] = [
   ['approved', 'Approved'],
@@ -19,11 +19,13 @@ export function DecisionFields({
   today,
   defaultVotedOn,
   minVotedOn,
+  offerFinalApproval = false,
 }: {
   seated: string[]
   today: string
   defaultVotedOn?: string
   minVotedOn?: string
+  offerFinalApproval?: boolean
 }) {
   return (
     <>
@@ -46,6 +48,12 @@ export function DecisionFields({
         hint="One per line. Start a line with Before issuance: if it must be met first."
       />
       <AreaField label="Reasons for disapproval" name="reasons" hint="Required when denied." />
+      {offerFinalApproval ? (
+        <CheckField
+          label="This is the last municipal approval the project needs"
+          name="finalMunicipalApproval"
+        />
+      ) : null}
     </>
   )
 }

@@ -22,6 +22,8 @@ export const projects = pgTable(
       .notNull()
       .references(() => parcels.id),
     title: text('title').notNull(),
+    finalApprovalOn: date('final_approval_on', { mode: 'string' }),
+    finalReviewBoard: text('final_review_board'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
