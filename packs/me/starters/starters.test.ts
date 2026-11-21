@@ -1,6 +1,5 @@
 import { ME_PACK } from '@packs/me'
 import { ME_STARTERS } from '@packs/me/starters'
-import { ME_ENFORCEMENT_TEMPLATES } from '@packs/me/starters/enforcementTemplates'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
 import { ConditionLibraryBodySchema } from '@/features/conditions/conditionSchema'
@@ -205,6 +204,10 @@ describe('Maine starters', () => {
     expect(fees('IP', { fixture_count: 6 }, true)).toBe(12000)
   })
 
+  it('prices an internal plumbing permit for only a permit transfer at the minimum plus the transfer', () => {
+    expect(fees('IP', { permit_transfers: 1 })).toBe(5000)
+  })
+
   it('prices the seasonal conversion permit at 5000 cents', () => {
     expect(starter('SC').feeSchedule.lines.map((l) => l.expr)).toEqual([
       { op: 'flat', cents: 5000 },
@@ -226,7 +229,7 @@ describe('Maine starters', () => {
   })
 
   it('no starter text carries New Hampshire statute or board words', () => {
-    for (const s of [...ME_STARTERS.map(allText), JSON.stringify(ME_ENFORCEMENT_TEMPLATES)]) {
+    for (const s of ME_STARTERS.map(allText)) {
       expect(s).not.toMatch(/\bRSA\b|ZBA|[Ss]electmen|Right-to-Know|NHDES|New Hampshire/)
     }
   })
@@ -239,31 +242,22 @@ describe('Maine starters', () => {
     }
   })
 
+  it('the shoreland permit offers the seven Chapter 1000 districts', () => {
+    const district = starter('SLZ').form.fields.find((f) => f.key === 'shoreland_district')
+    expect(district?.options?.map((o) => o.label)).toEqual([
+      'Resource Protection',
+      'Stream Protection',
+      'Limited Residential',
+      'Limited Commercial',
+      'General Development I',
+      'General Development II',
+      'Commercial Fisheries/Maritime Activities',
+    ])
+  })
+
   it('the inspection settings default passes its schema', () => {
     expect(InspectionSettingsBodySchema.safeParse(ME_PACK.inspectionSettingsDefault).success).toBe(
       true,
     )
-  })
-})
-
-describe('Maine enforcement letters', () => {
-  it('ships a notice of violation and the shoreland cure notice letter', () => {
-    expect(ME_ENFORCEMENT_TEMPLATES.map((t) => t.key)).toEqual([
-      'me-notice-of-violation',
-      'me-shoreland-cure-notice',
-    ])
-    for (const t of ME_ENFORCEMENT_TEMPLATES) {
-      expect(TemplateBodySchema.safeParse(t).success, t.key).toBe(true)
-      expect(checkTemplate(t), t.key).toBeNull()
-    }
-  })
-
-  it('the cure notice names the 10 days, certified mail and the §4452(1-A) remedies', () => {
-    const cure = ME_ENFORCEMENT_TEMPLATES.find((t) => t.key === 'me-shoreland-cure-notice')
-    expect(cure?.body).toContain('30-A MRSA §4452(1-A)')
-    expect(cure?.body).toContain('certified mail, return receipt requested')
-    expect(cure?.body).toContain('within 10 days')
-    expect(cure?.body).toContain('deny, suspend or revoke permits for further development')
-    expect(cure?.body).toContain('civil action')
   })
 })

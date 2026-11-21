@@ -26,7 +26,8 @@ export const SHORELAND_STARTER = permitStarter({
         { value: 'stream_protection', label: 'Stream Protection' },
         { value: 'limited_residential', label: 'Limited Residential' },
         { value: 'limited_commercial', label: 'Limited Commercial' },
-        { value: 'general_development', label: 'General Development' },
+        { value: 'general_development_1', label: 'General Development I' },
+        { value: 'general_development_2', label: 'General Development II' },
         {
           value: 'commercial_fisheries',
           label: 'Commercial Fisheries/Maritime Activities',
