@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { recordId, requiredText } from '@/features/input/schemas'
 import { RETIRED_PARCEL_COPY, startApplication } from '@/features/portal/drafts'
 import type { ActionResult } from '@/server/actionRunner'
@@ -11,6 +12,7 @@ import { withPortalActor } from '@/server/portalAction'
 const START_COPY = {
   unknown_parcel: 'That parcel was not found.',
   retired_parcel: RETIRED_PARCEL_COPY,
+  parcel_held: HELD_PARCEL_COPY,
   not_published: 'That kind of application is not available online.',
   config_inconsistent: 'That application is not ready yet. Ask the land use office.',
   forbidden: 'You cannot start this application.',

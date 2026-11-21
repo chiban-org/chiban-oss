@@ -1,0 +1,1 @@
+ALTER TABLE "notice_sets" ADD COLUMN "abutter_list_id" uuid;

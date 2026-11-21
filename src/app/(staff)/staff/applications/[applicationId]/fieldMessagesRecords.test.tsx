@@ -57,8 +57,10 @@ function view(overrides: Record<string, unknown>): StaffApplicationView {
     state: 'under_review',
     today: '2026-11-06',
     substeps: [],
-    permissions: { canIssue: true, canDetermineRegionalImpact: true },
+    permissions: { canIssue: true, canRecordAppeal: true, canDetermineRegionalImpact: true },
     appeals: [],
+    varianceValidity: 'not_required',
+    reliance: null,
     regionalImpact: { applies: true, determination: null, notices: [] },
     ...overrides,
   } as unknown as StaffApplicationView
@@ -90,7 +92,7 @@ describe('record forms show a refusal beside its field', () => {
 
   it('the appellant name', async () => {
     refuseWith('appellantName', 'Enter the appellant name.')
-    inProvider(<AppealsPanel view={view({ state: 'issued' })} graph={[]} />)
+    inProvider(<AppealsPanel view={view({ state: 'issued', acceptsAppeal: true })} graph={[]} />)
     fireEvent.change(screen.getByLabelText(/Appellant/), { target: { value: ' ' } })
     fireEvent.click(screen.getByRole('button', { name: 'Record appeal' }))
     await expectRefusalBeside(screen.getByLabelText(/Appellant/), 'Enter the appellant name.')

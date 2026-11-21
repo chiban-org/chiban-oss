@@ -1,6 +1,8 @@
 import { missingBoardMessage } from '@/features/boards/townBoards'
+import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { channelLabel } from '@/features/notices/channels'
 import type { BoardKind } from '@/features/packs/schema'
+import { rehearingWords } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const COPY: Record<string, string> = {
@@ -55,6 +57,7 @@ const COPY: Record<string, string> = {
   fees_incomplete: 'The notice cost could not be worked out from the issued list.',
   invalid_state: 'That step is not available from the current state.',
   unknown_parcel: 'That parcel ID was not found.',
+  parcel_held: HELD_PARCEL_COPY,
   no_issued_list: 'Issue the abutter list before scheduling a hearing.',
   list_out_of_date:
     'The abutter list was issued before the regional impact or water proximity finding. Draw and issue a new list first.',
@@ -72,6 +75,8 @@ const COPY: Record<string, string> = {
     'Choose a file uploaded as the minutes, certificate, or receipt, not the application or a generated notice.',
   item_not_found: 'Choose at least one notice item.',
   hearing_not_held: 'The hearing has not been held yet.',
+  hearing_required: 'This kind of application needs a hearing before a decision.',
+  meeting_required: 'Choose the meeting the decision was made at.',
   votes_inconsistent: 'The member votes do not add up to the totals.',
   already_filed: 'This decision has already been filed.',
   no_written_decision: 'Generate the Notice of Decision before filing.',
@@ -81,9 +86,19 @@ const COPY: Record<string, string> = {
   contacts_missing: 'Add the regional planning commission and affected municipalities in Settings.',
   no_clock: 'The transmittal deadline was not started for this application.',
   route_not_allowed: 'That step does not follow from the one you chose.',
-  wrong_outcome: 'Choose whether the rehearing was granted or denied.',
+  get wrong_outcome() {
+    return `Choose whether the ${rehearingWords().noun} was granted or denied.`
+  },
   before_parent: 'The date cannot be before the step it follows.',
   duplicate_step: 'That step is already recorded after the one it follows.',
+  already_final:
+    'The project already has its last municipal approval, recorded on another decision.',
+  before_reinstatement:
+    'The filing date cannot be before the permit last went back into force after an appeal or a hold.',
+  filed_during_hold:
+    'Record an appeal filed during a hold while the hold stands. This appeal is dated before the permit went back into force.',
+  not_final:
+    'The project did not have its last municipal approval on that date, so the appeal period had not started.',
   no_route: 'No Technical Review Committee route is set for this application type.',
   staff_account: 'That email belongs to a staff account. Board members need their own account.',
   send_failed:
@@ -95,6 +110,16 @@ const COPY: Record<string, string> = {
   packet_exists:
     'This meeting already has a packet. Change it in the Packet section of the meeting page.',
   already_published: 'This agenda is already on the public site. Reopen it to change it.',
+  already_recorded: 'The delivery to this recipient is already recorded.',
+  supplier_required: 'Choose the water supplier for the protection area.',
+  unknown_supplier: 'That water supplier has no contact on file. Add it in Settings first.',
+  no_receipt_requirements: 'This kind of application has no notices due on receipt.',
+  already_prepared: 'The receipt notices are already prepared.',
+  not_approving: 'Only an approval can be recorded at the registry.',
+  no_final_written_approval: 'Record the date of the final written approval first.',
+  before_approval: 'The recording cannot be dated before the final written approval.',
+  after_period: 'The recording is dated after the period for recording ended.',
+  method_not_allowed: 'That way of delivering the decision is not one the rules allow.',
 }
 
 const FALLBACK = 'Something went wrong. Try again.'

@@ -31,6 +31,8 @@ const NEW_CODES = [
   'already_published',
   'wrong_document',
   'before_vote',
+  'already_recorded',
+  'method_not_allowed',
 ]
 
 describe('boardErrorCopy for hearings, decisions, and notices', () => {

@@ -27,6 +27,7 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
     'board.final_approval.record': 'Recorded final approval',
     'board.regional_impact.record': 'Recorded the board regional impact finding',
     'board.reliance.link': 'Linked a variance this application relies on',
+    'board.reliance.unlink': 'Removed the link to a variance this application relied on',
     'board.terminate_unpaid_notice_costs': 'Ended the application for unpaid notice costs',
     'board.completeness.accepted': 'Recorded the board accepting the application as complete',
     'board.completeness.not_accepted': 'Recorded the board finding the application incomplete',

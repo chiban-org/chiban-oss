@@ -102,6 +102,7 @@ describe('changing the applicant parcels', () => {
           subjectId: crypto.randomUUID(),
           applicationId: lw.applicationId,
           anchorDate: '2027-04-14' as CivilDate,
+          stage: 'before_hearing',
         },
         signal,
       ),

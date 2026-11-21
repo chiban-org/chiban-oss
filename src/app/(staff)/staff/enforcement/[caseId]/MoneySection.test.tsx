@@ -96,3 +96,57 @@ describe('the payment form', () => {
     expect(payment?.querySelector('button')?.textContent).toContain('Record payment')
   })
 })
+
+describe('the penalty exposure', () => {
+  const rangeExposure = (fromDate: string | null, days: number) => ({
+    kind: 'range' as const,
+    fromDate,
+    days,
+    label: 'Statutory range, set by the court',
+    categories: [{ key: 'a', label: 'No permit', minCentsPerDay: 10000, maxCentsPerDay: 250000 }],
+    aggravations: [
+      { key: 'b', label: 'Prior conviction within 2 years', maxCentsPerDay: 50000 },
+      { key: 'c', label: 'Economic benefit', maxMultipleOfBenefit: 2 },
+    ],
+  })
+  const range = stubDetail({ exposure: rangeExposure('2027-03-05', 10) })
+
+  it('renders the statutory range and no estimate', () => {
+    renderForm(<MoneySection detail={range} can={ALL_CAN} />)
+    expect(screen.getByText('Statutory range, set by the court')).toBeTruthy()
+    expect(screen.getByText('No permit: $100.00 to $2,500.00 per day')).toBeTruthy()
+    expect(screen.getByText('Prior conviction within 2 years: up to $500.00 per day')).toBeTruthy()
+    expect(screen.getByText('Economic benefit: up to 2 times the economic benefit')).toBeTruthy()
+    expect(screen.queryByText(/estimated \$/)).toBeNull()
+  })
+
+  it('ends the accrual line of a range with one period, started or not', () => {
+    renderForm(<MoneySection detail={range} can={ALL_CAN} />)
+    expect(screen.getByText('Accrual began March 5, 2027. 10 days.')).toBeTruthy()
+    cleanup()
+    const notStarted = stubDetail({ exposure: rangeExposure(null, 0) })
+    renderForm(<MoneySection detail={notStarted} can={ALL_CAN} />)
+    expect(
+      screen.getByText(
+        'Accrual has not started: no written notice has been received and no conviction has been recorded.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('renders a computed estimate for a fixed daily rule', () => {
+    const fixed = stubDetail({
+      exposure: {
+        kind: 'computed',
+        fromDate: '2027-02-10',
+        days: 10,
+        cents: 275000,
+        label:
+          'Estimated statutory exposure for counsel. Nothing is owed unless a court imposes it.',
+      },
+    })
+    renderForm(<MoneySection detail={fixed} can={ALL_CAN} />)
+    expect(
+      screen.getByText('Accrual began February 10, 2027. 10 days, estimated $2,750.00.'),
+    ).toBeTruthy()
+  })
+})

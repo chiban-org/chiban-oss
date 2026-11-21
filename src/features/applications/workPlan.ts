@@ -1,3 +1,4 @@
+import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
 import { type NextStepPlan, planNextStep } from './nextStep'
@@ -31,6 +32,7 @@ export type PlanView = Pick<
   | 'allowsDirectIssue'
   | 'clocks'
   | 'regionalImpact'
+  | 'heldParcel'
 >
 
 export interface WorkPlanExtras {
@@ -141,7 +143,7 @@ function stepFrom(row: Requirement, secondary: PlanAction[]): NowStep {
   }
 }
 
-function moveStep(moves: NextStepPlan, secondary: PlanAction[]): NowStep | null {
+function moveStep(moves: NextStepPlan, secondary: PlanAction[], held: boolean): NowStep | null {
   if (moves.lead === null) return null
   const { to } = moves.lead
   const step = {
@@ -153,7 +155,11 @@ function moveStep(moves: NextStepPlan, secondary: PlanAction[]): NowStep | null 
   }
   return moves.leadAllowed
     ? { ...step, note: null, action: { kind: 'move', to } }
-    : { ...step, note: 'Your role cannot make this move.', action: null }
+    : {
+        ...step,
+        note: held && to === 'issued' ? null : 'Your role cannot make this move.',
+        action: null,
+      }
 }
 
 function nowStep(
@@ -178,7 +184,7 @@ function nowStep(
       warnings: [],
     }
   }
-  return moveStep(moves, secondary)
+  return moveStep(moves, secondary, view.heldParcel === true)
 }
 
 function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | null {
@@ -224,10 +230,14 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
+  const held =
+    view.heldParcel === true
+      ? addWarning(plan, { key: 'parcel.held', text: HELD_ISSUE_COPY })
+      : plan
   const withConflict =
     conflict === null
-      ? plan
-      : addWarning(plan, { key: 'board.meeting.deadline', text: conflict.warning })
+      ? held
+      : addWarning(held, { key: 'board.meeting.deadline', text: conflict.warning })
   return board?.missingBoard == null
     ? withConflict
     : addWarning(withConflict, { key: 'board.missing', text: board.missingBoard })

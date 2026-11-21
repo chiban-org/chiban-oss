@@ -47,6 +47,7 @@ const detail = stubDetail({
       documentId: null,
     },
   ],
+  cure: { choices: [], rule: null, notices: [] },
 })
 
 describe('adding a note', () => {

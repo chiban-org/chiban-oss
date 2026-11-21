@@ -8,6 +8,7 @@ import { buildingGateDefinitions } from '@/features/building/gates'
 import { censusClassification } from '@/features/census/classify'
 import { ruleChoicesFor } from '@/features/config/ruleChoices'
 import { decisionClockKeys } from '@/features/decisions/decisionClocks'
+import { varianceGateDefinitions } from '@/features/decisions/recordingGate'
 import { defaultParcelFileVisibility } from '@/features/documents/parcelVisibility'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
@@ -15,6 +16,7 @@ import { setActivePackForTest, withPackForTest } from '@/features/packs/registry
 import { packRoles } from '@/features/packs/roles'
 import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { XX_PACK } from '@/test/packs/xx'
+import { XX_VARIANCE_GATE, XX_VARIANCE_GATE_KEY } from '@/test/packs/xx/varianceGate'
 import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 
 afterEach(() => setActivePackForTest(null))
@@ -36,6 +38,16 @@ describe('a fictional pack with every optional role absent', () => {
     const nhKeys = buildingGateDefinitions().map((g) => g.key)
     expect(nhKeys).toEqual(['nh.bp.code_edition_recorded', 'nh.bp.regional_impact'])
     expect(regionalGateDefinitions().map((g) => g.key)).toEqual(['nh.ri.determination'])
+  })
+
+  it('registers the variance gate only when a pack names it', () => {
+    expect(varianceGateDefinitions()).toEqual([])
+    withPackForTest(XX_PACK, () => expect(varianceGateDefinitions()).toEqual([]))
+    withPackForTest(XX_VARIANCE_GATE, () =>
+      expect(varianceGateDefinitions().map((g) => [g.key, g.appliesTo, g.boundBy])).toEqual([
+        [XX_VARIANCE_GATE_KEY, ['issued', 'decided'], null],
+      ]),
+    )
   })
 
   it('offers no code edition record for its building permits', () => {

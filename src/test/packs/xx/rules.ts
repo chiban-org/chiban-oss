@@ -102,6 +102,7 @@ export const XX_RULES: PackRule[] = [
     channel: 'verified_mail',
     recipients: { roles: ['applicant', 'abutter_owner'] },
     leadRuleKey: 'xx.zba.notice_lead',
+    stage: 'before_hearing',
     overridePolicy: { policy: 'fixed' },
   },
 ]

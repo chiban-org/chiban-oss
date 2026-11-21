@@ -98,7 +98,10 @@ export async function recordAppealAction(formData: FormData): Promise<ActionResu
     if (!recorded.ok && recorded.error === 'future_date') {
       return refuseField('filedOn', FUTURE_FILING)
     }
-    return outcome(recorded, 'Appeal recorded. The permit is suspended.')
+    return outcome(recorded, 'Appeal recorded. The permit is suspended.', {
+      before_reinstatement: 'filedOn',
+      filed_during_hold: 'filedOn',
+    })
   })
 }
 
@@ -108,7 +111,10 @@ export async function resolveAppealAction(formData: FormData): Promise<ActionRes
     if (!resolved.ok && resolved.error === 'future_date') {
       return refuseField('resolvedOn', FUTURE_RESOLUTION)
     }
-    return outcome(resolved, 'Appeal resolved.', { before_filing: 'resolvedOn' })
+    return outcome(resolved, 'Appeal resolved.', {
+      before_filing: 'resolvedOn',
+      before_hold: 'resolvedOn',
+    })
   })
 }
 

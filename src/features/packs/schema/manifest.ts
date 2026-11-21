@@ -5,7 +5,11 @@ import {
   type ProceedingClassification,
   ProceedingClassificationSchema,
 } from './boards'
-import { CeaseAndDesistRuleSchema, CivilPenaltyRuleSchema } from './enforcement'
+import {
+  CeaseAndDesistRuleSchema,
+  CivilPenaltyRuleSchema,
+  CureNoticeRuleSchema,
+} from './enforcement'
 import {
   type CodeEditionEntry,
   CodeEditionEntrySchema,
@@ -16,6 +20,7 @@ import { roleIssues } from './roleChecks'
 import { type PackRoles, PackRolesSchema } from './roles'
 import {
   ClockRuleSchema,
+  DecisionDeliveryRuleSchema,
   EffectRuleSchema,
   GateRuleSchema,
   ListAgeRuleSchema,
@@ -35,8 +40,10 @@ export const PackRuleSchema = z
     EffectRuleSchema,
     TownSettingRuleSchema,
     NoticeRequirementRuleSchema,
+    DecisionDeliveryRuleSchema,
     CeaseAndDesistRuleSchema,
     CivilPenaltyRuleSchema,
+    CureNoticeRuleSchema,
   ])
   .refine(
     (r) =>
@@ -50,11 +57,73 @@ export const PackRuleSchema = z
   )
 export type PackRule = z.infer<typeof PackRuleSchema>
 
+function deliveryIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'decision_delivery') return []
+    const due = clockByKey.get(r.dueRuleKey)
+    const valid = due?.clockType === 'action_due' && due.startEvent === 'board_vote'
+    return valid
+      ? []
+      : [
+          `decision_delivery ${r.key} dueRuleKey ${r.dueRuleKey} must be an action_due clock started by board_vote`,
+        ]
+  })
+}
+
+function receiptStageIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'notice_requirement' || r.stage !== 'on_receipt') return []
+    const lead = clockByKey.get(r.leadRuleKey)
+    const valid = lead?.direction === 'after' && lead.startEvent === 'application_received'
+    return valid
+      ? []
+      : [
+          `notice_requirement ${r.key} is on_receipt and its lead clock ${r.leadRuleKey} must count after application_received`,
+        ]
+  })
+}
+
+function cureIssues(rules: PackRule[]): string[] {
+  const byKey = new Map(rules.map((r) => [r.key, r] as const))
+  return rules.flatMap((r) => {
+    if (r.kind !== 'cure_notice') return []
+    const issues: string[] = []
+    const cure = byKey.get(r.cureRuleKey)
+    if (
+      cure?.kind !== 'clock' ||
+      cure.clockType !== 'action_due' ||
+      cure.startEvent !== 'cure_notice_sent'
+    ) {
+      issues.push(
+        `cure_notice ${r.key} cureRuleKey ${r.cureRuleKey} must be an action_due clock started by cure_notice_sent`,
+      )
+    }
+    if (r.penaltyRuleKey !== null && byKey.get(r.penaltyRuleKey)?.kind !== 'civil_penalty') {
+      issues.push(
+        `cure_notice ${r.key} penaltyRuleKey ${r.penaltyRuleKey} must be a civil_penalty rule`,
+      )
+    }
+    return issues
+  })
+}
+
 function settingClockIssues(rules: PackRule[]): string[] {
   const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
   const issues: string[] = []
   for (const r of rules) {
     if (r.kind !== 'clock') continue
+    if (r.consequence.kind === 'deemed_refused' && r.clockType !== 'action_due') {
+      issues.push(`clock ${r.key} is deemed_refused and must be an action_due clock`)
+    }
+    if (r.consequence.kind === 'void_unless_recorded' && r.clockType !== 'action_due') {
+      issues.push(`clock ${r.key} is void_unless_recorded and must be an action_due clock`)
+    }
     if (!('fromSetting' in r.length)) {
       if (r.overridePolicy.policy === 'delegated_choice') {
         issues.push(
@@ -104,7 +173,13 @@ export const PackManifestSchema = z
       classificationKeys: new Set(m.classifications.map((c) => c.key)),
       seriesKeys: new Set(m.recordSeries.map((r) => r.key)),
     }
-    const issues = [...roleIssues(m.roles, targets), ...settingClockIssues(m.rules)]
+    const issues = [
+      ...roleIssues(m.roles, targets),
+      ...settingClockIssues(m.rules),
+      ...deliveryIssues(m.rules),
+      ...receiptStageIssues(m.rules),
+      ...cureIssues(m.rules),
+    ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })
 export type PackManifestData = z.infer<typeof PackManifestSchema>

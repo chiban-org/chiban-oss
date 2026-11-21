@@ -5,6 +5,7 @@ import type { BoardPanelData } from '@/features/boards/panelData'
 import { DecisionSection } from './boardDecisionSection'
 import { MeetingForm, VoteFormBody } from './boardForms'
 import { CostSection, DeterminationSection, ListSection } from './boardPanelSections'
+import { ReceiptSection } from './receiptSection'
 
 function voteSummary(data: BoardPanelData, rejectOnly: boolean): string {
   if (rejectOnly) return 'Record that the board did not accept it'
@@ -100,6 +101,7 @@ export function BoardPanel({
       />
       <ListSection data={data} />
       <CostSection data={data} />
+      {data.receipt === null ? null : <ReceiptSection data={data.receipt} today={data.today} />}
       <DecisionSection data={data} />
     </section>
   )

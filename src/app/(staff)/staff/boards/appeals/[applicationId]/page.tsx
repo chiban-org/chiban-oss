@@ -6,9 +6,11 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadApplicationAppeals } from '@/features/appeals/adminAppeals'
 import { hasCapability } from '@/features/authz/capabilities'
+import { loadDeliveryGroups } from '@/features/decisions/deliveryView'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
+import { DeliverySection } from '../../decisions/[decisionId]/DeliverySection'
 import { AppealSteps } from './AppealSteps'
 
 export const metadata: Metadata = { title: 'Appeal of an administrative decision' }
@@ -29,6 +31,9 @@ export default async function ApplicationAppealsPage({
   const view = await loadApplicationAppeals(ctx.db, ctx.actor, applicationId, ctx.signal)
   if (view === null) notFound()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const deliveries = (await loadDeliveryGroups(ctx.db, applicationId, ctx.signal)).filter(
+    (g) => g.source === 'appeal',
+  )
   return (
     <main>
       <PageHeader
@@ -45,10 +50,15 @@ export default async function ApplicationAppealsPage({
         {view.nodeChoices.length === 0 ? null : (
           <details open={view.graph.length === 1}>
             <summary>Record an appeal step</summary>
-            <AppealSteps nodeChoices={view.nodeChoices} today={today} />
+            <AppealSteps
+              nodeChoices={view.nodeChoices}
+              today={today}
+              offerFinalApproval={view.offerFinalApproval}
+            />
           </details>
         )}
       </section>
+      {deliveries.length === 0 ? null : <DeliverySection groups={deliveries} today={today} />}
     </main>
   )
 }

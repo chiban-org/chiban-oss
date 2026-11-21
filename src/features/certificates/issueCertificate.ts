@@ -8,7 +8,7 @@ import { nextNumber } from '@/features/applications/createApplication'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { requireCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { buildCertificatePdf } from '@/features/certificates/certificatePdf'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
@@ -181,8 +181,9 @@ export async function issueCertificateOfOccupancy(
   Result<{ certificateId: string; number: string; documentId: string }, IssueCertificateError>
 > {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'permit.issue', signal)
-  if (!allowed.ok) return err('forbidden')
+  if (!(await mayActOnApplication(db, actor, 'permit.issue', input.applicationId, signal))) {
+    return err('forbidden')
+  }
   const today = await townToday(db, deps.now ?? new Date(), signal)
   return await transactionResult(db, (tx) =>
     issueInTransaction(tx, store, actor, input, today, signal),

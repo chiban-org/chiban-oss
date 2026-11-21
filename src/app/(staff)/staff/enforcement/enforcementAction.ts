@@ -74,6 +74,29 @@ const COPY: Record<string, string> = {
     'This case is shown on the public site. Write the public text for that complaint on its own case first.',
   complaint_text_unreviewed:
     'Write the public text for every complaint before showing the case on the public site.',
+  no_cure_procedure: 'Choose the cure procedure for this case before sending a cure notice.',
+  no_open_findings: 'Choose at least one open finding for the cure notice.',
+  unknown_rule: 'This town has no such cure procedure.',
+  notice_sent: 'A cure notice was already sent, so the procedure cannot be changed.',
+  before_sent: 'The return receipt cannot be dated before the notice was mailed.',
+  future_date: 'The date cannot be in the future.',
+  no_parcel: 'Link this case to a parcel before placing a development hold.',
+  remedy_not_available: 'The cure procedure for this case does not provide that remedy.',
+  cure_not_lapsed:
+    'The cure period has not run out on that date, or every noticed violation was corrected.',
+  already_held: 'This parcel already has an enforcement hold.',
+  already_released: 'This hold was already released.',
+  after_released: 'This hold was released, so it no longer acts on permits.',
+  before_placed: 'The date cannot be before the hold was placed.',
+  before_suspension: 'The date cannot be before the permit was suspended under the hold.',
+  before_reinstatement:
+    'The date cannot be before the permit last went back into force after an appeal or an earlier hold.',
+  before_appeal_resolution:
+    'The release date cannot be before an appeal on a permit this hold suspends was resolved.',
+  findings_open: 'Mark every finding corrected or withdrawn before releasing the hold.',
+  balance_due: 'Collect every fine and cost on this case before releasing the hold.',
+  not_on_parcel: 'That permit is not on the held parcel.',
+  not_issued: 'Only an issued permit can be suspended or revoked under the hold.',
   verification_required:
     'Anonymous intake needs a passing retention check for the version that is running.',
 }

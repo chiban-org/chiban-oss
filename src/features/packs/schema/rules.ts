@@ -37,12 +37,16 @@ export const StartEventSchema = z.enum([
   'regional_impact_notice_mailed',
   'acceptance_meeting_set',
   'application_accepted',
+  'hearing_held',
   'final_approval',
+  'final_written_approval',
   'board_vote',
   'decision_filed',
   'rehearing_vote',
+  'project_final_approval',
   'administrative_decision',
   'order_served',
+  'cure_notice_sent',
   'judgment_entered',
   'rtk_request_received',
   'rtk_time_statement',
@@ -121,6 +125,8 @@ export const ClockRuleSchema = z
         'amendment_window_opens',
         'appeal_untimely',
         'enforcement_step_opens',
+        'deemed_refused',
+        'void_unless_recorded',
       ]),
       text: z.string().min(1),
     }),
@@ -134,6 +140,8 @@ export const ClockRuleSchema = z
     waivable: z.boolean(),
     onlyWhen: FactConditionSchema.optional(),
     relianceFloorMonths: z.number().int().positive().optional(),
+    cancelledBy: StartEventSchema.optional(),
+    satisfiedByDecision: z.boolean().optional(),
     overridePolicy: OverridePolicySchema,
   })
   .refine(
@@ -212,7 +220,32 @@ export const NoticeRequirementRuleSchema = z.object({
     z.object({ public: z.literal(true) }),
   ]),
   leadRuleKey: z.string().min(1),
-  onlyWhen: z.enum(['regional_impact_yes', 'des_within_500ft']).optional(),
+  onlyWhen: z.enum(['regional_impact_yes', 'des_within_500ft', 'source_water_area']).optional(),
+  stage: z.enum(['before_hearing', 'on_receipt']).default('before_hearing'),
   overridePolicy: OverridePolicySchema,
 })
 export type NoticeRequirementRule = z.infer<typeof NoticeRequirementRuleSchema>
+
+export const DELIVERY_RECIPIENTS = [
+  'applicant',
+  'agent',
+  'planning_board',
+  'municipal_officers',
+] as const
+export const DeliveryRecipientSchema = z.enum(DELIVERY_RECIPIENTS)
+export type DeliveryRecipient = z.infer<typeof DeliveryRecipientSchema>
+
+export const DELIVERY_METHODS = ['mail', 'hand'] as const
+export const DeliveryMethodSchema = z.enum(DELIVERY_METHODS)
+export type DeliveryMethod = z.infer<typeof DeliveryMethodSchema>
+
+export const DecisionDeliveryRuleSchema = z.object({
+  ...base,
+  kind: z.literal('decision_delivery'),
+  boardKinds: z.array(BoardKindSchema).min(1),
+  recipients: z.array(DeliveryRecipientSchema).min(1),
+  methods: z.array(DeliveryMethodSchema).min(1),
+  dueRuleKey: z.string().min(1),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type DecisionDeliveryRule = z.infer<typeof DecisionDeliveryRuleSchema>

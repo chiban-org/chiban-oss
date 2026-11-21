@@ -14,6 +14,7 @@ const EMPTY_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, a
 export interface RequirementFlags {
   regionalImpact: boolean
   desWithin: boolean
+  sourceWaterArea?: boolean | null
 }
 
 export interface PlannedRequirement {
@@ -30,6 +31,7 @@ export interface PlanInput {
   flags: RequirementFlags
   townLeadDays: Record<string, number>
   publicChoice: 'public_posting' | 'newspaper' | null
+  stage?: NoticeRequirementRule['stage']
 }
 
 function channelOf(rule: NoticeRequirementRule, choice: PlanInput['publicChoice']): NoticeChannel {
@@ -43,7 +45,7 @@ export function planRequirement(
   rule: NoticeRequirementRule,
   input: PlanInput,
 ): PlannedRequirement | null {
-  if (!applies(rule, input.flags)) return null
+  if (!applies(rule, input.flags, input.stage ?? 'before_hearing')) return null
   const lead = ruleByKey(loadPack(), rule.leadRuleKey)
   if (lead.kind !== 'clock') return null
   const length = resolveRuleLength(lead, EMPTY_FACTS, null, input.townLeadDays[lead.key])

@@ -1,4 +1,5 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import { cureLinks, cureMethodPhrase, cureRecipientRoles } from '@/features/enforcement/cureRules'
 import { finesNeedJudgment } from '@/features/enforcement/fines'
 import { motionBlocks } from '@/features/enforcement/motionGate'
 import { missingOrderContent } from '@/features/enforcement/orderPdf'
@@ -13,9 +14,17 @@ import {
   serviceStatus,
 } from '@/features/enforcement/serviceStatus'
 import { NOT_STAYED } from '@/features/enforcement/stay'
-import type { CeaseAndDesistRule, CivilPenaltyRule, RecipientRole } from '@/features/packs/schema'
+import { remedyActions } from '@/features/enforcement/workPlanCure'
+import type {
+  CeaseAndDesistRule,
+  CivilPenaltyRule,
+  ClockRule,
+  CureNoticeRule,
+  PackRule,
+  RecipientRole,
+} from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
-import { attempt, type FieldProbe, packRule, probe } from './probe'
+import { attempt, type FieldProbe, packRule, packWith, probe } from './probe'
 import { observeRule, ruleProbes } from './ruleProbes'
 
 const d = (s: string) => s as CivilDate
@@ -158,10 +167,146 @@ function penaltyProbe(mutate: (r: CivilPenaltyRule) => CivilPenaltyRule): FieldP
   return probe<CivilPenaltyRule>({ base: penaltyRule, mutate, observe: observePenalty })
 }
 
+type RangePenalty = Extract<CivilPenaltyRule, { model: 'range_daily' }>
+
+const PROBE_RANGE: RangePenalty = {
+  kind: 'civil_penalty',
+  key: 'probe.range_penalty',
+  version: 1,
+  label: 'Probe range penalty',
+  citation: { label: 'Probe statute', url: 'https://laws.example/probe' },
+  model: 'range_daily',
+  categories: [{ key: 'one', label: 'Category one', minCentsPerDay: 1000, maxCentsPerDay: 5000 }],
+  aggravations: [
+    { key: 'cap', label: 'Capped', maxCentsPerDay: 3000 },
+    { key: 'multiple', label: 'Multiple', maxMultipleOfBenefit: 2 },
+  ],
+  accrual: 'after_earlier_of_conviction_or_written_notice',
+  imposedBy: 'court',
+  overridePolicy: { policy: 'fixed' },
+}
+
+function rangeProbe(mutate: (r: RangePenalty) => RangePenalty): FieldProbe {
+  return probe<RangePenalty>({
+    base: () => PROBE_RANGE,
+    mutate,
+    observe: (rule) => observePenalty(rule),
+  })
+}
+
+const firstCategory = (r: RangePenalty, change: Partial<RangePenalty['categories'][number]>) => ({
+  ...r,
+  categories: [{ ...r.categories[0], ...change } as RangePenalty['categories'][number]],
+})
+
+const aggravation = (
+  r: RangePenalty,
+  index: number,
+  change: Partial<RangePenalty['aggravations'][number]>,
+) => ({
+  ...r,
+  aggravations: r.aggravations.map((a, i) => (i === index ? { ...a, ...change } : a)),
+})
+
+const PROBE_CURE: CureNoticeRule = {
+  kind: 'cure_notice',
+  key: 'probe.cure',
+  version: 1,
+  label: 'Probe cure procedure',
+  citation: { label: 'Probe statute', url: 'https://laws.example/probe' },
+  occupant: 'if_applicable',
+  method: 'certified_mail_return_receipt',
+  cureRuleKey: 'probe.cure_period',
+  penaltyRuleKey: 'probe.cure_penalty',
+  remedies: { developmentHold: true, civilAction: true },
+  overridePolicy: { policy: 'fixed' },
+}
+
+const PROBE_CURE_CLOCK: ClockRule = {
+  kind: 'clock',
+  key: 'probe.cure_period',
+  version: 1,
+  label: 'Probe cure period',
+  citation: { label: 'Probe statute', url: 'https://laws.example/probe' },
+  clockType: 'action_due',
+  whose: 'third_party',
+  startEvent: 'cure_notice_sent',
+  length: { unit: 'days', value: 10 },
+  direction: 'after',
+  consequence: { kind: 'enforcement_step_opens', text: 'A remedy opens.' },
+  extension: { allowed: false, note: 'None.' },
+  waivable: false,
+  overridePolicy: { policy: 'fixed' },
+}
+
+const PROBE_CURE_PENALTY: CivilPenaltyRule = {
+  kind: 'civil_penalty',
+  key: 'probe.cure_penalty',
+  version: 1,
+  label: 'Probe penalty',
+  citation: { label: 'Probe statute', url: 'https://laws.example/probe' },
+  model: 'fixed_daily',
+  firstOffenseCentsPerDay: 1000,
+  subsequentCentsPerDay: 2000,
+  accrual: 'after_earlier_of_conviction_or_written_notice',
+  imposedBy: 'court',
+  overridePolicy: { policy: 'fixed' },
+}
+
+const PROBE_CURE_RULES: PackRule[] = [
+  PROBE_CURE_CLOCK,
+  { ...PROBE_CURE_CLOCK, key: 'probe.cure_period_alt' },
+  PROBE_CURE_PENALTY,
+  { ...PROBE_CURE_PENALTY, key: 'probe.cure_penalty_alt' },
+]
+
+function observeCure(rule: CureNoticeRule): unknown {
+  const lapsed = {
+    staff: { row: { status: 'violation_found' as const } },
+    today: d('2027-03-20'),
+    stay: { stayed: false, reason: null },
+    banner: null,
+    findings: [{ id: 'f1', status: 'open' as const }],
+    notices: [],
+    orders: [],
+    fines: [],
+    referrals: [],
+    cure: { rule, notices: [{ findingIds: ['f1'], due: d('2027-03-10'), returnReceiptOn: null }] },
+  }
+  const links = attempt(() => cureLinks(packWith(PROBE_CURE_RULES), rule))
+  return {
+    generic: observeRule(rule, rule),
+    links:
+      links === 'throws'
+        ? links
+        : [links.cure.key, links.penalty === null ? null : links.penalty.key],
+    remedies: remedyActions(lapsed).map((a) => a.kind),
+    recipients: [cureRecipientRoles(rule, true), cureRecipientRoles(rule, false)],
+    method: cureMethodPhrase(rule),
+  }
+}
+
+function cureProbe(mutate: (r: CureNoticeRule) => CureNoticeRule): FieldProbe {
+  return probe<CureNoticeRule>({ base: () => PROBE_CURE, mutate, observe: observeCure })
+}
+
 export function enforcementProbes(): Record<string, FieldProbe> {
   return {
     ...ruleProbes('cease_and_desist', ZONING, ['policy']),
     ...ruleProbes('civil_penalty', PENALTY, ['policy']),
+    ...ruleProbes('cure_notice', 'probe.cure', ['policy'], () => PROBE_CURE),
+    'cure_notice.occupant': cureProbe((r) => ({ ...r, occupant: 'never' as never })),
+    'cure_notice.method': cureProbe((r) => ({ ...r, method: 'first_class_mail' as never })),
+    'cure_notice.cureRuleKey': cureProbe((r) => ({ ...r, cureRuleKey: 'probe.cure_period_alt' })),
+    'cure_notice.penaltyRuleKey': cureProbe((r) => ({ ...r, penaltyRuleKey: null })),
+    'cure_notice.remedies.developmentHold': cureProbe((r) => ({
+      ...r,
+      remedies: { ...r.remedies, developmentHold: false },
+    })),
+    'cure_notice.remedies.civilAction': cureProbe((r) => ({
+      ...r,
+      remedies: { ...r.remedies, civilAction: false },
+    })),
     'cease_and_desist.contentFields': cdProbe((r) => ({
       ...r,
       contentFields: r.contentFields.filter((f) => f !== 'facts'),
@@ -208,6 +353,30 @@ export function enforcementProbes(): Record<string, FieldProbe> {
       ...r,
       subsequentCentsPerDay: 2000,
     })),
+    'civil_penalty.model': penaltyProbe((r) => ({
+      ...PROBE_RANGE,
+      key: r.key,
+      label: r.label,
+      citation: r.citation,
+    })),
+    'civil_penalty.categories.key': rangeProbe((r) => firstCategory(r, { key: 'other' })),
+    'civil_penalty.categories.label': rangeProbe((r) => firstCategory(r, { label: 'Other label' })),
+    'civil_penalty.categories.minCentsPerDay': rangeProbe((r) =>
+      firstCategory(r, { minCentsPerDay: 2000 }),
+    ),
+    'civil_penalty.categories.maxCentsPerDay': rangeProbe((r) =>
+      firstCategory(r, { maxCentsPerDay: 9000 }),
+    ),
+    'civil_penalty.aggravations.key': rangeProbe((r) => aggravation(r, 0, { key: 'other' })),
+    'civil_penalty.aggravations.label': rangeProbe((r) =>
+      aggravation(r, 0, { label: 'Other label' }),
+    ),
+    'civil_penalty.aggravations.maxCentsPerDay': rangeProbe((r) =>
+      aggravation(r, 0, { maxCentsPerDay: 4000 }),
+    ),
+    'civil_penalty.aggravations.maxMultipleOfBenefit': rangeProbe((r) =>
+      aggravation(r, 1, { maxMultipleOfBenefit: 3 }),
+    ),
     'civil_penalty.accrual': penaltyProbe((r) => ({ ...r, accrual: 'other' as never })),
     'civil_penalty.imposedBy': penaltyProbe((r) => ({ ...r, imposedBy: 'other' as never })),
   }

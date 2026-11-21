@@ -4,6 +4,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { loadApplicationContext } from '@/features/applications/context'
 import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnClassification } from '@/features/authz/classificationScope'
 import type { InspectionHistoryRow } from '@/features/inspections/history'
 import { listInspectionHistory } from '@/features/inspections/history'
 import { describeIntakeBlock, reinspectableFailureIds } from '@/features/inspections/lookup'
@@ -52,7 +53,13 @@ export async function loadInspectionsPanelData(
     'inspection.schedule',
     ctx.signal,
   )
-  const canIssue = await hasCapability(ctx.db, ctx.actor.userId, 'permit.issue', ctx.signal)
+  const canIssue = await mayActOnClassification(
+    ctx.db,
+    ctx.actor,
+    'permit.issue',
+    app?.typeBody.classification,
+    ctx.signal,
+  )
   const latestFinal = history
     .filter((h) => h.isFinal && (h.status === 'passed' || h.status === 'failed'))
     .sort((a, b) => (a.resultRecordedAt?.getTime() ?? 0) - (b.resultRecordedAt?.getTime() ?? 0))

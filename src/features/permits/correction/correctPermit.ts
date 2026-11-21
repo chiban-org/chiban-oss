@@ -157,7 +157,7 @@ export async function correctPermit(
   deps: CorrectionDeps = {},
 ): Promise<Result<{ revision: number; documentId: string }, CorrectionError>> {
   signal.throwIfAborted()
-  if (!(await mayCorrectPermits(db, actor, signal))) return err('forbidden')
+  if (!(await mayCorrectPermits(db, actor, input.applicationId, signal))) return err('forbidden')
   if (input.reason.trim() === '') return err('reason_required')
   if (input.projectTitle.trim() === '') return err('title_required')
   const store = deps.store ?? getObjectStore()

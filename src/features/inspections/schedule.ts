@@ -7,7 +7,7 @@ import { isProjectParty } from '@/features/access/queries'
 import { isSuspended } from '@/features/appeals/suspension'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability, requireCapability } from '@/features/authz/capabilities'
+import { mayActOnInspection, userMayActOnInspection } from '@/features/authz/classificationScope'
 import { queueCalendarPush } from '@/features/calendar/queuePush'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
@@ -277,8 +277,9 @@ export async function scheduleInspection(
   deps: ScheduleDeps = {},
 ): Promise<Result<{ calendarSequence: number; pushIds: string[] }, ScheduleError>> {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'inspection.schedule', signal)
-  if (!allowed.ok) return err('forbidden')
+  if (!(await mayActOnInspection(db, actor, 'inspection.schedule', input.inspectionId, signal))) {
+    return err('forbidden')
+  }
   const rules = await loadRules(db, deps.now ?? new Date(), signal)
   const [inspector] = await db
     .select({ isActive: users.isActive })
@@ -286,7 +287,13 @@ export async function scheduleInspection(
     .where(eq(users.id, input.inspectorUserId))
   const qualifies =
     inspector?.isActive === true &&
-    (await hasCapability(db, input.inspectorUserId, 'inspection.record', signal))
+    (await userMayActOnInspection(
+      db,
+      input.inspectorUserId,
+      'inspection.record',
+      input.inspectionId,
+      signal,
+    ))
   if (!qualifies) return err('not_an_inspector')
   const invalid = slotError(input, rules)
   if (invalid !== null) return err(invalid)
@@ -324,7 +331,13 @@ export async function cancelInspection(
   signal: AbortSignal,
 ): Promise<Result<{ pushIds: string[] }, CancelError>> {
   signal.throwIfAborted()
-  const isStaff = (await requireCapability(db, actor.userId, 'inspection.schedule', signal)).ok
+  const isStaff = await mayActOnInspection(
+    db,
+    actor,
+    'inspection.schedule',
+    input.inspectionId,
+    signal,
+  )
   return await transactionResult(db, async (tx) => {
     const [locked] = await tx
       .select()

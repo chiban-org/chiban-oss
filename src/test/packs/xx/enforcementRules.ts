@@ -53,6 +53,7 @@ export const XX_ENFORCEMENT_RULES: PackRule[] = [
     version: 1,
     label: 'Daily penalty',
     citation: { label: 'Vellmora Enforcement Act 5', url: ENFORCEMENT_ACT },
+    model: 'fixed_daily',
     firstOffenseCentsPerDay: 5000,
     subsequentCentsPerDay: 10000,
     accrual: 'after_earlier_of_conviction_or_written_notice',
@@ -60,3 +61,30 @@ export const XX_ENFORCEMENT_RULES: PackRule[] = [
     overridePolicy: { policy: 'fixed' },
   },
 ]
+
+export const XX_RANGE_PENALTY_KEY = 'xx.enf.penalty_range'
+
+export const XX_RANGE_PENALTY: PackRule = {
+  kind: 'civil_penalty',
+  key: XX_RANGE_PENALTY_KEY,
+  version: 1,
+  label: 'Ranged daily penalty',
+  citation: { label: 'Vellmora Enforcement Act 5', url: ENFORCEMENT_ACT },
+  model: 'range_daily',
+  categories: [
+    { key: 'no_permit', label: 'No permit', minCentsPerDay: 10000, maxCentsPerDay: 250000 },
+    {
+      key: 'specific',
+      label: 'Specific violation',
+      minCentsPerDay: 5000,
+      maxCentsPerDay: 100000,
+    },
+  ],
+  aggravations: [
+    { key: 'prior', label: 'Prior conviction within 2 years', maxCentsPerDay: 50000 },
+    { key: 'benefit', label: 'Economic benefit', maxMultipleOfBenefit: 2 },
+  ],
+  accrual: 'after_earlier_of_conviction_or_written_notice',
+  imposedBy: 'court',
+  overridePolicy: { policy: 'fixed' },
+}

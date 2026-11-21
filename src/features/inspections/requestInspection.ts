@@ -7,7 +7,7 @@ import { isProjectParty } from '@/features/access/queries'
 import { isSuspended } from '@/features/appeals/suspension'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { requireCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { inspectableTypes, typeTaken } from '@/features/inspections/eligibility'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import { reinspectableFailureIds } from '@/features/inspections/lookup'
@@ -63,8 +63,14 @@ export async function requestInspection(
   signal.throwIfAborted()
   const now = deps.now ?? new Date()
   if (input.channel !== 'portal') {
-    const allowed = await requireCapability(db, actor.userId, 'inspection.schedule', signal)
-    if (!allowed.ok) return err('forbidden')
+    const allowed = await mayActOnApplication(
+      db,
+      actor,
+      'inspection.schedule',
+      input.applicationId,
+      signal,
+    )
+    if (!allowed) return err('forbidden')
   }
   const [app] = await db
     .select({ id: applications.id, projectId: applications.projectId, state: applications.state })

@@ -2,6 +2,8 @@ import type { DbOrTx } from '@/db/client'
 import {
   EMPTY_REGIONAL_CONTACTS,
   type RegionalContactsBody,
+  type StoredRegionalContacts,
+  withContactDefaults,
 } from '@/features/boards/regionalContactsSchema'
 import { getPublished } from '@/features/config/store'
 
@@ -12,5 +14,7 @@ export async function getRegionalContacts(
   signal: AbortSignal,
 ): Promise<RegionalContactsBody> {
   const published = await getPublished(db, 'regional_contacts', 'default', signal)
-  return published === null ? EMPTY_REGIONAL_CONTACTS : (published.body as RegionalContactsBody)
+  return published === null
+    ? EMPTY_REGIONAL_CONTACTS
+    : withContactDefaults(published.body as StoredRegionalContacts)
 }

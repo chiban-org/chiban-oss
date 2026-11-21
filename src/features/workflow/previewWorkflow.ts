@@ -66,6 +66,8 @@ function eventPlacement(
     case 'application_completed':
     case 'application_accepted':
       return { state: 'under_review', on: accepted }
+    case 'hearing_held':
+      return { state: 'under_review', on: meeting }
     case 'permit_issued':
       return { state: 'issued', on: accepted }
     case 'regional_impact_notice_mailed':
@@ -74,9 +76,12 @@ function eventPlacement(
     case 'board_vote':
     case 'decision_filed':
     case 'final_approval':
+    case 'final_written_approval':
     case 'rehearing_vote':
+    case 'project_final_approval':
       return { state: 'decided', on: meeting }
     case 'order_served':
+    case 'cure_notice_sent':
     case 'judgment_entered':
     case 'rtk_request_received':
     case 'rtk_time_statement':
@@ -130,12 +135,13 @@ function noticesFor(body: ApplicationTypeBody, facts: ProjectFacts, dates: Dates
   const meeting = dates.meeting
   if (classification === undefined || meeting === undefined) return []
   const flags = { regionalImpact: facts.regionalImpact === true, desWithin: false }
-  return requirementsFor(classification, flags).flatMap((rule) => {
+  return requirementsFor(classification, flags, 'before_hearing').flatMap((rule) => {
     const plan = planRequirement(rule, {
       hearingDate: meeting,
       flags,
       townLeadDays: {},
       publicChoice: null,
+      stage: 'before_hearing',
     })
     return plan === null
       ? []

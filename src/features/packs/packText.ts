@@ -7,6 +7,7 @@ export interface PackText {
   signerRoleLabels: Readonly<Record<string, string>>
   lockedTexts: Readonly<Record<string, string>>
   environmentalAgency: string
+  receiptNotices: boolean
   vocabulary: Vocabulary
 }
 
@@ -15,6 +16,9 @@ export function packText(): PackText {
     signerRoleLabels: signerRoleLabels(),
     lockedTexts: lockedTexts(),
     environmentalAgency: activePack().labels.environmentalAgency,
+    receiptNotices: activePack().manifest.rules.some(
+      (r) => r.kind === 'notice_requirement' && r.stage === 'on_receipt',
+    ),
     vocabulary: packVocabulary(),
   }
 }

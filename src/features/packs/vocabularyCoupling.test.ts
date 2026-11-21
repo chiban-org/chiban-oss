@@ -8,8 +8,9 @@ const ALLOWED_PREFIXES = ['src/test/', 'src/features/demo/', 'src/features/packs
 const TEST_FILE = /\.test\.tsx?$/
 const SOURCE_FILE = /\.tsx?$/
 const STATE_VOCABULARY = /Right-to-Know|Right to Know|\bZBA\b|Zoning Board|selectmen|\bRSA \d/
+const REHEARING_WORD = /\brehearing\b/i
 const STORED_IDENTIFIERS =
-  /selectmenCertifications|selectmen_certifications?|certified_by_selectmen/g
+  /selectmenCertifications|selectmen_certifications?|certified_by_selectmen|'rehearing'|\.rehearing\b|get rehearing\(\)|rehearing: \{/g
 
 function sourceFiles(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
@@ -25,17 +26,18 @@ function scanned(rel: string): boolean {
   return !ALLOWED_PREFIXES.some((prefix) => rel.startsWith(prefix))
 }
 
+function carriesStateWord(line: string): boolean {
+  const stripped = line.replace(STORED_IDENTIFIERS, '')
+  return STATE_VOCABULARY.test(stripped) || REHEARING_WORD.test(stripped)
+}
+
 function vocabularyHits(): string[] {
   return SCANNED_DIRS.flatMap((dir) => sourceFiles(dir))
     .filter(scanned)
     .flatMap((rel) =>
       readFileSync(path.join(ROOT, rel), 'utf8')
         .split('\n')
-        .flatMap((line, i) =>
-          STATE_VOCABULARY.test(line.replace(STORED_IDENTIFIERS, ''))
-            ? [`${rel}:${i + 1}: ${line.trim()}`]
-            : [],
-        ),
+        .flatMap((line, i) => (carriesStateWord(line) ? [`${rel}:${i + 1}: ${line.trim()}`] : [])),
     )
 }
 
@@ -60,5 +62,15 @@ describe('engine vocabulary comes from the pack', () => {
     expect(STATE_VOCABULARY.test(stripped("'selectmen_certifications'"))).toBe(false)
     expect(STATE_VOCABULARY.test(stripped("substep: 'certified_by_selectmen'"))).toBe(false)
     expect(STATE_VOCABULARY.test(stripped('Certified by the selectmen'))).toBe(true)
+  })
+
+  it('detects the rehearing word and lets its stored identifiers through', () => {
+    expect(carriesStateWord('Motion for rehearing')).toBe(true)
+    expect(carriesStateWord('Rehearing granted')).toBe(true)
+    expect(carriesStateWord("kind: 'rehearing_motion'")).toBe(false)
+    expect(carriesStateWord("outcome: 'rehearing_denied'")).toBe(false)
+    expect(carriesStateWord("'rehearing_vote'")).toBe(false)
+    expect(carriesStateWord("input.kind === 'rehearing'")).toBe(false)
+    expect(carriesStateWord('HEARING_KIND_LABELS.rehearing')).toBe(false)
   })
 })

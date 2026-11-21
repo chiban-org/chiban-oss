@@ -19,6 +19,7 @@ export const noticeSets = pgTable(
     applicationId: uuid('application_id'),
     anchorDate: date('anchor_date', { mode: 'string' }).notNull(),
     inheritedFrom: uuid('inherited_from'),
+    abutterListId: uuid('abutter_list_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('notice_sets_subject_idx').on(t.subjectKind, t.subjectId)],

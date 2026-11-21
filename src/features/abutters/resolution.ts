@@ -1,6 +1,6 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Tx } from '@/db/client'
-import type { RecipientRole } from '@/features/abutters/roles'
+import type { ConditionalRoleTrigger, RecipientRole } from '@/features/abutters/roles'
 import type { Candidate, IncompleteReason } from '@/features/abutters/types'
 
 export interface Provenance {
@@ -39,7 +39,7 @@ export interface ResolverInput {
   applicationId: string
   candidates: Candidate[]
   roles: RecipientRole[]
-  conditionalRoles: { role: RecipientRole; when: 'regional_impact_yes' | 'des_within_500ft' }[]
+  conditionalRoles: { role: RecipientRole; when: ConditionalRoleTrigger }[]
   now: Date
 }
 

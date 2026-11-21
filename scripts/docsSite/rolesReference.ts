@@ -1,5 +1,6 @@
 import { CAPABILITIES, CAPABILITY_KEYS } from '@/constants/capabilities'
-import { type Role, STAFF_ROLES } from '@/constants/roles'
+import type { Role } from '@/constants/roles'
+import { packStaffRoles } from '@/features/authz/classificationScope'
 import { DEFAULT_GRANTS } from '@/features/authz/defaultGrants'
 import { settingsMenuFor } from '@/features/settingsMenu/settingsMenu'
 import { type NavViewer, navItemsFor } from '@/features/staffNav/navItems'
@@ -30,7 +31,7 @@ function sentence(text: string): string {
 
 export function renderPermissionsTable(): string {
   const rows = CAPABILITY_KEYS.map((capability) => {
-    const holders = STAFF_ROLES.filter((role) => DEFAULT_GRANTS[role]?.includes(capability))
+    const holders = packStaffRoles().filter((role) => DEFAULT_GRANTS[role]?.includes(capability))
     const who = holders.length === 0 ? 'None' : listInWords(holders.map(roleLabel))
     return [sentence(CAPABILITIES[capability]), who]
   })
@@ -40,7 +41,7 @@ export function renderPermissionsTable(): string {
 }
 
 export function renderMenusList(): string {
-  const entries = STAFF_ROLES.map((role) => {
+  const entries = packStaffRoles().map((role) => {
     const viewer = viewerFor(role)
     const menu = navItemsFor(viewer)
       .filter((item) => item.access.kind !== 'settings')

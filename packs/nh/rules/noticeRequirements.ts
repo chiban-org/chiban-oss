@@ -21,6 +21,7 @@ function requirement(
   return {
     kind: 'notice_requirement',
     version: 1,
+    stage: 'before_hearing',
     overridePolicy: { policy: 'fixed' },
     ...fields,
   }

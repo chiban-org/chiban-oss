@@ -11,10 +11,12 @@ import {
   assessForTransition,
   runTransitionEffects,
 } from '@/features/applications/transitionEffects'
+import { heldClose, holdChecks, isHoldMove } from '@/features/applications/transitionHold'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnClassification } from '@/features/authz/classificationScope'
 import { CLOSURE_GATE_KEY } from '@/features/gates/coreGates'
 import { DOCUMENT_GATE_KEYS } from '@/features/gates/documentGates'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
@@ -40,8 +42,11 @@ export interface TransitionInput {
     | 'notice_costs_unpaid'
     | 'issuance'
     | 'revoked_on_appeal'
+    | 'revoked_under_hold'
   cutover?: boolean
   boardVote?: boolean
+  deemedRefusal?: true
+  holdId?: string
 }
 
 export const CUTOVER_GATE_NOTE = 'Status carried from the prior system; gates not evaluated'
@@ -52,6 +57,8 @@ export type TransitionError =
   | 'stale_version'
   | 'fees_incomplete'
   | 'not_found'
+  | 'parcel_held'
+  | 'held_suspension'
   | { gateBlocked: GateResult[] }
 
 export interface TransitionOutcome {
@@ -60,6 +67,7 @@ export interface TransitionOutcome {
   rowVersion: number
 }
 
+const NO_FLAGS = { cutover: false, deemedRefusal: false, underHold: false }
 const NEEDS_ISSUE_CAPABILITY: readonly CoreState[] = ['issued', 'decided', 'denied']
 const BOARD_RECORD_STATES: readonly CoreState[] = ['under_review', 'decided', 'denied']
 
@@ -74,23 +82,27 @@ async function isAllowedActor(
   actor: AnyActor,
   app: ApplicationContext,
   to: CoreState,
-  cutover: boolean,
+  flags: { cutover: boolean; deemedRefusal: boolean; underHold: boolean },
   signal: AbortSignal,
 ): Promise<boolean> {
-  if (actor.kind === 'system') return to === 'expired'
-  if (cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
+  if (actor.kind === 'system') return to === 'expired' || (to === 'denied' && flags.deemedRefusal)
+  if (flags.cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
+  if (flags.underHold && (await isHoldMove(tx, app, to, signal))) {
+    return await hasCapability(tx, actor.userId, 'enforcement.manage', signal)
+  }
   if (to === 'expired' || to === 'suspended') return false
   if (app.state === 'suspended' && to === 'issued') return false
   if (boardOf(app) !== null && BOARD_RECORD_STATES.includes(to)) {
     return await hasCapability(tx, actor.userId, 'board.record', signal)
   }
+  const classification = app.typeBody.classification
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
-    return await hasCapability(tx, actor.userId, 'permit.issue', signal)
+    return await mayActOnClassification(tx, actor, 'permit.issue', classification, signal)
   }
   if (to === 'closed') {
     return (
-      (await hasCapability(tx, actor.userId, 'permit.issue', signal)) ||
-      (await hasCapability(tx, actor.userId, 'inspection.record', signal))
+      (await mayActOnClassification(tx, actor, 'permit.issue', classification, signal)) ||
+      (await mayActOnClassification(tx, actor, 'inspection.record', classification, signal))
     )
   }
   if (to === 'withdrawn') {
@@ -109,7 +121,7 @@ export async function actorMayMove(
   to: CoreState,
   signal: AbortSignal,
 ): Promise<boolean> {
-  return await isAllowedActor(db, actor, app, to, false, signal)
+  return await isAllowedActor(db, actor, app, to, NO_FLAGS, signal)
 }
 
 export function needsBoardVote(app: ApplicationContext, to: CoreState): boolean {
@@ -121,10 +133,10 @@ async function gateResultsFor(
   app: ApplicationContext,
   input: TransitionInput,
   today: CivilDate,
-  reinstating: boolean,
+  skipGates: boolean,
   signal: AbortSignal,
 ): Promise<GateResult[]> {
-  if (reinstating || input.cutover === true) return []
+  if (skipGates || input.cutover === true || input.deemedRefusal === true) return []
   const results = await evaluateGates(tx, app, input.to, today, signal)
   const reason = input.closureReason
   if (reason === undefined) return results
@@ -135,7 +147,7 @@ async function gateResultsFor(
 }
 
 function notifiesParties(input: TransitionInput, from: CoreState): boolean {
-  if (input.cutover === true) return false
+  if (input.cutover === true || input.deemedRefusal === true) return false
   return input.to === 'denied' || (input.to === 'issued' && from !== 'suspended')
 }
 
@@ -158,8 +170,9 @@ export async function applyTransition(
   if (!isTransitionAllowed(app.state, input.to, app.typeBody.workflow))
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
-  const reinstating = app.state === 'suspended' && input.to === 'issued'
-  const results = await gateResultsFor(tx, app, input, today, reinstating, signal)
+  const hold = await holdChecks(tx, app, input, signal)
+  if (hold.issuanceHeld) return err('parcel_held')
+  const results = await gateResultsFor(tx, app, input, today, hold.skipGates, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const assessed = await assessForTransition(tx, actor, app, input.to, signal)
   if (!assessed.ok) return err(assessed.error)
@@ -219,9 +232,23 @@ export async function transitionApplication(
   if (input.to === 'submitted') return err('invalid_transition')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
-  if (!(await isAllowedActor(tx, actor, app, input.to, input.cutover === true, signal))) {
+  if (
+    !(await isAllowedActor(
+      tx,
+      actor,
+      app,
+      input.to,
+      {
+        cutover: input.cutover === true,
+        deemedRefusal: input.deemedRefusal === true,
+        underHold: input.holdId !== undefined,
+      },
+      signal,
+    ))
+  ) {
     return err('forbidden')
   }
+  if (await heldClose(tx, app, input, signal)) return err('held_suspension')
   if (needsBoardVote(app, input.to) && input.boardVote !== true) return err('invalid_transition')
   return await applyTransition(tx, actor, input, signal, now)
 }

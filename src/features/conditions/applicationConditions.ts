@@ -7,6 +7,7 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication, packHasPlumbingScope } from '@/features/authz/classificationScope'
 import {
   type ConditionLibraryBody,
   MIN_WAIVER_REASON_LENGTH,
@@ -15,10 +16,16 @@ import { getVersion } from '@/features/config/store'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
 
-async function mayChangeConditions(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
-  return (
-    hasFullRecordAccess(actor) && (await hasCapability(db, actor.userId, 'permit.issue', signal))
-  )
+async function mayChangeConditions(
+  db: Db,
+  actor: Actor,
+  applicationId: string | null,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (!hasFullRecordAccess(actor)) return false
+  return applicationId === null
+    ? await hasCapability(db, actor.userId, 'permit.issue', signal)
+    : await mayActOnApplication(db, actor, 'permit.issue', applicationId, signal)
 }
 
 async function isClosedApplication(db: Db, applicationId: string): Promise<boolean> {
@@ -41,7 +48,7 @@ export async function applyCondition(
   >
 > {
   signal.throwIfAborted()
-  if (!(await mayChangeConditions(db, actor, signal))) return err('forbidden')
+  if (!(await mayChangeConditions(db, actor, input.applicationId, signal))) return err('forbidden')
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (TERMINAL_STATES.includes(app.state)) return err('application_closed')
@@ -99,12 +106,17 @@ export async function setConditionStatus(
   signal: AbortSignal,
 ): Promise<Result<void, 'forbidden' | 'not_found' | 'reason_required' | 'application_closed'>> {
   signal.throwIfAborted()
-  if (!(await mayChangeConditions(db, actor, signal))) return err('forbidden')
+  const scoped = packHasPlumbingScope()
+  if (!scoped && !(await mayChangeConditions(db, actor, null, signal))) return err('forbidden')
+  if (scoped && !hasFullRecordAccess(actor)) return err('forbidden')
   const [row] = await db
     .select()
     .from(applicationConditions)
     .where(eq(applicationConditions.id, input.conditionId))
   if (row === undefined) return err('not_found')
+  if (scoped && !(await mayChangeConditions(db, actor, row.applicationId, signal))) {
+    return err('forbidden')
+  }
   if (await isClosedApplication(db, row.applicationId)) return err('application_closed')
   const reason = input.reason?.trim() ?? ''
   if (input.status === 'waived' && row.blocksIssuance) {

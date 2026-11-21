@@ -15,9 +15,11 @@ import {
   recordNoticeReceiptAction,
   sendNoticeAction,
 } from '../findingActions'
+import { CureSection } from './CureSection'
 import type { Can } from './can'
 import { FindingChoices } from './FindingChoices'
 import { FindingRow } from './FindingRow'
+import { RemedySection } from './RemedySection'
 import { Hidden, Section } from './Section'
 
 const METHODS = Object.entries(NOTICE_METHOD_LABELS) as [string, string][]
@@ -192,12 +194,14 @@ export function FindingsSection({
           />
         ))}
       </ul>
-      {can.manage && open.length > 0 && !hosted.has('send_notice') ? (
+      {can.manage && open.length > 0 && detail.cure.rule === null && !hosted.has('send_notice') ? (
         <details>
           <summary>Send a notice of violation</summary>
           <SendNoticeForm detail={detail} variant="outline" />
         </details>
       ) : null}
+      <CureSection detail={detail} can={can} hosted={hosted} />
+      <RemedySection detail={detail} can={can} hosted={hosted} />
     </Section>
   )
 }

@@ -2,6 +2,7 @@ import { abutterProbes } from '@/features/packs/probes/abutterProbes'
 import { boardProbes } from '@/features/packs/probes/boardProbes'
 import { clockProbes } from '@/features/packs/probes/clockProbes'
 import { decisionProbes } from '@/features/packs/probes/decisionProbes'
+import { deliveryProbes } from '@/features/packs/probes/deliveryProbes'
 import { enforcementProbes } from '@/features/packs/probes/enforcementProbes'
 import { otherProbes } from '@/features/packs/probes/otherProbes'
 import type { FieldProbe } from '@/features/packs/probes/probe'
@@ -13,6 +14,7 @@ export const FIELD_PROBES: Record<string, FieldProbe> = {
   ...clockProbes(),
   ...boardProbes(),
   ...decisionProbes(),
+  ...deliveryProbes(),
   ...abutterProbes(),
   ...otherProbes(),
   ...seriesProbes(),

@@ -20,7 +20,7 @@ import { LocalAmendmentEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
-import type { RegionalContactsBody } from '@/features/boards/regionalContacts'
+import type { StoredRegionalContacts } from '@/features/boards/regionalContactsSchema'
 import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type {
@@ -184,7 +184,7 @@ export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
 }
 
 export function RegionalContactsAdapter({ body, onChange }: EditorProps) {
-  return <RegionalContactsEditor body={body as RegionalContactsBody} onChange={onChange} />
+  return <RegionalContactsEditor body={body as StoredRegionalContacts} onChange={onChange} />
 }
 
 export function ReviewRoutesAdapter({ body, onChange }: EditorProps) {

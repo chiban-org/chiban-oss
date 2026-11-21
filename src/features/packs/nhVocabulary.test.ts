@@ -12,11 +12,15 @@ import {
   appealPointer,
   appealResultLabel,
   appealStepHint,
+  appealStepResultLabel,
   appealsLead,
   appealToBoard,
   boardDecision,
   linkedPlanningDecisionLabel,
+  motionForRehearing,
   recordDecisionDescription,
+  rehearingDecision,
+  rehearingGrantedLabel,
 } from '@/features/appeals/appealWords'
 import { activityPhrase } from '@/features/applications/activityPhrase'
 import { statePermitAtFiling } from '@/features/applications/documentItemIssues'
@@ -25,13 +29,16 @@ import {
   certificationPhrase,
   requestToGoverningBody,
 } from '@/features/boards/certificationWords'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { exerciseFloorReason } from '@/features/boards/exercise'
 import { determinationMissingReason } from '@/features/boards/regionalGate'
 import {
   codeEditionMissingReason,
   regionalDeterminationMissingReason,
 } from '@/features/building/gates'
+import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { type DecisionView, toGraphNodes } from '@/features/decisions/decisionView'
+import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { documentKindLabel } from '@/features/documents/recordSource'
 import { whoCanSeeSentence } from '@/features/documents/whoCanSee'
 import { nextStepOf } from '@/features/enforcement/caseNextStep'
@@ -41,6 +48,7 @@ import { stayBanner } from '@/features/enforcement/stay'
 import { actorLabel } from '@/features/enforcement/workPlan'
 import { stayStepTask } from '@/features/enforcement/workPlanSteps'
 import { gateByKey } from '@/features/gates/registry'
+import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { activePack } from '@/features/packs/registry'
 import { roleCitationSuffix } from '@/features/packs/roles'
 import {
@@ -52,6 +60,7 @@ import {
   recordsLaw,
   recordsRequest,
 } from '@/features/packs/vocabulary'
+import { decisionOutcome } from '@/features/parcels/openGroups'
 import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { holdTargetLabels, holdTargetOptions } from '@/features/records/holdKinds'
 import {
@@ -149,7 +158,25 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(RTK_RESPONSE_KIND.record).toBe('Right-to-Know request')
   })
 
-  it('boards and appeals', () => {
+  it('rehearing copy', () => {
+    expect(motionForRehearing()).toBe('Motion for rehearing')
+    expect(rehearingDecision()).toBe('Rehearing decision')
+    expect(rehearingGrantedLabel()).toBe('Rehearing granted')
+    expect(appealStepResultLabel()).toBe(
+      'Result, for a rehearing decision or a decision after appeal',
+    )
+    expect(OUTCOME_LABELS.rehearing_granted).toBe('Rehearing granted')
+    expect(OUTCOME_LABELS.rehearing_denied).toBe('Rehearing denied')
+    expect(HEARING_KIND_LABELS.rehearing).toBe('Rehearing')
+    expect(START_EVENT_LABELS.rehearing_vote).toBe('Rehearing vote')
+    expect(boardErrorCopy('wrong_outcome')).toBe(
+      'Choose whether the rehearing was granted or denied.',
+    )
+    expect(decisionOutcome('rehearing_granted', null).label).toBe('Rehearing granted')
+    expect(decisionOutcome('rehearing_denied', null).label).toBe('Rehearing denied')
+  })
+
+  it('boards and appeals', async () => {
     expect(appealStepHint()).toBe(
       'For an appeal to the Zoning Board. An appeal of an issued permit suspends it.',
     )
@@ -168,11 +195,15 @@ describe('New Hampshire vocabulary through the pack', () => {
     )
     expect(appealToBoard()).toBe('Appeal to the Zoning Board')
     expect(boardDecision()).toBe('Zoning Board decision')
-    const nodes = toGraphNodes([
-      { id: 'a', kind: 'zba_decision', occurredOn: '2026-01-02' },
-      { id: 'b', kind: 'zba_appeal', occurredOn: '2026-01-03' },
-      { id: 'c', kind: 'pb_decision', occurredOn: '2026-01-04' },
-    ] as never)
+    const nodes = await toGraphNodes(
+      {} as never,
+      [
+        { id: 'a', kind: 'zba_decision', occurredOn: '2026-01-02' },
+        { id: 'b', kind: 'zba_appeal', occurredOn: '2026-01-03' },
+        { id: 'c', kind: 'pb_decision', occurredOn: '2026-01-04' },
+      ] as never,
+      new AbortController().signal,
+    )
     expect(nodes.map((n) => n.kindLabel)).toEqual([
       'Zoning Board decision',
       'Appeal to the Zoning Board',

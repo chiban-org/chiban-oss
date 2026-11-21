@@ -10,7 +10,7 @@ import type {
   PackRule,
   StartEvent,
 } from '@/features/packs/schema'
-import { boardLabel } from '@/features/packs/vocabulary'
+import { boardLabel, rehearingWords } from '@/features/packs/vocabulary'
 import { formatCivilDateWithWeekday } from '@/lib/formatDate'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { escapeText, joinBlocks, listInWords, table } from './markdown'
@@ -40,12 +40,18 @@ const START_EVENTS: Record<StartEvent, string> = {
   regional_impact_notice_mailed: 'the regional impact notice is mailed',
   acceptance_meeting_set: 'the meeting',
   application_accepted: 'the board accepts the application as complete',
+  hearing_held: 'the hearing is held',
   final_approval: 'final approval',
+  final_written_approval: 'the final written approval is issued',
   board_vote: 'the board votes',
   decision_filed: 'the decision is filed',
-  rehearing_vote: 'the board votes on the rehearing',
+  get rehearing_vote() {
+    return `the board votes on the ${rehearingWords().noun}`
+  },
+  project_final_approval: 'the project has its final municipal approval',
   administrative_decision: 'the administrative decision',
   order_served: 'the order is served',
+  cure_notice_sent: 'the cure notice is sent',
   judgment_entered: 'the court enters judgment',
   rtk_request_received: 'the request is received',
   rtk_time_statement: 'the town states the time it needs',

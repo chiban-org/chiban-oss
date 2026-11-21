@@ -24,7 +24,7 @@ export const AbuttersSpecSchema = z.object({
   conditionalRoles: z.array(
     z.object({
       role: RecipientRoleSchema,
-      when: z.enum(['regional_impact_yes', 'des_within_500ft']),
+      when: z.enum(['regional_impact_yes', 'des_within_500ft', 'source_water_area']),
     }),
   ),
 })
@@ -38,6 +38,8 @@ export const ProceedingClassificationSchema = z.object({
   noticeRequirementKeys: z.array(z.string().min(1)),
   requiredSubsteps: z.array(z.object({ state: z.enum(CORE_STATES), key: z.string().min(1) })),
   directIssueAllowed: z.boolean(),
+  hearing: z.enum(['required', 'optional']).default('required'),
+  recordingRequired: z.boolean().default(false),
   appealRights: z.string(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>

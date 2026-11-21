@@ -42,6 +42,7 @@ export const enforcementCases = pgTable(
     assignedTo: uuid('assigned_to'),
     isPublic: boolean('is_public').notNull().default(false),
     publicSummary: text('public_summary'),
+    cureRuleKey: text('cure_rule_key'),
     rowVersion: integer('row_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

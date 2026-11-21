@@ -43,6 +43,8 @@ function input(o: Options = {}): RecordPanelsInput {
     noticeDeadlines: [],
     fees: { assessments: [], preview: null, overrides: [] },
     appeals: [],
+    varianceValidity: 'not_required',
+    reliance: null,
     parties: many(o.parties, (i) => ({ id: `p${i}`, name: 'Pat', role: 'owner' })),
     codeEdition: null,
     regionalImpact: { applies: false, determination: null, notices: [] },

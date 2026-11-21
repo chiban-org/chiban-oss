@@ -2,17 +2,22 @@ import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { SelectField, TextField } from '@/components/staff/fields'
 import {
+  appealStepResultLabel,
   appealToBoard,
   boardDecision,
   linkedPlanningDecisionLabel,
+  motionForRehearing,
+  rehearingDecision,
+  rehearingGrantedLabel,
 } from '@/features/appeals/appealWords'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
 function appealSteps(): [string, string][] {
   return [
-    ['rehearing_motion', 'Motion for rehearing'],
-    ['rehearing_outcome', 'Rehearing decision'],
+    ['rehearing_motion', motionForRehearing()],
+    ['rehearing_outcome', rehearingDecision()],
     ['court_petition', 'Court petition'],
     ['zba_appeal', appealToBoard()],
     ['zba_decision', boardDecision()],
@@ -42,11 +47,11 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             required
           />
           <SelectField
-            label="Result, for a rehearing decision or a decision after appeal"
+            label={appealStepResultLabel()}
             name="outcome"
             options={[
               ['', 'Not applicable'],
-              ['granted', 'Rehearing granted'],
+              ['granted', rehearingGrantedLabel()],
               ['denied', 'Denied'],
               ['approved', 'Approved'],
             ]}
@@ -59,6 +64,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
               ['yes', 'Yes'],
             ]}
           />
+          <LastApprovalCheck offered={view.offerFinalApproval} />
         </ActionForm>
       </details>
     </section>

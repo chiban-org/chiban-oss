@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -10,7 +10,9 @@ import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meet
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import {
   computeRuleDue,
+  eventMovesClocks,
   hasLocalBound,
+  keysCancelledBy,
   type ResolvedLength,
   resolveRuleLength,
   rulesForEvent,
@@ -42,6 +44,33 @@ export async function resolveClockLength(
   return resolveRuleLength(rule, facts, setting, townValue)
 }
 
+const ONCE_PER_APPLICATION: readonly StartEvent[] = ['project_final_approval']
+
+function deliveryDueKeys(pack: Pack): ReadonlySet<string> {
+  return new Set(pack.rules.flatMap((r) => (r.kind === 'decision_delivery' ? [r.dueRuleKey] : [])))
+}
+
+export async function clockStartedOn(
+  tx: Tx,
+  applicationId: string,
+  ruleKey: string,
+  startDate: CivilDate,
+): Promise<boolean> {
+  const [found] = await tx
+    .select({ id: clocks.id })
+    .from(clocks)
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        eq(clocks.ruleKey, ruleKey),
+        eq(clocks.startDate, startDate),
+        ne(clocks.status, 'superseded'),
+      ),
+    )
+    .limit(1)
+  return found !== undefined
+}
+
 export async function startClocksFor(
   tx: Tx,
   applicationId: string,
@@ -60,16 +89,55 @@ export async function startClocksFor(
     ...decisionFacts,
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
+  await cancelClocksFor(tx, applicationId, event, pack)
   const rules = rulesForEvent(pack.rules, event, bound, facts)
-  const running = await tx
+  const started = ONCE_PER_APPLICATION.includes(event)
+    ? ne(clocks.status, 'superseded')
+    : eq(clocks.status, 'running')
+  const existing = await tx
     .select({ ruleKey: clocks.ruleKey })
     .from(clocks)
-    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.status, 'running')))
-  const runningKeys = new Set(running.map((c) => c.ruleKey))
+    .where(and(eq(clocks.applicationId, applicationId), started))
+  const existingKeys = new Set(existing.map((c) => c.ruleKey))
+  const perSource = deliveryDueKeys(pack)
   for (const rule of rules) {
-    if (runningKeys.has(rule.key)) continue
+    if (perSource.has(rule.key)) {
+      if (await clockStartedOn(tx, applicationId, rule.key, onDate)) continue
+    } else if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
+}
+
+export async function startClocksWhenPackUses(
+  tx: Tx,
+  applicationId: string,
+  event: StartEvent,
+  onDate: CivilDate,
+  signal: AbortSignal,
+): Promise<void> {
+  const pack = loadPack()
+  if (!eventMovesClocks(pack.rules, event)) return
+  await startClocksFor(tx, applicationId, event, onDate, signal, pack)
+}
+
+async function cancelClocksFor(
+  tx: Tx,
+  applicationId: string,
+  event: StartEvent,
+  pack: Pack,
+): Promise<void> {
+  const cancelledKeys = keysCancelledBy(pack.rules, event)
+  if (cancelledKeys.length === 0) return
+  await tx
+    .update(clocks)
+    .set({ status: 'superseded', supersededReason: 'cancelled_by_event' })
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        inArray(clocks.status, ['running', 'overdue']),
+        inArray(clocks.ruleKey, cancelledKeys),
+      ),
+    )
 }
 
 export interface NewClockInput {

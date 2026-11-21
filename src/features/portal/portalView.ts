@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import {
   applicationConditions,
   clocks,
+  deemedRefusals,
   ledgerAllocations,
   ledgerEntries,
   parcels,
@@ -17,7 +18,7 @@ import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
-import { decisionClockKeys } from '@/features/decisions/decisionClocks'
+import { decisionDeadlineKeys } from '@/features/decisions/decisionClocks'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
 import { previewFees } from '@/features/fees/preview'
@@ -100,14 +101,28 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
   }
 }
 
-async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
+const REFUSED_BY_LAW_LABEL = 'Refused by operation of law'
+
+async function portalStateLabel(db: Db, applicationId: string, state: CoreState): Promise<string> {
+  if (state !== 'denied') return stateLabel(state)
+  const [refusal] = await db
+    .select({ id: deemedRefusals.applicationId })
+    .from(deemedRefusals)
+    .where(eq(deemedRefusals.applicationId, applicationId))
+  return refusal === undefined ? stateLabel(state) : REFUSED_BY_LAW_LABEL
+}
+
+const DECISION_PENDING_STATES = ['submitted', 'under_review']
+
+async function decisionDue(db: Db, applicationId: string, state: string, signal: AbortSignal) {
+  if (!DECISION_PENDING_STATES.includes(state)) return null
   const [clock] = await db
     .select()
     .from(clocks)
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        inArray(clocks.ruleKey, decisionClockKeys()),
+        inArray(clocks.ruleKey, decisionDeadlineKeys()),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )
@@ -234,7 +249,7 @@ export async function getPortalApplicationView(
     number: app.number,
     typeLabel: app.typeBody.label,
     state: app.state,
-    stateLabel: stateLabel(app.state),
+    stateLabel: await portalStateLabel(db, applicationId, app.state),
     parcel: {
       id: project?.parcelId ?? '',
       displayId: project === undefined ? null : (display.get(project.parcelId) ?? null),
@@ -244,7 +259,7 @@ export async function getPortalApplicationView(
     values: Object.fromEntries(Object.entries(app.values).filter(([k]) => !staffKeys.has(k))),
     attestationText: app.typeBody.attestationText,
     attestationSha256: attestationHash(app.typeBody.attestationText),
-    decisionDue: await decisionDue(db, applicationId, signal),
+    decisionDue: await decisionDue(db, applicationId, app.state, signal),
     record: recordFacts(app, project?.title ?? app.number, mayEnd),
     conditions: conditions.map((c) => ({ text: c.textSnapshot, status: c.status })),
     documents: (

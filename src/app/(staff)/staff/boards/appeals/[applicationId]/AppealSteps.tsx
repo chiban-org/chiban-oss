@@ -5,32 +5,40 @@ import {
   appealStepHint,
   appealToBoard,
   boardDecision,
+  motionForRehearing,
+  rehearingDecision,
+  rehearingGrantedLabel,
 } from '@/features/appeals/appealWords'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
 function steps(): [string, string][] {
   return [
     ['zba_appeal', appealToBoard()],
     ['zba_decision', boardDecision()],
-    ['rehearing_motion', 'Motion for rehearing'],
-    ['rehearing_outcome', 'Rehearing decision'],
+    ['rehearing_motion', motionForRehearing()],
+    ['rehearing_outcome', rehearingDecision()],
     ['court_petition', 'Court petition'],
   ]
 }
 
-const RESULTS: [string, string][] = [
-  ['', 'Not applicable'],
-  ['approved', 'Appeal granted'],
-  ['denied', 'Denied'],
-  ['granted', 'Rehearing granted'],
-]
+function results(): [string, string][] {
+  return [
+    ['', 'Not applicable'],
+    ['approved', 'Appeal granted'],
+    ['denied', 'Denied'],
+    ['granted', rehearingGrantedLabel()],
+  ]
+}
 
 export function AppealSteps({
   nodeChoices,
   today,
+  offerFinalApproval = false,
 }: {
   nodeChoices: { id: string; label: string }[]
   today: string
+  offerFinalApproval?: boolean
 }) {
   return (
     <ActionForm action={addAppealNodeAction} submitLabel="Record the step" className="max-w-md">
@@ -50,7 +58,8 @@ export function AppealSteps({
         required
       />
       <TextField label="Who appealed" name="appellantName" hint={appealStepHint()} />
-      <SelectField label={appealResultLabel()} name="outcome" options={RESULTS} />
+      <SelectField label={appealResultLabel()} name="outcome" options={results()} />
+      <LastApprovalCheck offered={offerFinalApproval} />
     </ActionForm>
   )
 }

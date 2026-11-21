@@ -1,0 +1,1 @@
+ALTER TABLE "board_decisions" ALTER COLUMN "hearing_id" DROP NOT NULL;

@@ -23,9 +23,7 @@ export const boardDecisions = pgTable(
     applicationId: uuid('application_id')
       .notNull()
       .references(() => applications.id),
-    hearingId: uuid('hearing_id')
-      .notNull()
-      .references(() => hearings.id),
+    hearingId: uuid('hearing_id').references(() => hearings.id),
     meetingId: uuid('meeting_id')
       .notNull()
       .references(() => boardMeetings.id),
@@ -45,6 +43,7 @@ export const boardDecisions = pgTable(
     conditions: jsonb('conditions').$type<DecisionCondition[]>().notNull(),
     reasonsForDisapproval: text('reasons_for_disapproval'),
     filedOn: date('filed_on', { mode: 'string' }),
+    finalWrittenApprovalOn: date('final_written_approval_on', { mode: 'string' }),
     minutesDocumentId: uuid('minutes_document_id'),
     writtenDecisionDocumentId: uuid('written_decision_document_id'),
     letterDocumentId: uuid('letter_document_id'),

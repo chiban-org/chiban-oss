@@ -24,6 +24,7 @@ import { desRuleIfPresent, suggestDesProximity } from '@/features/boards/des500'
 import { desText, suggestionText } from '@/features/boards/desPanelText'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { boardPanelClocks, boundByClassification } from '@/features/boards/panelClocks'
+import { loadReceiptPanel, type ReceiptPanel } from '@/features/boards/receiptPanel'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { boardForKind, missingBoardMessage } from '@/features/boards/townBoards'
 import { loadPack } from '@/features/packs/loadPack'
@@ -79,6 +80,7 @@ export interface BoardPanelData {
   certification: { offered: boolean; history: string[] }
   exerciseText: string | null
   hasExercise: boolean
+  receipt: ReceiptPanel | null
 }
 
 const PROFESSION_TEXT = {
@@ -193,6 +195,7 @@ export async function loadBoardPanel(
   const parcelIds = await applicantParcelIds(db, applicationId, signal)
   const labels = await displayIdsFor(db, parcelIds)
   const panelClocks = await boardPanelClocks(db, applicationId)
+  const permissions = await changePermissions(db, actor, app.state, signal)
   const certs = await db
     .select()
     .from(selectmenCertifications)
@@ -204,7 +207,7 @@ export async function loadBoardPanel(
     boardName: boardRow?.name ?? activePack().boardKinds[boardKind].label,
     missingBoard: boardRow === null ? missingBoardMessage(boardKind) : null,
     state: app.state,
-    ...(await changePermissions(db, actor, app.state, signal)),
+    ...permissions,
     canOpenLists: await mayManageAbutters(db, actor.userId, signal),
     hasFilingLead: boundByClassification(classification?.mandatoryRuleKeys, rules.filingLead),
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
@@ -259,5 +262,15 @@ export async function loadBoardPanel(
     exerciseText:
       panelClocks.exerciseDue === null ? null : formatCivilDate(panelClocks.exerciseDue),
     hasExercise: boundByClassification(classification?.mandatoryRuleKeys, rules.zbaExercise),
+    receipt: await loadReceiptPanel(
+      db,
+      {
+        applicationId,
+        classification,
+        canRecord: permissions.canRecord,
+        canManage: permissions.canManage,
+      },
+      signal,
+    ),
   }
 }

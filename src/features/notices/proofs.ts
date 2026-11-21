@@ -15,6 +15,7 @@ import { syncTransmittalClock, TRANSMITTAL_SUBJECT } from '@/features/decisions/
 import { isEvidenceKind } from '@/features/documents/types'
 import { channelLabel, type NoticeChannel } from '@/features/notices/channels'
 import { methodAllowed, type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
+import { RECEIPT_SUBJECT, syncReceiptClocks } from '@/features/notices/receiptNotices'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -123,6 +124,11 @@ export async function recordProof(
       items.filter((i) => i.subjectKind === TRANSMITTAL_SUBJECT).map((i) => i.setId),
     )) {
       await syncTransmittalClock(tx, setId, signal)
+    }
+    for (const setId of new Set(
+      items.filter((i) => i.subjectKind === RECEIPT_SUBJECT).map((i) => i.setId),
+    )) {
+      await syncReceiptClocks(tx, setId, signal)
     }
     await writeAudit(
       tx,

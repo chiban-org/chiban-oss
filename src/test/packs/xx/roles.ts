@@ -5,6 +5,7 @@ export const XX_ROLES: PackRoles = {
     buildingPermit: 'xx.building_permit',
     tradePermit: null,
     enforcement: [],
+    plumbingInspectorOwns: [],
   },
   rules: {
     buildingPermitDecision: 'xx.bp.decision',
@@ -42,5 +43,5 @@ export const XX_ROLES: PackRoles = {
     board: [],
     portalBoardDeadlines: [],
   },
-  gates: { abutterListFresh: null },
+  gates: { abutterListFresh: null, varianceRecorded: null },
 }

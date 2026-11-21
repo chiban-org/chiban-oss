@@ -100,6 +100,7 @@ export const XX_PACK: StatePack = {
     recordsLaw: 'Open Records',
     recordsRequest: 'Open Records request',
     governingBody: 'town council',
+    rehearing: { noun: 'reconsideration', capitalised: 'Reconsideration' },
     citations: {
       exerciseFloorAuthority: 'Vellmora Land Act 12',
       abutterListIssued: { label: 'Vellmora Land Act 9', url: null },

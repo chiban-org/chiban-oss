@@ -3,7 +3,13 @@ import { checkAdjustment } from '@/features/clocks/adjustClock'
 import { explainClock, START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { meetingBoundSpec } from '@/features/clocks/meetingBound'
 import { relianceFloorDue } from '@/features/clocks/relianceFloor'
-import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clocks/ruleEngine'
+import {
+  computeRuleDue,
+  keysCancelledBy,
+  keysSatisfiedByDecision,
+  resolveRuleLength,
+  rulesForEvent,
+} from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
@@ -74,6 +80,8 @@ function observeClock(rule: ClockRule, original: ClockRule): unknown {
       resolveRuleLength(rule, FACT_SETS[1] as ProjectFacts, settingRule, 18),
     ),
     relianceFloors: ['2028-01-10', '2029-02-01'].map((on) => relianceFloorDue(rule, d(on))),
+    cancelled: EVENTS.map((e) => keysCancelledBy([rule], e).length),
+    satisfiedByDecision: keysSatisfiedByDecision([rule]).length,
     meetingBound: attempt(() => meetingBoundSpec(rule, loadPack())),
     started: EVENTS.map((e) => rulesForEvent([rule], e, new Set([original.key])).length),
     adjustments: [
@@ -178,7 +186,7 @@ export function clockProbes(): Record<string, FieldProbe> {
     ),
     'clock.consequence.kind': clockProbe(DECISION, (r) => ({
       ...r,
-      consequence: { ...r.consequence, kind: 'lapse' },
+      consequence: { ...r.consequence, kind: 'deemed_refused' },
     })),
     'clock.consequence.text': clockProbe(DECISION, (r) => ({
       ...r,
@@ -198,6 +206,11 @@ export function clockProbes(): Record<string, FieldProbe> {
     'clock.relianceFloorMonths': clockProbe('nh.zba.exercise', (r) => ({
       ...r,
       relianceFloorMonths: 3,
+    })),
+    'clock.cancelledBy': clockProbe(DECISION, (r) => ({ ...r, cancelledBy: 'hearing_held' })),
+    'clock.satisfiedByDecision': clockProbe(DECISION, (r) => ({
+      ...r,
+      satisfiedByDecision: true,
     })),
     'clock.waivable': clockProbe(DECISION, (r) => ({ ...r, waivable: true })),
   }

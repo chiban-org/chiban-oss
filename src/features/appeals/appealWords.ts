@@ -1,4 +1,4 @@
-import { boardShort } from '@/features/packs/vocabulary'
+import { boardShort, rehearingWords } from '@/features/packs/vocabulary'
 
 export function appealToBoard(): string {
   return `Appeal to the ${boardShort('zba')}`
@@ -13,7 +13,7 @@ export function appealStepHint(): string {
 }
 
 export function appealResultLabel(): string {
-  return `Result, for a ${boardShort('zba')} or rehearing decision`
+  return `Result, for a ${boardShort('zba')} or ${rehearingWords().noun} decision`
 }
 
 export function linkedPlanningDecisionLabel(): string {
@@ -30,4 +30,20 @@ export function appealsLead(): string {
 
 export function appealPointer(): string {
   return `To appeal a decision by the building inspector or zoning administrator to the ${boardShort('zba')},`
+}
+
+export function motionForRehearing(): string {
+  return `Motion for ${rehearingWords().noun}`
+}
+
+export function rehearingDecision(): string {
+  return `${rehearingWords().capitalised} decision`
+}
+
+export function rehearingGrantedLabel(): string {
+  return `${rehearingWords().capitalised} granted`
+}
+
+export function appealStepResultLabel(): string {
+  return `Result, for a ${rehearingWords().noun} decision or a decision after appeal`
 }

@@ -28,14 +28,14 @@ export const NH_APPEAL_ROUTES: AppealRoute[] = [
   },
   {
     from: 'rehearing_outcome',
-    when: 'denied',
+    when: { outcome: 'denied', label: 'denied' },
     to: 'court_petition',
     windowRuleKey: 'nh.appeal.zba_court',
     citation: { label: 'RSA 677:4', url: RSA_677_4 },
   },
   {
     from: 'rehearing_outcome',
-    when: 'granted',
+    when: { outcome: 'granted', label: 'granted' },
     to: 'zba_decision',
     windowRuleKey: null,
     citation: { label: 'RSA 677:2', url: RSA_677_2 },
@@ -48,14 +48,14 @@ export const NH_APPEAL_ROUTES: AppealRoute[] = [
   },
   {
     from: 'pb_decision',
-    when: 'zoning matters appealable under RSA 676:5 III',
+    when: { linkedComponent: true, label: 'zoning matters appealable under RSA 676:5 III' },
     to: 'zba_appeal',
     windowRuleKey: 'nh.appeal.admin_to_zba',
     citation: { label: 'RSA 677:15 I-a', url: RSA_677_15 },
   },
   {
     from: 'rehearing_outcome',
-    when: 'denied on a linked component',
+    when: { outcome: 'denied', linkedComponent: true, label: 'denied on a linked component' },
     to: 'court_petition',
     windowRuleKey: 'nh.appeal.pb_court_after_zba',
     citation: { label: 'RSA 677:15 I-a', url: RSA_677_15 },

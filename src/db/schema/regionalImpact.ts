@@ -56,3 +56,25 @@ export const desProximityDeterminations = pgTable('des_proximity_determinations'
   determinedBy: uuid('determined_by').notNull(),
   determinedOn: date('determined_on', { mode: 'string' }).notNull(),
 })
+
+export const sourceWaterDeterminations = pgTable('source_water_determinations', {
+  applicationId: uuid('application_id')
+    .primaryKey()
+    .references(() => applications.id),
+  determination: text('determination', { enum: ['within', 'not_within'] }).notNull(),
+  supplierKey: text('supplier_key'),
+  determinedBy: uuid('determined_by').notNull(),
+  determinedOn: date('determined_on', { mode: 'string' }).notNull(),
+})
+
+export const applicationMunicipalities = pgTable(
+  'application_municipalities',
+  {
+    applicationId: uuid('application_id')
+      .notNull()
+      .references(() => applications.id),
+    municipalityKey: text('municipality_key').notNull(),
+    relation: text('relation', { enum: ['abutting', 'includes'] }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.applicationId, t.municipalityKey] })],
+)

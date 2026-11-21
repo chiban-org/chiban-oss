@@ -135,7 +135,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
       key: 'appeals',
       empty: !hasAppeals(view, graph),
       node:
-        hasAppeals(view, graph) || (view.state === 'issued' && view.permissions.canIssue) ? (
+        hasAppeals(view, graph) || (view.acceptsAppeal && view.permissions.canRecordAppeal) ? (
           <AppealsPanel key="appeals" view={view} graph={graph} />
         ) : null,
     },

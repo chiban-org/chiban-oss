@@ -7,7 +7,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { isTerminalState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { licenseLookupUrl } from '@/features/licenseChecks/packLicenses'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
@@ -36,9 +36,15 @@ export type RecordLicenseCheckError =
   | 'application_closed'
   | 'license_mismatch'
 
-async function mayRecord(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
+async function mayRecord(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
   return (
-    hasFullRecordAccess(actor) && (await hasCapability(db, actor.userId, 'permit.issue', signal))
+    hasFullRecordAccess(actor) &&
+    (await mayActOnApplication(db, actor, 'permit.issue', applicationId, signal))
   )
 }
 
@@ -76,7 +82,7 @@ export async function recordLicenseCheck(
 ): Promise<Result<{ checkId: string }, RecordLicenseCheckError>> {
   signal.throwIfAborted()
   const now = input.checkedAt ?? new Date()
-  if (!(await mayRecord(db, actor, signal))) return err('forbidden')
+  if (!(await mayRecord(db, actor, input.applicationId, signal))) return err('forbidden')
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (!licenseCheckApplies({ classification: app.typeBody.classification, values: app.values })) {

@@ -2,7 +2,11 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { FINE_KIND_LABELS } from '@/features/enforcement/labels'
-import { PENALTY_EXPOSURE_AFTER_FINE_LABEL } from '@/features/enforcement/penaltyExposure'
+import {
+  PENALTY_EXPOSURE_AFTER_FINE_LABEL,
+  type PenaltyExposure,
+  penaltyRangeLines,
+} from '@/features/enforcement/penaltyExposure'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
@@ -16,6 +20,53 @@ const METHODS: [string, string][] = [
   ['cash', 'Cash'],
   ['check', 'Check'],
 ]
+
+const ACCRUAL_NOT_STARTED =
+  'Accrual has not started: no written notice has been received and no conviction has been recorded.'
+
+function accrualDays(fromDate: string, days: number): string {
+  return `Accrual began ${formatCivilDate(fromDate)}. ${days} ${days === 1 ? 'day' : 'days'}`
+}
+
+function accrualSentence(exposure: PenaltyExposure): string {
+  return exposure.fromDate === null
+    ? ACCRUAL_NOT_STARTED
+    : `${accrualDays(exposure.fromDate, exposure.days)}.`
+}
+
+function PenaltyExposureNote({
+  exposure,
+  hasFines,
+}: {
+  exposure: PenaltyExposure
+  hasFines: boolean
+}) {
+  if (exposure.kind === 'range') {
+    return (
+      <div className="record-item">
+        <p className="m-0 font-medium">{exposure.label}</p>
+        <p className="m-0">{accrualSentence(exposure)}</p>
+        {penaltyRangeLines(exposure).map((line) => (
+          <p key={line} className="m-0">
+            {line}
+          </p>
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="record-item">
+      <p className="m-0 font-medium">
+        {hasFines ? PENALTY_EXPOSURE_AFTER_FINE_LABEL : exposure.label}
+      </p>
+      <p className="m-0">
+        {exposure.fromDate === null
+          ? ACCRUAL_NOT_STARTED
+          : `${accrualDays(exposure.fromDate, exposure.days)}, estimated ${formatCents(exposure.cents)}.`}
+      </p>
+    </div>
+  )
+}
 
 export function FinePaymentForm({
   fineId,
@@ -109,16 +160,7 @@ export function MoneySection({
         </article>
       ))}
       {detail.exposure === null ? null : (
-        <div className="record-item">
-          <p className="m-0 font-medium">
-            {detail.fines.length === 0 ? detail.exposure.label : PENALTY_EXPOSURE_AFTER_FINE_LABEL}
-          </p>
-          <p className="m-0">
-            {detail.exposure.fromDate === null
-              ? 'Accrual has not started: no written notice has been received and no conviction has been recorded.'
-              : `Accrual began ${formatCivilDate(detail.exposure.fromDate)}. ${detail.exposure.days} ${detail.exposure.days === 1 ? 'day' : 'days'}, estimated ${formatCents(detail.exposure.cents)}.`}
-          </p>
-        </div>
+        <PenaltyExposureNote exposure={detail.exposure} hasFines={detail.fines.length > 0} />
       )}
       {can.fine && bases.length > 0 && !detail.stay.stayed ? (
         <details>

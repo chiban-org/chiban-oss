@@ -4,6 +4,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
 import { rolesToServe } from './serviceStatus'
+import { cureNoticeSent, cureReceiptRecorded } from './workPlanCure'
 import {
   type CasePlanInput,
   type CasePlanOrder,
@@ -42,7 +43,7 @@ const findingRow = (input: CasePlanInput) =>
   )
 
 function orderGroup(input: CasePlanInput): CaseRequirementGroup {
-  const notice = noticeOfViolationSent(input.notices)
+  const notice = noticeOfViolationSent(input.notices) || cureNoticeSent(input)
   const drafted = input.orders.some((o) => o.row.status !== 'withdrawn')
   return {
     key: 'order',
@@ -53,7 +54,7 @@ function orderGroup(input: CasePlanInput): CaseRequirementGroup {
       row(
         'notice.received',
         'Receipt of the notice recorded',
-        input.notices.some((n) => n.receivedOn !== null),
+        input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input),
         'Penalty accrual starts when written notice is received.',
       ),
       row('order.drafted', 'Order drafted', drafted),

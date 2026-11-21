@@ -247,7 +247,7 @@ File: `data/appeal_nodes.ndjson`. Ordered by id.
 - `outcome`: text, nullable
 - `status`: text
 - `untimely`: boolean
-- `created_by`: uuid
+- `created_by`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
@@ -319,6 +319,17 @@ File: `data/application_document_links.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 - `document_id` refers to `documents`
+
+### application_municipalities
+
+File: `data/application_municipalities.ndjson`. Ordered by application_id, municipality_key.
+
+- `application_id`: uuid
+- `municipality_key`: text
+- `relation`: text
+
+References:
+- `application_id` refers to `applications`
 
 ### application_notes
 
@@ -470,7 +481,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `application_id`: uuid
-- `hearing_id`: uuid
+- `hearing_id`: uuid, nullable
 - `meeting_id`: uuid
 - `voted_on`: date
 - `outcome`: text
@@ -480,6 +491,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 - `conditions`: jsonb
 - `reasons_for_disapproval`: text, nullable
 - `filed_on`: date, nullable
+- `final_written_approval_on`: date, nullable
 - `minutes_document_id`: uuid, nullable
 - `written_decision_document_id`: uuid, nullable
 - `letter_document_id`: uuid, nullable
@@ -914,6 +926,27 @@ References:
 - `application_id` refers to `applications`
 - `applicant_party_id` refers to `project_parties`
 
+### cure_notices
+
+File: `data/cure_notices.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `finding_ids`: uuid[]
+- `recipient_role`: text
+- `recipient_name`: text
+- `mailing_address`: text
+- `sent_on`: date
+- `return_receipt_on`: date, nullable
+- `document_id`: uuid, nullable
+- `cure_due`: jsonb
+- `sent_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`
+
 ### cutover_reconciliations
 
 File: `data/cutover_reconciliations.ndjson`. Ordered by id.
@@ -939,6 +972,73 @@ File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
 References:
 - `application_id` refers to `applications`
 
+### decision_deliveries
+
+File: `data/decision_deliveries.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `decision_id`: uuid, nullable
+- `appeal_node_id`: uuid, nullable
+- `recipient_role`: text
+- `party_id`: uuid, nullable
+- `recipient_name`: text
+- `method`: text, nullable
+- `delivered_on`: date, nullable
+- `recorded_by`: uuid, nullable
+- `recorded_at`: timestamp with time zone, nullable
+
+References:
+- `application_id` refers to `applications`
+- `decision_id` refers to `board_decisions`
+- `appeal_node_id` refers to `appeal_nodes`
+- `party_id` refers to `project_parties`
+
+### decision_notices
+
+File: `data/decision_notices.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `document_id`: uuid
+- `mailed_on`: date
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `document_id` refers to `documents`
+
+### decision_recordings
+
+File: `data/decision_recordings.ndjson`. Ordered by decision_id.
+
+- `decision_id`: uuid
+- `registry`: text
+- `book`: text
+- `page`: text
+- `recorded_on`: date
+- `certificate_document_id`: uuid
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `decision_id` refers to `board_decisions`
+- `certificate_document_id` refers to `documents`
+
+### deemed_refusals
+
+File: `data/deemed_refusals.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `rule_key`: text
+- `rule_version`: integer
+- `due_on`: date
+- `fired_on`: date
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
 ### des_proximity_determinations
 
 File: `data/des_proximity_determinations.ndjson`. Ordered by application_id.
@@ -952,6 +1052,23 @@ File: `data/des_proximity_determinations.ndjson`. Ordered by application_id.
 
 References:
 - `application_id` refers to `applications`
+
+### development_holds
+
+File: `data/development_holds.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `parcel_id`: uuid
+- `case_id`: uuid
+- `placed_on`: date
+- `placed_by`: uuid
+- `released_on`: date, nullable
+- `released_by`: uuid, nullable
+- `created_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+- `case_id` refers to `enforcement_cases`
 
 ### disposition_batches
 
@@ -1100,12 +1217,28 @@ File: `data/enforcement_cases.ndjson`. Ordered by id.
 - `assigned_to`: uuid, nullable
 - `is_public`: boolean
 - `public_summary`: text, nullable
+- `cure_rule_key`: text, nullable
 - `row_version`: integer
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone
 
 References:
 - `parcel_id` refers to `parcels`
+
+### enforcement_civil_actions
+
+File: `data/enforcement_civil_actions.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `filed_on`: date
+- `court`: text
+- `docket`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
 
 ### enforcement_designations
 
@@ -1335,6 +1468,21 @@ File: `data/historical_records.ndjson`. Ordered by id.
 - `source_row`: integer
 - `imported_by`: uuid
 - `imported_at`: timestamp with time zone
+
+### hold_permit_actions
+
+File: `data/hold_permit_actions.ndjson`. Ordered by hold_id, application_id.
+
+- `hold_id`: uuid
+- `application_id`: uuid
+- `action`: text
+- `acted_on`: date
+- `acted_by`: uuid
+- `reinstated_on`: date, nullable
+
+References:
+- `hold_id` refers to `development_holds`
+- `application_id` refers to `applications`
 
 ### import_exceptions
 
@@ -1650,6 +1798,7 @@ File: `data/notice_sets.ndjson`. Ordered by id.
 - `application_id`: uuid, nullable
 - `anchor_date`: date
 - `inherited_from`: uuid, nullable
+- `abutter_list_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 ### notification_outbox
@@ -2006,6 +2155,8 @@ File: `data/projects.ndjson`. Ordered by id.
 - `id`: uuid
 - `parcel_id`: uuid
 - `title`: text
+- `final_approval_on`: date, nullable
+- `final_review_board`: text, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 
@@ -2490,6 +2641,19 @@ File: `data/selectmen_certifications.ndjson`. Ordered by id.
 - `decided_on`: date, nullable
 - `recorded_by`: uuid
 - `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
+### source_water_determinations
+
+File: `data/source_water_determinations.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `determination`: text
+- `supplier_key`: text, nullable
+- `determined_by`: uuid
+- `determined_on`: date
 
 References:
 - `application_id` refers to `applications`

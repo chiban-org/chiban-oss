@@ -2,7 +2,8 @@ import { asc, eq } from 'drizzle-orm'
 import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { Db } from '@/db/client'
 import { boardDecisions, boardMeetings, hearings } from '@/db/schema'
-import { loadApplicationContext } from '@/features/applications/context'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -10,13 +11,25 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { boardForKind } from '@/features/boards/townBoards'
 import { toGraphNodes } from '@/features/decisions/decisionView'
+import {
+  classificationOfApplication,
+  hearingIsOptional,
+} from '@/features/decisions/hearingOptional'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { seatedMemberNames } from '@/features/decisions/seatedVoters'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { hearingText, loadApplicationAppealNodes } from '@/features/hearings/views'
 import { type TrcDepartmentSummary, trcSummary } from '@/features/reviews/trcSummary'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
+
+export interface NoHearingDecisionForm {
+  meetings: { id: string; text: string }[]
+  seatedMembers: string[]
+  today: string
+  offerFinalApproval: boolean
+}
 
 export interface ApplicationHearingsPanel {
   applicationId: string
@@ -27,8 +40,33 @@ export interface ApplicationHearingsPanel {
   scheduleKinds: [string, string][]
   hearings: { id: string; text: string }[]
   decisions: { id: string; text: string }[]
+  noHearing: NoHearingDecisionForm | null
   graph: GraphNode[]
   trc: TrcDepartmentSummary[]
+}
+
+async function noHearingForm(
+  db: Db,
+  app: ApplicationContext,
+  ctx: {
+    boardId: string | null
+    meetings: { id: string; meetingDate: string; status: string }[]
+    today: CivilDate
+    decisions: { outcome: string }[]
+    signal: AbortSignal
+  },
+): Promise<NoHearingDecisionForm | null> {
+  if (!hearingIsOptional(classificationOfApplication(app)) || app.state !== 'under_review')
+    return null
+  if (ctx.boardId === null) return null
+  if (ctx.decisions.some((d) => d.outcome !== 'rehearing_granted')) return null
+  const past = ctx.meetings.filter((m) => m.status === 'scheduled' && m.meetingDate <= ctx.today)
+  return {
+    meetings: past.map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })).reverse(),
+    seatedMembers: await seatedMemberNames(db, ctx.boardId, ctx.today),
+    today: ctx.today,
+    offerFinalApproval: packWaitsForFinalApproval(),
+  }
 }
 
 export async function loadApplicationHearingsPanel(
@@ -76,6 +114,13 @@ export async function loadApplicationHearingsPanel(
           ['public_hearing', HEARING_KIND_LABELS.public_hearing],
           ['rehearing', HEARING_KIND_LABELS.rehearing],
         ]
+  const noHearing = await noHearingForm(db, app, {
+    boardId: boardRow?.id ?? null,
+    meetings,
+    today,
+    decisions,
+    signal,
+  })
   return {
     applicationId,
     canRecord,
@@ -98,7 +143,8 @@ export async function loadApplicationHearingsPanel(
       id: d.id,
       text: `${OUTCOME_LABELS[d.outcome]}, voted ${formatCivilDate(d.votedOn)}`,
     })),
-    graph: toGraphNodes(await loadApplicationAppealNodes(db, applicationId)),
+    noHearing,
+    graph: await toGraphNodes(db, await loadApplicationAppealNodes(db, applicationId), signal),
     trc: summary.ok ? summary.value : [],
   }
 }

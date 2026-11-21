@@ -13,6 +13,10 @@ export function governingBody(): string {
   return activePack().labels.governingBody
 }
 
+export function rehearingWords(): { noun: string; capitalised: string } {
+  return activePack().labels.rehearing
+}
+
 export function boardLabel(kind: BoardKind): string {
   return activePack().boardKinds[kind].label
 }

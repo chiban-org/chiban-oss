@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import type { Db, DbOrTx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import { applications, attestations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { answerChanges } from '@/features/applications/amendChanges'
@@ -12,6 +12,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { captureApplicability } from '@/features/buildingProgram/applicability'
 import { getVersion } from '@/features/config/store'
+import { holdBlocksApplication, holdsEnabled } from '@/features/enforcement/holdReads'
 import type { FormBody } from '@/features/forms/formSchema'
 import {
   extractFacts,
@@ -71,11 +72,22 @@ export type SubmitError =
   | 'attestation_mismatch'
   | 'invalid_transition'
   | 'not_found'
+  | 'parcel_held'
   | { fieldErrors: FieldError[] }
   | { gateBlocked: GateResult[] }
 
 async function mayEdit(db: DbOrTx, actor: Actor, projectId: string): Promise<boolean> {
   return hasFullRecordAccess(actor) || (await isActiveParty(db, actor.userId, projectId))
+}
+
+async function heldAfterLock(tx: Tx, applicationId: string, signal: AbortSignal) {
+  if (!holdsEnabled()) return false
+  await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .for('update')
+  return await holdBlocksApplication(tx, applicationId, signal)
 }
 
 export async function submitApplication(
@@ -98,6 +110,9 @@ export async function submitApplication(
   if (!(await mayEdit(db, actor, app.projectId))) return err('forbidden')
   if (app.state !== 'draft') return err('invalid_transition')
   const cutover = input.cutover
+  if (cutover === undefined && (await holdBlocksApplication(db, app.id, signal))) {
+    return err('parcel_held')
+  }
   if (!(await mayUseAttestationRoute(db, actor, input, signal))) return err('forbidden')
   const { statement, statementSha256 } = statementFor(app.typeBody.attestationText, input)
   if (statementSha256 !== attestationHash(statement)) return err('attestation_mismatch')
@@ -113,6 +128,9 @@ export async function submitApplication(
     : keepStaffOnlyValues(formBody, app.values, checked.value.values)
   const facts = staff ? checked.value.facts : extractFacts(formBody, values)
   return await transactionResult<{ state: 'submitted' }, SubmitError>(db, async (tx) => {
+    if (cutover === undefined && (await heldAfterLock(tx, app.id, signal))) {
+      return err('parcel_held')
+    }
     const today = cutover?.receivedDate ?? (await townToday(tx, now, signal))
     await tx
       .update(applications)
