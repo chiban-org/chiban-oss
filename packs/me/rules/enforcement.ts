@@ -64,7 +64,7 @@ export const ENFORCEMENT_RULES: PackRule[] = [
     direction: 'after',
     consequence: {
       kind: 'enforcement_step_opens',
-      text: 'The municipality may deny, suspend or revoke a permit for further development, and may file a civil action.',
+      text: 'If the violation is not corrected within 10 days, the municipality may deny, suspend or revoke permits for further development of the land until the violation is corrected and the penalties and costs are paid, and may file a civil action.',
     },
     extension: { allowed: false, note: '30-A MRSA §4452(1-A) provides no extension.' },
     waivable: false,
