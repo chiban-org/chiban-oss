@@ -17,6 +17,7 @@ import { getBoardSettings } from '@/features/boards/boardSettings'
 import { getMeeting } from '@/features/boards/meetings'
 import { boardForKind } from '@/features/boards/townBoards'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
+import { applyHearingHeldBeforeAcceptance } from '@/features/clocks/heldHearingAtAcceptance'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import {
   createClock,
@@ -202,6 +203,7 @@ export async function recordCompletenessVote(
         if (!stepped.ok) return err('invalid_state')
       }
       await startClocksFor(tx, app.id, 'application_accepted', input.votedOn, signal)
+      await applyHearingHeldBeforeAcceptance(tx, app.id, signal)
     }
     await writeAudit(
       tx,
