@@ -108,6 +108,30 @@ async function kindPrecondition(
   }
 }
 
+type ResponseInput = z.output<typeof ResponseSchema>
+
+function responseColumns(
+  value: ResponseInput,
+  request: typeof rtkRequests.$inferSelect,
+  followUp: boolean,
+  statedDue: SubjectDue | null,
+) {
+  return {
+    status:
+      value.kind === 'time_statement' ? ('awaiting_decision' as const) : ('responded' as const),
+    firstResponseOn: followUp ? request.firstResponseOn : value.respondedOn,
+    ...(followUp ? { followUpOn: value.respondedOn } : {}),
+    firstResponseKind: value.kind,
+    firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
+    ...(value.kind === 'acknowledged'
+      ? { acknowledgedOn: value.respondedOn, clarificationQuestion: value.clarification ?? null }
+      : {}),
+    statedDue,
+    openDueOn: statedDue === null ? null : statedDue.due,
+    rowVersion: request.rowVersion + 1,
+  }
+}
+
 export async function recordFirstResponse(
   db: Db,
   store: ObjectStore,
@@ -159,22 +183,7 @@ export async function recordFirstResponse(
       }
       await tx
         .update(rtkRequests)
-        .set({
-          status: value.kind === 'time_statement' ? 'awaiting_decision' : 'responded',
-          firstResponseOn: followUp ? request.firstResponseOn : value.respondedOn,
-          ...(followUp ? { followUpOn: value.respondedOn } : {}),
-          firstResponseKind: value.kind,
-          firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
-          ...(value.kind === 'acknowledged'
-            ? {
-                acknowledgedOn: value.respondedOn,
-                clarificationQuestion: value.clarification ?? null,
-              }
-            : {}),
-          statedDue,
-          openDueOn: statedDue === null ? null : statedDue.due,
-          rowVersion: request.rowVersion + 1,
-        })
+        .set(responseColumns(value, request, followUp, statedDue))
         .where(eq(rtkRequests.id, request.id))
       const letterDocumentId = await fileRequestLetter(
         tx,
