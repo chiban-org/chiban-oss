@@ -11,17 +11,14 @@ import {
   violationFindings,
   violationNotices,
 } from '@/db/schema'
-import { curePenaltyFor, cureRules, earliestReturnReceipt } from '@/features/enforcement/cureRules'
+import { casePenaltyExposure, casePenaltyOf } from '@/features/enforcement/casePenalty'
+import { cureRules, earliestReturnReceipt } from '@/features/enforcement/cureRules'
 import {
   APPEAL_OUTCOME_LABELS,
   APPEAL_TARGET_LABELS,
   PROVISION_KIND_LABELS,
 } from '@/features/enforcement/labels'
-import {
-  PENALTY_EXPOSURE_LABEL,
-  penaltyExposure,
-  penaltyRangeLines,
-} from '@/features/enforcement/penaltyExposure'
+import { PENALTY_EXPOSURE_LABEL, penaltyRangeLines } from '@/features/enforcement/penaltyExposure'
 import { stayBanner, stayFor } from '@/features/enforcement/stay'
 import type { CivilPenaltyRule } from '@/features/packs/schema'
 import { boardAbbrev } from '@/features/packs/vocabulary'
@@ -109,13 +106,31 @@ export async function appealBlocks(
   return blocks
 }
 
-async function casePenaltyRule(db: DbOrTx, caseId: string): Promise<CivilPenaltyRule | null> {
+async function caseCureRuleKey(db: DbOrTx, caseId: string): Promise<string | null> {
   if (cureRules().length === 0) return null
   const [caseRow] = await db
     .select({ cureRuleKey: enforcementCases.cureRuleKey })
     .from(enforcementCases)
     .where(eq(enforcementCases.id, caseId))
-  return curePenaltyFor(caseRow?.cureRuleKey ?? null)
+  return caseRow?.cureRuleKey ?? null
+}
+
+async function cureReceipt(db: DbOrTx, caseId: string): Promise<CivilDate | null> {
+  return earliestReturnReceipt(
+    await db
+      .select({ returnReceiptOn: cureNotices.returnReceiptOn })
+      .from(cureNotices)
+      .where(eq(cureNotices.caseId, caseId)),
+  )
+}
+
+async function noticeReceipt(db: DbOrTx, caseId: string): Promise<CivilDate | null> {
+  const rows = await db
+    .select({ receivedOn: violationNotices.receivedOn })
+    .from(violationNotices)
+    .where(eq(violationNotices.caseId, caseId))
+  return (rows.flatMap((n) => (n.receivedOn === null ? [] : [n.receivedOn])).sort()[0] ??
+    null) as CivilDate | null
 }
 
 export async function exposureBlocks(
@@ -127,33 +142,26 @@ export async function exposureBlocks(
     today: CivilDate
   },
 ): Promise<PdfBlock[]> {
-  const rule = input.penaltyRule ?? (await casePenaltyRule(db, input.caseId))
-  if (rule === null) return []
-  const received =
-    input.penaltyRule === null
-      ? earliestReturnReceipt(
-          await db
-            .select({ returnReceiptOn: cureNotices.returnReceiptOn })
-            .from(cureNotices)
-            .where(eq(cureNotices.caseId, input.caseId)),
-        )
-      : ((
-          await db
-            .select({ receivedOn: violationNotices.receivedOn })
-            .from(violationNotices)
-            .where(eq(violationNotices.caseId, input.caseId))
-        )
-          .flatMap((n) => (n.receivedOn === null ? [] : [n.receivedOn]))
-          .sort()[0] ?? null)
-  const exposure = penaltyExposure(rule, {
-    noticeReceivedOn: received as CivilDate | null,
+  const cureKey = input.penaltyRule === null ? await caseCureRuleKey(db, input.caseId) : null
+  const penalty = casePenaltyOf(input.penaltyRule, cureKey)
+  if (penalty === null) return []
+  const { rule } = penalty
+  const viaCure = penalty.source === 'cure'
+  const exposure = casePenaltyExposure(penalty, {
+    noticeReceivedOn: viaCure ? null : await noticeReceipt(db, input.caseId),
+    cureReceiptOn: viaCure ? await cureReceipt(db, input.caseId) : null,
     convictedOn: input.convictedOn,
-    through: input.today,
-    offense: 'first',
+    today: input.today,
   })
+  if (exposure === null) return []
   const accrual = {
     label: 'Accrual began',
-    value: exposure.fromDate === null ? 'Not started' : formatCivilDate(exposure.fromDate),
+    value:
+      exposure.fromDate === null
+        ? exposure.kind === 'range' && exposure.noAccrualRule === true
+          ? 'None recorded'
+          : 'Not started'
+        : formatCivilDate(exposure.fromDate),
   }
   if (exposure.kind === 'range') {
     return [

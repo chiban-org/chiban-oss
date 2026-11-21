@@ -1,10 +1,12 @@
 import { abutterProbes } from '@/features/packs/probes/abutterProbes'
 import { boardProbes } from '@/features/packs/probes/boardProbes'
+import { cancelProbes } from '@/features/packs/probes/cancelProbes'
 import { clockProbes } from '@/features/packs/probes/clockProbes'
 import { decisionProbes } from '@/features/packs/probes/decisionProbes'
 import { deliveryProbes } from '@/features/packs/probes/deliveryProbes'
 import { enforcementProbes } from '@/features/packs/probes/enforcementProbes'
 import { otherProbes } from '@/features/packs/probes/otherProbes'
+import { penaltyProbes } from '@/features/packs/probes/penaltyProbes'
 import type { FieldProbe } from '@/features/packs/probes/probe'
 import { seriesProbes } from '@/features/packs/probes/seriesProbes'
 
@@ -12,6 +14,7 @@ export type { FieldProbe } from '@/features/packs/probes/probe'
 
 export const FIELD_PROBES: Record<string, FieldProbe> = {
   ...clockProbes(),
+  ...cancelProbes(),
   ...boardProbes(),
   ...decisionProbes(),
   ...deliveryProbes(),
@@ -19,4 +22,5 @@ export const FIELD_PROBES: Record<string, FieldProbe> = {
   ...otherProbes(),
   ...seriesProbes(),
   ...enforcementProbes(),
+  ...penaltyProbes(),
 }

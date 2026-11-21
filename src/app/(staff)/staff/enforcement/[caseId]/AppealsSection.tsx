@@ -7,6 +7,7 @@ import {
   PERIL_LABELS,
 } from '@/features/enforcement/labels'
 import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/restraintWords'
+import { boardLabel } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import {
   appealAction,
@@ -39,7 +40,7 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
     .filter((d) => d.docKind === 'court_document')
     .map((d) => [d.documentId, d.title])
   return (
-    <Section id="appeals" title="Appeals to the zoning board of adjustment">
+    <Section id="appeals" title={`Appeals to the ${boardLabel('zba').toLowerCase()}`}>
       {detail.appeals.length === 0 ? <p>No appeal has been filed.</p> : null}
       {detail.appeals.map((a) => (
         <article key={a.row.id} className="record-item space-y-2">

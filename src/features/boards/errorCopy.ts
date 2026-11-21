@@ -129,6 +129,7 @@ const FIELD_WORDS: Record<string, string> = {
   findings: 'Findings',
   conditions: 'Conditions',
   reasonsForDisapproval: 'Reasons for disapproval',
+  significant: 'Whether this is a significant land use decision',
 }
 
 function noticeItemsText(

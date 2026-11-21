@@ -492,6 +492,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 - `reasons_for_disapproval`: text, nullable
 - `filed_on`: date, nullable
 - `final_written_approval_on`: date, nullable
+- `significant`: boolean, nullable
 - `minutes_document_id`: uuid, nullable
 - `written_decision_document_id`: uuid, nullable
 - `letter_document_id`: uuid, nullable
@@ -2194,6 +2195,7 @@ File: `data/record_events.ndjson`. Ordered by id.
 - `project_id`: uuid, nullable
 - `case_id`: uuid, nullable
 - `application_id`: uuid, nullable
+- `rtk_request_id`: uuid, nullable
 - `kind`: text
 - `occurred_on`: date
 - `recorded_by_kind`: text
@@ -2204,6 +2206,7 @@ References:
 - `project_id` refers to `projects`
 - `case_id` refers to `enforcement_cases`
 - `application_id` refers to `applications`
+- `rtk_request_id` refers to `rtk_requests`
 
 ### redaction_boxes
 
@@ -2582,6 +2585,9 @@ File: `data/rtk_requests.ndjson`. Ordered by id.
 - `first_response_on`: date, nullable
 - `first_response_kind`: text, nullable
 - `first_response_url`: text, nullable
+- `acknowledged_on`: date, nullable
+- `clarification_question`: text, nullable
+- `follow_up_on`: date, nullable
 - `denied_on`: date, nullable
 - `created_by`: uuid, nullable
 - `created_at`: timestamp with time zone

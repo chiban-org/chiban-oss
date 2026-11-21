@@ -5,7 +5,7 @@ import {
   isNumberType,
   questionsOf,
 } from '@/features/forms/formSchema'
-import type { DecisionOutcome } from '@/features/packs/schema'
+import type { BoardKind, DecisionOutcome } from '@/features/packs/schema'
 import { parseCivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -18,6 +18,8 @@ export interface ProjectFacts {
   regionalImpact?: boolean
   decisionFiledLate?: boolean
   outcome?: DecisionOutcome
+  significantDecision?: boolean
+  finalReviewBoard?: BoardKind
 }
 
 export type FieldErrorCode =

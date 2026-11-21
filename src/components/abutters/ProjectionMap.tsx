@@ -9,7 +9,7 @@ interface Props {
   bbox: Bbox | null
   basemapRasterUrl: string | null
   basemapAttribution: string | null
-  captureRadiusFt: number
+  captureRadiusFt: number | null
 }
 
 export function ProjectionMap({
@@ -32,10 +32,16 @@ export function ProjectionMap({
         hint="The map is a visual aid. The tables below list every parcel by its number."
       />
       <ul className="mt-2 flex list-none flex-wrap gap-4 p-0 text-sm">
-        <li>Dark dots: corners of the property facing the street or stream</li>
-        <li>Open dots: where the perpendicular lines meet property across</li>
-        <li>Shaded bands: parcels inside are abutters</li>
-        <li>{`Circles: the ${captureRadiusFt} foot capture area around each open dot`}</li>
+        {captureRadiusFt === null ? (
+          <li>Outline: parcels inside the town buffer are abutters</li>
+        ) : (
+          <>
+            <li>Dark dots: corners of the property facing the street or stream</li>
+            <li>Open dots: where the perpendicular lines meet property across</li>
+            <li>Shaded bands: parcels inside are abutters</li>
+            <li>{`Circles: the ${captureRadiusFt} foot capture area around each open dot`}</li>
+          </>
+        )}
       </ul>
     </div>
   )

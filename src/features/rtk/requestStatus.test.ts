@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { requestChipStatus, requestRowChipStatus } from '@/features/rtk/requestStatus'
+import {
+  requestChipStatus,
+  requestRowChipStatus,
+  requestStatusLabel,
+} from '@/features/rtk/requestStatus'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -38,5 +42,25 @@ describe('requestRowChipStatus', () => {
     expect(requestRowChipStatus('responded', false)).toBe('passed')
     expect(requestRowChipStatus('open', false)).toBe('neutral')
     expect(requestRowChipStatus('closed', false)).toBe('neutral')
+  })
+})
+
+describe('a request with only an acknowledgement', () => {
+  it('shows as acknowledged, not passed, until a substantive response', () => {
+    const acknowledged = view({
+      status: 'responded',
+      firstResponseKind: 'acknowledged',
+      current: null,
+    })
+    expect(requestChipStatus(acknowledged)).toBe('neutral')
+    expect(requestStatusLabel(acknowledged)).toBe('Acknowledged')
+    expect(requestRowChipStatus('responded', false, 'acknowledged')).toBe('neutral')
+    const answered = view({
+      status: 'responded',
+      firstResponseKind: 'made_available',
+      current: null,
+    })
+    expect(requestChipStatus(answered)).toBe('passed')
+    expect(requestStatusLabel(answered)).toBe('Responded')
   })
 })

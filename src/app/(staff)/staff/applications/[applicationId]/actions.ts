@@ -10,7 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { recordCodeEdition } from '@/features/building/codeEdition'
-import { markComplete } from '@/features/building/completeness'
+import { markComplete, markedCompleteMessage } from '@/features/building/completeness'
 import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { choice, civilDate, optionalText, requiredText } from '@/features/input/schemas'
 import { issueApplication } from '@/features/issuance/issueApplication'
@@ -92,12 +92,14 @@ export async function markCompleteAction(formData: FormData): Promise<ActionResu
         applicationId: applicationIdField(),
         completedDate: civilDate('the completed date', { latest: today }),
       }),
-    async ({ db, actor, signal }, input) =>
-      outcome(
-        await markComplete(db, actor, input, signal),
-        'Marked complete. The decision clock is running.',
-        { before_receipt: 'completedDate', future_date: 'completedDate' },
-      ),
+    async ({ db, actor, signal }, input) => {
+      const marked = await markComplete(db, actor, input, signal)
+      const message = marked.ok ? await markedCompleteMessage(db, input.applicationId, signal) : ''
+      return outcome(marked, message, {
+        before_receipt: 'completedDate',
+        future_date: 'completedDate',
+      })
+    },
   )
 }
 

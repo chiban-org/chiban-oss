@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { abutterLists, remediationTasks } from '@/db/schema'
+import { bufferOverlay } from '@/features/abutters/bufferOverlay'
 import { issueList } from '@/features/abutters/issue'
 import {
   attestCrossings,
@@ -12,8 +13,6 @@ import {
   selectParcel,
 } from '@/features/abutters/lists'
 import { loadListView } from '@/features/abutters/listView'
-import { projectionOverlay } from '@/features/abutters/overlay'
-import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { currentIssuedList, type ListSnapshot, snapshotHash } from '@/features/abutters/queries'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { activeBoards } from '@/features/boards/townBoards'
@@ -237,10 +236,10 @@ describe('snapshot settings and hash stability', () => {
       })
     }
     const outline = async (bufferFt: number) => {
-      const overlay = await handle.db.transaction((tx) =>
-        projectionOverlay(tx, [lw.ids.A ?? ''], primaryAbutterParams(), 50, signal, bufferFt),
+      const feature = await handle.db.transaction((tx) =>
+        bufferOverlay(tx, { applicantParcelIds: [lw.ids.A ?? ''], bufferFt }, signal),
       )
-      return overlay.features.find((f) => f.properties.kind === 'buffer')?.geometry
+      return feature?.geometry
     }
     await publishBuffer(300)
     const { listId } = await generate()

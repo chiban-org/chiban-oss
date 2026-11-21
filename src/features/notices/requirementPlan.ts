@@ -48,7 +48,12 @@ export function planRequirement(
   if (!applies(rule, input.flags, input.stage ?? 'before_hearing')) return null
   const lead = ruleByKey(loadPack(), rule.leadRuleKey)
   if (lead.kind !== 'clock') return null
-  const length = resolveRuleLength(lead, EMPTY_FACTS, null, input.townLeadDays[lead.key])
+  const length = resolveRuleLength(
+    lead,
+    EMPTY_FACTS,
+    'fromSetting' in lead.length ? ruleByKey(loadPack(), lead.length.fromSetting) : null,
+    input.townLeadDays[lead.key],
+  )
   const holidays = packHolidayCalendar()
   const { due } = computeRuleDue(lead, length, input.hearingDate, holidays)
   return {

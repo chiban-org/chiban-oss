@@ -4,6 +4,7 @@ import type { StatePack } from '@/features/packs/schema'
 export interface TownBufferShape {
   defaultFt: number | null
   maxFt: number
+  maxSetBy?: 'state_law' | 'chiban'
 }
 
 export function packWithTownBuffer(townBuffer: TownBufferShape): StatePack {

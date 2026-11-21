@@ -12,6 +12,7 @@ import { currentIssuedList } from '@/features/abutters/queries'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { BoardSettingsBody } from '@/features/boards/boardSettingsSchema'
 import { boardForKind } from '@/features/boards/townBoards'
+import { townSettingValue } from '@/features/clocks/resolvedLength'
 import { getPublished } from '@/features/config/store'
 import type { NoticeChannel } from '@/features/notices/channels'
 import {
@@ -21,10 +22,10 @@ import {
   type RequirementFlags,
 } from '@/features/notices/requirementPlan'
 import { requirementsFor } from '@/features/notices/requirementsFor'
-import { loadPack } from '@/features/packs/loadPack'
+import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
-import type { CivilDate } from '@/types/civilDate'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export interface DeriveInput {
@@ -53,9 +54,12 @@ export async function townLeads(
   signal: AbortSignal,
 ): Promise<Record<string, number>> {
   const out: Record<string, number> = {}
+  const pack = loadPack()
   for (const key of new Set(requirements.map((r) => r.leadRuleKey))) {
-    const published = await getPublished(tx, 'town_rule_setting', key, signal)
-    const value = (published?.body as { value: number } | undefined)?.value
+    const lead = ruleByKey(pack, key)
+    const settingKey =
+      lead.kind === 'clock' && 'fromSetting' in lead.length ? lead.length.fromSetting : key
+    const value = await townSettingValue(tx, settingKey, signal)
     if (value !== undefined) out[key] = value
   }
   return out
@@ -245,6 +249,15 @@ function townExtras(setId: string, plan: PlannedRequirement, notice: PublicNotic
   return [...boards, ...website]
 }
 
+function earlierPlan(
+  current: PlannedRequirement | null,
+  next: PlannedRequirement | null,
+): PlannedRequirement | null {
+  if (current === null) return next
+  if (next === null) return current
+  return compareCivil(next.dueOn, current.dueOn) < 0 ? next : current
+}
+
 export async function deriveNoticeItems(
   tx: Tx,
   input: DeriveInput,
@@ -262,7 +275,7 @@ export async function deriveNoticeItems(
       return err('list_out_of_date')
     }
     rows.push(...made.rows)
-    publicPlan = made.publicPlan ?? publicPlan
+    publicPlan = earlierPlan(publicPlan, made.publicPlan)
   }
   const [set] = await tx
     .insert(noticeSets)

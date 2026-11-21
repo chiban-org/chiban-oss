@@ -1,0 +1,1 @@
+ALTER TABLE "board_decisions" ADD COLUMN "significant" boolean;

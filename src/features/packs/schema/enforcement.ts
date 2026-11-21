@@ -53,10 +53,11 @@ export const CeaseAndDesistRuleSchema = z.object({
 })
 export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>
 
+const statedAccrual = z.literal('after_earlier_of_conviction_or_written_notice')
+
 const penaltyBase = {
   ...base,
   kind: z.literal('civil_penalty'),
-  accrual: z.literal('after_earlier_of_conviction_or_written_notice'),
   imposedBy: z.literal('court'),
   overridePolicy: z.object({ policy: z.literal('fixed') }),
 }
@@ -64,6 +65,7 @@ const penaltyBase = {
 export const FixedDailyPenaltySchema = z.object({
   ...penaltyBase,
   model: z.literal('fixed_daily').default('fixed_daily'),
+  accrual: statedAccrual,
   firstOffenseCentsPerDay: z.number().int().positive(),
   subsequentCentsPerDay: z.number().int().positive(),
 })
@@ -71,6 +73,7 @@ export const FixedDailyPenaltySchema = z.object({
 export const RangeDailyPenaltySchema = z.object({
   ...penaltyBase,
   model: z.literal('range_daily'),
+  accrual: statedAccrual.nullable(),
   categories: z
     .array(
       z.object({

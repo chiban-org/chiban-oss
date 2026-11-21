@@ -7,6 +7,7 @@ import { setSubstep, transitionApplication } from '@/features/applications/trans
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { offersCertification } from '@/features/boards/certificationClock'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { packRoles } from '@/features/packs/roles'
@@ -76,7 +77,7 @@ export async function recordSelectmenCertification(
     if (app === null) return err('not_found')
     if (app.state !== 'under_review') return err('not_under_review')
     const [overdue] = await tx
-      .select({ id: clocks.id })
+      .select({ ruleKey: clocks.ruleKey, ruleVersion: clocks.ruleVersion })
       .from(clocks)
       .where(
         and(
@@ -88,7 +89,7 @@ export async function recordSelectmenCertification(
       )
       .orderBy(desc(clocks.createdAt))
       .limit(1)
-    if (overdue === undefined) return err('clock_not_overdue')
+    if (overdue === undefined || !offersCertification(overdue)) return err('clock_not_overdue')
     const decidedOn = input.decidedOn ?? input.requestedOn
     if (input.outcome === 'certified') {
       const certified = await certify(tx, actor, app, decidedOn, signal)

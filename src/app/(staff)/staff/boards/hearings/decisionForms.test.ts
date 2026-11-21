@@ -39,3 +39,22 @@ describe('the last municipal approval checkbox', () => {
     expect(parsed.ok && parsed.value.finalMunicipalApproval).toBe(false)
   })
 })
+
+describe('the significant land use decision question', () => {
+  it('reads yes and no on both decision forms', () => {
+    const yes = parseForm(RECORD_DECISION_FORM, decisionForm({ significant: 'yes' }, 'hearingId'))
+    const no = parseForm(
+      RECORD_DECISION_NO_HEARING_FORM,
+      decisionForm({ significant: 'no' }, 'meetingId'),
+    )
+    expect(yes.ok && yes.value.significant).toBe(true)
+    expect(no.ok && no.value.significant).toBe(false)
+  })
+
+  it('reads an unanswered or absent question as no answer', () => {
+    const blank = parseForm(RECORD_DECISION_FORM, decisionForm({ significant: '' }, 'hearingId'))
+    const absent = parseForm(RECORD_DECISION_FORM, decisionForm({}, 'hearingId'))
+    expect(blank.ok && blank.value.significant).toBeUndefined()
+    expect(absent.ok && absent.value.significant).toBeUndefined()
+  })
+})

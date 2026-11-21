@@ -9,3 +9,9 @@ export function primaryAbutterParams(): AbutterParams {
   }
   return first
 }
+
+export const NO_PROJECTION_MESSAGE = "This state's notice law has no street or stream projection."
+
+export function supportsProjection(params: AbutterParams): boolean {
+  return params.captureRadiusFt !== null
+}

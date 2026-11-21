@@ -88,6 +88,7 @@ export function HearingsPanel({
               seated={data.noHearing.seatedMembers}
               today={data.noHearing.today}
               offerFinalApproval={data.noHearing.offerFinalApproval}
+              significance={data.noHearing.significanceQuestion ?? null}
             />
           </ActionForm>
         </details>

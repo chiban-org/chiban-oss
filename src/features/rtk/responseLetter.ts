@@ -39,6 +39,7 @@ const RELEASE_METHOD_LABELS: Record<(typeof rtkReleases.$inferSelect)['method'],
 }
 
 const KIND_SENTENCES: Record<string, string> = {
+  acknowledged: 'The town has received your request.',
   made_available: 'The records you requested are available to you.',
   website_reference: 'The records you requested are posted on the town website.',
   denied: 'The town cannot provide some or all of the records you requested.',
@@ -70,6 +71,12 @@ function responseBlocks(request: Request): PdfBlock[] {
   const kind = request.deniedOn === null ? request.firstResponseKind : 'denied'
   const blocks: PdfBlock[] = []
   if (kind !== null) blocks.push({ kind: 'paragraph', text: KIND_SENTENCES[kind] ?? '' })
+  if (kind === 'acknowledged' && request.clarificationQuestion !== null) {
+    blocks.push({
+      kind: 'fields',
+      rows: [{ label: 'Question for you', value: request.clarificationQuestion }],
+    })
+  }
   if (request.deniedOn !== null) {
     blocks.push({
       kind: 'fields',

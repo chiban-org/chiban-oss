@@ -6,7 +6,10 @@ import { relianceFloorDue } from '@/features/clocks/relianceFloor'
 import {
   computeRuleDue,
   keysCancelledBy,
+  keysOnlyIfHearingScheduled,
+  keysSatisfiedByCompletion,
   keysSatisfiedByDecision,
+  keysSatisfiedByInspection,
   resolveRuleLength,
   rulesForEvent,
 } from '@/features/clocks/ruleEngine'
@@ -82,6 +85,9 @@ function observeClock(rule: ClockRule, original: ClockRule): unknown {
     relianceFloors: ['2028-01-10', '2029-02-01'].map((on) => relianceFloorDue(rule, d(on))),
     cancelled: EVENTS.map((e) => keysCancelledBy([rule], e).length),
     satisfiedByDecision: keysSatisfiedByDecision([rule]).length,
+    satisfiedByInspection: keysSatisfiedByInspection([rule]).length,
+    satisfiedByCompletion: keysSatisfiedByCompletion([rule]).length,
+    hearingScheduled: keysOnlyIfHearingScheduled([rule]).length,
     meetingBound: attempt(() => meetingBoundSpec(rule, loadPack())),
     started: EVENTS.map((e) => rulesForEvent([rule], e, new Set([original.key])).length),
     adjustments: [
@@ -211,6 +217,18 @@ export function clockProbes(): Record<string, FieldProbe> {
     'clock.satisfiedByDecision': clockProbe(DECISION, (r) => ({
       ...r,
       satisfiedByDecision: true,
+    })),
+    'clock.satisfiedByInspection': clockProbe('town.bp.expiration', (r) => ({
+      ...r,
+      satisfiedByInspection: true,
+    })),
+    'clock.satisfiedByCompletion': clockProbe(DECISION, (r) => ({
+      ...r,
+      satisfiedByCompletion: true,
+    })),
+    'clock.onlyIfHearingScheduled': clockProbe(DECISION, (r) => ({
+      ...r,
+      onlyIfHearingScheduled: true,
     })),
     'clock.waivable': clockProbe(DECISION, (r) => ({ ...r, waivable: true })),
   }

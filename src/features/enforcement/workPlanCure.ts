@@ -1,6 +1,7 @@
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil, daysBetween } from '@/types/civilDate'
 import { cureStanding, uncoveredOpenFindings } from './cureStanding'
+import { orderAvailableForFindings } from './orderAvailability'
 import { type CasePlanInput, draftOrderOf } from './workPlanInput'
 import type { Step } from './workPlanSteps'
 import type { CaseAction, CaseDue } from './workPlanTypes'
@@ -18,7 +19,9 @@ export function remedyActions(input: CasePlanInput): CaseAction[] {
     ...(cure.rule.remedies.civilAction && cure.civilActionFiled !== true
       ? [{ kind: 'file_civil_action' as const }]
       : []),
-    ...(draftOrderOf(input) === null ? [{ kind: 'draft_order' as const }] : []),
+    ...(draftOrderOf(input) === null && orderAvailableForFindings(input.findings)
+      ? [{ kind: 'draft_order' as const }]
+      : []),
   ]
 }
 

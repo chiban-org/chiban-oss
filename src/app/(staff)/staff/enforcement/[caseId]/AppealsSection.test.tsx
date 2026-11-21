@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
+
+import { ME_PACK } from '@packs/me'
+import { NH_PACK } from '@packs/nh'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
@@ -28,7 +32,10 @@ const {
   restrainingOrderAction,
 } = await import('../appealActions')
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  setActivePackForTest(null)
+})
 
 const detail = stubDetail({
   orders: [{ row: { id: 'o1', number: 'CD-2027-0001', status: 'issued' } }],
@@ -112,5 +119,22 @@ describe('marking a restraining order dissolved', () => {
     renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
     fireEvent.click(screen.getByRole('button', { name: 'Mark dissolved' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Date dissolved')), message)
+  })
+})
+
+describe('the appeals heading', () => {
+  it('names the New Hampshire board as before', () => {
+    setActivePackForTest(NH_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(
+      screen.getByRole('heading', { name: 'Appeals to the zoning board of adjustment' }),
+    ).toBeTruthy()
+  })
+
+  it('names the Maine Board of Appeals', () => {
+    setActivePackForTest(ME_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(screen.getByRole('heading', { name: 'Appeals to the board of appeals' })).toBeTruthy()
+    expect(screen.queryByText(/zoning board/i)).toBeNull()
   })
 })

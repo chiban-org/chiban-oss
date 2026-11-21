@@ -841,6 +841,34 @@
       "when": 1795243629388,
       "tag": "0119_receipt_notice_list",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1795267947808,
+      "tag": "0120_retention_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "7",
+      "when": 1795271951448,
+      "tag": "0121_rtk_acknowledgement",
+      "breakpoints": true
+    },
+    {
+      "idx": 122,
+      "version": "7",
+      "when": 1795272482107,
+      "tag": "0122_rtk_follow_up_on",
+      "breakpoints": true
+    },
+    {
+      "idx": 123,
+      "version": "7",
+      "when": 1795273744666,
+      "tag": "0123_decision_significance",
+      "breakpoints": true
     }
   ]
 }

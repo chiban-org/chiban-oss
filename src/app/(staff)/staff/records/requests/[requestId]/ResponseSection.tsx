@@ -1,6 +1,6 @@
 import { NEW_TAB } from '@/components/newTab'
 import type { RtkLetterOutcome } from '@/db/schema'
-import { costTotal, responseLabel } from '@/features/rtk/labels'
+import { costTotal, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
@@ -14,9 +14,17 @@ function timelinessText(request: RtkRequestView): string | null {
 
 function recordedLine(request: RtkRequestView): string {
   const label = responseLabel(request.firstResponseKind) ?? 'Response recorded'
-  return request.firstResponseOn === null
-    ? `${label}.`
-    : `${label}, ${formatCivilDate(request.firstResponseOn)}.`
+  const on = responseDateOf(request)
+  return on === null ? `${label}.` : `${label}, ${formatCivilDate(on)}.`
+}
+
+function acknowledgementLines(request: RtkRequestView): string[] {
+  if (request.acknowledgedOn === null) return []
+  const lines = [`Receipt acknowledged, ${formatCivilDate(request.acknowledgedOn)}.`]
+  if (request.clarificationQuestion !== null) {
+    lines.push(`Question for the requester: ${request.clarificationQuestion}`)
+  }
+  return lines
 }
 
 function statementLine(statement: RtkRequestView['timeStatements'][number]): string {
@@ -33,7 +41,10 @@ export function ResponseSection({ request }: { request: RtkRequestView }) {
   return (
     <section aria-labelledby="first-response">
       <h2 id="first-response">First response</h2>
-      <p>{recordedLine(request)}</p>
+      {acknowledgementLines(request).map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+      {request.firstResponseKind === 'acknowledged' ? null : <p>{recordedLine(request)}</p>}
       {late === null ? null : <p>{late}</p>}
       {request.timeStatements.map((s) => (
         <p key={s.id}>{statementLine(s)}</p>

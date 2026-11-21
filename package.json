@@ -23,6 +23,7 @@
     "test:integration": "vitest run --project integration --passWithNoTests",
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test -c playwright.demo.config.ts",
+    "test:e2e:me": "playwright test -c playwright.me.config.ts",
     "gate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:unit:west && pnpm test:integration && pnpm term-gate",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",

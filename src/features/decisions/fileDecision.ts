@@ -129,7 +129,7 @@ export async function fileDecision(
       signal,
       undefined,
       undefined,
-      { decisionFiledLate: late },
+      { outcome: decision.outcome, decisionFiledLate: late },
     )
     await writeAudit(
       tx,

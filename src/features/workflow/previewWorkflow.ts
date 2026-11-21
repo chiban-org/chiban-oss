@@ -6,7 +6,12 @@ import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeMeetingBoundDue, meetingBoundSpec } from '@/features/clocks/meetingBound'
-import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clocks/ruleEngine'
+import {
+  computeRuleDue,
+  hearingDependentRulesForEvent,
+  resolveRuleLength,
+  rulesForEvent,
+} from '@/features/clocks/ruleEngine'
 import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
@@ -116,7 +121,11 @@ function clocksFor(body: ApplicationTypeBody, facts: ProjectFacts, dates: Dates)
     const placed = eventPlacement(event, dates)
     if (placed === null) continue
     const { state, on } = placed
-    for (const rule of rulesForEvent(pack.rules, event, bound, eventFacts)) {
+    const rules = [
+      ...rulesForEvent(pack.rules, event, bound, eventFacts),
+      ...hearingDependentRulesForEvent(pack.rules, event, bound, eventFacts),
+    ]
+    for (const rule of rules) {
       const list = byState.get(state) ?? []
       list.push({
         ruleKey: rule.key,

@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { clocks } from '@/db/schema'
+import { offersCertification } from '@/features/boards/certificationClock'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { packRoles } from '@/features/packs/roles'
 
@@ -12,7 +13,7 @@ export interface BoardPanelClocks {
 export async function boardPanelClocks(db: Db, applicationId: string): Promise<BoardPanelClocks> {
   const { rules } = packRoles()
   const [decision] = await db
-    .select({ id: clocks.id })
+    .select({ ruleKey: clocks.ruleKey, ruleVersion: clocks.ruleVersion })
     .from(clocks)
     .where(
       and(
@@ -31,7 +32,10 @@ export async function boardPanelClocks(db: Db, applicationId: string): Promise<B
         eq(clocks.status, 'running'),
       ),
     )
-  return { decisionOpen: decision !== undefined, exerciseDue: exercise?.currentDue ?? null }
+  return {
+    decisionOpen: decision !== undefined && offersCertification(decision),
+    exerciseDue: exercise?.currentDue ?? null,
+  }
 }
 
 export function boundByClassification(

@@ -1,4 +1,5 @@
 import { ORDER_CONTENT_LABELS } from '@/features/enforcement/labels'
+import { NO_ORDER_TEXT } from '@/features/enforcement/orderAvailability'
 import { formatCivilDate } from '@/lib/formatDate'
 import { errorCopy } from '@/server/actionRunner'
 import type { CivilDate } from '@/types/civilDate'
@@ -22,6 +23,7 @@ const COPY: Record<string, string> = {
     'These findings mix building code and other violations. Issue a separate order for each kind.',
   building_code_not_enforced:
     'This town enforces no building code, so a building code finding or order cannot be added to this case.',
+  order_not_available: NO_ORDER_TEXT,
   not_a_draft: 'That order has already been issued.',
   case_not_ready: 'The case needs a violation finding before an order can be issued.',
   case_past_orders: 'Orders cannot be issued once the case is in court, resolved, or closed.',

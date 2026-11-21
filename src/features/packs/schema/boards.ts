@@ -40,6 +40,7 @@ export const ProceedingClassificationSchema = z.object({
   directIssueAllowed: z.boolean(),
   hearing: z.enum(['required', 'optional']).default('required'),
   recordingRequired: z.boolean().default(false),
+  significanceApplies: z.boolean().optional(),
   appealRights: z.string(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>
@@ -48,7 +49,7 @@ export const AbutterParamsSchema = z.object({
   key: z.string().min(1),
   version: z.number().int().positive(),
   citation: z.object({ label: z.string().min(1), url: z.string().url() }),
-  captureRadiusFt: z.number().positive(),
+  captureRadiusFt: z.number().positive().nullable(),
   adjacencyToleranceFt: z.number().positive(),
   simplifyToleranceFt: z.number().positive(),
   cornerTurnDeg: z.number().positive(),
@@ -59,7 +60,11 @@ export const AbutterParamsSchema = z.object({
   alongDepthFt: z.number().positive(),
   tolerancesLabel: z.string().min(1),
   townBuffer: z
-    .object({ defaultFt: z.number().positive().nullable(), maxFt: z.number().positive() })
+    .object({
+      defaultFt: z.number().positive().nullable(),
+      maxFt: z.number().positive(),
+      maxSetBy: z.enum(['state_law', 'chiban']).optional(),
+    })
     .optional(),
 })
 export type AbutterParams = z.infer<typeof AbutterParamsSchema>

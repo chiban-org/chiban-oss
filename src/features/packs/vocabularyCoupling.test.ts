@@ -8,6 +8,7 @@ const ALLOWED_PREFIXES = ['src/test/', 'src/features/demo/', 'src/features/packs
 const TEST_FILE = /\.test\.tsx?$/
 const SOURCE_FILE = /\.tsx?$/
 const STATE_VOCABULARY = /Right-to-Know|Right to Know|\bZBA\b|Zoning Board|selectmen|\bRSA \d/
+const MAINE_VOCABULARY = /\bFOAA\b|Freedom of Access|\bMRSA\b|M\.R\.S\.|\bMUBEC\b|Board of Appeals/
 const REHEARING_WORD = /\brehearing\b/i
 const STORED_IDENTIFIERS =
   /selectmenCertifications|selectmen_certifications?|certified_by_selectmen|'rehearing'|\.rehearing\b|get rehearing\(\)|rehearing: \{/g
@@ -28,7 +29,11 @@ function scanned(rel: string): boolean {
 
 function carriesStateWord(line: string): boolean {
   const stripped = line.replace(STORED_IDENTIFIERS, '')
-  return STATE_VOCABULARY.test(stripped) || REHEARING_WORD.test(stripped)
+  return (
+    STATE_VOCABULARY.test(stripped) ||
+    MAINE_VOCABULARY.test(stripped) ||
+    REHEARING_WORD.test(stripped)
+  )
 }
 
 function vocabularyHits(): string[] {
@@ -72,5 +77,19 @@ describe('engine vocabulary comes from the pack', () => {
     expect(carriesStateWord("'rehearing_vote'")).toBe(false)
     expect(carriesStateWord("input.kind === 'rehearing'")).toBe(false)
     expect(carriesStateWord('HEARING_KIND_LABELS.rehearing')).toBe(false)
+  })
+
+  it('detects each Maine term', () => {
+    for (const term of [
+      'FOAA',
+      'Freedom of Access',
+      'MRSA',
+      'M.R.S.',
+      'MUBEC',
+      'Board of Appeals',
+    ]) {
+      expect(carriesStateWord(`the ${term} request`)).toBe(true)
+    }
+    expect(carriesStateWord('foaa and mubec')).toBe(false)
   })
 })

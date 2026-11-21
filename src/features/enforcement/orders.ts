@@ -8,8 +8,8 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
+import { orderRuleKeyForKind } from '@/features/enforcement/orderAvailability'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
@@ -27,17 +27,19 @@ const DraftSchema = z.object({
   ceaseImmediately: z.boolean(),
 })
 
-type OrderRuleKey = { kind: 'key'; key: string } | { kind: 'split' } | { kind: 'not_enforced' }
+type OrderRuleKey =
+  | { kind: 'key'; key: string }
+  | { kind: 'split' }
+  | { kind: 'not_enforced' }
+  | { kind: 'not_available' }
 
 function orderRuleKeyFor(kinds: readonly string[], codeOpen: boolean): OrderRuleKey {
-  const { rules } = packRoles()
   const building = kinds.filter((k) => k === 'building_code').length
-  if (building === kinds.length) {
-    return rules.buildingCodeOrder === null || !codeOpen
-      ? { kind: 'not_enforced' }
-      : { kind: 'key', key: rules.buildingCodeOrder }
-  }
-  return building === 0 ? { kind: 'key', key: rules.zoningOrder } : { kind: 'split' }
+  if (building > 0 && building === kinds.length && !codeOpen) return { kind: 'not_enforced' }
+  if (kinds.every((k) => orderRuleKeyForKind(k) === null)) return { kind: 'not_available' }
+  if (building > 0 && building < kinds.length) return { kind: 'split' }
+  const key = orderRuleKeyForKind(kinds[0])
+  return key === null ? { kind: 'not_available' } : { kind: 'key', key }
 }
 
 export async function draftOrder(
@@ -55,6 +57,7 @@ export async function draftOrder(
     | 'findings_invalid'
     | 'split_required'
     | 'building_code_not_enforced'
+    | 'order_not_available'
   >
 > {
   signal.throwIfAborted()
@@ -87,6 +90,7 @@ export async function draftOrder(
     )
     if (resolved.kind === 'split') return err('split_required')
     if (resolved.kind === 'not_enforced') return err('building_code_not_enforced')
+    if (resolved.kind === 'not_available') return err('order_not_available')
     const ruleKey = resolved.key
     const rule = ruleByKey(loadPack(), ruleKey)
     const { number } = await nextEnforcementNumber(tx, 'CD', now, signal)

@@ -11,6 +11,7 @@ export const XX_ROLES: PackRoles = {
     buildingPermitDecision: 'xx.bp.decision',
     zoningOrder: 'xx.enf.order_zoning',
     buildingCodeOrder: 'xx.enf.order_building',
+    enforcementPenalty: null,
     rtkResponse: 'xx.rtk.response',
     rtkStatedTime: 'xx.rtk.stated_time',
     planningBoardDecision: null,

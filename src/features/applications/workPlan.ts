@@ -1,3 +1,4 @@
+import { completenessCopy, offersCompleteness } from '@/features/applications/completenessStep'
 import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
@@ -24,6 +25,7 @@ export type PlanView = Pick<
   StaffApplicationView,
   | 'state'
   | 'isBuildingPermit'
+  | 'classification'
   | 'completedDate'
   | 'nextTransitions'
   | 'allowedMoves'
@@ -66,13 +68,13 @@ function groupTitle(to: CoreState, board: boolean): string {
 const COMPLETENESS_STATES: readonly CoreState[] = ['submitted', 'under_review']
 
 function completenessRow(view: PlanView, extras: WorkPlanExtras): Requirement | null {
-  if (!view.isBuildingPermit || view.completedDate !== null) return null
+  if (!offersCompleteness(view) || view.completedDate !== null) return null
   if (!COMPLETENESS_STATES.includes(view.state)) return null
   return {
     key: 'completeness',
     label: 'Marked complete',
     done: false,
-    detail: 'The decision clock starts when the application is marked complete.',
+    detail: completenessCopy(view).detail,
     task: 'Mark the application complete',
     actor: 'town',
     anchor: 'completeness',

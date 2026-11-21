@@ -20,14 +20,16 @@ export interface CountingCitations {
   businessDayRoll: string
 }
 
-export interface PackParcelIdFormat {
+interface PackParcelIdFormatBase {
   key: string
   label: string
-  kind: 'digits'
-  width: number
   isDisplay: boolean
   example: string
 }
+
+export type PackParcelIdFormat =
+  | (PackParcelIdFormatBase & { kind: 'digits'; width: number })
+  | (PackParcelIdFormatBase & { kind: 'free_text'; width: null })
 
 export interface BoardKindNames {
   label: string
@@ -58,7 +60,13 @@ export interface PackLabels {
   recordsRequest: string
   governingBody: string
   rehearing: { noun: string; capitalised: string }
+  significantDecisionQuestion: string | null
+  significantDecisionHelp: string | null
   citations: PackCitations
+}
+
+export interface PackRecordsRequests {
+  acknowledgement: boolean
 }
 
 export interface PackSpatial {
@@ -96,5 +104,6 @@ export interface StatePack {
   ruleAreas: readonly RuleArea[]
   orderTexts: OrderTexts
   labels: PackLabels
+  recordsRequests: PackRecordsRequests
   spatial: PackSpatial
 }

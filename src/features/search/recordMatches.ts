@@ -4,8 +4,7 @@ import { enforcementCases, parcels, rtkRequests } from '@/db/schema'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { type ParcelSearchHit, searchParcels } from '@/features/parcels/searchParcels'
-import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
-import { requestRowChipStatus } from '@/features/rtk/requestStatus'
+import { requestRowChipStatus, requestStatusLabel } from '@/features/rtk/requestStatus'
 import type { CivilDate } from '@/types/civilDate'
 import { sameAddress } from './addressMatch'
 import {
@@ -66,6 +65,7 @@ export async function requestMatches(
       requesterName: rtkRequests.requesterName,
       description: rtkRequests.description,
       dueOn: rtkRequests.openDueOn,
+      firstResponseKind: rtkRequests.firstResponseKind,
     })
     .from(rtkRequests)
     .where(
@@ -87,8 +87,12 @@ export async function requestMatches(
       title: r.number,
       detail: joinDetail([r.requesterName, r.description]),
       chip: {
-        status: requestRowChipStatus(r.status, r.dueOn !== null && r.dueOn < today),
-        label: RTK_STATUS_LABELS[r.status],
+        status: requestRowChipStatus(
+          r.status,
+          r.dueOn !== null && r.dueOn < today,
+          r.firstResponseKind,
+        ),
+        label: requestStatusLabel(r),
       },
       newTab: false,
     })),

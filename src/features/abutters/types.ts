@@ -11,6 +11,7 @@ export type CandidateReason =
   | { kind: 'staff_selected'; crossing: CrossingKind; note: string; by: string }
   | { kind: 'across_between_points'; featureId: string; featureName: string | null }
   | { kind: 'across_within_capture'; featureId: string; distanceFt: number }
+  | { kind: 'within_buffer'; bufferFt: number }
 
 export interface Candidate {
   parcelId: string

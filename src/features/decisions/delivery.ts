@@ -8,6 +8,9 @@ import {
   projectParties,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { applicantName, applicationValues } from '@/features/abutters/applicantRecipient'
+import { capitalised } from '@/features/abutters/recipientRoleLabels'
+import { namedParty } from '@/features/applications/applicantName'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -156,9 +159,17 @@ export async function planDeliveries(
       ),
     )
     .orderBy(asc(projectParties.role), asc(projectParties.name))
-  const planned = plannedRecipients(rule, parties, {
+  const applicant = await applicantName(
+    tx,
+    resolved.applicationId,
+    await applicationValues(tx, resolved.applicationId),
+  )
+  const named = parties.map((p) =>
+    p.role === 'applicant' ? { ...p, name: namedParty(p.name) ?? applicant ?? p.name } : p,
+  )
+  const planned = plannedRecipients(rule, named, {
     planningBoard: boardLabel('planning_board'),
-    municipalOfficers: governingBody(),
+    municipalOfficers: capitalised(governingBody()),
   })
   if (planned.length === 0) return
   await tx.insert(decisionDeliveries).values(

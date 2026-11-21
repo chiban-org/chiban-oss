@@ -1,4 +1,10 @@
-export const LICENSE_TRADES = ['electrical', 'plumbing', 'fuelGas', 'oilHeating'] as const
+export const LICENSE_TRADES = [
+  'electrical',
+  'plumbing',
+  'fuelGas',
+  'oilHeating',
+  'manufacturedHousing',
+] as const
 export type LicenseTrade = (typeof LICENSE_TRADES)[number]
 
 export interface LicenseTypeGroup {

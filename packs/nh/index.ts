@@ -38,6 +38,7 @@ export const NH_PACK: StatePack = {
   ruleAreas: NH_RULE_AREAS,
   orderTexts: NH_ORDER_TEXTS,
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
+  recordsRequests: { acknowledgement: false },
   labels: {
     environmentalAgency: 'NH Department of Environmental Services',
     environmentalAgencyShort: 'NH DES',
@@ -46,6 +47,8 @@ export const NH_PACK: StatePack = {
     recordsRequest: 'Right-to-Know request',
     governingBody: 'selectmen',
     rehearing: { noun: 'rehearing', capitalised: 'Rehearing' },
+    significantDecisionQuestion: null,
+    significantDecisionHelp: null,
     citations: {
       exerciseFloorAuthority: 'RSA 674:33 I-a(a) and IV(b)',
       abutterListIssued: {

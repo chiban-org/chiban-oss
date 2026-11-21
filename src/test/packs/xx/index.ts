@@ -93,6 +93,7 @@ export const XX_PACK: StatePack = {
     noticeOfViolationRequest: 'Please call the town.',
   },
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
+  recordsRequests: { acknowledgement: false },
   labels: {
     environmentalAgency: 'Vellmora Water Office',
     environmentalAgencyShort: 'the Water Office',
@@ -101,6 +102,8 @@ export const XX_PACK: StatePack = {
     recordsRequest: 'Open Records request',
     governingBody: 'town council',
     rehearing: { noun: 'reconsideration', capitalised: 'Reconsideration' },
+    significantDecisionQuestion: null,
+    significantDecisionHelp: null,
     citations: {
       exerciseFloorAuthority: 'Vellmora Land Act 12',
       abutterListIssued: { label: 'Vellmora Land Act 9', url: null },

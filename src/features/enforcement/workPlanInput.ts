@@ -43,7 +43,8 @@ export interface CasePlanInput {
   today: CivilDate
   stay: Pick<StayState, 'stayed' | 'reason'>
   banner: string | null
-  findings: readonly Pick<typeof violationFindings.$inferSelect, 'id' | 'status'>[]
+  findings: readonly (Pick<typeof violationFindings.$inferSelect, 'id' | 'status'> &
+    Partial<Pick<typeof violationFindings.$inferSelect, 'provisionKind'>>)[]
   notices: readonly Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'>[]
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]

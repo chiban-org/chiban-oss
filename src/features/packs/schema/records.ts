@@ -25,6 +25,11 @@ export const RecordEventKindSchema = z.enum([
   'registration_expired',
   'septic_replaced_or_removed',
   'appeal_period_expired',
+  'permit_expired',
+  'occupancy_certificate_issued',
+  'final_inspection_passed',
+  'case_closed',
+  'request_completed',
 ])
 export type RecordEventKind = z.infer<typeof RecordEventKindSchema>
 

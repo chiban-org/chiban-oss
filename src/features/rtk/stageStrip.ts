@@ -1,10 +1,12 @@
 import type { Stage } from '@/components/layout/StageStrip'
+import { ACKNOWLEDGED_LABEL, isAcknowledgedOnly } from '@/features/rtk/requestStatus'
 import type { RtkRequestView } from '@/features/rtk/requests'
 
 export type RequestStageInput = Pick<
   RtkRequestView,
   'status' | 'statedDue' | 'firstResponseOn' | 'current'
->
+> &
+  Partial<Pick<RtkRequestView, 'firstResponseKind'>>
 
 function stage(key: string, label: string, status: Stage['status'], overdue = false): Stage {
   return { key, label, status, overdue }
@@ -43,6 +45,19 @@ export function requestStages(input: RequestStageInput): Stage[] {
         stage('closed', 'Closed', 'upcoming'),
       ]
     case 'responded':
+      if (
+        isAcknowledgedOnly({
+          status: input.status,
+          firstResponseKind: input.firstResponseKind ?? null,
+        })
+      ) {
+        return [
+          ...reached(input),
+          stage('acknowledged', ACKNOWLEDGED_LABEL, 'current'),
+          stage('responded', 'Responded', 'upcoming'),
+          stage('closed', 'Closed', 'upcoming'),
+        ]
+      }
       return [
         ...reached(input),
         stage('responded', 'Responded', 'current'),

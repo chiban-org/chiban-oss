@@ -8,18 +8,22 @@ import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
+import { townSettingValue } from '@/features/clocks/resolvedLength'
 import {
   computeRuleDue,
   eventMovesClocks,
   hasLocalBound,
+  hearingDependentRulesForEvent,
   keysCancelledBy,
+  keysOnlyIfHearingScheduled,
   type ResolvedLength,
   resolveRuleLength,
   rulesForEvent,
 } from '@/features/clocks/ruleEngine'
+import { significanceFact } from '@/features/clocks/significanceFact'
 import { effectiveBindings } from '@/features/config/bindings'
-import { getPublished } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
+import { electedHearing } from '@/features/hearings/electedHearing'
 import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import type { ClockRule, StartEvent } from '@/features/packs/schema'
@@ -34,13 +38,10 @@ export async function resolveClockLength(
 ): Promise<ResolvedLength> {
   if (!('fromSetting' in rule.length)) {
     if (!hasLocalBound(rule)) return resolveRuleLength(rule, facts, null, undefined)
-    const published = await getPublished(tx, 'town_rule_setting', rule.key, signal)
-    const townValue = (published?.body as { value: number } | undefined)?.value
-    return resolveRuleLength(rule, facts, null, townValue)
+    return resolveRuleLength(rule, facts, null, await townSettingValue(tx, rule.key, signal))
   }
   const setting = ruleByKey(pack, rule.length.fromSetting)
-  const published = await getPublished(tx, 'town_rule_setting', rule.length.fromSetting, signal)
-  const townValue = (published?.body as { value: number } | undefined)?.value
+  const townValue = await townSettingValue(tx, rule.length.fromSetting, signal)
   return resolveRuleLength(rule, facts, setting, townValue)
 }
 
@@ -79,18 +80,20 @@ export async function startClocksFor(
   signal: AbortSignal,
   pack: Pack = loadPack(),
   calendar: MeetingCalendar = boardMeetingCalendar(tx),
-  decisionFacts: Pick<ProjectFacts, 'outcome' | 'decisionFiledLate'> = {},
+  decisionFacts: Pick<ProjectFacts, 'outcome' | 'decisionFiledLate' | 'finalReviewBoard'> = {},
 ): Promise<void> {
   signal.throwIfAborted()
   const app = await loadApplicationContext(tx, applicationId, signal)
   if (app === null) return
   const facts = {
     ...(await factsWithDeterminations(tx, applicationId, app.facts)),
+    ...(await significanceFact(tx, applicationId, pack)),
     ...decisionFacts,
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
-  await cancelClocksFor(tx, applicationId, event, pack)
-  const rules = rulesForEvent(pack.rules, event, bound, facts)
+  await cancelClocksFor(tx, applicationId, { event, facts }, pack)
+  const hearing = await hearingDependentStart(tx, applicationId, { pack, event, bound, facts })
+  const rules = [...rulesForEvent(pack.rules, event, bound, facts), ...hearing.rules]
   const started = ONCE_PER_APPLICATION.includes(event)
     ? ne(clocks.status, 'superseded')
     : eq(clocks.status, 'running')
@@ -105,6 +108,38 @@ export async function startClocksFor(
       if (await clockStartedOn(tx, applicationId, rule.key, onDate)) continue
     } else if (existingKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
+  }
+  await meetIfHearingHeld(tx, applicationId, hearing, signal)
+}
+
+interface HearingDependentStart {
+  rules: ClockRule[]
+  heldOn: CivilDate | null
+}
+
+async function hearingDependentStart(
+  tx: Tx,
+  applicationId: string,
+  s: { pack: Pack; event: StartEvent; bound: ReadonlySet<string>; facts: ProjectFacts },
+): Promise<HearingDependentStart> {
+  if (keysOnlyIfHearingScheduled(s.pack.rules).length === 0) return { rules: [], heldOn: null }
+  const elected = await electedHearing(tx, applicationId)
+  if (elected === null) return { rules: [], heldOn: null }
+  return {
+    rules: hearingDependentRulesForEvent(s.pack.rules, s.event, s.bound, s.facts),
+    heldOn: elected.firstHeldOn,
+  }
+}
+
+export async function meetIfHearingHeld(
+  tx: Tx,
+  applicationId: string,
+  hearing: HearingDependentStart,
+  signal: AbortSignal,
+): Promise<void> {
+  if (hearing.heldOn === null) return
+  for (const rule of hearing.rules) {
+    await markClockMet(tx, applicationId, rule.key, hearing.heldOn, signal)
   }
 }
 
@@ -123,10 +158,10 @@ export async function startClocksWhenPackUses(
 async function cancelClocksFor(
   tx: Tx,
   applicationId: string,
-  event: StartEvent,
+  on: { event: StartEvent; facts: ProjectFacts },
   pack: Pack,
 ): Promise<void> {
-  const cancelledKeys = keysCancelledBy(pack.rules, event)
+  const cancelledKeys = keysCancelledBy(pack.rules, on.event, on.facts)
   if (cancelledKeys.length === 0) return
   await tx
     .update(clocks)

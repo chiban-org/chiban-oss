@@ -8,6 +8,7 @@ import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -37,27 +38,25 @@ export interface ApplicationAppeals {
   offerFinalApproval: boolean
 }
 
-function appealWindowEnds(decidedOn: CivilDate): CivilDate | null {
+type WindowEnds = (decidedOn: CivilDate) => CivilDate | null
+
+async function appealWindowEnds(db: Db, signal: AbortSignal): Promise<WindowEnds> {
   const key = packRoles().rules.adminAppealToZba
-  if (key === null) return null
+  if (key === null) return () => null
   const rule = ruleByKey(loadPack(), key)
-  if (rule.kind !== 'clock' || !('value' in rule.length)) return decidedOn
-  return computeRuleDue(
-    rule,
-    { unit: rule.length.unit, value: rule.length.value },
-    decidedOn,
-    packHolidayCalendar(),
-  ).due
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return (decidedOn) => decidedOn
+  const length = await resolvedLength(db, rule, signal)
+  return (decidedOn) => computeRuleDue(rule, length, decidedOn, packHolidayCalendar()).due
 }
 
 export function appealStatusText(
   decision: NodeRow,
   appeal: NodeRow | undefined,
   today: CivilDate,
+  ends: CivilDate | null = null,
 ): string {
   if (appeal !== undefined)
     return `Appealed to the ${boardShort('zba')} on ${formatCivilDate(appeal.occurredOn)}`
-  const ends = appealWindowEnds(decision.occurredOn as CivilDate)
   if (ends === null) return 'Not appealed.'
   return ends < today
     ? `Not appealed. The appeal window ended ${formatCivilDate(ends)}.`
@@ -88,8 +87,10 @@ export async function loadAdministrativeAppeals(
           .where(and(inArray(appealNodes.parentId, ids), eq(appealNodes.kind, 'zba_appeal')))
   const today = await townToday(db, now, signal)
   const lines: AdministrativeAppealLine[] = []
+  const endsFor = await appealWindowEnds(db, signal)
   for (const { node, number } of decisions) {
     const app = await loadApplicationContext(db, node.applicationId ?? '', signal)
+    const appeal = appeals.find((a) => a.parentId === node.id)
     lines.push({
       applicationId: node.applicationId ?? '',
       applicationNumber: number,
@@ -97,8 +98,9 @@ export async function loadAdministrativeAppeals(
       decidedOnText: formatCivilDate(node.occurredOn),
       statusText: appealStatusText(
         node,
-        appeals.find((a) => a.parentId === node.id),
+        appeal,
         today,
+        appeal === undefined ? endsFor(node.occurredOn as CivilDate) : null,
       ),
     })
   }

@@ -10,6 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { mayActOnInspection, userMayActOnInspection } from '@/features/authz/classificationScope'
 import { queueCalendarPush } from '@/features/calendar/queuePush'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
+import { lockInspectionAfterApplication } from '@/features/inspections/lockInspection'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { schedulingDates, slotStarts } from '@/features/inspections/slots'
@@ -161,23 +162,15 @@ async function bookInTransaction(
   rules: Rules,
   signal: AbortSignal,
 ): Promise<Result<{ calendarSequence: number; pushIds: string[] }, ScheduleError>> {
-  const [locked] = await tx
-    .select()
-    .from(inspections)
-    .where(eq(inspections.id, input.inspectionId))
-    .for('update')
-  if (locked === undefined) return err('not_found')
+  const found = await lockInspectionAfterApplication(tx, input.inspectionId)
+  if (found === null) return err('not_found')
+  const { inspection: locked, appState } = found
   if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
   if (locked.status !== 'requested' && locked.status !== 'scheduled') return err('not_schedulable')
-  const [app] = await tx
-    .select({ state: applications.state })
-    .from(applications)
-    .where(eq(applications.id, locked.applicationId))
-    .for('update')
-  if (app?.state === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
+  if (appState === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
     return err('permit_suspended')
   }
-  if (app?.state !== 'issued') return err('not_schedulable')
+  if (appState !== 'issued') return err('not_schedulable')
   await tx
     .select({ id: users.id })
     .from(users)
@@ -339,11 +332,7 @@ export async function cancelInspection(
     signal,
   )
   return await transactionResult(db, async (tx) => {
-    const [locked] = await tx
-      .select()
-      .from(inspections)
-      .where(eq(inspections.id, input.inspectionId))
-      .for('update')
+    const locked = (await lockInspectionAfterApplication(tx, input.inspectionId))?.inspection
     if (locked === undefined) return err('not_found')
     const ownRequest = locked.channel === 'portal' && locked.requestedByUserId === actor.userId
     if (!isStaff && !(ownRequest && (await stillAParty(tx, actor, locked.applicationId, signal)))) {

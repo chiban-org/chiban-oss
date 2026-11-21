@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reasonLines } from '@/features/abutters/reasonText'
+import { reasonLines, reasonText } from '@/features/abutters/reasonText'
 
 describe('reasonLines', () => {
   it('a parcel across a street between the points is not also listed as within capture', () => {
@@ -18,5 +18,13 @@ describe('reasonLines', () => {
         { kind: 'across_within_capture', featureId: 'f2', distanceFt: 12 },
       ]),
     ).toHaveLength(2)
+  })
+})
+
+describe('within_buffer', () => {
+  it('reads as a distance from the property', () => {
+    expect(reasonText({ kind: 'within_buffer', bufferFt: 150 })).toBe(
+      'Within 150 feet of the property',
+    )
   })
 })

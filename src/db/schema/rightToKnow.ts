@@ -25,6 +25,7 @@ export const RTK_STATUSES = [
   'withdrawn',
 ] as const
 export const RTK_RESPONSE_KINDS = [
+  'acknowledged',
   'made_available',
   'website_reference',
   'denied',
@@ -53,6 +54,9 @@ export const rtkRequests = pgTable(
     firstResponseOn: date('first_response_on', { mode: 'string' }),
     firstResponseKind: text('first_response_kind', { enum: RTK_RESPONSE_KINDS }),
     firstResponseUrl: text('first_response_url'),
+    acknowledgedOn: date('acknowledged_on', { mode: 'string' }),
+    clarificationQuestion: text('clarification_question'),
+    followUpOn: date('follow_up_on', { mode: 'string' }),
     deniedOn: date('denied_on', { mode: 'string' }),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

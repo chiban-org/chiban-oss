@@ -17,7 +17,12 @@ import {
   startClocksFor,
   startClocksWhenPackUses,
 } from '@/features/clocks/startClocks'
+import {
+  markHearingScheduledClocksMet,
+  startHearingScheduledClocks,
+} from '@/features/clocks/triggeredClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { lockHearingAfterApplication } from '@/features/hearings/lockHearing'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
 import { packRoles } from '@/features/packs/roles'
@@ -152,6 +157,7 @@ export async function scheduleHearing(
       noticeSetId: derived.value.setId,
       createdBy: actor.userId,
     })
+    if (input.kind !== 'rehearing') await startHearingScheduledClocks(tx, app.id, signal)
     await writeAudit(
       tx,
       {
@@ -227,12 +233,8 @@ export async function markHearingHeld(
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.heldOn, now, signal)) return err('future_date')
   return await transactionResult<void, HeldError>(db, async (tx) => {
-    const [hearing] = await tx
-      .select()
-      .from(hearings)
-      .where(eq(hearings.id, input.hearingId))
-      .for('update')
-    if (hearing === undefined) return err('not_found')
+    const hearing = await lockHearingAfterApplication(tx, input.hearingId)
+    if (hearing === null) return err('not_found')
     if (hearing.status !== 'scheduled' || hearing.properlyNoticedAt === null) {
       return err('not_properly_noticed')
     }
@@ -249,6 +251,9 @@ export async function markHearingHeld(
     const app = await loadApplicationContext(tx, hearing.applicationId, signal)
     if (app !== null && boardOfApplication(app) === 'zba') {
       await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
+    }
+    if (hearing.kind !== 'rehearing') {
+      await markHearingScheduledClocksMet(tx, hearing.applicationId, input.heldOn, signal)
     }
     if (app?.state === 'under_review') {
       await startClocksWhenPackUses(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)

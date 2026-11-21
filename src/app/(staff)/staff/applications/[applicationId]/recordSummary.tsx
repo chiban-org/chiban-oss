@@ -1,5 +1,6 @@
 import { StageStrip } from '@/components/layout/StageStrip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
+import { offersCompleteness } from '@/features/applications/completenessStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type StageInput, stagesFor } from '@/features/applications/stageStrip'
 import type { WorkPlan } from '@/features/applications/workPlanTypes'
@@ -22,7 +23,7 @@ function stageInput(view: StaffApplicationView, board: boolean): StageInput {
     substep: view.substep,
     board,
     allowsDirectIssue: view.allowsDirectIssue,
-    completeness: view.isBuildingPermit,
+    completeness: offersCompleteness(view),
     receivedDate: view.receivedDate,
     completedDate: view.completedDate,
     issuedOn: view.issuedOn,

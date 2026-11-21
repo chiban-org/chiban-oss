@@ -113,6 +113,15 @@ function cureIssues(rules: PackRule[]): string[] {
   })
 }
 
+function penaltyRoleIssues(roles: PackRoles, rules: PackRule[]): string[] {
+  const key = roles.rules.enforcementPenalty
+  if (key === null) return []
+  const rule = rules.find((r) => r.key === key)
+  return rule === undefined || rule.kind === 'civil_penalty'
+    ? []
+    : [`role rules.enforcementPenalty ${key} must be a civil_penalty rule`]
+}
+
 function settingClockIssues(rules: PackRule[]): string[] {
   const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
   const issues: string[] = []
@@ -135,6 +144,23 @@ function settingClockIssues(rules: PackRule[]): string[] {
     }
   }
   return issues
+}
+
+function triggeredClockIssues(rules: PackRule[]): string[] {
+  return rules.flatMap((r) => {
+    if (r.kind !== 'clock') return []
+    const issues: string[] = []
+    if (r.satisfiedByInspection === true && r.startEvent !== 'permit_issued') {
+      issues.push(`clock ${r.key} is satisfiedByInspection and must start at permit_issued`)
+    }
+    if (r.satisfiedByCompletion === true && r.startEvent !== 'application_received') {
+      issues.push(`clock ${r.key} is satisfiedByCompletion and must start at application_received`)
+    }
+    if (r.onlyIfHearingScheduled === true && r.startEvent !== 'application_accepted') {
+      issues.push(`clock ${r.key} is onlyIfHearingScheduled and must start at application_accepted`)
+    }
+    return issues
+  })
 }
 
 export const PackManifestSchema = z
@@ -176,9 +202,11 @@ export const PackManifestSchema = z
     const issues = [
       ...roleIssues(m.roles, targets),
       ...settingClockIssues(m.rules),
+      ...triggeredClockIssues(m.rules),
       ...deliveryIssues(m.rules),
       ...receiptStageIssues(m.rules),
       ...cureIssues(m.rules),
+      ...penaltyRoleIssues(m.roles, m.rules),
     ]
     for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })

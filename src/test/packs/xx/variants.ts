@@ -42,7 +42,10 @@ export const XX_NO_BUILDING: StatePack = xxPackWith({
     classifications: XX_PACK.manifest.classifications.filter((c) => c.key !== 'xx.building_permit'),
     recordSeriesDefaults: { byClassification: {}, byApplicationType: {} },
   },
-  pack: { ruleAreas: [{ title: 'All rules', rules: withoutBuilding }] },
+  pack: {
+    ruleAreas: [{ title: 'All rules', rules: withoutBuilding }],
+    buildingCodes: { choices: [], defaultChoice: null, requiredAbove: null },
+  },
 })
 
 export const XX_PB_SUBDIVISION_KEY = 'xx.pb_subdivision'

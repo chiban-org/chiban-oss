@@ -48,6 +48,9 @@ function ask(request: Request, pending: number, due: RequestDue | null): string 
     case 'awaiting_decision':
       return 'Release the records or deny the request'
     case 'responded':
+      if (request.firstResponseKind === 'acknowledged') {
+        return 'Send the time estimate or the records'
+      }
       return pending > 0
         ? 'Release the approved records, then close the request'
         : 'Close the request'
@@ -91,6 +94,14 @@ function nowOf(request: Request, pending: number, due: RequestDue | null): Reque
         warnings,
       }
     case 'responded':
+      if (request.firstResponseKind === 'acknowledged') {
+        return {
+          kind: 'respond',
+          task: 'Send the time estimate or the records',
+          note: null,
+          warnings,
+        }
+      }
       return pending > 0
         ? { kind: 'release', task: 'Release the records', note: null, warnings }
         : {

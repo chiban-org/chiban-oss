@@ -1,5 +1,6 @@
 import type { RtkCostLine, RtkResponseKind, RtkStatus } from '@/db/schema'
 import { formatCents } from '@/lib/money'
+import type { CivilDate } from '@/types/civilDate'
 
 export const RTK_STATUS_LABELS: Record<RtkStatus, string> = {
   open: 'Open',
@@ -18,6 +19,7 @@ export const RTK_VIA_LABELS = {
 } as const
 
 export const RTK_RESPONSE_LABELS: Record<RtkResponseKind, string> = {
+  acknowledged: 'Receipt acknowledged',
   made_available: 'Records made available',
   website_reference: 'Records are posted on the town website',
   denied: 'Denied, with the exemption cited',
@@ -28,6 +30,17 @@ const RESPONSE_LABELS = new Map<string, string>(Object.entries(RTK_RESPONSE_LABE
 
 export function responseLabel(kind: string | null): string | null {
   return kind === null ? null : (RESPONSE_LABELS.get(kind) ?? null)
+}
+
+export interface ResponseDates {
+  firstResponseOn: CivilDate | null
+  acknowledgedOn: CivilDate | null
+  followUpOn: CivilDate | null
+}
+
+export function responseDateOf(request: ResponseDates): CivilDate | null {
+  if (request.acknowledgedOn === null) return request.firstResponseOn
+  return request.followUpOn ?? request.acknowledgedOn
 }
 
 export const RTK_METHOD_LABELS = {

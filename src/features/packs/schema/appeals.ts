@@ -15,6 +15,8 @@ export interface AppealRouteWhen {
   outcome?: 'granted' | 'denied'
   linkedComponent?: boolean
   finalReviewBoard?: BoardKind
+  significant?: boolean
+  originalOutcome?: 'granted' | 'denied'
   label: string
 }
 

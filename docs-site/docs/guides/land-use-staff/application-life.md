@@ -45,7 +45,7 @@ A reviewer or a board member sees a shorter page with only the parts they need, 
 
 An application arrives from the applicant's portal or from the counter. It starts as **Submitted**. If the permit type charges a fee at filing, the fee is assessed now. Chiban starts the clocks that law attaches to the filing, and they appear under **Clocks** and as **Due next**.
 
-On a building permit, the first requirement is **Marked complete**. Choose **Mark complete** and enter the **Completed on** date, which is today unless the application became complete earlier. The decision clock starts from that date.
+On a building permit, the first requirement is **Marked complete**. Choose **Mark complete** and enter the **Completed on** date, which is today unless the application became complete earlier. In New Hampshire the decision clock starts from that date. In Maine the decision clock already started when the application was filed, so marking it complete does not move the decision date.
 
 ### 2. Assign a responsible staff member
 

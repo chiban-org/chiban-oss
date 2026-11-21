@@ -4,10 +4,13 @@ import { type appealNodes, clocks } from '@/db/schema'
 import {
   applicationProjectFinality,
   isApprovingOutcome,
-  PROJECT_FINAL_APPROVAL,
   type ProjectFinality,
   ruleWaitsForFinalApproval,
 } from '@/features/appeals/projectFinality'
+import { significanceForRoutes } from '@/features/appeals/routeSignificance'
+import { originalDecision, windowAnchor } from '@/features/appeals/windowAnchor'
+import { WAITING_START_EVENTS } from '@/features/appeals/windowStart'
+import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -18,10 +21,12 @@ import { err, ok, type Result } from '@/types/result'
 
 type NodeRow = typeof appealNodes.$inferSelect
 
-interface RouteFacts {
+export interface RouteFacts {
   outcome: 'granted' | 'denied' | null
   linkedComponent: boolean
   finalReviewBoard: BoardKind | null
+  significant: boolean | null
+  originalOutcome?: 'granted' | 'denied' | null
 }
 
 function routeSpecificity(when: AppealRoute['when']): number {
@@ -29,13 +34,18 @@ function routeSpecificity(when: AppealRoute['when']): number {
   return (
     (when.outcome === undefined ? 0 : 1) +
     (when.linkedComponent === undefined ? 0 : 1) +
-    (when.finalReviewBoard === undefined ? 0 : 1)
+    (when.finalReviewBoard === undefined ? 0 : 1) +
+    (when.significant === undefined ? 0 : 1) +
+    (when.originalOutcome === undefined ? 0 : 1)
   )
 }
 
 function routeApplies(when: NonNullable<AppealRoute['when']>, facts: RouteFacts): boolean {
   if (when.outcome !== undefined && when.outcome !== facts.outcome) return false
   if (when.finalReviewBoard !== undefined && when.finalReviewBoard !== facts.finalReviewBoard)
+    return false
+  if (when.significant !== undefined && when.significant !== facts.significant) return false
+  if (when.originalOutcome !== undefined && when.originalOutcome !== facts.originalOutcome)
     return false
   return when.linkedComponent === undefined || when.linkedComponent === facts.linkedComponent
 }
@@ -89,16 +99,32 @@ function outcomeFact(parent: NodeRow): RouteFacts['outcome'] {
   return parent.outcome === 'denied' ? 'denied' : null
 }
 
+export function usesOriginalOutcome(routes: readonly AppealRoute[]): boolean {
+  return routes.some((r) => r.when?.originalOutcome !== undefined)
+}
+
+export async function originalOutcomeFact(
+  db: DbOrTx,
+  node: NodeRow,
+  routes: readonly AppealRoute[],
+): Promise<Pick<RouteFacts, 'originalOutcome'>> {
+  if (!usesOriginalOutcome(routes)) return {}
+  const original = await originalDecision(db, node)
+  return { originalOutcome: original === null ? null : outcomeFact(original) }
+}
+
 export function routeFacts(
   parent: NodeRow,
   linkedComponent: boolean | undefined,
   finality: ProjectFinality | null,
+  significant: boolean | null,
 ): RouteFacts {
   const afterRehearing = parent.kind === 'rehearing_outcome'
   return {
     outcome: outcomeFact(parent),
     linkedComponent: afterRehearing ? parent.linkedPbNodeId !== null : linkedComponent === true,
     finalReviewBoard: finality?.finalReviewBoard ?? null,
+    significant,
   }
 }
 
@@ -111,15 +137,18 @@ export function mostSpecificRoute(
     .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
 }
 
-export function chooseRoute(
+export async function chooseRoute(
+  db: DbOrTx,
   parent: NodeRow,
-  input: { kind: AppealNodeKind; linkedComponent?: boolean },
-  finality: ProjectFinality | null,
-): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
-  const hit = mostSpecificRoute(
-    candidateRoutes(parent, input.kind),
-    routeFacts(parent, input.linkedComponent, finality),
-  )
+  input: { kind: AppealNodeKind; linkedComponent?: boolean; finality: ProjectFinality | null },
+  signal: AbortSignal,
+): Promise<Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'>> {
+  const routes = candidateRoutes(parent, input.kind)
+  const significant = await significanceForRoutes(db, parent, routes, signal)
+  const hit = mostSpecificRoute(routes, {
+    ...routeFacts(parent, input.linkedComponent, input.finality, significant),
+    ...(await originalOutcomeFact(db, parent, routes)),
+  })
   return hit === undefined ? err('route_not_allowed') : ok(hit)
 }
 
@@ -146,35 +175,43 @@ export interface WindowClock {
   currentDue: string
 }
 
+function laterStartEvent(ruleKey: string): string | null {
+  const rule = loadPack().rules.find((r) => r.kind === 'clock' && r.key === ruleKey)
+  return rule?.kind === 'clock' && WAITING_START_EVENTS.includes(rule.startEvent)
+    ? rule.startEvent
+    : null
+}
+
 export function clockedWindowDue(
   windowClocks: readonly WindowClock[],
   parent: NodeRow,
   ruleKey: string,
 ): CivilDate | null {
-  const afterFinal = ruleWaitsForFinalApproval(ruleKey)
+  const later = laterStartEvent(ruleKey)
   const clock = windowClocks.find(
     (c) =>
       c.ruleKey === ruleKey &&
-      (afterFinal ? c.startEvent === PROJECT_FINAL_APPROVAL : c.startDate === parent.occurredOn),
+      (later === null ? c.startDate === parent.occurredOn : c.startEvent === later),
   )
   return clock === undefined ? null : (clock.currentDue as CivilDate)
 }
 
-export function ruleWindowDue(
-  parent: NodeRow,
+export async function ruleWindowDue(
+  db: DbOrTx,
+  anchor: NodeRow,
   ruleKey: string,
   finality: ProjectFinality | null,
-): CivilDate {
+  signal: AbortSignal,
+): Promise<CivilDate> {
   const rule = ruleByKey(loadPack(), ruleKey)
   const startOn =
     ruleWaitsForFinalApproval(ruleKey) && finality !== null
       ? finality.finalOn
-      : (parent.occurredOn as CivilDate)
-  const length = rule.kind === 'clock' && 'value' in rule.length ? rule.length : null
-  if (rule.kind !== 'clock' || length === null) return parent.occurredOn as CivilDate
+      : (anchor.occurredOn as CivilDate)
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return anchor.occurredOn as CivilDate
   return computeRuleDue(
     rule,
-    { unit: length.unit, value: length.value },
+    await resolvedLength(db, rule, signal),
     startOn,
     packHolidayCalendar(),
   ).due
@@ -206,14 +243,16 @@ export async function windowDue(
   tx: DbOrTx,
   parent: NodeRow,
   window: { applicationId: string | null; ruleKey: string; finality: ProjectFinality | null },
+  signal: AbortSignal,
 ): Promise<CivilDate> {
   const { applicationId, ruleKey, finality } = window
+  const anchor = await windowAnchor(tx, parent, ruleKey)
   if (applicationId !== null) {
-    const started = ruleWaitsForFinalApproval(ruleKey)
-      ? eq(clocks.startEvent, PROJECT_FINAL_APPROVAL)
-      : eq(clocks.startDate, parent.occurredOn)
+    const later = laterStartEvent(ruleKey)
+    const started =
+      later === null ? eq(clocks.startDate, anchor.occurredOn) : eq(clocks.startEvent, later)
     const due = await startedClockDue(tx, applicationId, ruleKey, started)
     if (due !== null) return due
   }
-  return ruleWindowDue(parent, ruleKey, finality)
+  return await ruleWindowDue(tx, anchor, ruleKey, finality, signal)
 }

@@ -18,6 +18,7 @@ import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 import { rtkDueContext } from '@/features/rtk/dueContext'
 import { firstResponseTimeliness, type RtkTimeliness } from '@/features/rtk/timeliness'
@@ -134,6 +135,9 @@ export interface RtkRequestView {
   firstResponseOn: CivilDate | null
   firstResponseKind: string | null
   firstResponseUrl: string | null
+  acknowledgedOn: CivilDate | null
+  clarificationQuestion: string | null
+  followUpOn: CivilDate | null
   deniedOn: CivilDate | null
   rowVersion: number
   timeliness: RtkTimeliness
@@ -186,6 +190,9 @@ export async function rtkRequestView(
     firstResponseOn,
     firstResponseKind: row.firstResponseKind,
     firstResponseUrl: row.firstResponseUrl,
+    acknowledgedOn: row.acknowledgedOn as CivilDate | null,
+    clarificationQuestion: row.clarificationQuestion,
+    followUpOn: row.followUpOn as CivilDate | null,
     deniedOn: row.deniedOn as CivilDate | null,
     rowVersion: row.rowVersion,
     timeliness,
@@ -200,6 +207,7 @@ export async function closeRequest(
   actor: Actor,
   input: { requestId: string; to: 'closed' | 'withdrawn'; expectedRowVersion: number },
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<void, 'forbidden' | 'not_found' | 'stale_version' | 'already_closed'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'rtk.manage', signal)
@@ -217,6 +225,8 @@ export async function closeRequest(
       .update(rtkRequests)
       .set({ status: input.to, openDueOn: null, rowVersion: row.rowVersion + 1 })
       .where(eq(rtkRequests.id, row.id))
+    const today = await townToday(tx, now, signal)
+    await recordSystemEvent(tx, { kind: 'request_completed', rtkRequestId: row.id }, today)
     await writeAudit(
       tx,
       {

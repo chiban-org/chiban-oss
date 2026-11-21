@@ -18,11 +18,12 @@ export async function selectAcross(
   tx: DbOrTx,
   result: ProjectionResult,
   applicantParcelIds: string[],
-  captureRadiusFt: number,
+  captureRadiusFt: number | null,
   features: CrossingFeature[],
   signal: AbortSignal,
 ): Promise<Candidate[]> {
   signal.throwIfAborted()
+  if (captureRadiusFt === null) return []
   const srid = projectedSridParam()
   const names = new Map(features.map((f) => [f.id, f.name]))
   const reasons = new Map<string, CandidateReason[]>()

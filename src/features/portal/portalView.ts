@@ -12,6 +12,7 @@ import {
 } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
+import { completenessStepFor } from '@/features/applications/completenessStep'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
@@ -28,7 +29,6 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
 import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
-import { isBuildingPermit } from '@/features/packs/roles'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
@@ -92,7 +92,7 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
     substep: app.substep,
     board: boardKindOf(app.typeBody.classification) !== null,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
-    completeness: isBuildingPermit(app.typeBody.classification),
+    completeness: completenessStepFor(app.typeBody.classification) !== null,
     receivedDate: app.receivedDate,
     completedDate: app.completedDate,
     issuedOn: app.issuedOn,

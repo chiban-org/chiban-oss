@@ -1,4 +1,9 @@
-import { primaryAbutterParams } from '@/features/abutters/packParams'
+import {
+  NO_PROJECTION_MESSAGE,
+  primaryAbutterParams,
+  supportsProjection,
+} from '@/features/abutters/packParams'
+import { bufferAboveMaxMessage } from '@/features/abutters/townBuffer'
 import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
@@ -12,6 +17,11 @@ type Board = BoardSettingsBody['boards'][number]
 
 function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | null {
   if (!abutters.projectionEnabled) return null
+  if (!supportsProjection(primaryAbutterParams())) {
+    return {
+      invalid: [{ path: 'abutters.projectionEnabled', message: NO_PROJECTION_MESSAGE }],
+    }
+  }
   if (abutters.layersConfirmedBy === null) {
     return {
       invalid: [
@@ -54,7 +64,7 @@ function bufferIssue(abutters: BoardSettingsBody['abutters']): PublishError | nu
       invalid: [
         {
           path: 'abutters.bufferFt',
-          message: `State law lets a town set this distance to at most ${String(townBuffer.maxFt)} feet.`,
+          message: bufferAboveMaxMessage(townBuffer),
         },
       ],
     }

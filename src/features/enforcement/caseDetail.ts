@@ -7,7 +7,6 @@ import {
   enforcementAppeals,
   enforcementFines,
   enforcementOrders,
-  orderCourtSteps,
   perilCertifications,
   restrainingOrders,
   users,
@@ -15,46 +14,28 @@ import {
   violationNotices,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
-import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPanelDocuments, type PanelDocument } from '@/features/documents/panelData'
 import { getCase, type StaffCaseView } from '@/features/enforcement/access'
-import { answerDueOf } from '@/features/enforcement/answers'
+import {
+  casePenaltyExposure,
+  casePenaltyOf,
+  earliestConviction,
+} from '@/features/enforcement/casePenalty'
 import { type CaseRemedies, factsOf, loadCaseRemedies } from '@/features/enforcement/caseRemedies'
 import type { AttachableComplaint } from '@/features/enforcement/complaintCandidates'
-import {
-  curePenaltyFor,
-  cureRuleByKey,
-  cureRules,
-  earliestReturnReceipt,
-} from '@/features/enforcement/cureRules'
+import { cureRuleByKey, cureRules, earliestReturnReceipt } from '@/features/enforcement/cureRules'
 import { fineBalance } from '@/features/enforcement/fines'
-import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
-import { type PenaltyExposure, penaltyExposure } from '@/features/enforcement/penaltyExposure'
+import { loadOrderDetail, type OrderDetail } from '@/features/enforcement/orderDetail'
+import type { PenaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import type { SuggestionsByKind } from '@/features/enforcement/sections/suggestions'
-import {
-  loadServiceState,
-  orderRule,
-  type ServiceState,
-  statusOf,
-} from '@/features/enforcement/service'
-import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import { type StayState, stayBanner, stayFor } from '@/features/enforcement/stay'
-import type { CeaseAndDesistRule, CureNoticeRule } from '@/features/packs/schema'
+import type { CureNoticeRule } from '@/features/packs/schema'
 import type { CasePayments } from '@/features/payments/casePayments'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export interface OrderDetail {
-  row: typeof enforcementOrders.$inferSelect
-  rule: CeaseAndDesistRule
-  service: ServiceState
-  status: ServiceStatus
-  steps: (typeof orderCourtSteps.$inferSelect)[]
-  gate: { open: true } | { open: false; blocks: MotionBlock[] }
-  answerDues: { recipientId: string; name: string; due: SubjectDue; answeredOn: string | null }[]
-  appealDue: SubjectDue | null
-}
+export { buildOrderDetail, type OrderDetail } from '@/features/enforcement/orderDetail'
 
 export interface AppealDetail {
   row: typeof enforcementAppeals.$inferSelect
@@ -95,64 +76,6 @@ export interface CaseDetail {
   remedies?: CaseRemedies
 }
 
-export function buildOrderDetail(
-  row: typeof enforcementOrders.$inferSelect,
-  service: ServiceState,
-  steps: (typeof orderCourtSteps.$inferSelect)[],
-  stay: StayState,
-  today: CivilDate,
-): OrderDetail {
-  const rule = orderRule(row)
-  const status = statusOf(rule, service)
-  const filed = steps
-    .filter((s) => s.kind === 'filed_with_clerk')
-    .map((s) => s.occurredOn)
-    .sort()[0]
-  const gate = motionBlocks({
-    rule,
-    status,
-    recipients: service.recipients.map((r) => ({
-      answerDue: answerDueOf(r.row),
-      answeredOn: r.row.answeredOn as CivilDate | null,
-      served: status.servedOn[r.id] !== undefined,
-    })),
-    filedWithClerkOn: (filed ?? null) as CivilDate | null,
-    stay,
-    today,
-  })
-  const judgment = steps.find((s) => s.kind === 'judgment')
-  return {
-    row,
-    rule,
-    service,
-    status,
-    steps,
-    gate: gate.length === 0 ? { open: true } : { open: false, blocks: gate },
-    answerDues: service.recipients.flatMap((r) => {
-      const due = answerDueOf(r.row)
-      return due === null
-        ? []
-        : [{ recipientId: r.id, name: r.name, due, answeredOn: r.row.answeredOn }]
-    }),
-    appealDue:
-      judgment?.appealDue === undefined || judgment.appealDue === null
-        ? null
-        : (judgment.appealDue as SubjectDue),
-  }
-}
-
-async function orderDetail(
-  db: DbOrTx,
-  row: typeof enforcementOrders.$inferSelect,
-  stay: StayState,
-  today: CivilDate,
-  signal: AbortSignal,
-): Promise<OrderDetail> {
-  const service = await loadServiceState(db, row.id, signal)
-  const steps = await db.select().from(orderCourtSteps).where(eq(orderCourtSteps.orderId, row.id))
-  return buildOrderDetail(row, service, steps, stay, today)
-}
-
 async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, string>> {
   const unique = [...new Set(ids)]
   if (unique.length === 0) return {}
@@ -161,14 +84,6 @@ async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, stri
     .from(users)
     .where(inArray(users.id, unique))
   return Object.fromEntries(rows.map((r) => [r.id, r.name]))
-}
-
-function earliestConviction(
-  courtJudgment: CivilDate | null,
-  outcomes: { kind: string; occurredOn: string }[],
-): CivilDate | null {
-  const won = outcomes.filter((o) => o.kind === 'judgment_for_town').map((o) => o.occurredOn)
-  return ([courtJudgment, ...won].filter((x) => x !== null).sort()[0] ?? null) as CivilDate | null
 }
 
 export async function loadCaseDetail(
@@ -219,7 +134,9 @@ export async function loadCaseDetail(
         .where(eq(counselReferrals.caseId, caseId))
         .orderBy(asc(counselReferrals.referredOn)),
     ])
-  const orders = await Promise.all(orderRows.map((o) => orderDetail(db, o, stay, today, signal)))
+  const orders = await Promise.all(
+    orderRows.map((o) => loadOrderDetail(db, o, stay, today, signal)),
+  )
   const appealIds = appealRows.map((a) => a.id)
   const [certs, restraints] =
     appealIds.length === 0
@@ -262,12 +179,10 @@ export async function loadCaseDetail(
       .map((n) => n.receivedOn)
       .filter((d): d is string => d !== null)
       .sort()[0] ?? null
-  const penalty =
-    first === undefined
-      ? curePenaltyFor(view.value.row.cureRuleKey)
-      : enforcementRulesFor(first.rule).penalty
-  const penaltyNotice =
-    first === undefined ? earliestReturnReceipt(cureRows) : (notice as CivilDate | null)
+  const penalty = casePenaltyOf(
+    first === undefined ? null : enforcementRulesFor(first.rule).penalty,
+    view.value.row.cureRuleKey,
+  )
   const judgment = orders
     .flatMap((o) => o.steps)
     .find((s) => s.kind === 'judgment' && s.judgmentOutcome !== 'annulled')
@@ -300,18 +215,12 @@ export async function loadCaseDetail(
       row,
       outcomes: outcomes.filter((o) => o.referralId === row.id),
     })),
-    exposure:
-      penalty === null
-        ? null
-        : penaltyExposure(penalty, {
-            noticeReceivedOn: penaltyNotice,
-            convictedOn: earliestConviction(
-              (judgment?.occurredOn ?? null) as CivilDate | null,
-              outcomes,
-            ),
-            through: today,
-            offense: 'first',
-          }),
+    exposure: casePenaltyExposure(penalty, {
+      noticeReceivedOn: notice as CivilDate | null,
+      cureReceiptOn: earliestReturnReceipt(cureRows),
+      convictedOn: earliestConviction((judgment?.occurredOn ?? null) as CivilDate | null, outcomes),
+      today,
+    }),
     documents: await loadPanelDocuments(
       db,
       actor,

@@ -1,0 +1,1 @@
+ALTER TABLE "rtk_requests" ADD COLUMN "follow_up_on" date;

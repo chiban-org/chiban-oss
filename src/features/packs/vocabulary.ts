@@ -9,6 +9,10 @@ export function recordsRequest(): string {
   return activePack().labels.recordsRequest
 }
 
+export function acknowledgementEnabled(): boolean {
+  return activePack().recordsRequests.acknowledgement
+}
+
 export function governingBody(): string {
   return activePack().labels.governingBody
 }

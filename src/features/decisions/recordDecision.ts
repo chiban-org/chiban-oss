@@ -27,6 +27,7 @@ import {
   classificationOfApplication,
   hearingIsOptional,
 } from '@/features/decisions/hearingOptional'
+import { storedSignificance } from '@/features/decisions/significance'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
@@ -45,6 +46,7 @@ export interface RecordDecisionInput {
   conditions?: DecisionCondition[]
   reasonsForDisapproval?: string
   finalMunicipalApproval?: boolean
+  significant?: boolean
 }
 
 export type DecisionError =
@@ -195,7 +197,9 @@ export async function recordDecision(
     const venue = await resolveVenue(tx, app, input)
     if (!venue.ok) return err(venue.error)
     const { hearingId, meetingId, boardId } = venue.value
-    const problem = await inputProblem(tx, boardOfApplication(app) === null ? null : boardId, input)
+    const classification = classificationOfApplication(app)
+    const seatingBoardId = boardOfApplication(app) === null ? null : boardId
+    const problem = await inputProblem(tx, seatingBoardId, input, classification)
     if (problem !== null) return err(problem)
     const moved = await transitionApplication(
       tx,
@@ -228,6 +232,7 @@ export async function recordDecision(
         findings: input.findings.trim(),
         conditions: input.conditions ?? [],
         reasonsForDisapproval: input.reasonsForDisapproval?.trim() ?? null,
+        significant: storedSignificance(classification, input.outcome, input.significant),
         recordedBy: actor.userId,
       })
       .returning({ id: boardDecisions.id })

@@ -11,6 +11,7 @@ export const NH_ROLES: PackRoles = {
     buildingPermitDecision: 'nh.bp.decision',
     zoningOrder: 'nh.enf.cd_zoning',
     buildingCodeOrder: 'nh.enf.cd_building',
+    enforcementPenalty: null,
     rtkResponse: 'nh.rtk.response',
     rtkStatedTime: 'nh.rtk.stated_time',
     planningBoardDecision: 'nh.pb.decision',
