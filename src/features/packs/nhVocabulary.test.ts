@@ -176,7 +176,7 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(decisionOutcome('rehearing_denied', null).label).toBe('Rehearing denied')
   })
 
-  it('boards and appeals', () => {
+  it('boards and appeals', async () => {
     expect(appealStepHint()).toBe(
       'For an appeal to the Zoning Board. An appeal of an issued permit suspends it.',
     )
@@ -195,11 +195,15 @@ describe('New Hampshire vocabulary through the pack', () => {
     )
     expect(appealToBoard()).toBe('Appeal to the Zoning Board')
     expect(boardDecision()).toBe('Zoning Board decision')
-    const nodes = toGraphNodes([
-      { id: 'a', kind: 'zba_decision', occurredOn: '2026-01-02' },
-      { id: 'b', kind: 'zba_appeal', occurredOn: '2026-01-03' },
-      { id: 'c', kind: 'pb_decision', occurredOn: '2026-01-04' },
-    ] as never)
+    const nodes = await toGraphNodes(
+      {} as never,
+      [
+        { id: 'a', kind: 'zba_decision', occurredOn: '2026-01-02' },
+        { id: 'b', kind: 'zba_appeal', occurredOn: '2026-01-03' },
+        { id: 'c', kind: 'pb_decision', occurredOn: '2026-01-04' },
+      ] as never,
+      new AbortController().signal,
+    )
     expect(nodes.map((n) => n.kindLabel)).toEqual([
       'Zoning Board decision',
       'Appeal to the Zoning Board',

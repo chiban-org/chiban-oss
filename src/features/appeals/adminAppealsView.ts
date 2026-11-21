@@ -3,6 +3,7 @@ import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { Db } from '@/db/client'
 import { appealNodes, applications } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -32,6 +33,7 @@ export interface ApplicationAppeals {
   typeLabel: string
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
+  offerFinalApproval: boolean
 }
 
 function appealWindowEnds(decidedOn: CivilDate): CivilDate | null {
@@ -122,12 +124,13 @@ export async function loadApplicationAppeals(
     .from(appealNodes)
     .where(eq(appealNodes.applicationId, applicationId))
     .orderBy(asc(appealNodes.occurredOn), asc(appealNodes.createdAt))
-  const graph = toGraphNodes(nodes)
+  const graph = await toGraphNodes(db, nodes, signal)
   return {
     applicationId,
     applicationNumber: app.number,
     typeLabel: app.typeBody.label,
     graph,
     nodeChoices: graph.map((n) => ({ id: n.nodeId, label: `${n.kindLabel}, ${n.dateText}` })),
+    offerFinalApproval: packWaitsForFinalApproval(),
   }
 }

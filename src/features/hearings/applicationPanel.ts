@@ -144,7 +144,7 @@ export async function loadApplicationHearingsPanel(
       text: `${OUTCOME_LABELS[d.outcome]}, voted ${formatCivilDate(d.votedOn)}`,
     })),
     noHearing,
-    graph: toGraphNodes(await loadApplicationAppealNodes(db, applicationId)),
+    graph: await toGraphNodes(db, await loadApplicationAppealNodes(db, applicationId), signal),
     trc: summary.ok ? summary.value : [],
   }
 }

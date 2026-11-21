@@ -1,5 +1,5 @@
 import { and, desc, eq, ne } from 'drizzle-orm'
-import type { DbOrTx, Tx } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { type appealNodes, clocks } from '@/db/schema'
 import {
   applicationProjectFinality,
@@ -44,20 +44,71 @@ function candidateRoutes(parent: NodeRow, kind: AppealNodeKind): AppealRoute[] {
   return activePack().appealRoutes.filter((r) => r.from === parent.kind && r.to === kind)
 }
 
+export function windowRoutesFrom(node: NodeRow): AppealRoute[] {
+  return activePack().appealRoutes.filter((r) => r.from === node.kind && r.windowRuleKey !== null)
+}
+
+function dependsOnFinality(routes: AppealRoute[]): boolean {
+  return routes.some(
+    (r) =>
+      r.when?.finalReviewBoard !== undefined ||
+      (r.windowRuleKey !== null && ruleWaitsForFinalApproval(r.windowRuleKey)),
+  )
+}
+
+export async function finalityForRoutes(
+  db: DbOrTx,
+  parent: NodeRow,
+  routes: AppealRoute[],
+  signal: AbortSignal,
+): Promise<ProjectFinality | null> {
+  if (parent.applicationId === null || !dependsOnFinality(routes)) return null
+  return await applicationProjectFinality(db, parent.applicationId, signal)
+}
+
 export async function finalityForRoute(
   db: DbOrTx,
   parent: NodeRow,
   kind: AppealNodeKind,
   signal: AbortSignal,
 ): Promise<ProjectFinality | null> {
-  if (parent.applicationId === null) return null
-  const depends = candidateRoutes(parent, kind).some(
-    (r) =>
-      r.when?.finalReviewBoard !== undefined ||
-      (r.windowRuleKey !== null && ruleWaitsForFinalApproval(r.windowRuleKey)),
-  )
-  if (!depends) return null
-  return await applicationProjectFinality(db, parent.applicationId, signal)
+  return await finalityForRoutes(db, parent, candidateRoutes(parent, kind), signal)
+}
+
+const DECISION_PARENTS: readonly AppealNodeKind[] = [
+  'zba_decision',
+  'pb_decision',
+  'administrative_decision',
+]
+
+function outcomeFact(parent: NodeRow): RouteFacts['outcome'] {
+  if (parent.kind === 'rehearing_outcome')
+    return parent.outcome === 'granted' ? 'granted' : 'denied'
+  if (!DECISION_PARENTS.includes(parent.kind)) return null
+  if (isApprovingOutcome(parent.outcome)) return 'granted'
+  return parent.outcome === 'denied' ? 'denied' : null
+}
+
+export function routeFacts(
+  parent: NodeRow,
+  linkedComponent: boolean | undefined,
+  finality: ProjectFinality | null,
+): RouteFacts {
+  const afterRehearing = parent.kind === 'rehearing_outcome'
+  return {
+    outcome: outcomeFact(parent),
+    linkedComponent: afterRehearing ? parent.linkedPbNodeId !== null : linkedComponent === true,
+    finalReviewBoard: finality?.finalReviewBoard ?? null,
+  }
+}
+
+export function mostSpecificRoute(
+  routes: AppealRoute[],
+  facts: RouteFacts,
+): AppealRoute | undefined {
+  return routes
+    .filter((r) => r.when === undefined || routeApplies(r.when, facts))
+    .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
 }
 
 export function chooseRoute(
@@ -65,21 +116,10 @@ export function chooseRoute(
   input: { kind: AppealNodeKind; linkedComponent?: boolean },
   finality: ProjectFinality | null,
 ): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
-  const afterRehearing = parent.kind === 'rehearing_outcome'
-  const facts: RouteFacts = {
-    outcome: afterRehearing
-      ? parent.outcome === 'granted'
-        ? ('granted' as const)
-        : ('denied' as const)
-      : null,
-    linkedComponent: afterRehearing
-      ? parent.linkedPbNodeId !== null
-      : input.linkedComponent === true,
-    finalReviewBoard: finality?.finalReviewBoard ?? null,
-  }
-  const hit = candidateRoutes(parent, input.kind)
-    .filter((r) => r.when === undefined || routeApplies(r.when, facts))
-    .sort((a, b) => routeSpecificity(b.when) - routeSpecificity(a.when))[0]
+  const hit = mostSpecificRoute(
+    candidateRoutes(parent, input.kind),
+    routeFacts(parent, input.linkedComponent, finality),
+  )
   return hit === undefined ? err('route_not_allowed') : ok(hit)
 }
 
@@ -91,6 +131,7 @@ export function waitsForFinality(
 ): boolean {
   return (
     kind === 'court_petition' &&
+    parent.applicationId !== null &&
     finality === null &&
     isApprovingOutcome(parent.outcome) &&
     route.windowRuleKey !== null &&
@@ -99,7 +140,7 @@ export function waitsForFinality(
 }
 
 async function startedClockDue(
-  tx: Tx,
+  tx: DbOrTx,
   applicationId: string,
   ruleKey: string,
   started: ReturnType<typeof eq>,
@@ -121,7 +162,7 @@ async function startedClockDue(
 }
 
 export async function windowDue(
-  tx: Tx,
+  tx: DbOrTx,
   parent: NodeRow,
   window: { applicationId: string | null; ruleKey: string; finality: ProjectFinality | null },
 ): Promise<CivilDate> {

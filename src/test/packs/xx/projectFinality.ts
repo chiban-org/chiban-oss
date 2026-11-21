@@ -56,7 +56,15 @@ const WINDOW_RULES = [XX_FINAL_APPROVAL_WINDOW, XX_DENIAL_WINDOW, XX_PB_FINAL_WI
 const WINDOW_KEYS = WINDOW_RULES.map((r) => r.key)
 const RULES = [...XX_PACK.manifest.rules, ...WINDOW_RULES]
 
+const APPEAL_TO_BOARD: AppealRoute = {
+  from: 'zba_appeal',
+  to: 'zba_decision',
+  windowRuleKey: null,
+  citation: CITATION,
+}
+
 const GENERAL_ROUTES: AppealRoute[] = [
+  APPEAL_TO_BOARD,
   {
     from: 'zba_decision',
     to: 'court_petition',
@@ -99,3 +107,29 @@ function finalityPack(appealRoutes: AppealRoute[]): StatePack {
 
 export const XX_PROJECT_FINALITY = finalityPack(GENERAL_ROUTES)
 export const XX_PROJECT_FINALITY_BY_BOARD = finalityPack([...GENERAL_ROUTES, PLANNING_FINAL_ROUTE])
+
+const BY_OUTCOME_ROUTES: AppealRoute[] = [
+  APPEAL_TO_BOARD,
+  {
+    from: 'zba_decision',
+    when: { outcome: 'granted', label: 'approved' },
+    to: 'court_petition',
+    windowRuleKey: XX_FINAL_APPROVAL_WINDOW.key,
+    citation: CITATION,
+  },
+  {
+    from: 'zba_decision',
+    when: { outcome: 'denied', label: 'denied' },
+    to: 'court_petition',
+    windowRuleKey: XX_DENIAL_WINDOW.key,
+    citation: CITATION,
+  },
+  {
+    from: 'pb_decision',
+    to: 'court_petition',
+    windowRuleKey: XX_FINAL_APPROVAL_WINDOW.key,
+    citation: CITATION,
+  },
+]
+
+export const XX_PROJECT_FINALITY_BY_OUTCOME = finalityPack(BY_OUTCOME_ROUTES)

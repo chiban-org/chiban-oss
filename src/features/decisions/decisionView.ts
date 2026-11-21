@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import {
   appealNodes,
   boardDecisions,
@@ -16,10 +16,11 @@ import {
   motionForRehearing,
   rehearingDecision,
 } from '@/features/appeals/appealWords'
+import { nodeWindow } from '@/features/appeals/nodeWindow'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { loadRecordingView, type RecordingView } from '@/features/decisions/recordingView'
@@ -28,13 +29,9 @@ import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidenc
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
-import { packHolidayCalendar } from '@/features/packs/holidays'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { boardShort } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
-import type { CivilDate } from '@/types/civilDate'
 
 function nodeLabels() {
   return {
@@ -79,6 +76,7 @@ export interface DecisionView {
   } | null
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
+  offerFinalApproval: boolean
 }
 
 export interface FilingDue {
@@ -101,35 +99,26 @@ async function filingDue(db: Db, applicationId: string, today: string): Promise<
   return { text: formatCivilDate(clock.currentDue), overdue }
 }
 
-function windowOf(node: typeof appealNodes.$inferSelect): GraphNode['window'] {
-  const route = activePack().appealRoutes.filter(
-    (r) => r.from === node.kind && r.windowRuleKey !== null,
-  )
-  const first = route[0]
-  if (first === undefined || first.windowRuleKey === null) return null
-  const rule = ruleByKey(loadPack(), first.windowRuleKey)
-  if (rule.kind !== 'clock' || !('value' in rule.length)) return null
-  const due = computeRuleDue(
-    rule,
-    { unit: rule.length.unit, value: rule.length.value },
-    node.occurredOn as CivilDate,
-    packHolidayCalendar(),
-  ).due
-  return { label: rule.label, dueText: formatCivilDate(due), consequence: rule.consequence.text }
-}
-
-export function toGraphNodes(rows: (typeof appealNodes.$inferSelect)[]): GraphNode[] {
+export async function toGraphNodes(
+  db: DbOrTx,
+  rows: (typeof appealNodes.$inferSelect)[],
+  signal: AbortSignal,
+): Promise<GraphNode[]> {
   const labels = nodeLabels()
-  return rows.map((n) => ({
-    nodeId: n.id,
-    kindLabel: labels[n.kind],
-    dateText: formatCivilDate(n.occurredOn),
-    outcomeText: n.outcome === null ? null : (outcomeWords()[n.outcome] ?? null),
-    status: n.status,
-    untimely: n.untimely,
-    parentId: n.parentId,
-    window: windowOf(n),
-  }))
+  const nodes: GraphNode[] = []
+  for (const n of rows) {
+    nodes.push({
+      nodeId: n.id,
+      kindLabel: labels[n.kind],
+      dateText: formatCivilDate(n.occurredOn),
+      outcomeText: n.outcome === null ? null : (outcomeWords()[n.outcome] ?? null),
+      status: n.status,
+      untimely: n.untimely,
+      parentId: n.parentId,
+      window: await nodeWindow(db, n, signal),
+    })
+  }
+  return nodes
 }
 
 export async function checklistFor(
@@ -198,7 +187,7 @@ export async function loadDecisionView(
     .where(
       and(eq(noticeSets.subjectKind, TRANSMITTAL_SUBJECT), eq(noticeSets.subjectId, decisionId)),
     )
-  const graph = toGraphNodes(nodes)
+  const graph = await toGraphNodes(db, nodes, signal)
   const transmittalItems =
     transmittal === undefined ? null : await checklistFor(db, transmittal.id, signal)
   return {
@@ -235,6 +224,7 @@ export async function loadDecisionView(
             })),
           },
     graph,
+    offerFinalApproval: packWaitsForFinalApproval(),
     nodeChoices: nodes.map((n, i) => ({
       id: n.id,
       label: `${graph[i]?.kindLabel ?? ''}, ${graph[i]?.dateText ?? ''}`,
