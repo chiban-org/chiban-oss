@@ -1,21 +1,21 @@
 ---
 title: Writing a state pack
 sidebar_label: Writing a state pack
-description: How a state pack is built and chosen at run time, what each part of the New Hampshire pack holds, how roles tie its keys to engine features, and how packs are versioned.
+description: How a state pack is built and chosen at run time, what each part of a pack holds, how roles tie its keys to engine features, which features a pack can switch on, and how packs are versioned.
 sidebar_position: 10
 ---
 
 # Writing a state pack
 
-This page is for a developer who wants to understand or change the New Hampshire pack, or write one for another state, with `packs/nh` as the worked example. Staff read the result on the pages about [deadlines and holidays](./new-hampshire/deadlines.mdx) and [starters](./new-hampshire/starters.mdx), which are generated from the pack.
+This page is for a developer who wants to understand or change a state pack, or write one for another state. `packs/nh` is the worked example. `packs/me`, the Maine pack, is a second complete pack, and it switches on most of the features New Hampshire leaves off. Staff read the result on the generated pages for each state: [New Hampshire deadlines](./new-hampshire/deadlines.mdx) and [starters](./new-hampshire/starters.mdx), [Maine deadlines](./maine/deadlines.mdx) and [starters](./maine/starters.mdx). Whoever installs the server picks the pack as [choosing a state pack](./choosing-a-pack.md) describes.
 
 ## How a pack is chosen
 
 A pack is a TypeScript module that exports one `StatePack` object. The interface lives in the engine, in `src/features/packs/schema/statePack.ts`, and `packs/nh/index.ts` exports New Hampshire's as `NH_PACK`.
 
-`src/features/packs/registry.ts` holds a fixed map from pack id to pack, which today is `{ nh: NH_PACK }`. `activePack()` reads the `CHIBAN_PACK` setting the first time anything asks for the pack and keeps the answer. The setting is read when the server, the worker or a command-line tool runs, not when the image is built, so the same image can serve another state. A blank or missing setting means `nh`. Pages in the browser never read the setting: the server reads the pack and sends them the wording they show. An id that is not in the map stops the first request that needs the pack with a `PACK_INVALID` error. A pack still has to be compiled into the image and listed in the registry map before `CHIBAN_PACK` can name it.
+`src/features/packs/registry.ts` holds a fixed map from pack id to pack, which today is `{ nh: NH_PACK, me: ME_PACK }`. `activePack()` reads the `CHIBAN_PACK` setting the first time anything asks for the pack and keeps the answer. The setting is read when the server, the worker or a command-line tool runs, not when the image is built, so the same image can serve another state. A blank or missing setting means `nh`. Pages in the browser never read the setting: the server reads the pack and sends them the wording they show. An id that is not in the map stops the first request that needs the pack with a `PACK_INVALID` error. A pack still has to be compiled into the image and listed in the registry map before `CHIBAN_PACK` can name it.
 
-Everything the engine reads from a pack goes through the registry: `loadPack()`, `packInfo()`, the holiday calendar, the starters, the license types, the exemption list, the appeal routes and the rest. Outside `packs/nh`, the only files that import `@packs/nh` are the registry, `src/features/packs/registryAbutters.ts` and test support. The demo seed reads the active pack like the rest of the engine. A unit test, `packCoupling.test.ts`, fails the build if any other file imports the pack or names a key that begins `nh.`, with the field probes in `src/features/packs/probes` also exempt because they exercise New Hampshire rules on purpose. Tests load another pack with `withPackForTest(pack, run)` or `setActivePackForTest(pack)`, and `src/test/packs/xx` holds a small fictional pack for that purpose.
+Everything the engine reads from a pack goes through the registry: `loadPack()`, `packInfo()`, the holiday calendar, the starters, the license types, the exemption list, the appeal routes and the rest. Outside the pack folders, the only files that import `@packs/nh` or `@packs/me` are the registry, `src/features/packs/registryAbutters.ts`, test support and the demo seed in `src/features/demo`, whose Maine story names Maine keys. The rest of the demo seed reads the active pack like the rest of the engine. A unit test, `packCoupling.test.ts`, fails the build if any other file in `src` or `scripts` imports a pack or names a key that begins `nh.` or `me.`. The field probes in `src/features/packs/probes` are also exempt, because they exercise pack rules on purpose. A second test, `vocabularyCoupling.test.ts`, fails when an engine file writes a New Hampshire or Maine term, such as "ZBA" or "FOAA", that belongs behind a pack label. Tests load another pack with `withPackForTest(pack, run)` or `setActivePackForTest(pack)`, and `src/test/packs/xx` holds a small fictional pack for that purpose.
 
 The abutter strategy and resolver are code that runs against the database, so they are kept out of the registry, which loads wherever pack data is needed. `registryAbutters.ts` imports every pack's abutter code for its side effect of registering the strategy and resolver keys a classification names.
 
@@ -31,11 +31,13 @@ The engine needs to know which of a pack's keys plays a part it has code for: wh
 | `ruleGroups` | A list of rule key prefixes ending in a dot, or whole keys, such as `building: ['nh.bp.']` |
 | `gates` | The key of a gate the engine defines but the pack names, such as `abutterListFresh` or `varianceRecorded` |
 
-Roles that every state's permitting needs are required: the zoning cease and desist order rule, the two Right-to-Know response clocks and the record series for request letters, complaint photos and enforcement papers. Every other role can be `null`. Most of them are features New Hampshire law has and another state may not, such as regional impact, the DES 500-foot notice, the ZBA exercise period, the abutter list age, the Planning Board filing lead time, the appeal suspension and the administrative appeal to the ZBA. A `null` role means the feature is absent: its gate is not registered, its panel, step or check does not appear, and no clock is looked for. The fictional pack sets every optional role to `null`.
+Roles that every state's permitting needs are required: the two public records response clocks and the record series for request letters, complaint photos and enforcement papers. Every other role can be `null`. Most of them are features New Hampshire law has and another state may not, such as regional impact, the DES 500-foot notice, the ZBA exercise period, the abutter list age, the Planning Board filing lead time, the appeal suspension and the administrative appeal to the ZBA. A `null` role means the feature is absent: its gate is not registered, its panel, step or check does not appear, and no clock is looked for. The fictional pack sets every optional role to `null`.
 
-A pack for a state that issues no statewide building permit, or that leaves the building code to each town, can null the building roles too: `buildingPermit`, `buildingPermitDecision` and `buildingCodeOrder`. With `buildingPermit` null, no classification counts as the building permit, so the checks that depend on one are skipped. With `buildingPermitDecision` null, no decision deadline is started for a building permit. With `buildingCodeOrder` null, no case can take a building code finding, a cease and desist order for a building code violation cannot be drafted or issued, and the finding form and the town section list leave out the building code kind. Staff who try see that the town enforces no building code.
+A pack for a state that issues no statewide building permit, or that leaves the building code to each town, can null the building roles too: `buildingPermit`, `buildingPermitDecision` and `buildingCodeOrder`. With `buildingPermit` null, no classification counts as the building permit, so the checks that depend on one are skipped. With `buildingPermitDecision` null, no decision deadline is started for a building permit.
 
-A state that has the role gets the same result on new cases when a town publishes a building program with no code (see [Building codes and the town building program](#building-codes-and-the-town-building-program)). A case opened before that version keeps building code findings, drafting and issuing, so work already under way can finish. A case opened after it gets the refusals above. If the town publishes no code several times in a row, for example to change its number of residents, the first of those versions is the one that counts.
+Whether a case can take a building code finding depends on the pack's building codes, not on `buildingCodeOrder`. With `buildingCodes.choices` empty, no case can take one, and the finding form and the town section list leave out the building code kind. Staff who try see that the town enforces no building code. With choices present and `buildingCodeOrder` null, staff can record the finding but cannot draft an order for it (see [Enforcement without a statutory order](#enforcement-without-a-statutory-order)).
+
+A town in a state with building code choices gets the same refusal on new cases when it publishes a building program with no code (see [Building codes and the town building program](#building-codes-and-the-town-building-program)). A case opened before that version keeps building code findings, drafting and issuing, so work already under way can finish. A case opened after it gets the refusals above. If the town publishes no code several times in a row, for example to change its number of residents, the first of those versions is the one that counts.
 
 When a pack has no regional impact rules at all, meaning `regionalImpactGate`, `regionalImpactComment`, `regionalImpactDetermination` and `regionalImpactTransmittal` are all null, a board application goes to its hearing without a regional impact determination. The notice checklist adds no regional recipients.
 
@@ -57,7 +59,7 @@ Some engine vocabulary still carries New Hampshire names because it is stored: t
 | Abutter parameters | `abutters/params.ts` | Yes, `abutterParams` |
 | Roles | `roles.ts` | Yes, `roles` |
 | Holidays | `holidays.ts`, `countingCitations.ts` | No |
-| Right-to-Know exemptions | `rtkExemptions.ts` | No |
+| Public records exemptions | `rtkExemptions.ts` | No |
 | Starters | `starters/` | No |
 | Board kind names | `boardSchema.ts` | No |
 | Parcel ID formats | `parcelIdFormats.ts` | No |
@@ -139,7 +141,7 @@ A town setting and the clock that reads it work as a pair. `town.bp.validity` is
 
 ## Legal features a pack can switch on
 
-Contract 0.8.0 adds features that New Hampshire does not use. A pack for another state turns each one on by writing the rule, field or role described here. The New Hampshire pack leaves them all off, so its behaviour is unchanged. The examples use the fictional state of Vellmora.
+Contract 0.8.0 added features that New Hampshire does not use. A pack for another state turns each one on by writing the rule, field or role described here. The New Hampshire pack leaves them all off, so its behaviour is unchanged, and the Maine pack uses most of them. The examples use the fictional state of Vellmora. The features contract 0.9.0 added follow under [Features added in contract 0.9.0](#features-added-in-contract-090).
 
 ### Silence and recording consequences on a clock
 
@@ -170,7 +172,7 @@ A clock's `consequence.kind` has two more values. Both require `clockType: 'acti
 
 ### Clock fields and start events
 
-A clock rule may set `cancelledBy`, a start event. When that event happens on an application, a running or overdue clock of this rule is superseded with the reason `cancelled_by_event`, and the rules that start on the event begin. A clock rule may also set `satisfiedByDecision: true`, which means recording the board's decision meets the clock without any other step.
+A clock rule may set `cancelledBy`, a start event. When that event happens on an application, a running or overdue clock of this rule is superseded with the reason `cancelled_by_event`, and the rules that start on the event begin. Since contract 0.9.0, `cancelledBy` may also be `{ event, onlyWhen }`, which cancels only when the facts in `onlyWhen` hold at that event (see [Conditions on a clock](#conditions-on-a-clock)). A clock rule may also set `satisfiedByDecision: true`, which means recording the board's decision meets the clock without any other step.
 
 Together they describe a deadline that depends on whether a hearing was held. One clock runs from the application and is cancelled by `hearing_held`. A second clock starts on `hearing_held`. The decision meets whichever of the two is live when the board decides.
 
@@ -290,11 +292,96 @@ A permit can sit on two held parcels. Each hold may suspend it: the second recor
 }
 ```
 
-`outcome` (`granted` or `denied`) matches the outcome of the decision, or of a rehearing outcome's parent. `linkedComponent` matches when the decision is a component of a linked application. `finalReviewBoard` matches when the project's final review board is that board kind. `label` is the route's name in the pack. When several routes match, the most specific one, the one with the most conditions set, wins. A route with `finalReviewBoard` also needs the project to have its final approval declared.
+`outcome` (`granted` or `denied`) matches the outcome of the decision, or of a rehearing outcome's parent. `linkedComponent` matches when the decision is a component of a linked application. `finalReviewBoard` matches when the project's final review board is that board kind. Contract 0.9.0 adds `significant` and `originalOutcome`, described under [Significant decisions](#significant-decisions) and [Reconsideration windows](#reconsideration-windows). `label` is the route's name in the pack. When several routes match, the most specific one, the one with the most conditions set, wins. A route with `finalReviewBoard` also needs the project to have its final approval declared.
 
 A project is final when staff tick "This is the last municipal approval the project needs" on an approving decision. A pack without a clock rule on `project_final_approval` never shows the checkbox. The declaration records the vote date and the board kind on the project and starts the `project_final_approval` clocks of every application in it. A court petition on an approving decision whose window starts on that event is refused until the project is final. A second declaration is refused.
 
 `StatePack.labels.rehearing` holds the state's word for a rehearing, as `{ noun: 'reconsideration', capitalised: 'Reconsideration' }`, and the engine uses it wherever a rehearing is named on screen. Node kinds such as `rehearing_motion` are stored names and do not change.
+
+## Features added in contract 0.9.0
+
+Contract 0.9.0 adds the features below. The Maine pack uses them, and the New Hampshire pack leaves them off, so its behaviour is unchanged. The examples are Maine's.
+
+### Clocks met by an inspection or by completeness
+
+`satisfiedByInspection: true` is for a permit whose work must begin within a set time. The first inspection result recorded on the application meets the clock, whatever the result, and the permit then never lapses on it. Without an inspection the clock lapses the permit as any lapse clock does. Maine's `me.plumbing.validity` is a 24-month clock of this kind.
+
+`satisfiedByCompletion: true` is for a review the official must finish within a set time of receipt. Marking the application complete meets the clock, and the application page words the completeness step as meeting the completeness review date instead of starting a decision clock. Maine's `me.ssw.completeness` is a 14-day clock of this kind.
+
+`onlyIfHearingScheduled: true` is for a hearing that must be held within a set time when the board chooses to hold one. The clock is created when a hearing is first scheduled, dated from the day the rule's start event was recorded, and met when the hearing is held. It is never created for an application decided without a hearing, and a rehearing never starts it. A hearing held before the application was accepted meets it as soon as it is created. A decision recorded while it is running supersedes it. Maine's `me.pb.hearing_window` uses it with a 30-day length.
+
+The manifest refuses a clock that sets `satisfiedByInspection` without starting on `permit_issued`, `satisfiedByCompletion` without starting on `application_received`, or `onlyIfHearingScheduled` without starting on `application_accepted`.
+
+### Conditions on a clock
+
+`onlyWhen` takes one fact condition or a list of them, and a list holds only when every condition holds. The contract adds two facts. `{ fact: 'significantDecision', is: true }` reads the answer to the significance question on the decision. `{ fact: 'finalReviewBoard', in: ['planning_board'] }` reads the board kind recorded when the project's last approval was declared.
+
+```
+onlyWhen: [
+  { fact: 'outcome', in: ['denied'] },
+  { fact: 'significantDecision', is: true },
+],
+```
+
+A conditional `cancelledBy` uses the same conditions. Maine's 45-day Board of Appeals court window has `cancelledBy: { event: 'rehearing_vote', onlyWhen: { fact: 'outcome', in: ['rehearing_granted'] } }`, so a vote to reconsider ends it and a refusal leaves it running.
+
+### Town-set lengths in appeal windows and notice leads
+
+A clock whose length is `fromSetting` was already started with the town's value. Appeal window due dates, the administrative appeals list and the dates of notice leads now read it too, through one helper, `resolvedLength` in `src/features/clocks/resolvedLength.ts`. It uses the town's published value of the setting, or the setting's default when the town has published none.
+
+### Significant decisions
+
+`significanceApplies: true` on a classification makes recording a decision require an answer to "Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?". The answer is stored on the decision, and the form shows `StatePack.labels.significantDecisionHelp` under the question, or nothing when the label is `null`. Other classifications are not asked.
+
+`AppealRoute.when.significant` matches the decision's answer, or the answer on the decision a reconsideration started from, and it counts toward the route's specificity. Clock rules read the same answer through the `significantDecision` fact. Maine gives its Planning Board decisions four court routes and four windows: approval and denial, each with and without significance.
+
+### Reconsideration windows
+
+`AppealRoute.when.originalOutcome` matches the outcome of the decision a reconsideration started from, not of the reconsideration vote. Maine uses it so that a refused reconsideration of a Board of Appeals approval, on a project whose last approval was the Planning Board's, keeps the 30-day window the approval had.
+
+When a court route leaves a reconsideration step and its window starts on `board_vote`, the window is dated from the vote on the original decision, not from the reconsideration. A route whose window starts on `rehearing_vote` is dated from the reconsideration vote as before.
+
+### Enforcement without a statutory order
+
+`roles.rules.zoningOrder` may be `null`, like `buildingCodeOrder`. When the role a case's findings need is null, drafting an order is refused with `order_not_available`. The work plan and the case queue leave out the order step, and the case page says "This state has no statutory order for these findings. Send a notice of violation instead."
+
+`roles.rules.enforcementPenalty` names a `civil_penalty` rule shown for a case whose penalty no order or cure rule supplies. The manifest refuses a role that names any other kind of rule. The case uses the order's penalty first, then the cure rule's, then this role's.
+
+`civil_penalty.accrual` may be `null`, on a `range_daily` rule only. Such a range shows no accrual start, unless the cure path supplies one from the earliest return receipt.
+
+### Retention events
+
+A record series with `kind: 'event'` can start from five more events, each written by the system when its cause happens:
+
+| Event | Written when |
+| --- | --- |
+| `permit_expired` | A lapse clock started on `permit_issued` lapses |
+| `occupancy_certificate_issued` | A certificate of occupancy is issued |
+| `final_inspection_passed` | The final inspection passes |
+| `case_closed` | An enforcement case closes |
+| `request_completed` | A records request is closed or withdrawn |
+
+Each is written once per application, case or request, and only when the active pack has a record series that starts from it, so a pack that does not use an event gets no new rows. The retention page describes each as "Starts when" followed by the event in words, such as "the permit expires".
+
+### Records request acknowledgement
+
+`StatePack.recordsRequests.acknowledgement: true` lets staff answer a new request with **Acknowledge receipt of the request**, with an optional question asking the requester to clarify. The acknowledgement meets the `rtkResponse` clock, and the request stays open with the status Responded, so the time estimate and the full response can still be recorded. When the field is `false`, the form does not offer it and the server refuses it.
+
+### Town parties as notice recipients
+
+The notice recipient roles include `planning_board` and `municipal_officers`. Their role labels come from the pack's Planning Board name and `labels.governingBody`. The recipient's name is the town's Planning Board display name, or the governing body label. Their address is the town office mailing address in the town profile. A resolver adds them with `resolveTownParties` from `src/features/abutters/townParties.ts`, which reports a missing address through the resolver's `incomplete` list. Maine's Board of Appeals classifications list both roles, for the hearing notice 30-A MRSA §4353(3) requires.
+
+### Abutters without projection
+
+`AbutterParams.captureRadiusFt` may be `null` for a state whose notice law has no street or stream projection. Turning projection on is then refused, in the board settings and in the crossing tools, with "This state's notice law has no street or stream projection." A parcel picked up by the town buffer carries the reason `within_buffer`, which reads "Within 150 feet of the property" for a 150-foot buffer, and the map draws the buffer outline whenever the list has a buffer, whether or not projection is on.
+
+### Board steps that follow the pack's consequences
+
+The certification request and the completeness vote, two board steps New Hampshire uses, depend on the consequences of the pack's clocks. The request for certification by the governing body is offered and accepted only when the Planning Board decision clock on the application has the consequence `selectmen_certification`. A completeness vote of not accepted closes the application as denied only when the `filingLead` role names a clock with the consequence `not_accepted_at_meeting`. Otherwise the application stays open, waiting for the missing material.
+
+### License trades
+
+The license trades include `manufacturedHousing`, which Maine's license types use for manufactured housing installers and mechanics.
 
 ## Building codes and the town building program
 
@@ -321,7 +408,7 @@ An application records the code choice that was in force when it was submitted, 
 
 A classification ties an application type to the law that governs it. Each one has a key, a label, the rule keys that are mandatory for it, the `boardKind` that hears it or null, the `abutters` specification, the notice requirement keys, any required sub-steps, whether direct issue is allowed, and a text on appeal rights. An application type picks its classification with the `classification` field, and the board kind follows from it.
 
-The abutter specification names a strategy key and a resolver key, the recipient roles every notice goes to, and roles added only when a fact is true, such as a project of regional impact. The strategy and resolver are code in `packs/nh/abutters`, not data. `abutters/params.ts` holds the numbers that code uses, such as the 50-foot capture radius that RSA 672:3 sets. Its `tolerancesLabel` says that the other tolerances are Chiban's engineering choices.
+The abutter specification names a strategy key and a resolver key, the recipient roles every notice goes to, and roles added only when a fact is true, such as a project of regional impact. The strategy and resolver are code in `packs/nh/abutters`, not data. `abutters/params.ts` holds the numbers that code uses, such as the 50-foot capture radius that RSA 672:3 sets. Maine's sets `captureRadiusFt: null` (see [Abutters without projection](#abutters-without-projection)). Its `tolerancesLabel` says that the other tolerances are Chiban's engineering choices.
 
 Abutter parameters may also carry `townBuffer`, for a state where a town may widen the notice area by a distance:
 
@@ -337,17 +424,17 @@ Board kinds are a fixed list in the engine: Planning Board, Zoning Board of Adju
 
 ## Holidays and counting
 
-`holidays.ts` exports `nhLegalHolidays(year)`, which returns each holiday's date, name and citation. The list is the legal holidays of RSA 288:1, a holiday on a Sunday observed on the Monday after it under RSA 288:2, and biennial election day in even years. An optional map overrides Thanksgiving for a given year. `src/features/packs/holidays.ts` turns the function into the calendar that deadline arithmetic uses. `countingCitations.ts` names the statute for the way days are counted. The counting itself is in `src/features/clocks`, not in the pack.
+`holidays.ts` exports `nhLegalHolidays(year)`, which returns each holiday's date, name and citation. The list is the legal holidays of RSA 288:1, a holiday on a Sunday observed on the Monday after it under RSA 288:2, and biennial election day in even years. An optional map overrides Thanksgiving for a given year. Maine's `meLegalHolidays(year)` lists the holidays of 4 MRSA §1051, with the same Sunday rule, and names Thanksgiving as a Chiban assumption because the statute gives no date for it. `src/features/packs/holidays.ts` turns the function into the calendar that deadline arithmetic uses. `countingCitations.ts` names the statute for the way days are counted. The counting itself is in `src/features/clocks`, not in the pack.
 
 ## Record series
 
-A record series is a class of record with a retention rule. Each has a key, a version, a label, a citation with a URL, a `retention`, and a `preservation` of `pdfa` or `original`. Retention is `permanent`, a `duration` in years, or an `event` list with years added, where the events come from a fixed list such as `application_withdrawn` or `building_removed`. A series can point to others for the outcomes withdrawn, denied or expired.
+A record series is a class of record with a retention rule. Each has a key, a version, a label, a citation with a URL, a `retention`, and a `preservation` of `pdfa` or `original`. Retention is `permanent`, a `duration` in years, or an `event` list with years added, where the events come from a fixed list such as `application_withdrawn` or `building_removed`, plus the five added in [contract 0.9.0](#retention-events). A series can point to others for the outcomes withdrawn, denied or expired.
 
 `recordSeriesDefaults` maps a classification key, or an application type prefix, to the series its records are filed under.
 
-## Right-to-Know exemptions
+## Public records exemptions
 
-`rtkExemptions.ts` lists the statutory exemptions a custodian may cite when withholding a record: a key of the form `nh.rtk.91a5.<paragraph>`, the paragraph, a label and a citation. A further key, `other_law`, covers an exemption found in another statute. The records screens and the response letter read this list. The deadlines for answering a request are ordinary clock rules in `rules/rightToKnow.ts`.
+`rtkExemptions.ts` lists the statutory exemptions a custodian may cite when withholding a record: a key such as `nh.rtk.91a5.<paragraph>`, the paragraph, a label and a citation. Maine's list cites each paragraph of 1 MRSA §402(3). A further key, `other_law`, covers an exemption found in another statute. The records screens and the response letter read this list. The deadlines for answering a request are ordinary clock rules in `rules/rightToKnow.ts`.
 
 ## Starters
 
@@ -355,15 +442,17 @@ A starter is a complete application type in one object: the application type, it
 
 ## Labels, spatial reference and docs folder
 
-`StatePack.labels` holds the words and citations the engine shows on screen so that no state's names are written into engine code. Besides the environmental agency names and the license number label, it has `recordsLaw`, the short name of the public records law, `recordsRequest`, what a request under it is called, and `governingBody`, the town's elected body. A pack for a state with a different records law would write `recordsLaw: 'Open Records'`, `recordsRequest: 'open records request'` and `governingBody: 'town council'`. Its `citations` object has `exerciseFloorAuthority`, the statute for the minimum period a board approval stays valid, and `abutterListIssued`, a label and a URL, or `null` for the URL, for the authority behind the abutter list.
+`StatePack.labels` holds the words and citations the engine shows on screen so that no state's names are written into engine code. Besides the environmental agency names and the license number label, it has `recordsLaw`, the short name of the public records law, `recordsRequest`, what a request under it is called, `governingBody`, the town's elected body, and `significantDecisionHelp`, the help text under the significance question, or `null`. A pack for a state with a different records law would write `recordsLaw: 'Open Records'`, `recordsRequest: 'open records request'` and `governingBody: 'town council'`. Its `citations` object has `exerciseFloorAuthority`, the statute for the minimum period a board approval stays valid, and `abutterListIssued`, a label and a URL, or `null` for the URL, for the authority behind the abutter list.
 
-`StatePack.spatial` names the projected coordinate system the state's parcel work uses: `projectedSrid`, the EPSG number, and a `label`. Abutter distances, in feet, are measured in this system, so it must be one whose unit is the US survey foot, such as `{ projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' }`.
+`StatePack.recordsRequests` holds `acknowledgement`, described under [Records request acknowledgement](#records-request-acknowledgement).
+
+`StatePack.spatial` names the projected coordinate system the state's parcel work uses: `projectedSrid`, the EPSG number, and a `label`. Abutter distances, in feet, are measured in this system, so it must be one whose unit is the US survey foot, such as `{ projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' }`. Maine's is `{ projectedSrid: 26847, label: 'NAD83 / Maine East (ftUS)' }`, used for parcels anywhere in the state.
 
 `StatePack.docsSlug` is the folder name the generated state pages are written to. The generator puts them in `docs-site/docs/state-packs/<docsSlug>/_generated`, so a pack with `docsSlug: 'vellmora'` produces its pages next to the New Hampshire ones and does not overwrite them.
 
 ## Parcel ID formats
 
-`parcelIdFormats.ts` lists two formats, `cama15`, the 15-digit CAMA number, and `gis12`, the 12-digit map-lot ID that is shown on screen. A format has a key, a label, a kind, a width, whether it is the display one and an example. The list is used by the demo seed and by tests. When migrations finish, the migration command installs the active pack's formats if none of them is in the database yet, which is the case on a fresh install or after a switch to another pack. It also removes the two New Hampshire defaults, `cama15` and `gis12`, when the active pack does not list them and nothing uses them. Once any of the pack's formats is in the database, the command adds nothing, so a format a town deleted stays deleted. A town edits its formats under **Settings**, **Parcel ID formats**. A format added to the TypeScript list later does not reach a town that already has the pack's formats. The town adds it there.
+New Hampshire's `parcelIdFormats.ts` lists two formats, `cama15`, the 15-digit CAMA number, and `gis12`, the 12-digit map-lot ID that is shown on screen. A format has a key, a label, a kind, a width, whether it is the display one and an example. The kind is `digits`, with a whole-number `width`, or `free_text`, with `width: null`. Maine's one format is `{ key: 'map_lot', label: 'Map and lot', kind: 'free_text', width: null, isDisplay: true, example: 'R04-012' }`. The list is used by the demo seed and by tests. When migrations finish, the migration command installs the active pack's formats if none of them is in the database yet, which is the case on a fresh install or after a switch to another pack. It also removes the two New Hampshire defaults, `cama15` and `gis12`, when the active pack does not list them and nothing uses them. Once any of the pack's formats is in the database, the command adds nothing, so a format a town deleted stays deleted. A town edits its formats under **Settings**, **Parcel ID formats**. A format added to the TypeScript list later does not reach a town that already has the pack's formats. The town adds it there.
 
 ## Versioning
 
@@ -380,12 +469,12 @@ Versions exist at four levels. Adding fields to the manifest or the `StatePack` 
 2. Replace the classification key list in `boardSchema.ts` and the board kind names.
 3. Write the rules, one area at a time, with a URL for each citation, and run the pack's tests after each.
 4. Write the classifications and abutter parameters.
-5. Fill in `roles`. Name a key for each required role, and set an optional role to `null` where the state has no such rule. Fill in `buildingCodes`, `spatial`, `labels` and `docsSlug` on the pack object.
+5. Fill in `roles`. Name a key for each required role, and set an optional role to `null` where the state has no such rule. Fill in `buildingCodes`, `spatial`, `labels`, `recordsRequests` and `docsSlug` on the pack object.
 6. Write the holidays and the counting citation.
 7. Write the record series and their defaults.
 8. Write the exemption list for the state's public records law.
 9. Write the starters and run the starter test.
 10. Add the pack to the map in `src/features/packs/registry.ts`, and its abutter code to `registryAbutters.ts`, then set `CHIBAN_PACK` to its id. The compose file in `deploy` passes `CHIBAN_PACK` through to the containers, so setting it in the environment or the `.env` next to the compose file is enough.
-11. Run `pnpm docs:generate` to see the deadlines and starter pages the active pack produces.
+11. Run `CHIBAN_PACK=<id> pnpm docs:generate` to write the deadlines and starter pages the pack produces, then run `pnpm docs:generate` to bring the pages that do not belong to a state back to the default pack. Add the pack's pages to `docs-site/sidebars.ts`, and its id to the comparison in `scripts/docsSite/generatedPages.test.ts`, which checks the committed pages against the generator.
 
-The pack contract covers what New Hampshire needs. A state whose law needs a rule kind the schema does not have, a clock that starts on an event the engine does not record, a recipient role or condition the engine does not know, or a feature with no role, still needs engine work before its pack can express it. The generated docs are written to the folder named by `docsSlug`, and the abutter strategy and resolver are code a pack has to provide.
+The pack contract covers what New Hampshire and Maine need. A state whose law needs a rule kind the schema does not have, a clock that starts on an event the engine does not record, a recipient role or condition the engine does not know, or a feature with no role, still needs engine work before its pack can express it. The generated docs are written to the folder named by `docsSlug`, and the abutter strategy and resolver are code a pack has to provide.

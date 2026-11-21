@@ -106,7 +106,7 @@ function townSettingDefault(key: string): string {
     throw new AppError(ErrorIds.PACK_INVALID, 'clock length names a missing town setting', { key })
   }
   const policy = setting.overridePolicy
-  const name = `The town’s ${setting.label.toLowerCase()}`
+  const name = `The town’s ${setting.label.charAt(0).toLowerCase()}${setting.label.slice(1)}`
   if (policy.policy !== 'delegated_choice') return name
   return `${name}, ${amount(policy.default, setting.unit)} unless the town changes it`
 }

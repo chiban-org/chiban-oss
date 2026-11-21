@@ -23,18 +23,24 @@ function buildingOrTrade(c: ProceedingClassification): boolean {
   return presentKeys([classifications.buildingPermit, classifications.tradePermit]).includes(c.key)
 }
 
+function plumbingInspectorOwns(c: ProceedingClassification): boolean {
+  return activePack().manifest.roles.classifications.plumbingInspectorOwns.includes(c.key)
+}
+
+function localPermit(c: ProceedingClassification): boolean {
+  return c.boardKind === null && !buildingOrTrade(c) && !plumbingInspectorOwns(c)
+}
+
 function groups(): readonly StarterGroup[] {
   return [
     { title: 'Building and trade permits', includes: buildingOrTrade },
+    { title: 'Plumbing permits', includes: plumbingInspectorOwns },
     {
       title: `${boardLabel('planning_board')} applications`,
       includes: (c) => c.boardKind === 'planning_board',
     },
     { title: `${boardLabel('zba')} applications`, includes: (c) => c.boardKind === 'zba' },
-    {
-      title: 'Local permits and registrations',
-      includes: (c) => c.boardKind === null && !buildingOrTrade(c),
-    },
+    { title: 'Local permits and registrations', includes: localPermit },
   ]
 }
 
