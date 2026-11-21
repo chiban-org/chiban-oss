@@ -4,7 +4,7 @@ export const ME_ROLES: PackRoles = {
   classifications: {
     buildingPermit: 'me.building_permit',
     tradePermit: null,
-    enforcement: [],
+    enforcement: ['me.enforcement_land_use', 'me.enforcement_shoreland', 'me.enforcement_plumbing'],
     plumbingInspectorOwns: [
       'me.internal_plumbing',
       'me.subsurface_wastewater',
@@ -15,7 +15,7 @@ export const ME_ROLES: PackRoles = {
     buildingPermitDecision: 'me.bp.decision',
     zoningOrder: null,
     buildingCodeOrder: null,
-    enforcementPenalty: null,
+    enforcementPenalty: 'me.enf.penalty',
     rtkResponse: 'me.foaa.acknowledge',
     rtkStatedTime: 'me.foaa.estimate',
     planningBoardDecision: 'me.pb.decision_no_hearing',

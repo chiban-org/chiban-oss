@@ -4,6 +4,7 @@ import {
   BOA_RULE_KEYS,
   BOA_VARIANCE_RECORDING_KEY,
 } from '@packs/me/rules/boardOfAppeals'
+import { ME_CURE_CLOCK_KEY, ME_CURE_RULE_KEY, ME_PENALTY_KEY } from '@packs/me/rules/enforcement'
 import {
   SITE_PLAN_NOTICE_REQUIREMENTS,
   SITE_PLAN_RULE_KEYS,
@@ -102,6 +103,14 @@ function boardOfAppeals(
   }
 }
 
+function enforcement(
+  key: string,
+  label: string,
+  mandatoryRuleKeys: string[],
+): ProceedingClassification {
+  return { ...direct(key, label, mandatoryRuleKeys), directIssueAllowed: false }
+}
+
 const LOCAL_PERMIT_KEYS = ['town.permit.validity', 'town.permit.expiration']
 const SHORELAND_KEYS = [
   'town.slz.decision_days',
@@ -152,4 +161,11 @@ export const ME_CLASSIFICATIONS: ProceedingClassification[] = [
   }),
   boardOfAppeals('me.boa_variance', 'Variance', true),
   boardOfAppeals('me.boa_admin_appeal', 'Administrative appeal', false),
+  enforcement('me.enforcement_land_use', 'Land use enforcement', [ME_PENALTY_KEY]),
+  enforcement('me.enforcement_shoreland', 'Shoreland enforcement', [
+    ME_CURE_RULE_KEY,
+    ME_CURE_CLOCK_KEY,
+    ME_PENALTY_KEY,
+  ]),
+  enforcement('me.enforcement_plumbing', 'Plumbing enforcement', [ME_PENALTY_KEY]),
 ]

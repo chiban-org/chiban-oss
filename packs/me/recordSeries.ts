@@ -189,6 +189,9 @@ export const ME_RECORD_SERIES_DEFAULTS = {
     'me.pb_site_plan': 'me.rs.site_plans_approved',
     'me.boa_variance': 'me.rs.board_of_appeals_files',
     'me.boa_admin_appeal': 'me.rs.board_of_appeals_files',
+    'me.enforcement_land_use': 'me.rs.enforcement_files',
+    'me.enforcement_shoreland': 'me.rs.enforcement_files',
+    'me.enforcement_plumbing': 'me.rs.enforcement_files',
   } as Record<string, string>,
   byApplicationType: {
     SSW: 'me.rs.plumbing_external',

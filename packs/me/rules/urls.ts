@@ -14,6 +14,7 @@ export const ME_URLS = {
   title30Asec2691: `${STATUTES}/30-A/title30-Asec2691.html`,
   title30Asec4353: `${STATUTES}/30-A/title30-Asec4353.html`,
   title30Asec4403: `${STATUTES}/30-A/title30-Asec4403.html`,
+  title30Asec4452: `${STATUTES}/30-A/title30-Asec4452.html`,
   title30Asec4482: `${STATUTES}/30-A/title30-Asec4482.html`,
   title30Asec4482A: `${STATUTES}/30-A/title30-Asec4482-A.html`,
   civilProcedureRules: 'https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf',

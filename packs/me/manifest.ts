@@ -6,6 +6,7 @@ import { ME_ROLES } from '@packs/me/roles'
 import { APPEAL_RULES } from '@packs/me/rules/appeals'
 import { BOARD_OF_APPEALS_RULES } from '@packs/me/rules/boardOfAppeals'
 import { BUILDING_RULES } from '@packs/me/rules/building'
+import { ENFORCEMENT_RULES } from '@packs/me/rules/enforcement'
 import { LOCAL_PERMIT_RULES } from '@packs/me/rules/localPermits'
 import { PLANNING_BOARD_RULES } from '@packs/me/rules/planningBoard'
 import { PLUMBING_RULES } from '@packs/me/rules/plumbing'
@@ -22,6 +23,7 @@ export const ME_PACK_MANIFEST: PackManifest = {
     ...PLANNING_BOARD_RULES,
     ...BOARD_OF_APPEALS_RULES,
     ...APPEAL_RULES,
+    ...ENFORCEMENT_RULES,
     ...FOAA_RULES,
   ],
   classifications: ME_CLASSIFICATIONS,

@@ -1,6 +1,7 @@
 import { APPEAL_RULES } from '@packs/me/rules/appeals'
 import { BOARD_OF_APPEALS_RULES } from '@packs/me/rules/boardOfAppeals'
 import { BUILDING_RULES } from '@packs/me/rules/building'
+import { ENFORCEMENT_RULES } from '@packs/me/rules/enforcement'
 import { LOCAL_PERMIT_RULES } from '@packs/me/rules/localPermits'
 import { PLANNING_BOARD_RULES } from '@packs/me/rules/planningBoard'
 import { PLUMBING_RULES } from '@packs/me/rules/plumbing'
@@ -14,5 +15,6 @@ export const ME_RULE_AREAS: readonly RuleArea[] = [
   { title: 'Planning Board and subdivision', rules: PLANNING_BOARD_RULES },
   { title: 'Board of Appeals', rules: BOARD_OF_APPEALS_RULES },
   { title: 'Appeals', rules: APPEAL_RULES },
+  { title: 'Enforcement', rules: ENFORCEMENT_RULES },
   { title: 'FOAA requests', rules: FOAA_RULES },
 ]
