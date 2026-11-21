@@ -1,3 +1,5 @@
+import { APPEAL_RULES } from '@packs/me/rules/appeals'
+import { BOARD_OF_APPEALS_RULES } from '@packs/me/rules/boardOfAppeals'
 import { BUILDING_RULES } from '@packs/me/rules/building'
 import { LOCAL_PERMIT_RULES } from '@packs/me/rules/localPermits'
 import { PLANNING_BOARD_RULES } from '@packs/me/rules/planningBoard'
@@ -10,5 +12,7 @@ export const ME_RULE_AREAS: readonly RuleArea[] = [
   { title: 'Local permits', rules: LOCAL_PERMIT_RULES },
   { title: 'Plumbing and subsurface wastewater', rules: PLUMBING_RULES },
   { title: 'Planning Board and subdivision', rules: PLANNING_BOARD_RULES },
+  { title: 'Board of Appeals', rules: BOARD_OF_APPEALS_RULES },
+  { title: 'Appeals', rules: APPEAL_RULES },
   { title: 'FOAA requests', rules: FOAA_RULES },
 ]

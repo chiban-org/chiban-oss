@@ -3,6 +3,8 @@ import { ME_CLASSIFICATIONS } from '@packs/me/classifications'
 import { ME_CODE_EDITIONS } from '@packs/me/codeEditions'
 import { ME_RECORD_SERIES, ME_RECORD_SERIES_DEFAULTS } from '@packs/me/recordSeries'
 import { ME_ROLES } from '@packs/me/roles'
+import { APPEAL_RULES } from '@packs/me/rules/appeals'
+import { BOARD_OF_APPEALS_RULES } from '@packs/me/rules/boardOfAppeals'
 import { BUILDING_RULES } from '@packs/me/rules/building'
 import { LOCAL_PERMIT_RULES } from '@packs/me/rules/localPermits'
 import { PLANNING_BOARD_RULES } from '@packs/me/rules/planningBoard'
@@ -18,6 +20,8 @@ export const ME_PACK_MANIFEST: PackManifest = {
     ...LOCAL_PERMIT_RULES,
     ...PLUMBING_RULES,
     ...PLANNING_BOARD_RULES,
+    ...BOARD_OF_APPEALS_RULES,
+    ...APPEAL_RULES,
     ...FOAA_RULES,
   ],
   classifications: ME_CLASSIFICATIONS,

@@ -243,6 +243,10 @@ describe('the Planning Board classifications', () => {
         'town.sp.decision',
         'town.sp.hearing_notice_days',
         'town.sp.hearing_notice',
+        'me.appeal.board_court_final',
+        'me.appeal.board_court_denial',
+        'me.appeal.significant_final',
+        'me.appeal.significant_denial',
       ],
     })
   })
@@ -259,7 +263,7 @@ describe('the Planning Board classifications', () => {
   it('names the Planning Board roles', () => {
     expect(ME_ROLES.rules.planningBoardCompleteness).toBe('me.pb.completeness')
     expect(ME_ROLES.rules.planningBoardDecision).toBe('me.pb.decision_no_hearing')
-    expect(ME_ROLES.ruleGroups.board).toEqual(['me.pb.'])
+    expect(ME_ROLES.ruleGroups.board).toEqual(['me.pb.', 'me.boa.'])
   })
 })
 

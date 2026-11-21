@@ -1,3 +1,9 @@
+import { BOA_APPEAL_KEYS, PB_APPEAL_KEYS } from '@packs/me/rules/appeals'
+import {
+  BOA_NOTICE_REQUIREMENTS,
+  BOA_RULE_KEYS,
+  BOA_VARIANCE_RECORDING_KEY,
+} from '@packs/me/rules/boardOfAppeals'
 import {
   SITE_PLAN_NOTICE_REQUIREMENTS,
   SITE_PLAN_RULE_KEYS,
@@ -63,6 +69,39 @@ function planningBoard(
   }
 }
 
+const BOA_RECIPIENTS: Pick<AbuttersSpec, 'roles' | 'conditionalRoles'> = {
+  roles: ['applicant', 'abutter_owner', 'planning_board', 'municipal_officers'],
+  conditionalRoles: [],
+}
+
+function boardOfAppeals(
+  key: string,
+  label: string,
+  recordingRequired: boolean,
+): ProceedingClassification {
+  return {
+    key,
+    label,
+    mandatoryRuleKeys: [
+      ...BOA_RULE_KEYS,
+      ...(recordingRequired ? [BOA_VARIANCE_RECORDING_KEY] : []),
+      ...BOA_APPEAL_KEYS,
+    ],
+    boardKind: 'zba',
+    abutters: {
+      strategyKey: 'me.adjacent_buffer.v1',
+      resolverKey: 'me.recipients.v1',
+      ...BOA_RECIPIENTS,
+    },
+    noticeRequirementKeys: BOA_NOTICE_REQUIREMENTS,
+    requiredSubsteps: [{ state: 'under_review', key: 'hearing' }],
+    directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired,
+    appealRights: '',
+  }
+}
+
 const LOCAL_PERMIT_KEYS = ['town.permit.validity', 'town.permit.expiration']
 const SHORELAND_KEYS = [
   'town.slz.decision_days',
@@ -102,13 +141,15 @@ export const ME_CLASSIFICATIONS: ProceedingClassification[] = [
   ]),
   direct('me.seasonal_conversion', 'Seasonal dwelling conversion permit', ['me.plumbing.validity']),
   planningBoard('me.pb_subdivision', 'Subdivision', {
-    mandatory: SUBDIVISION_RULE_KEYS,
+    mandatory: [...SUBDIVISION_RULE_KEYS, ...PB_APPEAL_KEYS],
     notices: SUBDIVISION_NOTICE_REQUIREMENTS,
     recipients: SUBDIVISION_RECIPIENTS,
   }),
   planningBoard('me.pb_site_plan', 'Site plan review', {
-    mandatory: SITE_PLAN_RULE_KEYS,
+    mandatory: [...SITE_PLAN_RULE_KEYS, ...PB_APPEAL_KEYS],
     notices: SITE_PLAN_NOTICE_REQUIREMENTS,
     recipients: SITE_PLAN_RECIPIENTS,
   }),
+  boardOfAppeals('me.boa_variance', 'Variance', true),
+  boardOfAppeals('me.boa_admin_appeal', 'Administrative appeal', false),
 ]

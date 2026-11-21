@@ -1,3 +1,4 @@
+import { ME_APPEAL_ROUTES } from '@packs/me/appealRoutes'
 import { ME_BOARD_KINDS } from '@packs/me/boardSchema'
 import { ME_STATE_CODE_SECTIONS } from '@packs/me/buildingCodeSections'
 import { ME_CLASSIFICATIONS } from '@packs/me/classifications'
@@ -39,7 +40,7 @@ export const ME_PACK: StatePack = {
   defaultLicenseType: meDefaultLicenseType,
   licenseLookup: ME_LICENSE_LOOKUP,
   rtkExemptions: ME_FOAA_EXEMPTIONS,
-  appealRoutes: [],
+  appealRoutes: ME_APPEAL_ROUTES,
   parcelIdFormats: ME_PARCEL_ID_FORMATS,
   stateCodeSections: ME_STATE_CODE_SECTIONS,
   ruleTransitions: ME_RULE_TRANSITIONS,

@@ -25,7 +25,7 @@ export const ME_ROLES: PackRoles = {
     writtenDecision: null,
     decisionFiling: null,
     appealSuspension: null,
-    adminAppealToZba: null,
+    adminAppealToZba: 'me.appeal.admin_to_boa',
     codeEditionRecord: 'me.bp.code_edition',
     codeEditionGate: 'me.bp.code_edition_recorded',
     regionalImpactGate: null,
@@ -50,8 +50,8 @@ export const ME_ROLES: PackRoles = {
   },
   ruleGroups: {
     building: ['me.bp.'],
-    board: ['me.pb.'],
-    portalBoardDeadlines: [],
+    board: ['me.pb.', 'me.boa.'],
+    portalBoardDeadlines: ['me.appeal.'],
   },
-  gates: { abutterListFresh: null, varianceRecorded: null },
+  gates: { abutterListFresh: null, varianceRecorded: 'me.boa.variance_recorded' },
 }

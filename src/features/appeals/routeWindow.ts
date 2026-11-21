@@ -156,16 +156,25 @@ export interface WindowClock {
   currentDue: string
 }
 
+const STARTS_AFTER_THE_NODE: readonly string[] = [PROJECT_FINAL_APPROVAL, 'decision_filed']
+
+function laterStartEvent(ruleKey: string): string | null {
+  const rule = loadPack().rules.find((r) => r.kind === 'clock' && r.key === ruleKey)
+  return rule?.kind === 'clock' && STARTS_AFTER_THE_NODE.includes(rule.startEvent)
+    ? rule.startEvent
+    : null
+}
+
 export function clockedWindowDue(
   windowClocks: readonly WindowClock[],
   parent: NodeRow,
   ruleKey: string,
 ): CivilDate | null {
-  const afterFinal = ruleWaitsForFinalApproval(ruleKey)
+  const later = laterStartEvent(ruleKey)
   const clock = windowClocks.find(
     (c) =>
       c.ruleKey === ruleKey &&
-      (afterFinal ? c.startEvent === PROJECT_FINAL_APPROVAL : c.startDate === parent.occurredOn),
+      (later === null ? c.startDate === parent.occurredOn : c.startEvent === later),
   )
   return clock === undefined ? null : (clock.currentDue as CivilDate)
 }
@@ -221,9 +230,9 @@ export async function windowDue(
 ): Promise<CivilDate> {
   const { applicationId, ruleKey, finality } = window
   if (applicationId !== null) {
-    const started = ruleWaitsForFinalApproval(ruleKey)
-      ? eq(clocks.startEvent, PROJECT_FINAL_APPROVAL)
-      : eq(clocks.startDate, parent.occurredOn)
+    const later = laterStartEvent(ruleKey)
+    const started =
+      later === null ? eq(clocks.startDate, parent.occurredOn) : eq(clocks.startEvent, later)
     const due = await startedClockDue(tx, applicationId, ruleKey, started)
     if (due !== null) return due
   }

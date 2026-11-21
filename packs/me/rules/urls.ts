@@ -11,7 +11,13 @@ export const ME_URLS = {
   licenseeSearch: 'https://www.maine.gov/pfr/consumer/licensee-search',
   title30Asec4103: `${STATUTES}/30-A/title30-Asec4103.html`,
   title30Asec4215: `${STATUTES}/30-A/title30-Asec4215.html`,
+  title30Asec2691: `${STATUTES}/30-A/title30-Asec2691.html`,
+  title30Asec4353: `${STATUTES}/30-A/title30-Asec4353.html`,
   title30Asec4403: `${STATUTES}/30-A/title30-Asec4403.html`,
+  title30Asec4482: `${STATUTES}/30-A/title30-Asec4482.html`,
+  title30Asec4482A: `${STATUTES}/30-A/title30-Asec4482-A.html`,
+  title30Asec4482B: `${STATUTES}/30-A/title30-Asec4482-B.html`,
+  civilProcedureRules: 'https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf',
   subsurfaceWastewaterRule:
     'https://www.maine.gov/dhhs/sites/maine.gov.dhhs/files/rule-2023-10/10-144%20CMR%20Ch%20241%20Subsurface%20Wastewater%20Disposal%20Rule.pdf',
   mubecStandards:

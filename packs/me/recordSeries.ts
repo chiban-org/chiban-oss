@@ -187,6 +187,8 @@ export const ME_RECORD_SERIES_DEFAULTS = {
     'me.seasonal_conversion': 'me.rs.seasonal_conversion',
     'me.pb_subdivision': 'me.rs.subdivision_permits',
     'me.pb_site_plan': 'me.rs.site_plans_approved',
+    'me.boa_variance': 'me.rs.board_of_appeals_files',
+    'me.boa_admin_appeal': 'me.rs.board_of_appeals_files',
   } as Record<string, string>,
   byApplicationType: {
     SSW: 'me.rs.plumbing_external',
