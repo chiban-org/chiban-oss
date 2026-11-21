@@ -38,7 +38,7 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
-const { linkRelianceAction } = await import('./relianceActions')
+const { linkRelianceAction, unlinkRelianceAction } = await import('./relianceActions')
 
 let handle: TestDb
 let world: BoardWorld
@@ -93,5 +93,23 @@ describe('linkRelianceAction', () => {
       form({ applicationId: permit.applicationId, varianceApplicationId: other.applicationId }),
     )
     expect(result).toMatchObject({ ok: false, error: 'That record was not found.' })
+  })
+})
+
+describe('unlinkRelianceAction', () => {
+  it('removes the link from the permit', async () => {
+    const made = await decideUnderXx(handle.db, world)
+    const permit = await makeApplication(handle.db, world, { state: 'decided' })
+    state.actor = world.staff
+    const fields = {
+      applicationId: permit.applicationId,
+      varianceApplicationId: made.applicationId,
+    }
+    expect(await linkRelianceAction(form(fields))).toMatchObject({ ok: true })
+    expect(await unlinkRelianceAction(form(fields))).toEqual({
+      ok: true,
+      message: 'Variance link removed.',
+    })
+    expect(await handle.db.select().from(relianceLinks)).toEqual([])
   })
 })

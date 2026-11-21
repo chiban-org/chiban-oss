@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { applications, documents } from '@/db/schema'
+import { applications, auditLog, documents, relianceLinks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { linkReliance } from '@/features/boards/exercise'
@@ -9,7 +9,11 @@ import {
   recordFinalWrittenApproval,
   varianceValidity,
 } from '@/features/decisions/recording'
-import { linkVarianceReliance, varianceGateDefinitions } from '@/features/decisions/recordingGate'
+import {
+  linkVarianceReliance,
+  unlinkVarianceReliance,
+  varianceGateDefinitions,
+} from '@/features/decisions/recordingGate'
 import { evaluateGates } from '@/features/gates/evaluateGates'
 import { registerGate } from '@/features/gates/registry'
 import { setActivePackForTest } from '@/features/packs/registry'
@@ -163,6 +167,37 @@ describe('the dependent permit gate', () => {
     )
     await handle.db.transaction((tx) => markUnrecordedVoid(tx, addDays(DUE, 1), signal))
     expect((await gateResult(permit.applicationId, 'issued'))?.outcome.status).toBe('blocked')
+  })
+
+  it('passes again once staff remove a wrong link, and audits the removal', async () => {
+    const made = await approved()
+    const permit = await makeApplication(handle.db, world, { state: 'decided' })
+    const link = {
+      varianceApplicationId: made.applicationId,
+      planningApplicationId: permit.applicationId,
+    }
+    await linkReliance(handle.db, world.staff, link, signal)
+    await handle.db.transaction((tx) => markUnrecordedVoid(tx, addDays(DUE, 1), signal))
+    expect((await gateResult(permit.applicationId, 'issued'))?.outcome.status).toBe('blocked')
+    expect(await unlinkVarianceReliance(handle.db, world.reviewer, link, signal)).toEqual({
+      ok: false,
+      error: 'forbidden',
+    })
+    expect(await unlinkVarianceReliance(handle.db, world.staff, link, signal)).toEqual({
+      ok: true,
+      value: undefined,
+    })
+    expect(await handle.db.select().from(relianceLinks)).toEqual([])
+    expect((await gateResult(permit.applicationId, 'issued'))?.outcome).toEqual({ status: 'pass' })
+    const [audit] = await handle.db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.action, 'board.reliance.unlink'))
+    expect(audit).toMatchObject({ entityType: 'application', entityId: permit.applicationId })
+    expect(await unlinkVarianceReliance(handle.db, world.staff, link, signal)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
   })
 
   it('passes a permit with no link', async () => {

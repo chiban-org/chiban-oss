@@ -2,6 +2,8 @@ import { and, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { applications, projects, relianceLinks } from '@/db/schema'
+import { transactionResult } from '@/db/transactionResult'
+import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { linkReliance } from '@/features/boards/exercise'
@@ -15,7 +17,7 @@ import {
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
-import { err, type Result } from '@/types/result'
+import { err, ok, type Result } from '@/types/result'
 
 function gateRule(key: string): GateRule {
   const rule = ruleByKey(loadPack(), key)
@@ -83,4 +85,40 @@ export async function linkVarianceReliance(
     return err('not_found')
   }
   return await linkReliance(db, actor, input, signal)
+}
+
+export async function unlinkVarianceReliance(
+  db: Db,
+  actor: Actor,
+  input: { varianceApplicationId: string; planningApplicationId: string },
+  signal: AbortSignal,
+): Promise<Result<void, 'forbidden' | 'not_found'>> {
+  signal.throwIfAborted()
+  if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (packRoles().gates.varianceRecorded === null) return err('not_found')
+  return await transactionResult<void, 'forbidden' | 'not_found'>(db, async (tx) => {
+    const removed = await tx
+      .delete(relianceLinks)
+      .where(
+        and(
+          eq(relianceLinks.varianceApplicationId, input.varianceApplicationId),
+          eq(relianceLinks.planningApplicationId, input.planningApplicationId),
+        ),
+      )
+      .returning({ resolvedOn: relianceLinks.resolvedOn })
+    const [row] = removed
+    if (row === undefined) return err('not_found')
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'board.reliance.unlink',
+        entityType: 'application',
+        entityId: input.planningApplicationId,
+        before: { varianceApplicationId: input.varianceApplicationId, resolvedOn: row.resolvedOn },
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
 }

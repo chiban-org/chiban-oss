@@ -2,7 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField } from '@/components/staff/fields'
 import { VALIDITY_LABELS, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { RelianceView } from '@/features/decisions/relianceView'
-import { linkRelianceAction } from './relianceActions'
+import { linkRelianceAction, unlinkRelianceAction } from './relianceActions'
 
 interface Props {
   applicationId: string
@@ -30,6 +30,16 @@ export function ReliancePanel({ applicationId, validity, reliance, canLink }: Pr
                 <li key={l.id} className="record-item">
                   <p className="m-0 font-medium">{`Relies on ${l.number}`}</p>
                   <p className="m-0">{VALIDITY_LABELS[l.validity]}</p>
+                  {canLink ? (
+                    <ActionForm
+                      action={unlinkRelianceAction}
+                      submitLabel="Remove this link"
+                      variant="outline"
+                    >
+                      <input type="hidden" name="applicationId" value={applicationId} />
+                      <input type="hidden" name="varianceApplicationId" value={l.id} />
+                    </ActionForm>
+                  ) : null}
                 </li>
               ))}
             </ul>
