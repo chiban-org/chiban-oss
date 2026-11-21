@@ -2,12 +2,15 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applications } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
+import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { transitionApplication } from '@/features/applications/transition'
+import { planWork } from '@/features/applications/workPlan'
 import { buildingGateDefinitions } from '@/features/building/gates'
 import { evaluateGates } from '@/features/gates/evaluateGates'
 import { registerGate } from '@/features/gates/registry'
 import { setActivePackForTest } from '@/features/packs/registry'
+import { formatCivilDate } from '@/lib/formatDate'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -121,5 +124,25 @@ describe('a Maine building permit in a town that enforces no code', () => {
     if (refused.ok || typeof refused.error !== 'object') throw new Error('expected a gate refusal')
     const blocked = refused.error.gateBlocked.filter((g) => g.effective === 'blocked')
     expect(blocked.map((g) => g.key)).toEqual([CODE_GATE])
+  })
+})
+
+describe('the completeness step on a Maine building permit', () => {
+  it('says the decision deadline already runs from filing and names its date', async () => {
+    await publishProgram(null, 4000)
+    const applicationId = await submitted()
+    const view = await getStaffApplicationView(handle.db, world.staff, applicationId, NOW, signal)
+    if (view === null) throw new Error('missing view')
+    const due = view.clocks.find((c) => c.ruleKey === 'me.bp.decision')?.currentDue.value
+    expect(due).toBe('2027-04-01')
+    const plan = planWork(view, null, {
+      reviewers: 0,
+      abilities: new Set(['mark_complete']),
+      responsible: null,
+    })
+    const row = plan.groups.flatMap((g) => g.rows).find((r) => r.key === 'completeness')
+    expect(row?.detail).toBe(
+      `The decision deadline runs from filing and falls on ${formatCivilDate('2027-04-01')}. Marking the application complete does not change it.`,
+    )
   })
 })
