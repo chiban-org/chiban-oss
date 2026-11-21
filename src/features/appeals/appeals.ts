@@ -15,7 +15,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { effectiveBindings } from '@/features/config/bindings'
-import { holdSuspends } from '@/features/enforcement/holdReads'
+import { holdSuspends, holdsEnabled } from '@/features/enforcement/holdReads'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -59,16 +59,19 @@ async function filingTarget(
   input: AppealInput,
   signal: AbortSignal,
 ): Promise<Result<{ app: ApplicationContext; held: boolean }, FilingError>> {
-  await tx
-    .select({ id: applications.id })
-    .from(applications)
-    .where(eq(applications.id, input.applicationId))
-    .for('update')
+  const holds = holdsEnabled()
+  if (holds) {
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, input.applicationId))
+      .for('update')
+  }
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_issued')
   if (!(await acceptsIssuanceAppeal(tx, app, signal))) return err('not_issued')
   const held = app.state === 'suspended'
-  const returned = await lastReturnToIssued(tx, app)
+  const returned = holds ? await lastReturnToIssued(tx, app) : null
   if (returned !== null && input.filedOn < returned) return err('before_reinstatement')
   return ok({ app, held })
 }
