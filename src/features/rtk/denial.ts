@@ -56,7 +56,9 @@ export async function denyRequest(
     if (request.status !== 'awaiting_decision') return err('not_awaiting_decision')
     const today = await townToday(tx, now, signal)
     if (daysBetween(today, value.deniedOn) > 0) return err('future_date')
-    const statedOn = (request.firstResponseOn ?? request.receivedOn) as CivilDate
+    const statedOn = (request.followUpOn ??
+      request.firstResponseOn ??
+      request.receivedOn) as CivilDate
     if (daysBetween(statedOn, value.deniedOn) < 0) return err('before_statement')
     const [withheld] = await tx
       .select({ n: count() })

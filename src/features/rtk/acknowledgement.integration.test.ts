@@ -4,6 +4,7 @@ import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { setActivePackForTest } from '@/features/packs/registry'
+import { denyRequest } from '@/features/rtk/denial'
 import { createRelease } from '@/features/rtk/releases'
 import { logRequest, rtkRequestView } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -56,6 +57,22 @@ const respond = (input: Parameters<typeof recordFirstResponse>[3]) =>
 
 const rowOf = async (requestId: string) =>
   (await handle.db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId)))[0]
+
+async function withheldInFull(requestId: string): Promise<void> {
+  const withheld = await recordWithholding(
+    handle.db,
+    staff,
+    {
+      requestId,
+      scope: 'withheld_in_full',
+      recordDescription: 'Email from the town attorney about the Birch Lane variance',
+      exemptionKey: 'nh.rtk.91a5.xii',
+      explanation: 'The email is a confidential communication seeking legal advice from counsel.',
+    },
+    signal,
+  )
+  if (!withheld.ok) throw new Error(`withhold failed ${withheld.error}`)
+}
 
 const statement = {
   statedDate: d('2027-07-30'),
@@ -156,19 +173,7 @@ describe('under a pack that accepts an acknowledgement', () => {
   it('a denial after the acknowledgement records with its withholding', async () => {
     const requestId = await logged()
     await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })
-    const withheld = await recordWithholding(
-      handle.db,
-      staff,
-      {
-        requestId,
-        scope: 'withheld_in_full',
-        recordDescription: 'Email from the town attorney about the Birch Lane variance',
-        exemptionKey: 'nh.rtk.91a5.xii',
-        explanation: 'The email is a confidential communication seeking legal advice from counsel.',
-      },
-      signal,
-    )
-    expect(withheld.ok).toBe(true)
+    await withheldInFull(requestId)
     const r = await respond({ requestId, kind: 'denied', respondedOn: d('2027-07-09') })
     expect(r.ok).toBe(true)
     const row = await rowOf(requestId)
@@ -176,6 +181,30 @@ describe('under a pack that accepts an acknowledgement', () => {
     expect(row?.firstResponseKind).toBe('denied')
     expect(row?.firstResponseOn).toBe('2027-07-05')
     expect(row?.followUpOn).toBe('2027-07-09')
+  })
+
+  it('a denial after an acknowledged time statement is dated from the statement', async () => {
+    const requestId = await logged()
+    await respond({ requestId, kind: 'acknowledged', respondedOn: d('2027-07-05') })
+    await respond({
+      requestId,
+      kind: 'time_statement',
+      respondedOn: d('2027-07-09'),
+      timeStatement: statement,
+    })
+    await withheldInFull(requestId)
+    const deny = (deniedOn: string) =>
+      denyRequest(
+        { db: handle.db, store, actor: staff, signal, now: NOW },
+        {
+          requestId,
+          deniedOn: d(deniedOn),
+        },
+      )
+    expect(await deny('2027-07-07')).toEqual({ ok: false, error: 'before_statement' })
+    expect((await rowOf(requestId))?.status).toBe('awaiting_decision')
+    expect((await deny('2027-07-09')).ok).toBe(true)
+    expect((await rowOf(requestId))?.deniedOn).toBe('2027-07-09')
   })
 
   it('a clarification with any other response is invalid', async () => {
