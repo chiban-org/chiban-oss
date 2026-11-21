@@ -5,7 +5,7 @@ import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack, packById, withPackForTest } from '@/features/packs/registry'
 import { PackManifestSchema } from '@/features/packs/schema'
-import type { CivilDate } from '@/types/civilDate'
+import { addDays, type CivilDate } from '@/types/civilDate'
 import { ME_ABUTTER_PARAMS } from './abutters/params'
 import { ME_CODE_EDITIONS } from './codeEditions'
 import { ME_PACK } from './index'
@@ -72,7 +72,18 @@ describe('me pack', () => {
       abbreviation: 'BOA',
     })
     expect(ME_PACK.boardKinds.planning_board.label).toBe('Planning Board')
-    expect(ME_PACK.labels.significantDecisionHelp).toContain('30-A MRSA §4481')
+    const help = ME_PACK.labels.significantDecisionHelp ?? ''
+    for (const part of [
+      '30-A MRSA §4481(1)',
+      'chapter 187, subchapter 3',
+      'section 489-A',
+      '10,000 square feet of ground area',
+      '40,000 square feet of floor area',
+      'not revegetated',
+      '10 or more lots',
+    ]) {
+      expect(help).toContain(part)
+    }
   })
 
   it('reads map and lot as free text', () => {
@@ -138,6 +149,13 @@ describe('me pack', () => {
       'ASHRAE 90.1 2019',
     ])
     const previous = ME_CODE_EDITIONS.find((e) => e.key === 'me.edition.2018_01_23')
-    expect(previous?.amendmentPackages.map((p) => p.effectiveFrom)).toEqual(['2021-05-10'])
+    expect(previous?.enforcementFrom).toBe(addDays('2018-01-23' as CivilDate, 90))
+    expect(previous?.amendmentPackages).toEqual([
+      { effectiveFrom: '2021-05-10', label: 'IECC 2015 and IMC 2015 effective 2021-05-10' },
+    ])
+    expect(current?.citation.label).toContain('08-003 CMR ch 2 (formerly 16-642 CMR ch 1)')
+    expect(current?.citation.url).toBe(
+      'https://www.maine.gov/dps/fmo/sites/maine.gov.dps.fmo/files/inline-files/MUBEC%20Standards%20and%20Amendments.pdf',
+    )
   })
 })

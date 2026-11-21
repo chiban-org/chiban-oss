@@ -13,14 +13,14 @@ export const ME_CODE_EDITIONS: CodeEditionEntry[] = [
     label: 'IBC 2015, IEBC 2015, IRC 2015 (effective 2018-01-23)',
     status: 'verified',
     effectiveFrom: d('2018-01-23'),
-    enforcementFrom: null,
+    enforcementFrom: d('2018-04-23'),
     components: [
       { code: 'IBC', edition: '2015' },
       { code: 'IEBC', edition: '2015' },
       { code: 'IRC', edition: '2015' },
     ],
     amendmentPackages: [
-      { effectiveFrom: d('2021-05-10'), label: 'IECC 2015 effective 2021-05-10' },
+      { effectiveFrom: d('2021-05-10'), label: 'IECC 2015 and IMC 2015 effective 2021-05-10' },
     ],
     electionWindow: null,
     citation: { label: '16-642 CMR ch 1, filing 2018-006', url: ME_URLS.rulesAdopted2018 },
@@ -44,6 +44,10 @@ export const ME_CODE_EDITIONS: CodeEditionEntry[] = [
     ],
     amendmentPackages: [],
     electionWindow: null,
-    citation: { label: '16-642 CMR ch 1 §6', url: ME_URLS.mubecChapter1 },
+    citation: {
+      label:
+        'MUBEC Standards and Amendments, effective beginning April 7, 2025; 08-003 CMR ch 2 (formerly 16-642 CMR ch 1)',
+      url: ME_URLS.mubecStandards,
+    },
   },
 ]

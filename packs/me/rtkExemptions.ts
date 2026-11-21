@@ -9,7 +9,7 @@ const PARAGRAPHS: ReadonlyArray<readonly [string, string]> = [
   ['D', 'Material prepared for collective bargaining negotiations'],
   [
     'E',
-    'Confidential faculty and administrative committee records of the state colleges and university',
+    'Confidential records of faculty and administrative committees of the Maine Maritime Academy, the Maine Community College System and the University of Maine System',
   ],
   ['F', 'Confidential records held by a municipal association'],
   ['G', "An association's legislative positions and insurance materials"],

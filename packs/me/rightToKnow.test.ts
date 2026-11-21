@@ -86,6 +86,7 @@ describe('Freedom of Access Act rules', () => {
     const label = (p: string) => ME_FOAA_EXEMPTIONS.find((e) => e.paragraph === p)?.label
     expect(label('A')).toBe('Records designated confidential by statute')
     expect(label('N')).toBe('Social Security numbers')
+    expect(label('E')).toContain('Maine Maritime Academy, the Maine Community College System')
     expect(ME_PACK.rtkExemptions).toBe(ME_FOAA_EXEMPTIONS)
   })
 })

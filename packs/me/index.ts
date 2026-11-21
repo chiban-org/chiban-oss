@@ -15,7 +15,7 @@ import { ME_RULE_TRANSITIONS } from '@packs/me/transitions'
 import type { StatePack } from '@/features/packs/schema'
 
 const SIGNIFICANT_DECISION_HELP =
-  'Under 30-A MRSA §4481, a significant land use decision is final action on a site plan for buildings over 10,000 square feet of ground area or 40,000 square feet of floor area, or for more than 3 acres of buildings, parking, roads and other graded areas, or on a subdivision of 10 or more lots.'
+  'Under 30-A MRSA §4481(1), a significant land use decision is final action on a project reviewed under a site plan or other chapter 187, subchapter 3 ordinance, or under Title 38, section 488, subsection 19 or section 489-A, whose buildings occupy more than 10,000 square feet of ground area or contain more than 40,000 square feet of floor area, or that occupies more than 3 acres with buildings, parking lots, roads, paved areas, wharves and other areas stripped or graded and not revegetated. It is also final action on a project of 10 or more lots under a chapter 187, subchapter 4 (subdivision) ordinance or that Title 38 authority.'
 
 export const ME_PACK: StatePack = {
   manifest: ME_PACK_MANIFEST,
