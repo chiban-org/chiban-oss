@@ -5,6 +5,7 @@ import { generateDecisionDocuments } from '@/features/decisions/decisionDocument
 import { recordDecisionDelivery } from '@/features/decisions/delivery'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { recordDecision } from '@/features/decisions/recordDecision'
+import { recordDecisionRecording, recordFinalWrittenApproval } from '@/features/decisions/recording'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
@@ -17,6 +18,8 @@ import {
   RECORD_DECISION_FORM,
   RECORD_DECISION_NO_HEARING_FORM,
   RECORD_DELIVERY_FORM,
+  RECORD_FINAL_APPROVAL_FORM,
+  RECORD_REGISTRY_FORM,
 } from './forms'
 
 export async function recordDecisionAction(formData: FormData): Promise<ActionResult> {
@@ -109,6 +112,30 @@ export async function recordDeliveryAction(formData: FormData): Promise<ActionRe
       future_date: 'deliveredOn',
       before_vote: 'deliveredOn',
       method_not_allowed: 'method',
+    }),
+  )
+}
+
+export async function recordFinalApprovalAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    RECORD_FINAL_APPROVAL_FORM,
+    async ({ db, actor, signal }, input) =>
+      errorOrField(
+        await recordFinalWrittenApproval(db, actor, input, signal),
+        'Final written approval recorded. The recording period has started.',
+        { future_date: 'approvedOn', before_vote: 'approvedOn' },
+      ),
+  )
+}
+
+export async function recordRegistryAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, RECORD_REGISTRY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await recordDecisionRecording(db, actor, input, signal), 'Recording saved.', {
+      future_date: 'recordedOn',
+      before_approval: 'recordedOn',
+      after_period: 'recordedOn',
+      document_not_found: 'certificateDocumentId',
     }),
   )
 }

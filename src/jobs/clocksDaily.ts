@@ -109,6 +109,31 @@ export async function expireLapsedPermits(
   return failures
 }
 
+export async function markUnrecordedVoid(
+  tx: Tx,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<{ voided: string[] }> {
+  signal.throwIfAborted()
+  const pack = loadPack()
+  const past = await tx
+    .select()
+    .from(clocks)
+    .where(and(inArray(clocks.status, ['running', 'overdue']), lt(clocks.currentDue, today)))
+  const voided: string[] = []
+  for (const clock of past) {
+    const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
+    if (rule.kind !== 'clock' || rule.consequence.kind !== 'void_unless_recorded') continue
+    const lapsed = await tx
+      .update(clocks)
+      .set({ status: 'lapsed' })
+      .where(and(eq(clocks.id, clock.id), inArray(clocks.status, ['running', 'overdue'])))
+      .returning({ id: clocks.id })
+    if (lapsed.length > 0 && !voided.includes(clock.applicationId)) voided.push(clock.applicationId)
+  }
+  return { voided }
+}
+
 export const clocksDailyJob = defineJob<DailyPayload>({
   name: JOB_NAMES.CLOCKS_DAILY,
   intervalSeconds: SECONDS_PER_DAY,
@@ -122,6 +147,7 @@ export const clocksDailyJob = defineJob<DailyPayload>({
     const refusal = await refuseBySilence(ctx.db, today, ctx.signal)
     await warnClocksDueSoon(ctx.db, today, ctx.signal)
     const failures = await expireLapsedPermits(ctx.db, today, ctx.signal)
+    await markUnrecordedVoid(ctx.db, today, ctx.signal)
     if (refusal.failures.length > 0) {
       return failKeepingWrites(`refusal failed: ${refusal.failures.join('; ')}`)
     }

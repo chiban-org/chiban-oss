@@ -15,6 +15,7 @@ export const START_EVENT_LABELS: Record<string, string> = {
   application_accepted: 'Application accepted as complete',
   hearing_held: 'Hearing held',
   final_approval: 'Final approval',
+  final_written_approval: 'Final written approval',
   board_vote: 'Board vote',
   decision_filed: 'Decision filed',
   rehearing_vote: 'Rehearing vote',

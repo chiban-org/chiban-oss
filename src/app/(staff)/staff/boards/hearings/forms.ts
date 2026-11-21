@@ -122,6 +122,20 @@ export const RECORD_DELIVERY_FORM = z.object({
   deliveredOn: civilDate('the date it was delivered'),
 })
 
+export const RECORD_FINAL_APPROVAL_FORM = z.object({
+  decisionId: decisionId(),
+  approvedOn: civilDate('the date of the final written approval'),
+})
+
+export const RECORD_REGISTRY_FORM = z.object({
+  decisionId: decisionId(),
+  registry: requiredText('the registry of deeds', { max: 200 }),
+  book: requiredText('the book', { max: 50 }),
+  page: requiredText('the page', { max: 50 }),
+  recordedOn: civilDate('the date it was recorded'),
+  certificateDocumentId: recordId('the recorded certificate'),
+})
+
 export const ADD_APPEAL_NODE_FORM = z.object({
   parentId: recordId('the step it follows'),
   kind: choice('a step', APPEAL_KINDS),

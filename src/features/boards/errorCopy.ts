@@ -101,6 +101,10 @@ const COPY: Record<string, string> = {
   supplier_required: 'Choose the water supplier for the protection area.',
   no_receipt_requirements: 'This kind of application has no notices due on receipt.',
   already_prepared: 'The receipt notices are already prepared.',
+  not_approving: 'Only an approval can be recorded at the registry.',
+  no_final_written_approval: 'Record the date of the final written approval first.',
+  before_approval: 'The recording cannot be dated before the final written approval.',
+  after_period: 'The recording is dated after the period for recording ended.',
   method_not_allowed: 'That way of delivering the decision is not one the rules allow.',
 }
 

@@ -104,6 +104,7 @@ const SPECS: Spec[] = [
   { table: t.completenessVotes },
   { table: t.decisionDeliveries },
   { table: t.decisionNotices },
+  { table: t.decisionRecordings },
   { table: t.deemedRefusals },
   { table: t.codeEditionRecords },
   { table: t.configVersions },

@@ -16,6 +16,7 @@ import { AppealsSection } from './AppealsSection'
 import { DecisionRail } from './DecisionRail'
 import { DeliverySection } from './DeliverySection'
 import { FilingSection } from './FilingSection'
+import { RecordingSection } from './RecordingSection'
 import { TransmittalSection } from './TransmittalSection'
 
 export const metadata: Metadata = { title: 'Board decision' }
@@ -89,6 +90,13 @@ export default async function DecisionPage({
       node:
         deliveries.length === 0 ? null : (
           <DeliverySection key="delivery" groups={deliveries} today={today} />
+        ),
+    },
+    {
+      empty: false,
+      node:
+        view.recording === null ? null : (
+          <RecordingSection key="recording" view={view} today={today} />
         ),
     },
     {

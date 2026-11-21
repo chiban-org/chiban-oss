@@ -2,6 +2,7 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import { listIsFreshAtFiling, proximityVerdict } from '@/features/abutters/proximityRule'
 import { recipientRolesFor } from '@/features/abutters/roles'
 import { hearingIsOptional } from '@/features/decisions/hearingOptional'
+import { recordingIsRequired } from '@/features/decisions/recordingRequired'
 import { classificationOf, type FieldProbe, packRule, probe } from '@/features/packs/probes/probe'
 import { observeRule, ruleProbes } from '@/features/packs/probes/ruleProbes'
 import type { ListAgeRule, ProceedingClassification, ProximityRule } from '@/features/packs/schema'
@@ -97,6 +98,11 @@ export function boardProbes(): Record<string, FieldProbe> {
       base: () => classificationOf('nh.zba_variance'),
       mutate: (c) => ({ ...c, hearing: 'optional' }),
       observe: hearingIsOptional,
+    }),
+    'classification.recordingRequired': probe<ProceedingClassification>({
+      base: () => classificationOf('nh.zba_variance'),
+      mutate: (c) => ({ ...c, recordingRequired: true }),
+      observe: recordingIsRequired,
     }),
     'classification.boardKind': abuttersProbe((c) => ({ ...c, boardKind: 'zba' })),
     'classification.abutters.strategyKey': abuttersProbe((c) =>

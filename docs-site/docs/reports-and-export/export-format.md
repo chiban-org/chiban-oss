@@ -491,6 +491,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 - `conditions`: jsonb
 - `reasons_for_disapproval`: text, nullable
 - `filed_on`: date, nullable
+- `final_written_approval_on`: date, nullable
 - `minutes_document_id`: uuid, nullable
 - `written_decision_document_id`: uuid, nullable
 - `letter_document_id`: uuid, nullable
@@ -985,6 +986,23 @@ File: `data/decision_notices.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 - `document_id` refers to `documents`
+
+### decision_recordings
+
+File: `data/decision_recordings.ndjson`. Ordered by decision_id.
+
+- `decision_id`: uuid
+- `registry`: text
+- `book`: text
+- `page`: text
+- `recorded_on`: date
+- `certificate_document_id`: uuid
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `decision_id` refers to `board_decisions`
+- `certificate_document_id` refers to `documents`
 
 ### deemed_refusals
 

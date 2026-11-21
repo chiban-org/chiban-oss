@@ -76,6 +76,7 @@ function eventPlacement(
     case 'board_vote':
     case 'decision_filed':
     case 'final_approval':
+    case 'final_written_approval':
     case 'rehearing_vote':
       return { state: 'decided', on: meeting }
     case 'order_served':

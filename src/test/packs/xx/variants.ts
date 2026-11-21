@@ -61,6 +61,7 @@ export const XX_OPTIONAL_HEARING: StatePack = xxPackWith({
         requiredSubsteps: [],
         directIssueAllowed: false,
         hearing: 'optional',
+        recordingRequired: false,
         appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
       },
     ],
@@ -209,4 +210,44 @@ export const XX_RECEIPT_NOTICES: StatePack = xxPackWith({
     ),
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: RECEIPT_PACK_RULES }] },
+})
+
+export const XX_VOID_KEY = 'xx.zba.void_unless_recorded'
+
+export const XX_VOID_RULE: PackRule = {
+  kind: 'clock',
+  key: XX_VOID_KEY,
+  version: 1,
+  label: 'Record the certificate of approval',
+  citation: { label: 'Vellmora Permit Act 14', url: 'https://laws.example/vellmora/permit-act' },
+  clockType: 'action_due',
+  whose: 'applicant',
+  startEvent: 'final_written_approval',
+  length: { unit: 'days', value: 90 },
+  direction: 'after',
+  consequence: {
+    kind: 'void_unless_recorded',
+    text: 'A variance not recorded within the period is void.',
+  },
+  extension: { allowed: false, note: 'The act provides no extension.' },
+  waivable: false,
+  overridePolicy: { policy: 'fixed' },
+}
+
+const RECORDING_PACK_RULES = [...XX_PACK.manifest.rules, XX_VOID_RULE]
+
+export const XX_RECORDING: StatePack = xxPackWith({
+  manifest: {
+    rules: RECORDING_PACK_RULES,
+    classifications: XX_PACK.manifest.classifications.map((c) =>
+      c.key === 'xx.board_variance'
+        ? {
+            ...c,
+            recordingRequired: true,
+            mandatoryRuleKeys: [...c.mandatoryRuleKeys, XX_VOID_KEY],
+          }
+        : c,
+    ),
+  },
+  pack: { ruleAreas: [{ title: 'All rules', rules: RECORDING_PACK_RULES }] },
 })

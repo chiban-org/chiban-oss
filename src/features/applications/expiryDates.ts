@@ -1,4 +1,4 @@
-import { and, desc, inArray, isNull } from 'drizzle-orm'
+import { and, desc, inArray, isNull, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadPack } from '@/features/packs/loadPack'
@@ -27,6 +27,7 @@ export async function expiryDates(
         inArray(clocks.applicationId, applicationIds),
         inArray(clocks.ruleKey, keys),
         isNull(clocks.supersededBy),
+        ne(clocks.status, 'met'),
       ),
     )
     .orderBy(desc(clocks.createdAt), desc(clocks.id))

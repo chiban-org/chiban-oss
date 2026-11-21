@@ -42,6 +42,7 @@ const START_EVENTS: Record<StartEvent, string> = {
   application_accepted: 'the board accepts the application as complete',
   hearing_held: 'the hearing is held',
   final_approval: 'final approval',
+  final_written_approval: 'the final written approval is issued',
   board_vote: 'the board votes',
   decision_filed: 'the decision is filed',
   rehearing_vote: 'the board votes on the rehearing',

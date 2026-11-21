@@ -17,6 +17,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { loadRecordingView, type RecordingView } from '@/features/decisions/recordingView'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
 import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidence'
 import { channelLabel } from '@/features/notices/channels'
@@ -65,6 +66,7 @@ export interface DecisionView {
   filingDue: FilingDue | null
   minutesChoices: { id: string; label: string }[]
   proofChoices: { id: string; label: string }[]
+  recording: RecordingView | null
   regional: boolean
   transmittalStarted: boolean
   transmittal: {
@@ -215,6 +217,7 @@ export async function loadDecisionView(
       .filter((d) => !proofDocs.has(d.id))
       .map((d) => ({ id: d.id, label: d.title })),
     proofChoices: docs.map((d) => ({ id: d.id, label: d.title })),
+    recording: await loadRecordingView(db, decision, app, docs),
     regional: regional?.determination === 'yes',
     transmittalStarted: transmittal !== undefined,
     transmittal:

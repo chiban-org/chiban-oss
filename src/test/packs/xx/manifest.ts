@@ -21,6 +21,7 @@ export const XX_PACK_MANIFEST: PackManifest = {
       requiredSubsteps: [],
       directIssueAllowed: false,
       hearing: 'required',
+      recordingRequired: false,
       appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
     },
     {
@@ -33,6 +34,7 @@ export const XX_PACK_MANIFEST: PackManifest = {
       requiredSubsteps: [],
       directIssueAllowed: true,
       hearing: 'required',
+      recordingRequired: false,
       appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
     },
     {
@@ -50,6 +52,7 @@ export const XX_PACK_MANIFEST: PackManifest = {
       requiredSubsteps: [{ state: 'under_review', key: 'hearing' }],
       directIssueAllowed: false,
       hearing: 'required',
+      recordingRequired: false,
       appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
     },
   ],

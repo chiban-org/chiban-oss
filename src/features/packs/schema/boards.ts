@@ -39,6 +39,7 @@ export const ProceedingClassificationSchema = z.object({
   requiredSubsteps: z.array(z.object({ state: z.enum(CORE_STATES), key: z.string().min(1) })),
   directIssueAllowed: z.boolean(),
   hearing: z.enum(['required', 'optional']).default('required'),
+  recordingRequired: z.boolean().default(false),
   appealRights: z.string(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>
