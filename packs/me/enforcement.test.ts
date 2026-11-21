@@ -33,7 +33,8 @@ describe('me enforcement penalty', () => {
     expect(penalty.aggravations).toEqual([
       {
         key: 'prior_conviction',
-        label: 'Prior conviction within 2 years',
+        label:
+          'Previous conviction of the same party within the past 2 years for a violation of the same law or ordinance (raises the maximum for a specific violation and for a shoreland violation in a resource protection zone, not for work or land use without a required permit)',
         maxCentsPerDay: 2500000,
       },
       { key: 'economic_benefit', label: 'Economic benefit', maxMultipleOfBenefit: 2 },
