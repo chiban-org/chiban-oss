@@ -44,6 +44,6 @@ export const SIGN_STARTER = permitStarter({
       requiredIf: NOT_OWNER,
     }),
   ],
-  closesOn: 'issuance',
+  closesOn: 'expiration',
   permitDetails: 'Issued {{application.issuedOn}}, expires {{application.expiresOn}}.',
 })

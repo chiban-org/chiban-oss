@@ -36,6 +36,13 @@ function fees(prefix: string, values: Record<string, FieldValue>, afterTheFact =
   }).totalCents
 }
 
+function bindingsOfStarter(s: StarterBundle): string[] {
+  const classification = ME_PACK.manifest.classifications.find(
+    (c) => c.key === s.applicationType.classification,
+  )
+  return [...(classification?.mandatoryRuleKeys ?? []), ...s.applicationType.bindings]
+}
+
 function allText(s: StarterBundle): string {
   return JSON.stringify(s)
 }
@@ -253,6 +260,17 @@ describe('Maine starters', () => {
       'General Development II',
       'Commercial Fisheries/Maritime Activities',
     ])
+  })
+
+  it('no starter with a lapse clock closes on issuance', () => {
+    const pack = loadPack()
+    for (const s of PERMITS) {
+      const lapses = bindingsOfStarter(s).some((key) => {
+        const rule = pack.rules.find((r) => r.key === key)
+        return rule?.kind === 'clock' && rule.consequence.kind === 'lapse'
+      })
+      if (lapses) expect(s.applicationType.workflow.closesOn, s.id).not.toBe('issuance')
+    }
   })
 
   it('the inspection settings default passes its schema', () => {

@@ -38,6 +38,6 @@ export const SEASONAL_CONVERSION_STARTER = permitStarter({
       requiredIf: { field: 'public_sewer', op: 'equals', value: 'no' },
     }),
   ],
-  closesOn: 'issuance',
+  closesOn: 'expiration',
   permitDetails: 'Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}.',
 })

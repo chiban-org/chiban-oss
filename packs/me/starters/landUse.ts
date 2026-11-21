@@ -38,6 +38,6 @@ export const LAND_USE_STARTER = permitStarter({
     },
   ],
   documents: [PLOT_PLAN, OWNER_AUTHORIZATION],
-  closesOn: 'issuance',
+  closesOn: 'expiration',
   permitDetails: 'Issued {{application.issuedOn}}, expires {{application.expiresOn}}.',
 })

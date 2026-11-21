@@ -41,6 +41,6 @@ export const DEMOLITION_STARTER = permitStarter({
       stage: 'before_issue',
     }),
   ],
-  closesOn: 'issuance',
+  closesOn: 'expiration',
   permitDetails: 'Issued {{application.issuedOn}}, expires {{application.expiresOn}}.',
 })

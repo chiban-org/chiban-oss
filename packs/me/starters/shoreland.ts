@@ -80,6 +80,6 @@ export const SHORELAND_STARTER = permitStarter({
     }),
     OWNER_AUTHORIZATION,
   ],
-  closesOn: 'issuance',
+  closesOn: 'expiration',
   permitDetails: 'Issued {{application.issuedOn}}, expires {{application.expiresOn}}.',
 })
