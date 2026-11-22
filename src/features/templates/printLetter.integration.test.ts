@@ -2,9 +2,13 @@ import { ME_PACK } from '@packs/me'
 import { eq } from 'drizzle-orm'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { LettersForm } from '@/app/(staff)/staff/applications/[applicationId]/printLetterPanel'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  LettersForm,
+  LoadedLetters,
+} from '@/app/(staff)/staff/applications/[applicationId]/printLetterPanel'
 import { applicationConditions, documents, parcels } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -14,6 +18,14 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { downloadObject } from '@/test/objectBytes'
 import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
+
+const panel = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
+
+vi.mock('@/server/requireStaff', async (original) => ({
+  ...(await original<typeof import('@/server/requireStaff')>()),
+  requireStaffContext: () =>
+    Promise.resolve({ db: panel.db, actor: panel.actor, signal: new AbortController().signal }),
+}))
 
 const signal = new AbortController().signal
 const NOW = new Date('2027-03-02T17:00:00Z')
@@ -80,6 +92,18 @@ describe('printing a letter template against an application', () => {
     expect(html).toContain('<h2>Letters</h2>')
     expect(html).toContain('Variance recording certificate')
     expect(html).toContain('Print the letter')
+  })
+
+  it('the self-loading panel shows the letters to staff, and nothing where there are none or to a reviewer', async () => {
+    panel.db = handle.db
+    const as = async (actor: Actor, applicationId: string) => {
+      panel.actor = actor
+      const element = await LoadedLetters({ applicationId })
+      return element === null ? null : renderToStaticMarkup(element)
+    }
+    expect(await as(world.staff, variance)).toContain('Variance recording certificate')
+    expect(await as(world.staff, building)).toBeNull()
+    expect(await as(world.reviewer, variance)).toBeNull()
   })
 
   it('prints the recording certificate on an approved variance and attaches it for the parties', async () => {
