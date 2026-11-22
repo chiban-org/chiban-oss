@@ -1,4 +1,6 @@
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { type CasePlanInput, counselState } from './workPlanInput'
 import type { CaseAction, CaseActor, CaseNowStep } from './workPlanTypes'
 
@@ -51,4 +53,15 @@ export function noOrderCounselStep(input: CasePlanInput): Step {
     })
   }
   return town('counsel.referred', 'Refer the case to town counsel', null)
+}
+
+export function correctionWaitStep(input: CasePlanInput): Step | null {
+  const correctBy = input.notices.at(-1)?.correctBy ?? null
+  if (correctBy === null || compareCivil(correctBy as CivilDate, input.today) <= 0) return null
+  return waiting({
+    key: 'notice.correct_by',
+    actor: 'respondent',
+    ask: 'Correct the violation',
+    task: `Wait for the correction date, ${formatCivilDate(correctBy)}`,
+  })
 }

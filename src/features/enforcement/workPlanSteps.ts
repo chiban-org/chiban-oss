@@ -21,6 +21,7 @@ import {
   unservedFor,
 } from './workPlanInput'
 import {
+  correctionWaitStep,
   judgmentStep,
   noOrderCounselStep,
   resolveStep,
@@ -89,7 +90,7 @@ function violationStep(input: CasePlanInput): Step {
       noticeId: unreceived.id,
     })
   }
-  if (!ordered) return noOrderCounselStep(input)
+  if (!ordered) return correctionWaitStep(input) ?? noOrderCounselStep(input)
   return town('order.drafted', 'Draft a cease and desist order', { kind: 'draft_order' })
 }
 

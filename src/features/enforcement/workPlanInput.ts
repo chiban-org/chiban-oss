@@ -45,7 +45,8 @@ export interface CasePlanInput {
   banner: string | null
   findings: readonly (Pick<typeof violationFindings.$inferSelect, 'id' | 'status'> &
     Partial<Pick<typeof violationFindings.$inferSelect, 'provisionKind'>>)[]
-  notices: readonly Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'>[]
+  notices: readonly (Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'> &
+    Partial<Pick<typeof violationNotices.$inferSelect, 'correctBy'>>)[]
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]
   referrals: readonly { outcomes: readonly { kind: string }[] }[]
