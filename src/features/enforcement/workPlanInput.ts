@@ -59,10 +59,15 @@ export interface CasePlanExtras {
   responsible: string | null
 }
 
-const NOT_LIVE: readonly OrderRow['status'][] = ['draft', 'annulled', 'withdrawn', 'complied']
+export const NOT_LIVE_ORDER: readonly OrderRow['status'][] = [
+  'draft',
+  'annulled',
+  'withdrawn',
+  'complied',
+]
 
 export function liveOrders(input: CasePlanInput): CasePlanOrder[] {
-  return input.orders.filter((o) => !NOT_LIVE.includes(o.row.status))
+  return input.orders.filter((o) => !NOT_LIVE_ORDER.includes(o.row.status))
 }
 
 export function liveOrder(input: CasePlanInput): CasePlanOrder | null {

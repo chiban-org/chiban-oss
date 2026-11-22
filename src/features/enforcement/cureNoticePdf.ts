@@ -4,7 +4,7 @@ import type { Actor } from '@/features/auth/actor'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { attachDocument } from '@/features/documents/attach'
 import { cureLinks, cureMethodPhrase } from '@/features/enforcement/cureRules'
-import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
+import { CURE_RECIPIENT_LABELS, PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack } from '@/features/packs/loadPack'
 import type { CureNoticeRule } from '@/features/packs/schema'
@@ -33,11 +33,6 @@ export interface CureNoticePdfInput {
   cureDue: Pick<SubjectDue, 'due'>
 }
 
-const RECIPIENT_LABELS: Record<CureRecipientRole, string> = {
-  owner: 'Owner',
-  occupant: 'Occupant',
-}
-
 const paragraph = (text: string): PdfBlock => ({ kind: 'paragraph', text })
 
 export async function renderCureNoticePdf(input: CureNoticePdfInput): Promise<Uint8Array> {
@@ -47,7 +42,7 @@ export async function renderCureNoticePdf(input: CureNoticePdfInput): Promise<Ui
     {
       kind: 'fields',
       rows: [
-        { label: RECIPIENT_LABELS[recipient.role], value: recipient.name },
+        { label: CURE_RECIPIENT_LABELS[recipient.role], value: recipient.name },
         { label: 'Mailing address', value: recipient.mailingAddress },
         { label: 'Case', value: input.caseNumber },
         { label: 'Property', value: input.locationText },

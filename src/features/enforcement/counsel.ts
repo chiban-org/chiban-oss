@@ -20,7 +20,9 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
 import { buildCounselPacket } from '@/features/enforcement/counselPacket'
+import { COURT_OUTCOMES, type CounselOutcomeKind } from '@/features/enforcement/courtOutcomes'
 import { orderAvailableForFindings } from '@/features/enforcement/orderAvailability'
+import { NOT_LIVE_ORDER } from '@/features/enforcement/workPlanInput'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { civilDateSchema } from '@/features/packs/schema'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -124,19 +126,6 @@ export async function referToCounsel(
     return ok({ referralId: row?.id ?? '', packetDocumentId: attached.documentId })
   })
 }
-
-type CounselOutcomeKind = (typeof COUNSEL_OUTCOME_KINDS)[number]
-type OrderStatus = (typeof enforcementOrders.$inferSelect)['status']
-
-const COURT_OUTCOMES: readonly CounselOutcomeKind[] = [
-  'motion_filed',
-  'hearing_held',
-  'judgment_for_town',
-  'judgment_for_respondent',
-  'appealed_to_superior_court',
-]
-
-const NOT_LIVE_ORDER: readonly OrderStatus[] = ['draft', 'annulled', 'withdrawn', 'complied']
 
 async function movesIntoCourt(
   tx: Tx,

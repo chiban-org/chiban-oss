@@ -5,6 +5,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { cureMethodPhrase } from '@/features/enforcement/cureRules'
 import { uncoveredOpenFindings } from '@/features/enforcement/cureStanding'
 import { openFindingChoices } from '@/features/enforcement/findingChoices'
+import { CURE_RECIPIENT_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import {
   applyCureProcedureAction,
@@ -16,8 +17,6 @@ import { FindingChoices } from './FindingChoices'
 import { Hidden } from './Section'
 
 type Variant = 'default' | 'outline'
-
-const ROLE_LABELS = { owner: 'Owner', occupant: 'Occupant' } as const
 
 export function ApplyCureForm({ detail }: { detail: CaseDetail }) {
   const options: [string, string][] = [
@@ -88,7 +87,7 @@ function CureNoticeItem({
   return (
     <li className="record-item space-y-2">
       <p>
-        {`${ROLE_LABELS[notice.recipientRole]}: ${notice.recipientName}, ${notice.mailingAddress}. `}
+        {`${CURE_RECIPIENT_LABELS[notice.recipientRole]}: ${notice.recipientName}, ${notice.mailingAddress}. `}
         {`Mailed ${formatCivilDate(notice.sentOn)} ${cureMethodPhrase(detail.cure.rule)}. `}
         {`Cure period ends ${formatCivilDate(notice.due)}. `}
         {notice.returnReceiptOn === null

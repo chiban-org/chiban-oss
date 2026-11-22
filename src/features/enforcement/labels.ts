@@ -1,4 +1,9 @@
-import type { EnforcementStatus } from '@/db/schema'
+import type { CureRecipientRole, EnforcementStatus } from '@/db/schema'
+
+export const CURE_RECIPIENT_LABELS: Record<CureRecipientRole, string> = {
+  owner: 'Owner',
+  occupant: 'Occupant',
+}
 
 export const CASE_STATUS_LABELS: Record<EnforcementStatus, string> = {
   intake: 'Received',
