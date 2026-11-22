@@ -11,6 +11,7 @@ import { placeDevelopmentHold } from '@/features/enforcement/developmentHolds'
 import { recordFinding } from '@/features/enforcement/findings'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { makeTestStore } from '@/test/objectStore'
 import { type EnforcementWorld, setupEnforcementWorld } from '@/test/enforcementFixtures'
 import { makeParcel } from '@/test/parcels'
 import { pdfWording } from '@/test/pdfWording'
@@ -72,6 +73,7 @@ async function shorelandCaseWithRemedies(): Promise<string> {
   const { ids } = must(
     await sendCureNotice(
       db,
+      (await makeTestStore()).store,
       world.staff,
       {
         caseId,
@@ -79,7 +81,6 @@ async function shorelandCaseWithRemedies(): Promise<string> {
         owner: { name: 'Larkspur Family Trust', mailingAddress: '9 Fern Road, Vellmora' },
         occupant: 'none',
         sentOn: d('2027-03-01'),
-        documentId: null,
       },
       signal,
       SENT_NOW,
