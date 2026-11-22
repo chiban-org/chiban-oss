@@ -25,24 +25,22 @@ import {
 } from './requestForms'
 
 export async function logRequestAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, logRequestForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await logRequest(
-        db,
-        actor,
-        {
-          receivedOn: input.receivedOn,
-          receivedVia: input.receivedVia,
-          description: input.description,
-          ...(input.requesterName === null ? {} : { requesterName: input.requesterName }),
-          ...(input.requesterContact === null ? {} : { requesterContact: input.requesterContact }),
-        },
-        signal,
-      ),
-      'Request logged.',
-      { future_date: 'receivedOn' },
-    ),
-  )
+  return await runStaffFormToday(formData, logRequestForm, async ({ db, actor, signal }, input) => {
+    const logged = await logRequest(
+      db,
+      actor,
+      {
+        receivedOn: input.receivedOn,
+        receivedVia: input.receivedVia,
+        description: input.description,
+        ...(input.requesterName === null ? {} : { requesterName: input.requesterName }),
+        ...(input.requesterContact === null ? {} : { requesterContact: input.requesterContact }),
+      },
+      signal,
+    )
+    const message = logged.ok ? `Request ${logged.value.number} logged.` : ''
+    return recordsOutcome(logged, message, { future_date: 'receivedOn' })
+  })
 }
 
 export async function firstResponseAction(formData: FormData): Promise<ActionResult> {
