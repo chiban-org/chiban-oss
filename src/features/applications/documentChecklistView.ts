@@ -114,7 +114,12 @@ interface RowContext {
   overrideOf: (stage: DocumentStage) => OverrideRow | null
 }
 
-const GATED_STATES = ['submitted', 'decided', 'issued', 'closed'] as const
+const GATE_OF_STATE: readonly (readonly [Parameters<typeof gatedStages>[0], string])[] = [
+  ['submitted', DOCUMENT_GATE_KEYS.submitted],
+  ['decided', DOCUMENT_GATE_KEYS.decided],
+  ['issued', DOCUMENT_GATE_KEYS.issued],
+  ['closed', DOCUMENT_GATE_KEYS.closed],
+]
 
 async function activeDocumentOverrides(db: DbOrTx, applicationId: string): Promise<OverrideRow[]> {
   return await db
@@ -139,8 +144,8 @@ function stageOverrides(
   closesOn: Parameters<typeof gatedStages>[1],
 ): (stage: DocumentStage) => OverrideRow | null {
   return (stage) => {
-    const keys = GATED_STATES.filter((to) => gatedStages(to, closesOn).includes(stage)).map(
-      (to) => DOCUMENT_GATE_KEYS[to],
+    const keys = GATE_OF_STATE.filter(([to]) => gatedStages(to, closesOn).includes(stage)).map(
+      ([, key]) => key,
     )
     return overrides.find((o) => keys.some((k) => k === o.gateKey)) ?? null
   }
@@ -172,12 +177,17 @@ function rowOf(item: DocumentItem, ctx: RowContext): ChecklistRow {
     open: stageOpenFor(item.stage, ctx.state),
     waiver: note(row?.waiverReason, row?.waiverRequestedBy, row?.waiverRequestedAt, ctx.names),
     accepted: note(row?.acceptedReason, row?.acceptedBy, row?.acceptedAt, ctx.names),
-    override: status === 'missing' ? overrideNote(ctx.overrideOf(item.stage), ctx.names) : null,
+    override: overrideNote(status, ctx.overrideOf(item.stage), ctx.names),
   }
 }
 
-function overrideNote(found: OverrideRow | null, names: Map<string, string>): ChecklistNote | null {
-  return found === null ? null : note(found.reason, found.createdBy, found.createdAt, names)
+function overrideNote(
+  status: ItemStatus,
+  found: OverrideRow | null,
+  names: Map<string, string>,
+): ChecklistNote | null {
+  if (status !== 'missing' || found === null) return null
+  return note(found.reason, found.createdBy, found.createdAt, names)
 }
 
 export async function loadDocumentChecklist(
