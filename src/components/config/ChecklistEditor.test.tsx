@@ -20,7 +20,9 @@ function show(body: ChecklistBody) {
 describe('ChecklistEditor provenance', () => {
   it('shows the source line when the checklist has one', () => {
     show({ ...BASE, provenance: 'Chiban starting checklist. The town can edit it.' })
-    expect(screen.getByText('Source: Chiban starting checklist. The town can edit it.')).toBeTruthy()
+    expect(
+      screen.getByText('Source: Chiban starting checklist. The town can edit it.'),
+    ).toBeTruthy()
   })
 
   it('shows no source line when the checklist has none', () => {
