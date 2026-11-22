@@ -2,7 +2,11 @@ import { ME_PACK } from '@packs/me'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { setActivePackForTest } from '@/features/packs/registry'
-import { logRequest } from '@/features/rtk/requests'
+import { rtkRequestFacets } from '@/features/rtk/requestList'
+import { requestChipGroups } from '@/features/rtk/requestListChips'
+import { readRequestsView } from '@/features/rtk/requestListParams'
+import { requestStatusLabel } from '@/features/rtk/requestStatus'
+import { logRequest, rtkRequestView } from '@/features/rtk/requests'
 import { buildResponseLetter } from '@/features/rtk/responseLetter'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -87,5 +91,42 @@ describe('the stated date label on a time statement', () => {
     expect(wording).toContain('The town needs more time to respond to your request.')
     expect(wording).toContain('Response by\nJuly 30, 2027')
     expect(wording).not.toContain('nonbinding')
+  })
+
+  describe('the status chip while the town works to its date', () => {
+    const ESTIMATED = "Waiting for the town's estimated date"
+
+    async function shownStatus(): Promise<{ chip: string; filters: string[] }> {
+      const requestId = await statedRequest()
+      const view = await rtkRequestView(handle.db, custodian, requestId, d('2027-07-14'), signal)
+      if (!view.ok) throw new Error(view.error)
+      const facets = await rtkRequestFacets(
+        handle.db,
+        custodian,
+        { filters: {}, today: d('2027-07-14') },
+        signal,
+      )
+      const status = requestChipGroups(readRequestsView({}).params, facets).find(
+        (g) => g.label === 'Status',
+      )
+      return {
+        chip: requestStatusLabel(view.value),
+        filters: status?.chips.map((c) => c.label) ?? [],
+      }
+    }
+
+    it('reads as an estimate under Maine', async () => {
+      const shown = await shownStatus()
+      expect(shown.chip).toBe(ESTIMATED)
+      expect(shown.filters).toContain(ESTIMATED)
+      expect(shown.filters).not.toContain('Waiting for the date the town stated')
+    })
+
+    it('reads the same under New Hampshire', async () => {
+      setActivePackForTest(null)
+      const shown = await shownStatus()
+      expect(shown.chip).toBe(ESTIMATED)
+      expect(shown.filters).toContain(ESTIMATED)
+    })
   })
 })
