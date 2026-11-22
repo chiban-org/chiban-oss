@@ -20,11 +20,19 @@ function Task({ href, title, children }: { href: string; title: string; children
   )
 }
 
-function AccountTask({ audience }: { audience: HomeAudience }) {
+function AccountTask({
+  audience,
+  onlinePayment,
+}: {
+  audience: HomeAudience
+  onlinePayment: boolean
+}) {
   if (audience === 'resident') {
     return (
       <Task href="/portal" title="Your applications">
-        Check where each application stands, pay fees, and request inspections.
+        {onlinePayment
+          ? 'Check where each application stands, pay fees, and request inspections.'
+          : 'Check where each application stands and request inspections.'}
       </Task>
     )
   }
@@ -47,6 +55,7 @@ interface HomeContentProps {
   townName: string
   example: SearchExample | null
   boardMember?: boolean
+  onlinePayment?: boolean
 }
 
 export function meetingsTaskText(): string {
@@ -62,6 +71,7 @@ export function HomeContent({
   townName,
   example,
   boardMember = false,
+  onlinePayment = true,
 }: HomeContentProps) {
   return (
     <main className="mx-auto max-w-3xl">
@@ -82,7 +92,9 @@ export function HomeContent({
           </Task>
         ) : null}
         <Task href="/portal/apply" title="Apply for a permit">
-          Start a building, trade, or land use application online and pay its fees.
+          {onlinePayment
+            ? 'Start a building, trade, or land use application online and pay its fees.'
+            : 'Start a building, trade, or land use application online.'}
         </Task>
         <Task href="/meetings" title="Meetings">
           {meetingsTaskText()}
@@ -93,7 +105,7 @@ export function HomeContent({
         <Task href="/records/request" title="Ask for town records">
           {recordsTaskText()}
         </Task>
-        <AccountTask audience={audience} />
+        <AccountTask audience={audience} onlinePayment={onlinePayment} />
       </ul>
     </main>
   )

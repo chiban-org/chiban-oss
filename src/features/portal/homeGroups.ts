@@ -8,6 +8,8 @@ export interface HomeFacts {
   dueCents: number
   failedInspection: boolean
   missingDocuments: readonly string[]
+  board: boolean
+  payAtOffice: string | null
 }
 
 const WAITING: Partial<Record<CoreState, string>> = {
@@ -28,12 +30,20 @@ export function homeGroup(facts: HomeFacts): HomeGroup {
   return isTerminalState(facts.state) ? 'finished' : 'in_progress'
 }
 
+const BOARD_APPROVED = 'Approved by the board.'
+
 export function homeNextStep(facts: HomeFacts): string {
   if (facts.state === 'draft') return 'Finish the form and submit it.'
-  if (facts.dueCents > 0) return `Pay ${formatCents(facts.dueCents)}.`
+  if (facts.dueCents > 0) {
+    const amount = formatCents(facts.dueCents)
+    return facts.payAtOffice === null
+      ? `Pay ${amount}.`
+      : `Pay ${amount} at the ${facts.payAtOffice}.`
+  }
   if (facts.missingDocuments.length > 0) return `Add ${facts.missingDocuments.join(', ')}.`
   if (facts.failedInspection) {
     return 'An inspection failed. Request a reinspection when the work is fixed.'
   }
+  if (facts.state === 'decided' && facts.board) return BOARD_APPROVED
   return WAITING[facts.state] ?? ''
 }

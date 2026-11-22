@@ -32,6 +32,7 @@ import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
+import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import { ENDING_ROLES } from '@/features/portal/endApplication'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
@@ -65,6 +66,7 @@ export interface PortalApplicationView {
   onlineTotalCents: number
   convenienceCents: number
   canPay: boolean
+  payAtOffice: boolean
   history: PortalMoneyEntry[]
   canEdit: boolean
   canUpload: boolean
@@ -232,6 +234,8 @@ export async function getPortalApplicationView(
     signal,
   )
   const settings = await getPaymentSettings(db, signal)
+  const online = (await getActiveProcessor(db, signal)).state === 'known'
+  const payable = fees.dueCents > 0 && payer
   const convenienceCents = computeConvenienceFee(
     fees.dueCents,
     settings.convenienceFee,
@@ -274,7 +278,8 @@ export async function getPortalApplicationView(
     feeEstimate: await feeEstimate(db, app, signal),
     onlineTotalCents: fees.dueCents + convenienceCents,
     convenienceCents,
-    canPay: fees.dueCents > 0 && payer,
+    canPay: payable && online,
+    payAtOffice: payable && !online,
     history: await historyFor(db, actor, applicationId),
     canEdit: app.state === 'draft' && isParty,
     canUpload: writable && isParty,

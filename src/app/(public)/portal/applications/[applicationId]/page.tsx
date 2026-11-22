@@ -7,6 +7,7 @@ import type { DocumentChecklistView } from '@/features/applications/documentChec
 import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
 import { isSettledStatus } from '@/features/applications/liveChecklist'
 import { displayFieldValue } from '@/features/forms/displayValue'
+import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { applicantStatus, missingNow } from '@/features/portal/applicantStatus'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
@@ -99,10 +100,11 @@ export default async function PortalApplicationPage({ params }: Props) {
   const result = await getPortalApplicationView(ctx.db, ctx.actor, applicationId, ctx.signal)
   if (!result.ok) notFound()
   const view = result.value
-  const [town, board, checklist] = await Promise.all([
+  const [town, board, checklist, profile] = await Promise.all([
     getTownSettings(ctx.db, ctx.signal),
     loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadDocumentChecklist(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadTownProfile(ctx.db, ctx.signal),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
   const status = applicantStatus({
@@ -164,7 +166,7 @@ export default async function PortalApplicationPage({ params }: Props) {
         </section>
       ) : null}
 
-      <FeesPanel view={view} />
+      <FeesPanel view={view} officeName={profile?.officeName ?? 'land use office'} />
       <EndingActions view={view} />
     </main>
   )
