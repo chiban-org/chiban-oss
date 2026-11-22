@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { versionLabel } from '@/app/(staff)/staff/records/requests/[requestId]/versionLabels'
 import type { Actor } from '@/features/auth/actor'
-import { loadReleaseCandidates } from '@/features/rtk/requestPage'
+import { approveRendition } from '@/features/renditions/approvals'
+import { loadReleaseCandidates, loadRequestApprovals } from '@/features/rtk/requestPage'
 import { logRequest } from '@/features/rtk/requests'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'
-import { redactedVersionOf } from '@/test/renditionFixtures'
+import { redactedVersionOf, STATEMENT } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal
 const NOW = new Date('2027-07-14T15:00:00Z')
@@ -69,5 +70,39 @@ describe('the label of a copy redacted for another request', () => {
     expect(forFirst.startsWith('Redacted copy for this request, ')).toBe(true)
     const original = candidate?.versions.find((v) => v.role === 'original')
     expect(original?.madeFor).toBeNull()
+  })
+
+  it('an approval of that copy on another request carries the request it was made for', async () => {
+    const first = await logged('Owner letters on Birch Lane')
+    const second = await logged('All Birch Lane correspondence')
+    const doc = await uploadRedactionFixture(handle.db, store, custodian, 'letter.pdf')
+    const redactedId = await redactedVersionOf(
+      handle.db,
+      store,
+      custodian,
+      doc,
+      'rtk_release',
+      first.requestId,
+    )
+    const approved = await approveRendition(
+      handle.db,
+      custodian,
+      {
+        versionId: redactedId,
+        purpose: 'rtk_release',
+        rtkRequestId: second.requestId,
+        reviewStatement: STATEMENT,
+      },
+      signal,
+      store,
+    )
+    if (!approved.ok) throw new Error(approved.error)
+    const [approval] = await loadRequestApprovals(handle.db, second.requestId)
+    expect(approval?.madeFor).toEqual({ requestId: first.requestId, number: first.number })
+    const label = versionLabel(approval?.role ?? '', new Date(), ZONE, {
+      madeFor: approval?.madeFor,
+      currentRequestId: second.requestId,
+    })
+    expect(label.startsWith(`Redacted copy made for ${first.number}, `)).toBe(true)
   })
 })

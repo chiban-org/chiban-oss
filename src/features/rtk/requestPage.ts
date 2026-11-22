@@ -1,10 +1,8 @@
 import { and, asc, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
-  auditLog,
   documents,
   documentVersions,
-  recordEvents,
   redactionJobs,
   renditionApprovals,
   rtkReleaseItems,
@@ -15,8 +13,6 @@ import {
 import type { Actor } from '@/features/auth/actor'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 import { currentLinkExpiry } from '@/features/rtk/releaseReissue'
-import { townTimeZone } from '@/features/town/timeZone'
-import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 
 const CANDIDATE_LIMIT = 25
 const MIN_QUERY = 2
@@ -30,6 +26,20 @@ const RECORD_KIND_LABELS: Record<string, string> = {
   meeting: 'Board meeting',
 }
 
+export interface MadeFor {
+  requestId: string
+  number: string
+}
+
+function madeForOf(row: {
+  madeForId: string | null
+  madeForNumber: string | null
+}): MadeFor | null {
+  return row.madeForId === null || row.madeForNumber === null
+    ? null
+    : { requestId: row.madeForId, number: row.madeForNumber }
+}
+
 export interface ReleaseCandidate {
   documentId: string
   title: string
@@ -40,7 +50,7 @@ export interface ReleaseCandidate {
     role: string
     filename: string
     createdAt: string
-    madeFor?: { requestId: string; number: string } | null
+    madeFor?: MadeFor | null
   }[]
 }
 
@@ -55,6 +65,7 @@ export interface RequestApproval {
   versionCreatedAt: Date
   releasedIn: number | null
   cited: boolean
+  madeFor?: MadeFor | null
 }
 
 export interface ReleaseSummary {
@@ -147,17 +158,14 @@ export async function loadReleaseCandidates(
       versions: own.map(({ createdAt, madeForId, madeForNumber, ...v }) => ({
         ...v,
         createdAt: createdAt.toISOString(),
-        madeFor:
-          madeForId === null || madeForNumber === null
-            ? null
-            : { requestId: madeForId, number: madeForNumber },
+        madeFor: madeForOf({ madeForId, madeForNumber }),
       })),
     }
   })
 }
 
 export async function loadRequestApprovals(db: Db, requestId: string): Promise<RequestApproval[]> {
-  return await db
+  const rows = await db
     .select({
       approvalId: renditionApprovals.id,
       documentId: renditionApprovals.documentId,
@@ -169,10 +177,14 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       versionCreatedAt: documentVersions.createdAt,
       releasedIn: RELEASED_IN,
       cited: CITED,
+      madeForId: rtkRequests.id,
+      madeForNumber: rtkRequests.number,
     })
     .from(renditionApprovals)
     .innerJoin(documents, eq(documents.id, renditionApprovals.documentId))
     .innerJoin(documentVersions, eq(documentVersions.id, renditionApprovals.versionId))
+    .leftJoin(redactionJobs, eq(redactionJobs.resultVersionId, documentVersions.id))
+    .leftJoin(rtkRequests, eq(rtkRequests.id, redactionJobs.rtkRequestId))
     .where(
       and(
         eq(renditionApprovals.purpose, 'rtk_release'),
@@ -180,6 +192,10 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       ),
     )
     .orderBy(asc(renditionApprovals.approvedAt))
+  return rows.map(({ madeForId, madeForNumber, ...row }) => ({
+    ...row,
+    madeFor: madeForOf({ madeForId, madeForNumber }),
+  }))
 }
 
 async function linkOf(
@@ -254,42 +270,4 @@ export async function loadRequestLetters(db: Db, requestId: string) {
     .from(documents)
     .where(and(eq(documents.recordKind, 'rtk_request'), eq(documents.recordId, requestId)))
     .orderBy(asc(documents.seq))
-}
-
-const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/
-
-function auditDateOf(after: unknown): CivilDate | null {
-  if (typeof after !== 'object' || after === null || !('on' in after)) return null
-  const on = after.on
-  return typeof on === 'string' && CIVIL_DATE.test(on) ? (on as CivilDate) : null
-}
-
-export async function requestCompletedOn(
-  db: Db,
-  request: { id: string; status: string },
-  signal: AbortSignal,
-): Promise<CivilDate | null> {
-  if (request.status !== 'closed' && request.status !== 'withdrawn') return null
-  const [event] = await db
-    .select({ occurredOn: recordEvents.occurredOn })
-    .from(recordEvents)
-    .where(
-      and(eq(recordEvents.rtkRequestId, request.id), eq(recordEvents.kind, 'request_completed')),
-    )
-    .limit(1)
-  if (event !== undefined) return event.occurredOn as CivilDate
-  const [audit] = await db
-    .select({ at: auditLog.at, after: auditLog.after })
-    .from(auditLog)
-    .where(
-      and(
-        eq(auditLog.entityType, 'rtk_request'),
-        eq(auditLog.entityId, request.id),
-        eq(auditLog.action, `rtk.request_${request.status}`),
-      ),
-    )
-    .orderBy(desc(auditLog.at))
-    .limit(1)
-  if (audit === undefined) return null
-  return auditDateOf(audit.after) ?? todayInTimeZone(await townTimeZone(db, signal), audit.at)
 }
