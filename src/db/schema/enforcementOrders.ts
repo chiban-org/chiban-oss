@@ -76,6 +76,9 @@ export const violationNotices = pgTable(
     receivedOn: date('received_on', { mode: 'string' }),
     receiptBasis: text('receipt_basis'),
     documentId: uuid('document_id').references(() => documents.id),
+    recipientName: text('recipient_name'),
+    recipientAddress: text('recipient_address'),
+    correctBy: date('correct_by', { mode: 'string' }),
   },
   (t) => [index('violation_notices_case_idx').on(t.caseId)],
 )
