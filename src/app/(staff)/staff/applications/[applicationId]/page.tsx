@@ -10,7 +10,9 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { cutoverRows } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadAmendForm } from '@/features/applications/amendForm'
+import { loadLateAppealWarning } from '@/features/applications/appealTimeliness'
 import { closureStage } from '@/features/applications/closureStage'
+import { loadApplicationContext } from '@/features/applications/context'
 import { getLimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import {
   getStaffApplicationView,
@@ -78,6 +80,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     license,
     letters,
     amend,
+    lateAppeal,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -97,6 +100,9 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     loadLicenseCheckPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadLettersData(ctx, applicationId),
     loadAmendForm(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadApplicationContext(ctx.db, applicationId, ctx.signal).then((app) =>
+      loadLateAppealWarning(ctx.db, app, ctx.signal),
+    ),
   ])
   if (view === null || records === null) return null
   return {
@@ -115,6 +121,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     notes,
     license,
     letters,
+    lateAppeal,
   }
 }
 
@@ -153,6 +160,7 @@ export default async function StaffApplicationPage({ params }: Props) {
       ...closureStage(ready.inspections.history, new Set(ready.inspections.reinspectableIds)),
       dueFinal: due?.row.isFinal === true,
     },
+    lateAppeal: ready.lateAppeal,
   })
   const plan = withLettersToMail(planned, ready.letters.letters)
   const parts = applicationPanels({ ...ready, hosted: hostedActions(plan) })

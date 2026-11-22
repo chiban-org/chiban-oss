@@ -44,6 +44,7 @@ export interface WorkPlanExtras {
   responsible: string | null
   inspection?: InspectionStep | null
   closure?: ClosureFacts
+  lateAppeal?: string | null
 }
 
 const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
@@ -258,10 +259,14 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
+  const late =
+    extras.lateAppeal == null
+      ? plan
+      : addWarning(plan, { key: 'appeal.late', text: extras.lateAppeal })
   const held =
     view.heldParcel === true
-      ? addWarning(plan, { key: 'parcel.held', text: HELD_ISSUE_COPY })
-      : plan
+      ? addWarning(late, { key: 'parcel.held', text: HELD_ISSUE_COPY })
+      : late
   const withConflict =
     conflict === null
       ? held
