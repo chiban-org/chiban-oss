@@ -75,12 +75,21 @@ function previousSlot(
   }
 }
 
+function sameSlot(locked: InspectionRow, booking: Booking): boolean {
+  return (
+    locked.status === 'scheduled' &&
+    locked.scheduledDate === booking.date &&
+    locked.startMinute === booking.startMinute
+  )
+}
+
 async function queuePartyBookingNotice(
   tx: Tx,
   locked: InspectionRow,
   booking: Booking,
   signal: AbortSignal,
 ): Promise<void> {
+  if (sameSlot(locked, booking)) return
   const previous = previousSlot(locked)
   await queueForParties(
     tx,

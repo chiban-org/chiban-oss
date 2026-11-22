@@ -90,4 +90,23 @@ describe('moving a booked inspection', () => {
     )
     expect(message?.text).toContain('from July 7, 2027 at 9:30 AM to July 9, 2027 at 10:30 AM')
   })
+
+  it('changing only the inspector, or saving the same slot, sends parties no moved message', async () => {
+    const first = await staffActor(handle.db, 'inspector')
+    const second = await staffActor(handle.db, 'inspector')
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const id = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      channel: 'phone',
+    })
+    await book(id, first.userId, '2027-07-07', 570)
+    const scheduled = await queued(permit.applicationId, 'inspection_scheduled')
+    await book(id, first.userId, '2027-07-07', 570)
+    await book(id, second.userId, '2027-07-07', 570)
+    expect(await queued(permit.applicationId, 'inspection_rescheduled')).toHaveLength(0)
+    expect(await queued(permit.applicationId, 'inspection_scheduled')).toHaveLength(
+      scheduled.length,
+    )
+    const [row] = await handle.db.select().from(inspections).where(eq(inspections.id, id))
+    expect(row?.inspectorUserId).toBe(second.userId)
+  })
 })
