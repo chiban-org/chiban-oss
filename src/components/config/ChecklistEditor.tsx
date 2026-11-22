@@ -40,6 +40,9 @@ export function ChecklistEditor({
           value={body.label}
           onChange={(e) => onChange({ ...body, label: e.target.value })}
         />
+        {body.provenance === undefined ? null : (
+          <p className="text-sm text-muted-foreground">{`Source: ${body.provenance}`}</p>
+        )}
         <Check
           label="This is the final inspection, which can close the permit"
           checked={isFinalChecklist(body)}
