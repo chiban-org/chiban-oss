@@ -27,15 +27,21 @@ export function waiting(w: Waiting): Step {
   return { ...w, actorName: null, note: w.note ?? null, action: null }
 }
 
+export function holdReleaseStep(ending: 'resolving' | 'closing'): Step {
+  return town(
+    'hold.release',
+    'Release the hold',
+    null,
+    `Release it under Development hold before ${ending} the case.`,
+  )
+}
+
+export function holdActive(input: Pick<CasePlanInput, 'cure'>): boolean {
+  return input.cure?.holdPlaced === true
+}
+
 export function resolveStep(input: Pick<CasePlanInput, 'cure'>): Step {
-  if (input.cure?.holdPlaced === true) {
-    return town(
-      'hold.release',
-      'Release the hold',
-      null,
-      'Release it under Development hold before resolving the case.',
-    )
-  }
+  if (holdActive(input)) return holdReleaseStep('resolving')
   return town('move:resolved', 'Resolve the case', { kind: 'move', to: 'resolved' })
 }
 

@@ -13,6 +13,7 @@ import {
   soonestAnswer,
   stepOf,
 } from './workPlanInput'
+import { holdActive, holdReleaseStep } from './workPlanNoOrder'
 import { requirementGroups } from './workPlanRequirements'
 import { currentStep, type Step } from './workPlanSteps'
 import type { CaseDue, CaseMove, CaseNowStep, CaseWorkPlan } from './workPlanTypes'
@@ -25,6 +26,7 @@ const OUTCOMES: ReadonlyMap<EnforcementStatus, string> = new Map([
 ])
 
 const MOVES: readonly CaseMove[] = ['investigating', 'no_violation', 'resolved', 'closed']
+const ENDINGS: readonly EnforcementStatus[] = ['resolved', 'closed']
 const DUE_STATUSES: readonly EnforcementStatus[] = ['order_issued', 'in_court']
 
 function dueAt(key: CaseDue['key'], label: string, date: string, today: CivilDate): CaseDue {
@@ -113,13 +115,22 @@ function movesOf(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlan
     (to): to is CaseMove =>
       (MOVES as readonly string[]).includes(to) &&
       to !== inCard &&
+      !(holdActive(input) && ENDINGS.includes(to)) &&
       (to !== 'no_violation' || noViolationAllowed(status, statuses)),
   )
 }
 
+function holdFirst(step: Step | null, input: CasePlanInput): Step | null {
+  if (!holdActive(input)) return step
+  const closes = step === null || (step.action?.kind === 'move' && step.action.to === 'closed')
+  return closes && CASE_TRANSITIONS[input.staff.row.status].includes('closed')
+    ? holdReleaseStep('closing')
+    : step
+}
+
 export function planCaseWork(input: CasePlanInput, extras: CasePlanExtras): CaseWorkPlan {
   const status = input.staff.row.status
-  const step = currentStep(input)
+  const step = holdFirst(currentStep(input), input)
   const due = caseDue(input)
   const now = nowOf(allowed(step, extras), input)
   return {
