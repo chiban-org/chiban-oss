@@ -228,6 +228,7 @@ describe('a Maine site plan review', () => {
         'Alder Pond Town Hall bulletin board',
         '2027-04-07',
       ],
+      ['town.sp.notice.abutters', 'first_class_mail', 'Recipient 1', '2027-04-07'],
       ['town.sp.notice.hearing', 'public_posting', null, '2027-04-07'],
     ])
     await holdSubdivisionHearing(handle.db, world, id, hearing)

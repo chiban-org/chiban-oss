@@ -160,6 +160,18 @@ const SITE_PLAN_RULES: PackRule[] = [
     stage: 'before_hearing',
     overridePolicy: { policy: 'delegated_choice', default: 0 },
   },
+  {
+    kind: 'notice_requirement',
+    key: 'town.sp.notice.abutters',
+    version: 1,
+    label: 'Site plan hearing notice to abutters',
+    citation: TOWN_RULE,
+    channel: 'first_class_mail',
+    recipients: { roles: ['abutter_owner'] },
+    leadRuleKey: 'town.sp.hearing_notice',
+    stage: 'before_hearing',
+    overridePolicy: { policy: 'fixed' },
+  },
 ]
 
 export const PLANNING_BOARD_RULES: PackRule[] = [
@@ -176,4 +188,4 @@ export const SITE_PLAN_RULE_KEYS = SITE_PLAN_RULES.filter(
   (r) => r.kind !== 'notice_requirement',
 ).map((r) => r.key)
 
-export const SITE_PLAN_NOTICE_REQUIREMENTS = ['town.sp.notice.hearing']
+export const SITE_PLAN_NOTICE_REQUIREMENTS = ['town.sp.notice.hearing', 'town.sp.notice.abutters']

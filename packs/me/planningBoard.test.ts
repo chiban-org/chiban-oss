@@ -237,7 +237,7 @@ describe('the Planning Board classifications', () => {
     })
     expect(classification('me.pb_site_plan')).toMatchObject({
       abutters: { roles: ['applicant', 'abutter_owner'], conditionalRoles: [] },
-      noticeRequirementKeys: ['town.sp.notice.hearing'],
+      noticeRequirementKeys: ['town.sp.notice.hearing', 'town.sp.notice.abutters'],
       mandatoryRuleKeys: [
         'town.sp.decision_days',
         'town.sp.decision',
