@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applications, hearings } from '@/db/schema'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { planWork } from '@/features/applications/workPlan'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { scheduleHearing } from '@/features/hearings/hearings'
@@ -92,5 +93,28 @@ describe('a filed Board of Appeals application', () => {
     const items = await itemsOf(handle.db, hearing?.noticeSetId ?? '')
     expect(items.length).toBeGreaterThan(0)
     expect(new Set(items.map((i) => i.dueOn))).toEqual(new Set([NOTICE_DUE]))
+  })
+
+  it('refuses with a plain reason while the abutter list is not issued', async () => {
+    const applicationId = await submitBoardApplication(
+      handle.db,
+      world,
+      BOA_VARIANCE_TYPE,
+      BOA_RECEIVED,
+    )
+    const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
+    const meeting = panel?.scheduleMeetings.find((m) => m.date === BOA_HEARING)
+    if (meeting === undefined) throw new Error('no hearing meeting offered')
+    const refused = await scheduleHearing(
+      handle.db,
+      world.staff,
+      { applicationId, meetingId: meeting.id, kind: 'public_hearing' },
+      signal,
+    )
+    expect(refused.ok).toBe(false)
+    if (refused.ok) return
+    expect(boardErrorCopy(refused.error)).toBe(
+      'Issue the abutter list before scheduling a hearing.',
+    )
   })
 })
