@@ -12,6 +12,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue } from '@/features/clocks/subjectDue'
+import { attachCureLetters, type CureNoticeRecipient } from '@/features/enforcement/cureNoticePdf'
 import {
   casePlanCure,
   cureClockOf,
@@ -22,6 +23,7 @@ import { cureStanding } from '@/features/enforcement/cureStanding'
 import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
 import type { CureNoticeRule } from '@/features/packs/schema'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -36,7 +38,9 @@ export async function applyCureProcedure(
   actor: Actor,
   input: { caseId: string; ruleKey: string | null },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found' | 'unknown_rule' | 'notice_sent'>> {
+): Promise<
+  Result<void, 'forbidden' | 'not_found' | 'unknown_rule' | 'notice_sent' | 'case_closed'>
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
   if (!allowed.ok) return err('forbidden')
@@ -48,6 +52,7 @@ export async function applyCureProcedure(
       .where(eq(enforcementCases.id, input.caseId))
       .for('update')
     if (row === undefined) return err('not_found')
+    if (row.status === 'closed') return err('case_closed')
     if (await noticeOrOrderExists(tx, input.caseId)) return err('notice_sent')
     await tx
       .update(enforcementCases)
@@ -92,6 +97,7 @@ async function noticeOrOrderExists(tx: Tx, caseId: string): Promise<boolean> {
 
 export async function sendCureNotice(
   db: Db,
+  store: ObjectStore,
   actor: Actor,
   input: {
     caseId: string
@@ -99,7 +105,6 @@ export async function sendCureNotice(
     owner: Recipient
     occupant: Recipient | 'none'
     sentOn: CivilDate
-    documentId: string | null
   },
   signal: AbortSignal,
   now: Date = new Date(),
@@ -131,7 +136,7 @@ export async function sendCureNotice(
     if (findingIds.length === 0) return err('no_open_findings')
     if (compareCivil(input.sentOn, today) > 0) return err('future_date')
     const open = await tx
-      .select({ id: violationFindings.id })
+      .select()
       .from(violationFindings)
       .where(
         and(
@@ -146,22 +151,36 @@ export async function sendCureNotice(
       packVersion: loadPack().version,
       citations: packCountingCitations(),
     })
-    const recipients: { role: 'owner' | 'occupant'; name: string; mailingAddress: string }[] = []
+    const recipients: CureNoticeRecipient[] = []
     for (const role of cureRecipientRoles(rule, input.occupant !== 'none')) {
       if (role === 'owner') recipients.push({ role, ...input.owner })
       else if (input.occupant !== 'none') recipients.push({ role, ...input.occupant })
     }
+    const documentIds = await attachCureLetters(
+      tx,
+      { store, actor, signal },
+      {
+        caseId: input.caseId,
+        caseNumber: caseRow.number,
+        locationText: caseRow.locationText,
+        findings: open,
+        rule,
+        sentOn: input.sentOn,
+        cureDue,
+        recipients,
+      },
+    )
     const rows = await tx
       .insert(cureNotices)
       .values(
-        recipients.map((r) => ({
+        recipients.map((r, i) => ({
           caseId: input.caseId,
           findingIds,
           recipientRole: r.role,
           recipientName: r.name,
           mailingAddress: r.mailingAddress,
           sentOn: input.sentOn,
-          documentId: input.documentId,
+          documentId: documentIds.at(i) ?? null,
           cureDue,
           sentBy: actor.userId,
         })),

@@ -9,6 +9,7 @@ export interface CaseStageInput {
   orderIssued: boolean
   inCourt: boolean
   overdue: boolean
+  orderPossible?: boolean
 }
 
 const PATH: readonly EnforcementStatus[] = [
@@ -45,6 +46,7 @@ function noViolationStages(input: CaseStageInput): Stage[] {
 }
 
 function skipped(input: CaseStageInput, status: EnforcementStatus): boolean {
+  if (status === 'order_issued' && input.orderPossible === false) return true
   const reached = status === 'order_issued' ? input.orderIssued : input.inCourt
   const optional = status === 'order_issued' || status === 'in_court'
   return optional && !reached && rank(input.status) > rank(status)

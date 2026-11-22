@@ -26,6 +26,7 @@ export function CounselSection({
       .filter((d) => d.docKind === 'court_document')
       .map((d) => [d.documentId, d.title] as [string, string]),
   ]
+  const open = detail.staff.row.status !== 'closed'
   return (
     <Section id="counsel" title="Town counsel">
       {detail.referrals.length === 0 ? <p>This case has not been referred to counsel.</p> : null}
@@ -44,7 +45,7 @@ export function CounselSection({
               >{`${formatCivilDate(o.occurredOn)}: ${COUNSEL_OUTCOME_LABELS[o.kind]}${o.court === null ? '' : `, ${o.court}`}${o.docket === null ? '' : `, docket ${o.docket}`}${o.note === null ? '' : `. ${o.note}`}`}</li>
             ))}
           </ul>
-          {can.counsel ? (
+          {can.counsel && open ? (
             <details>
               <summary className="cursor-pointer font-medium">Record an outcome</summary>
               <ActionForm action={outcomeAction} submitLabel="Record outcome">
@@ -66,7 +67,7 @@ export function CounselSection({
           ) : null}
         </article>
       ))}
-      {mayRefer ? (
+      {mayRefer && open ? (
         <details>
           <summary>Refer to counsel</summary>
           <ActionForm action={referAction} submitLabel="Refer to counsel">

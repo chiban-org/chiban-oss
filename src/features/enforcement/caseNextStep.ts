@@ -1,5 +1,6 @@
 import type { CaseActionKind, CaseActor, CaseWorkPlan } from '@/features/enforcement/workPlanTypes'
 import { boardAbbrev } from '@/features/packs/vocabulary'
+import { lowerFirst } from '@/lib/words'
 
 export interface NextStep {
   actor: string
@@ -36,7 +37,7 @@ export const EVERY_CASE_ABILITY: ReadonlySet<CaseActionKind> = new Set([
 export function nextStepOf(plan: CaseWorkPlan): NextStep | null {
   if (plan.now === null) return null
   const { ask, actor } = plan.now
-  return { actor: actorLabels()[actor], ask: ask.charAt(0).toLowerCase() + ask.slice(1) }
+  return { actor: actorLabels()[actor], ask: lowerFirst(ask) }
 }
 
 export function nextStepText(step: NextStep): string {

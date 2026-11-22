@@ -1,6 +1,7 @@
 import { StageStrip } from '@/components/layout/StageStrip'
 import { DoThisNowCard, RequirementItem, RequirementsPanel } from '@/components/layout/WorkPlan'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
+import { orderAvailableForFindings } from '@/features/enforcement/orderAvailability'
 import { caseStages } from '@/features/enforcement/stageStrip'
 import type { CaseWorkPlan } from '@/features/enforcement/workPlanTypes'
 import { CasePlanForm } from './CasePlanForm'
@@ -13,6 +14,7 @@ function stageInput(detail: CaseDetail, plan: CaseWorkPlan) {
     orderIssued: detail.orders.some((o) => o.row.issuedOn !== null),
     inCourt: detail.orders.some((o) => o.steps.length > 0),
     overdue: plan.due !== null && plan.due.daysLeft < 0,
+    orderPossible: orderAvailableForFindings(detail.findings),
   }
 }
 

@@ -89,6 +89,7 @@ export async function seedMaineShorelandCase(ctx: MaineContext): Promise<void> {
   const sent = must(
     await sendCureNotice(
       ctx.db,
+      ctx.store,
       officer,
       {
         caseId: opened.caseId,
@@ -99,7 +100,6 @@ export async function seedMaineShorelandCase(ctx: MaineContext): Promise<void> {
           mailingAddress: `${SHORELAND_ADDRESS}, Fernhollow, ME 04000`,
         },
         sentOn,
-        documentId: null,
       },
       ctx.signal,
       noonOf(sentOn),

@@ -10,6 +10,7 @@ import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  courtWithoutOrder,
   filingLead,
   gateBlocks,
   liveOrder,
@@ -43,17 +44,22 @@ const findingRow = (input: CasePlanInput) =>
     input.findings.some((f) => f.status !== 'withdrawn'),
   )
 
+const CURE_RECEIPT_DETAIL = 'Not required to refer. A refused certified letter never comes back.'
+
 function noticeRows(input: CasePlanInput, receivedDetail: string): CaseRequirement[] {
   const notice = noticeOfViolationSent(input.notices) || cureNoticeSent(input)
+  const received = input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input)
+  if (input.cure?.rule != null) {
+    return [
+      findingRow(input),
+      row('notice.sent', 'Cure notice mailed', notice),
+      row('notice.received', 'Return receipt recorded', received, CURE_RECEIPT_DETAIL),
+    ]
+  }
   return [
     findingRow(input),
     row('notice.sent', 'Notice of violation sent', notice),
-    row(
-      'notice.received',
-      'Receipt of the notice recorded',
-      input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input),
-      receivedDetail,
-    ),
+    row('notice.received', 'Receipt of the notice recorded', received, receivedDetail),
   ]
 }
 
@@ -175,6 +181,7 @@ function counselGroup(input: CasePlanInput): CaseRequirementGroup {
 }
 
 function courtGroups(input: CasePlanInput): CaseRequirementGroup[] {
+  if (courtWithoutOrder(input)) return [counselGroup(input)]
   const order = liveOrder(input)
   if (order === null) return []
   if (stepOf(order, 'motion_to_enforce') !== null) return [resolveGroup(input, order)]

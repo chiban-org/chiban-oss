@@ -114,6 +114,10 @@ export function TextField({
   )
 }
 
+export function DateField({ label, name, today }: { label: string; name: string; today: string }) {
+  return <TextField label={label} name={name} type="date" defaultValue={today} required />
+}
+
 export function AreaField({
   label,
   hint,
