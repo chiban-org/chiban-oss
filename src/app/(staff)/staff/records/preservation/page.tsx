@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { awaitingFirstCopyText, countAwaitingFirstCopy } from '@/features/preservation/pendingCount'
+import { countAwaitingFirstCopy } from '@/features/preservation/pendingCount'
 import { type IncompleteRow, listPreservationIncomplete } from '@/features/preservation/preserve'
 import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
 import { listPreservationRetrying, type RetryingRow } from '@/features/preservation/retryQueue'
 import { documentRecordLinks } from '@/features/records/staffRecordLinks'
 import { requireStaffContext } from '@/server/requireStaff'
 import { retryPreservationAction } from '../actions'
+import { NothingFailed } from './NothingFailed'
 
 export const metadata: Metadata = { title: 'Preservation' }
 
@@ -54,29 +55,21 @@ function Problem({ row }: { row: IncompleteRow }) {
   )
 }
 
-function NothingFailed({ waiting }: { waiting: number }) {
-  const note = awaitingFirstCopyText(waiting)
-  return (
-    <div className="px-5 py-8">
-      <p className="m-0">No archival copy has failed.</p>
-      {note === null ? null : <p className="mt-2 mb-0">{note}</p>}
-    </div>
-  )
-}
-
 function IncompleteTable({
   rows,
   links,
   waiting,
+  retrying,
 }: {
   rows: IncompleteRow[]
   links: ReadonlyMap<string, string>
   waiting: number
+  retrying: number
 }) {
   return (
     <div className="table-panel">
       {rows.length === 0 ? (
-        <NothingFailed waiting={waiting} />
+        <NothingFailed waiting={waiting} retrying={retrying} />
       ) : (
         <table className="w-full min-w-[44rem] text-left">
           <thead>
@@ -170,6 +163,7 @@ export default async function PreservationQueuePage() {
         rows={queue.value.rows}
         links={links}
         waiting={untried.ok ? untried.value : 0}
+        retrying={waiting.length}
       />
       <RetryingList rows={waiting} links={links} />
     </main>
