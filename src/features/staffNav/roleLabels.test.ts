@@ -10,6 +10,10 @@ describe('primaryRoleLabel', () => {
   it('falls back to Staff when no staff role is held', () => {
     expect(primaryRoleLabel([])).toBe('Staff')
   })
+
+  it('names the plumbing inspector ahead of the inspector role it comes with', () => {
+    expect(primaryRoleLabel(['inspector', 'plumbing_inspector'])).toBe('Plumbing inspector')
+  })
 })
 
 describe('roleLabel', () => {
