@@ -17,6 +17,8 @@ export interface NotificationPayload {
   inspectionLabel?: string
   onDate?: string
   atTime?: string
+  previousDate?: string
+  previousTime?: string
   result?: string
   revision?: number
   contractorRemoved?: boolean

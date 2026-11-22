@@ -43,6 +43,10 @@ export function defaultWordingFor(
       subject: `Inspection scheduled: ${NUMBER}, ${INSPECTION_LABEL} on {{inspection.date}} at {{inspection.time}}`,
       body: `An inspection for ${NUMBER} is scheduled for {{inspection.date}} at {{inspection.time}}. Someone should be at the site.`,
     },
+    inspection_rescheduled: {
+      subject: `Inspection moved: ${NUMBER}, ${INSPECTION_LABEL}`,
+      body: `The ${INSPECTION_LABEL} inspection for ${NUMBER} has moved from {{inspection.previousDate}} at {{inspection.previousTime}} to {{inspection.date}} at {{inspection.time}}.`,
+    },
     inspection_cancelled: {
       subject: `Inspection cancelled: ${NUMBER}, ${INSPECTION_LABEL}`,
       body: `The ${INSPECTION_LABEL} inspection for ${NUMBER} was cancelled. ${DETAILS}`,

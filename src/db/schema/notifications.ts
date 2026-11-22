@@ -24,6 +24,7 @@ export const NOTIFICATION_EVENTS = [
   'review_assigned',
   'board_comment_requested',
   'inspection_scheduled',
+  'inspection_rescheduled',
   'inspection_cancelled',
   'inspection_result',
   'permit_corrected',

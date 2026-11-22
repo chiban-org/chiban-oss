@@ -79,6 +79,7 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
   application_issued: render('application_issued', applicationLink),
   application_denied: render('application_denied', applicationLink),
   inspection_scheduled: render('inspection_scheduled', applicationLink),
+  inspection_rescheduled: render('inspection_rescheduled', applicationLink),
   inspection_cancelled: render('inspection_cancelled', applicationLink),
   inspection_result: render('inspection_result', applicationLink),
   permit_corrected: (c) =>
