@@ -112,6 +112,7 @@ interface RowContext {
   names: Map<string, string>
   state: Parameters<typeof stageOpenFor>[1]
   overrideOf: (stage: DocumentStage) => OverrideRow | null
+  staffView: boolean
 }
 
 const GATE_OF_STATE: readonly (readonly [Parameters<typeof gatedStages>[0], string])[] = [
@@ -177,17 +178,18 @@ function rowOf(item: DocumentItem, ctx: RowContext): ChecklistRow {
     open: stageOpenFor(item.stage, ctx.state),
     waiver: note(row?.waiverReason, row?.waiverRequestedBy, row?.waiverRequestedAt, ctx.names),
     accepted: note(row?.acceptedReason, row?.acceptedBy, row?.acceptedAt, ctx.names),
-    override: overrideNote(status, ctx.overrideOf(item.stage), ctx.names),
+    override: overrideNote(status, ctx.overrideOf(item.stage), ctx),
   }
 }
 
 function overrideNote(
   status: ItemStatus,
   found: OverrideRow | null,
-  names: Map<string, string>,
+  ctx: Pick<RowContext, 'names' | 'staffView'>,
 ): ChecklistNote | null {
   if (status !== 'missing' || found === null) return null
-  return note(found.reason, found.createdBy, found.createdAt, names)
+  if (!ctx.staffView) return { reason: '', by: '', at: found.createdAt.toISOString() }
+  return note(found.reason, found.createdBy, found.createdAt, ctx.names)
 }
 
 export async function loadDocumentChecklist(
@@ -222,6 +224,7 @@ export async function loadDocumentChecklist(
     names: await namesOf(db, records, overrides),
     state: app.state,
     overrideOf: stageOverrides(overrides, app.typeBody.workflow.closesOn),
+    staffView: actor.kind === 'staff',
   }
   const rows = items.map((item) => rowOf(item, ctx))
   const linked = new Set(rows.flatMap((r) => r.files.map((f) => f.documentId)))

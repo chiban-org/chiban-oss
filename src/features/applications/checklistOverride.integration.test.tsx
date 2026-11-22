@@ -87,7 +87,7 @@ async function rendered(actor: 'staff' | 'applicant', applicationId: string) {
 }
 
 describe('a document gate overridden at issuance', () => {
-  it('shows the override on the checklist row for staff and the applicant', async () => {
+  it('shows staff the override reason and name, and the applicant only that the town accepted it', async () => {
     const { applicationId } = await makeApplication(handle.db, world, { state: 'decided' })
     await clearOtherGates(applicationId)
     const issued = await moveTo(handle.db, world.staff, applicationId, 'issued')
@@ -101,12 +101,16 @@ describe('a document gate overridden at issuance', () => {
       .select({ name: users.displayName })
       .from(users)
       .where(eq(users.id, world.staff.userId))
-    for (const actor of ['staff', 'applicant'] as const) {
-      const { row, html } = await rendered(actor, applicationId)
-      expect(row?.override).toMatchObject({ reason: REASON, by: clerk?.name })
-      expect(html).toContain('Gone ahead without the document')
-      expect(html).toContain(`Overridden: ${REASON} (${clerk?.name ?? ''}, `)
-      expect(html).not.toContain('Can come later')
-    }
+    const staff = await rendered('staff', applicationId)
+    expect(staff.row?.override).toMatchObject({ reason: REASON, by: clerk?.name })
+    expect(staff.html).toContain('Gone ahead without the document')
+    expect(staff.html).toContain(`Overridden: ${REASON} (${clerk?.name ?? ''}, `)
+    const applicant = await rendered('applicant', applicationId)
+    expect(applicant.row?.override).toMatchObject({ reason: '', by: '' })
+    expect(applicant.html).toContain('Accepted by the town')
+    expect(applicant.html).not.toContain(REASON)
+    expect(applicant.html).not.toContain(clerk?.name ?? 'no name')
+    expect(applicant.html).not.toContain('Overridden')
+    expect(applicant.html).not.toContain('Can come later')
   })
 })

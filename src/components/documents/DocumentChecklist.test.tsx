@@ -178,6 +178,44 @@ describe('DocumentChecklist for the applicant', () => {
   })
 })
 
+describe('a document gate override on the checklist', () => {
+  const overridden = {
+    ...VIEW,
+    stages: VIEW.stages.map((s) => ({
+      ...s,
+      rows: s.rows.map((r) =>
+        r.stage === 'before_issue'
+          ? {
+              ...r,
+              open: false,
+              override: {
+                reason: 'Approval confirmed by phone.',
+                by: 'Dana Clerk',
+                at: '2027-03-10T15:00:00.000Z',
+              },
+            }
+          : r,
+      ),
+    })),
+  }
+
+  it('shows staff the reason and who overrode it', () => {
+    renderAs('staff', { view: overridden })
+    const text = item('State septic approval').textContent
+    expect(text).toContain('Gone ahead without the document')
+    expect(text).toContain('Overridden: Approval confirmed by phone. (Dana Clerk, 2027-03-10)')
+  })
+
+  it('shows the applicant only that the town accepted it', () => {
+    renderAs('applicant', { view: overridden })
+    const text = item('State septic approval').textContent
+    expect(text).toContain('Accepted by the town')
+    expect(text).not.toContain('Approval confirmed by phone.')
+    expect(text).not.toContain('Dana Clerk')
+    expect(text).not.toContain('Overridden')
+  })
+})
+
 describe('DocumentChecklist for staff', () => {
   it('lets the clerk upload to an item, record a waiver request, and accept without the file', () => {
     renderAs('staff')

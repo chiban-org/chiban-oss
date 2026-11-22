@@ -38,6 +38,7 @@ const STATUS_WORDS: ReadonlyMap<ItemStatus, string> = new Map([
 const DONE: ReadonlySet<ItemStatus> = new Set(['provided', 'accepted', 'waiver_requested'])
 
 const OVERRIDDEN = 'Gone ahead without the document'
+const TOWN_ACCEPTED = 'Accepted by the town'
 
 function StatusMark({ status, overridden }: { status: ItemStatus; overridden: boolean }) {
   if (overridden || DONE.has(status))
@@ -45,6 +46,10 @@ function StatusMark({ status, overridden }: { status: ItemStatus; overridden: bo
   if (status === 'not_needed')
     return <Minus className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
   return <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+}
+
+function overrideWords(actor: ItemProps['actor']): string {
+  return actor === 'staff' ? OVERRIDDEN : TOWN_ACCEPTED
 }
 
 function NoteLine({ prefix, note }: { prefix: string; note: ChecklistNote }) {
@@ -95,7 +100,7 @@ export function ChecklistItem(props: ItemProps) {
         <div className="min-w-0">
           <p className="m-0 font-medium">{row.label}</p>
           <p className="m-0 text-sm text-muted-foreground">
-            {overridden ? OVERRIDDEN : STATUS_WORDS.get(row.status)}
+            {overridden ? overrideWords(actor) : STATUS_WORDS.get(row.status)}
             {later ? '. Can come later' : ''}
           </p>
           {row.help === null ? null : <p className="m-0 text-sm">{row.help}</p>}
@@ -107,7 +112,9 @@ export function ChecklistItem(props: ItemProps) {
         )}
         {row.waiver === null ? null : <NoteLine prefix="Waiver requested" note={row.waiver} />}
         {row.accepted === null ? null : <NoteLine prefix="Accepted" note={row.accepted} />}
-        {row.override === null ? null : <NoteLine prefix="Overridden" note={row.override} />}
+        {row.override === null || actor !== 'staff' ? null : (
+          <NoteLine prefix="Overridden" note={row.override} />
+        )}
         <FileLinks props={props} />
         {actor === 'staff' ? <StaffControls props={props} /> : <ApplicantControls props={props} />}
       </div>
