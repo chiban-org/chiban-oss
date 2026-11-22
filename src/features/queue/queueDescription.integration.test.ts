@@ -17,12 +17,7 @@ afterAll(async () => {
 
 async function descriptionOf(values: Record<string, string>): Promise<string | undefined> {
   const app = await makeApplication(handle.db, world, { values, state: 'submitted' } as never)
-  const page = await listWorkQueue(
-    handle.db,
-    world.staff,
-    { filters: {}, limit: 50 },
-    signal,
-  )
+  const page = await listWorkQueue(handle.db, world.staff, { filters: {}, limit: 50 }, signal)
   return page.rows.find((r) => r.applicationId === app.applicationId)?.description
 }
 
