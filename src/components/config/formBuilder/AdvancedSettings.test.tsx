@@ -15,11 +15,15 @@ afterEach(cleanup)
 const FIELD: FormField = { key: 'decision_date', label: 'Date', type: 'date', required: true }
 const SIGNIFICANCE = 'Shown beside the significance question'
 
-function renderWith(onPatch: (patch: Partial<FormField>) => void, pack: StatePack = ME_PACK) {
+function renderWith(
+  onPatch: (patch: Partial<FormField>) => void,
+  pack: StatePack = ME_PACK,
+  field: FormField = FIELD,
+) {
   render(
     <PackTextProvider value={withPackForTest(pack, () => packText())}>
       <AdvancedSettings
-        field={FIELD}
+        field={field}
         frozen={false}
         references={[]}
         onKey={vi.fn()}
@@ -28,6 +32,27 @@ function renderWith(onPatch: (patch: Partial<FormField>) => void, pack: StatePac
     </PackTextProvider>,
   )
 }
+
+describe('the Fact hint', () => {
+  it('says the appealed decision date is read from the answers, not copied into project facts', () => {
+    renderWith(vi.fn(), ME_PACK, { ...FIELD, fact: 'appealedDecisionDate' })
+    expect(
+      screen.getByText(
+        'The late appeal warning reads this answer as the date of the decision being appealed. It is not copied into the project facts.',
+      ),
+    ).toBeTruthy()
+    expect(
+      screen.queryByText('Copies the answer into the project facts that rules read.'),
+    ).toBeNull()
+  })
+
+  it('keeps the project facts hint for the other facts', () => {
+    renderWith(vi.fn(), ME_PACK, { ...FIELD, fact: 'dwellingUnits' })
+    expect(
+      screen.getByText('Copies the answer into the project facts that rules read.'),
+    ).toBeTruthy()
+  })
+})
 
 describe('AdvancedSettings', () => {
   it('offers the appealed decision date fact', () => {

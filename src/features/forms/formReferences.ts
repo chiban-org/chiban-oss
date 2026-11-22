@@ -42,11 +42,23 @@ const KEYS_READ_BY_CODE: Readonly<Record<string, FieldReference>> = {
   },
 }
 
-const FACT_WORDS: Record<NonNullable<FormField['fact']>, string> = {
-  classification: 'Supplies the use classification that deadlines and certificates rely on.',
-  dwellingUnits: 'Supplies the number of dwelling units that fees and deadlines rely on.',
-  afterTheFact: 'Records whether work started before the permit.',
-  appealedDecisionDate: 'Supplies the date of the decision being appealed.',
+const FACT_REFERENCES: Record<NonNullable<FormField['fact']>, FieldReference> = {
+  classification: {
+    source: 'Project facts',
+    detail: 'Supplies the use classification that deadlines and certificates rely on.',
+  },
+  dwellingUnits: {
+    source: 'Project facts',
+    detail: 'Supplies the number of dwelling units that fees and deadlines rely on.',
+  },
+  afterTheFact: {
+    source: 'Project facts',
+    detail: 'Records whether work started before the permit.',
+  },
+  appealedDecisionDate: {
+    source: 'Late appeal warning',
+    detail: 'Reads this answer as the date of the decision being appealed.',
+  },
 }
 
 function multiplierRefs(expr: FeeExpr): string[] {
@@ -124,7 +136,6 @@ export function referencesTo(
     .filter((use) => use.fieldKey === field.key)
     .map(({ source, detail }) => ({ source, detail }))
   const fromCode = KEYS_READ_BY_CODE[field.key]
-  const fact =
-    field.fact === undefined ? [] : [{ source: 'Project facts', detail: FACT_WORDS[field.fact] }]
+  const fact = field.fact === undefined ? [] : [FACT_REFERENCES[field.fact]]
   return [...fromQuestions, ...fromConfig, ...(fromCode === undefined ? [] : [fromCode]), ...fact]
 }

@@ -9,6 +9,9 @@ import { FACT_CHOICES } from '@/features/forms/questionTypes'
 
 const FROZEN_HINT = 'A version that was put into use uses this key, so it stays fixed.'
 const FREE_HINT = 'Made from the question text. Answers are stored under it.'
+const FACT_HINT = 'Copies the answer into the project facts that rules read.'
+const APPEALED_DATE_HINT =
+  'The late appeal warning reads this answer as the date of the decision being appealed. It is not copied into the project facts.'
 
 export function AdvancedSettings({
   field,
@@ -40,7 +43,7 @@ export function AdvancedSettings({
           <>
             <Pick
               label="Fact"
-              hint="Copies the answer into the project facts that rules read."
+              hint={field.fact === 'appealedDecisionDate' ? APPEALED_DATE_HINT : FACT_HINT}
               value={field.fact ?? ''}
               options={FACT_CHOICES}
               onChange={(e) => {
