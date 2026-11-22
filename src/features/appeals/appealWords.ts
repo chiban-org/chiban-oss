@@ -1,4 +1,20 @@
+import { activePack } from '@/features/packs/registry'
 import { boardShort, rehearingWords } from '@/features/packs/vocabulary'
+
+function officials(): readonly string[] {
+  return activePack().labels.administrativeOfficials
+}
+
+export function officialsOrAnother(): string {
+  return `the ${officials().join(', ')} or another town official`
+}
+
+export function officialsOr(): string {
+  const titles = officials()
+  const last = titles.at(-1) ?? ''
+  const rest = titles.slice(0, -1)
+  return rest.length === 0 ? `the ${last}` : `the ${rest.join(', ')} or ${last}`
+}
 
 export function appealToBoard(): string {
   return `Appeal to the ${boardShort('zba')}`
@@ -21,15 +37,15 @@ export function linkedPlanningDecisionLabel(): string {
 }
 
 export function recordDecisionDescription(): string {
-  return `A decision by the building inspector, zoning administrator or another town official on an application or permit. Recording it starts the time to appeal it to the ${boardShort('zba')}.`
+  return `A decision by ${officialsOrAnother()} on an application or permit. Recording it starts the time to appeal it to the ${boardShort('zba')}.`
 }
 
 export function appealsLead(): string {
-  return `Decisions by the building inspector, zoning administrator or another town official that can be appealed to the ${boardShort('zba')}.`
+  return `Decisions by ${officialsOrAnother()} that can be appealed to the ${boardShort('zba')}.`
 }
 
 export function appealPointer(): string {
-  return `To appeal a decision by the building inspector or zoning administrator to the ${boardShort('zba')},`
+  return `To appeal a decision by ${officialsOr()} to the ${boardShort('zba')},`
 }
 
 export function motionForRehearing(): string {
