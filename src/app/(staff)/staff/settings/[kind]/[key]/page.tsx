@@ -13,7 +13,7 @@ import {
 } from '@/features/boards/boardSettingsSchema'
 import { activeBoards } from '@/features/boards/townBoards'
 import { discardOffer } from '@/features/config/discardOffer'
-import { type EditorContext, editorContext } from '@/features/config/editorContext'
+import { type EditorContext, editorContext, feeUsedByLabels } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
 import {
   type ConfigKind,
@@ -134,6 +134,7 @@ export default async function SettingsKeyPage({ params }: Props) {
     ),
     references,
     feeQuestions: kind === 'fee_schedule' ? numberQuestionsFor(referenceRows, key) : [],
+    feeUsedBy: kind === 'fee_schedule' ? feeUsedByLabels(referenceRows, key) : [],
     formFields: kind === 'application_type' ? formFieldsByKey(referenceRows) : {},
   }
   const isForm = kind === 'form'

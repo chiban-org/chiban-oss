@@ -1,7 +1,12 @@
 import { primaryAbutterParams, supportsProjection } from '@/features/abutters/packParams'
+import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { filingLeadRule } from '@/features/boards/filingLead'
 import { hasLocalBound } from '@/features/clocks/ruleEngine'
-import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
+import type {
+  NamedChoice,
+  ReferenceChoices,
+  ReferenceRow,
+} from '@/features/config/referenceChoices'
 import type { RuleChoiceGroups } from '@/features/config/ruleChoices'
 import { TOWN_RULE_BOUNDS } from '@/features/config/townRuleBounds'
 import type { FormBuilderData } from '@/features/forms/formReferences'
@@ -49,6 +54,7 @@ export interface EditorContext {
   >
   references?: ReferenceChoices
   feeQuestions?: NamedChoice[]
+  feeUsedBy?: string[]
   formFields?: Record<string, FormField[]>
   form?: FormBuilderData
   template?: TemplateBuilderData
@@ -126,6 +132,16 @@ function townRuleRange(rule: PackRule, unit: string | null): { min: number; max:
     }
   }
   return { min: bounds.min, max: bounds.max }
+}
+
+export function feeUsedByLabels(rows: readonly ReferenceRow[], feeScheduleKey: string): string[] {
+  const byKey = new Map<string, ApplicationTypeBody>()
+  for (const row of rows) {
+    if (row.kind !== 'application_type') continue
+    if (!byKey.has(row.key) || row.status === 'draft')
+      byKey.set(row.key, row.body as ApplicationTypeBody)
+  }
+  return [...byKey.values()].filter((t) => t.feeScheduleKey === feeScheduleKey).map((t) => t.label)
 }
 
 export function editorContext(
