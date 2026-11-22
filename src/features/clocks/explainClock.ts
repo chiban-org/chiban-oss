@@ -58,6 +58,7 @@ export interface ClockExplanation {
   extensionPolicy: string
   allowedAdjustments: AdjustmentKind[]
   status: ClockRow['status']
+  supersededReason: string | null
   metOn: CivilDate | null
   daysRemaining: number
 }
@@ -137,6 +138,7 @@ export function explainClock(
     extensionPolicy: extensionPolicyText(rule),
     allowedAdjustments: allowedAdjustmentKinds(rule),
     status: clock.status,
+    supersededReason: clock.supersededReason,
     metOn: clock.metOn as CivilDate | null,
     daysRemaining: daysBetween(today, clock.currentDue as CivilDate),
   }

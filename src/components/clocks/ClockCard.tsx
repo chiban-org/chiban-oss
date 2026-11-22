@@ -7,10 +7,30 @@ import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { daysBetween } from '@/types/civilDate'
 
 const WHOSE: Record<ClockExplanation['whose'], string> = {
-  official: 'Municipal official',
+  official: 'Town staff',
   board: 'Board',
   applicant: 'Applicant',
   third_party: 'Third party',
+}
+
+function supersededLabel(reason: string | null): string {
+  if (reason?.startsWith('rule_change:') === true) return 'Superseded by a rule change'
+  switch (reason) {
+    case 'cancelled_by_event':
+      return 'Replaced by a later step'
+    case 'decided_without_hearing':
+      return 'Ended when the board decided'
+    case 'meeting_calendar_changed':
+      return 'Replaced when the meeting changed'
+    case 'acceptance_meeting_changed':
+      return 'Replaced when the acceptance meeting changed'
+    case 'regional_impact_determined':
+      return 'Replaced by the regional impact determination'
+    case 'later_certified_notice':
+      return 'Replaced by a later notice'
+    default:
+      return 'Replaced'
+  }
 }
 
 function plural(n: number): string {
@@ -36,7 +56,7 @@ function statusChip(clock: ClockExplanation) {
     case 'lapsed':
       return <StatusChip status="failed" label="Lapsed" />
     case 'superseded':
-      return <StatusChip status="neutral" label="Superseded by a rule change" />
+      return <StatusChip status="neutral" label={supersededLabel(clock.supersededReason)} />
     case 'stopped':
       return <StatusChip status="neutral" label="Stopped" />
     case 'running':
