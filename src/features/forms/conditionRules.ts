@@ -77,19 +77,25 @@ export function changeOperator(leaf: Leaf, op: Operator): Leaf {
 }
 
 function valueWords(leaf: Leaf, field: FormField | undefined): string {
-  const label = (v: string) => field?.options?.find((o) => o.value === v)?.label ?? v
+  const label = (v: string) =>
+    (field?.options?.find((o) => o.value === v)?.label ?? v).toLowerCase()
   if (leaf.value === undefined) return ''
   const values = Array.isArray(leaf.value) ? leaf.value : [String(leaf.value)]
   return ` ${values.map(label).join(', ')}`
 }
 
-function leafWords(leaf: Leaf, fields: readonly FormField[]): string {
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1)
+}
+
+function leafWords(leaf: Leaf, fields: readonly FormField[], first: boolean): string {
   const field = fields.find((f) => f.key === leaf.field)
-  return `${field?.label ?? leaf.field} ${OPERATOR_WORDS[leaf.op]}${valueWords(leaf, field)}`
+  const label = field?.label ?? leaf.field
+  return `${first ? label : lowerFirst(label)} ${OPERATOR_WORDS[leaf.op]}${valueWords(leaf, field)}`
 }
 
 export function describeCondition(condition: Condition, fields: readonly FormField[]): string {
   const set = ruleSetOf(condition)
-  const words = (set?.rules ?? []).map((leaf) => leafWords(leaf, fields))
+  const words = (set?.rules ?? []).map((leaf, index) => leafWords(leaf, fields, index === 0))
   return words.join(set?.join === 'any' ? ', or ' : ', and ')
 }

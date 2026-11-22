@@ -146,7 +146,7 @@ describe('FormBuilder', () => {
       ],
     })
     expect(
-      within(canvas()).getByText(/Shown only when Use is not Commercial, or Use is Residential/),
+      within(canvas()).getByText(/Shown only when Use is not commercial, or use is residential/),
     ).toBeTruthy()
   })
 

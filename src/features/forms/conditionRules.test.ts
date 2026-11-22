@@ -116,7 +116,7 @@ describe('operators and values', () => {
   it('describes a rule in plain words for the question card', () => {
     const fields = [SELECT, YES_NO, COUNT]
     expect(describeCondition({ field: 'use', op: 'equals', value: 'residential' }, fields)).toBe(
-      'Use is Residential',
+      'Use is residential',
     )
     expect(
       describeCondition(
@@ -128,9 +128,9 @@ describe('operators and values', () => {
         },
         fields,
       ),
-    ).toBe('Started early is yes, or Units is more than 2')
+    ).toBe('Started early is yes, or units is more than 2')
     expect(
       describeCondition({ field: 'use', op: 'in', value: ['residential', 'commercial'] }, fields),
-    ).toBe('Use is any of Residential, Commercial')
+    ).toBe('Use is any of residential, commercial')
   })
 })
