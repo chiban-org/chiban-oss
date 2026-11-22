@@ -1,4 +1,5 @@
 import type { EnforcementStatus } from '@/db/schema'
+import { cureRules } from '@/features/enforcement/cureRules'
 import { ROLE_LABELS } from '@/features/enforcement/labels'
 import type { RecipientRole } from '@/features/packs/schema'
 import { boardAbbrev } from '@/features/packs/vocabulary'
@@ -66,6 +67,17 @@ function draftStep(input: CasePlanInput, draft: CasePlanOrder): Step {
   return draftIsStale(input.findings, draft.row.findingIds) ? redraftStep(draft) : issueStep(draft)
 }
 
+function cureRouting(): string | null {
+  const rules = cureRules()
+  if (rules.length === 0) return null
+  return rules
+    .map(
+      (rule) =>
+        `If the ${rule.label.toLowerCase()} applies, choose it under Cure notice before sending a notice of violation.`,
+    )
+    .join(' ')
+}
+
 function violationStep(input: CasePlanInput): Step {
   const standing = findingStanding(input)
   if (standing === 'corrected') return resolveStep()
@@ -78,7 +90,7 @@ function violationStep(input: CasePlanInput): Step {
   if (lapsedDraft !== null) return draftStep(input, lapsedDraft)
   if (cure !== null) return cure
   if (!noticeOfViolationSent(input.notices)) {
-    return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
+    return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' }, cureRouting())
   }
   const ordered = orderAvailableForFindings(input.findings)
   const draft = ordered ? draftOrderOf(input) : null
