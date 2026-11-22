@@ -8,8 +8,15 @@ import type { StarterBundle } from '@/features/packs/schema'
 import { ATTESTATION_TEXT } from '@/features/packs/schema'
 import type { TextTemplateBody } from '@/features/templates/templateSchema'
 
-export const ME_HEARING_NOTICE_TEXT =
-  '{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kindPhrase}}\n\nDate of this notice: {{notice.issuedOn}}\n\nThe {{board.name}} will hold a {{hearing.kindPhrase}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nThis notice is mailed to the owners of abutting property and others entitled to notice, and is posted at the town office and on the town website. Anyone interested may speak at the hearing. The application may be reviewed at the town office.'
+const ME_HEARING_NOTICE_HEAD =
+  '{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kindPhrase}}\n\nDate of this notice: {{notice.issuedOn}}\n\nThe {{board.name}} will hold a {{hearing.kindPhrase}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\n'
+
+const ME_HEARING_NOTICE_TAIL =
+  ' Anyone interested may speak at the hearing. The application may be reviewed at the town office.'
+
+export const ME_HEARING_NOTICE_TEXT = `${ME_HEARING_NOTICE_HEAD}This notice is mailed to the owners of abutting property and others entitled to notice, and is posted at the town office and on the town website.${ME_HEARING_NOTICE_TAIL}`
+
+export const ME_APPLICANT_HEARING_NOTICE_TEXT = `${ME_HEARING_NOTICE_HEAD}This notice is mailed to the applicant and published in the newspaper, and is posted at the town office and on the town website.${ME_HEARING_NOTICE_TAIL}`
 
 const CHAIR_ROLE_BY_BOARD_KIND = {
   zba: 'zba_chair',
@@ -42,6 +49,7 @@ export interface BoardStarterInput {
   workflow: ApplicationTypeBody['workflow']
   documents: DocumentItem[]
   extraTemplates?: TextTemplateBody[]
+  hearingNoticeText?: string
 }
 
 const NOT_THE_OWNER = { field: 'is_owner', op: 'not_equals', value: 'yes' } as const
@@ -124,13 +132,14 @@ export const ABUTTER_NOTICE_LINE: FeeScheduleBody['lines'][number] = {
   },
 }
 
-function boardTemplates(slug: string, label: string, classification: string): TextTemplateBody[] {
+function boardTemplates(input: BoardStarterInput): TextTemplateBody[] {
+  const { slug, label, classification } = input
   return [
     {
       key: `${slug}-hearing-notice`,
       label: `${label} hearing notice`,
       kind: 'hearing_notice',
-      body: ME_HEARING_NOTICE_TEXT,
+      body: input.hearingNoticeText ?? ME_HEARING_NOTICE_TEXT,
     },
     {
       key: `${slug}-notice-of-decision`,
@@ -155,10 +164,7 @@ function boardTemplates(slug: string, label: string, classification: string): Te
 
 export function boardStarter(input: BoardStarterInput): StarterBundle {
   const { slug, prefix, label } = input
-  const templates = [
-    ...boardTemplates(slug, label, input.classification),
-    ...(input.extraTemplates ?? []),
-  ]
+  const templates = [...boardTemplates(input), ...(input.extraTemplates ?? [])]
   return {
     id: input.id,
     version: 2,

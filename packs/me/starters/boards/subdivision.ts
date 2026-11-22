@@ -1,4 +1,8 @@
-import { boardStarter, PLANNING_BOARD_WORKFLOW } from '@packs/me/starters/boards/shared'
+import {
+  boardStarter,
+  ME_APPLICANT_HEARING_NOTICE_TEXT,
+  PLANNING_BOARD_WORKFLOW,
+} from '@packs/me/starters/boards/shared'
 import { doc } from '@packs/me/starters/permitParts'
 
 export const RECEIPT_TEXT =
@@ -13,6 +17,7 @@ export const SUBDIVISION_STARTER = boardStarter({
   slug: 'sub',
   label: 'Subdivision',
   classification: 'me.pb_subdivision',
+  hearingNoticeText: ME_APPLICANT_HEARING_NOTICE_TEXT,
   fields: [
     {
       key: 'lot_count',
