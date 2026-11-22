@@ -52,13 +52,13 @@ Under **Regional impact and water bodies**, record whether the project has regio
 
 Below it, Chiban measures from the parcel to the nearest water body and suggests whether the NH DES notice applies. Choose an answer under **Record the NH DES determination**. If your answer differs from what the map suggests, or you choose that the notice does not apply, write a reason. The map measures from the parcel, not the building site, so use your own judgment where they differ.
 
-Both findings change who gets notice, and regional impact lengthens the decision period. Record them before you draw the abutter list. If you record or change either one after a list was issued, Chiban asks you to draw and issue a new list before a hearing can be scheduled.
+Where the town's state has no regional impact rule, this section is headed **Water bodies** and has only the water body question. Both findings change who gets notice, and regional impact lengthens the decision period. Record them before you draw the abutter list. If you record or change either one after a list was issued, Chiban asks you to draw and issue a new list before a hearing can be scheduled.
 
 ### 3. Issue the abutter list
 
 Under **Abutter lists**, draw a list and open it to review who receives notice. Issuing it fixes that version. The list page shows the notice cost for the mailings, which is collected under the application's fees and payments. Hearings cannot be scheduled until a list has been issued.
 
-You can also add other parcels to the application, and record a professional whose seal is on the plat, choosing whether that person is sent notice.
+You can also add other parcels to the application, and record a professional whose seal is on the plat, choosing whether that person is sent notice. The professional form is offered only on applications where notice goes to a sealed professional, which the Zoning Board does not.
 
 If the applicant does not pay the notice costs, **End this application for unpaid notice costs** closes it. It asks for a reason.
 

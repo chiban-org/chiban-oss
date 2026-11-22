@@ -14,8 +14,8 @@ sidebar_position: 3
 
 Applications sit in three groups.
 
-- **Needs you.** Something is waiting on you: finish a draft, pay a fee, add a document or ask for an inspection. Each row says which, for example "Pay $45.00" or "Finish the form and submit it."
-- **In progress.** The town has it and you have nothing to do.
+- **Needs you.** Something is waiting on you: finish a draft, pay a fee, add a document or ask for an inspection. Each row says which, for example "Pay $45.00" or "Finish the form and submit it." Where the town does not take payment online, a fee reads "Pay $45.00 at the" town office.
+- **In progress.** The town has it and you have nothing to do. An application a board has approved reads "Approved by the board." while it waits for the permit.
 - **Finished.** Closed, denied, withdrawn or otherwise over. This group is folded away until you open it.
 
 Each row shows the street address, the project name and the application number, a plain sentence about the next step, and a status. Choose the address to open the application. The page also has links to **Contractor projects** and **Look up a parcel**.

@@ -31,6 +31,10 @@ These pages have a **Version history** that lists each version, whether it is in
 
 A replaced version has a **Restore version** button, for example **Restore version 1**. It makes that version live at once, as a new version, and replaces the one in use now. The history keeps all of them, and the restored one is marked "Restored from version 1".
 
+## Going back to the starting value
+
+To stop using a town rule's own value, open the rule and choose **Use the starting value again**. Chiban then goes back to the starting value shown on the State law page. See [state law, town rules and local code](./town-rules-and-state-law.md).
+
 ## Starting a new item
 
 On the lists for application types, forms, fee schedules, templates, conditions, inspection checklists and local code amendments, the button at the top starts a new item, for example **New form**. It asks for a name. Under **Advanced** is a short name that other settings use to refer to the item. It is made from the name if you leave it empty, and it cannot be changed later. The new item starts as a draft that is not in use.

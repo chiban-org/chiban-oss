@@ -26,6 +26,12 @@ Wording, letterhead and signers come from templates your administrator keeps und
 
 The permit is also saved to the record when it is issued, where the people on the project can see it. A permit you print later is drawn again from the current record, so it shows the fee status at the time you print it, for example a balance still owed.
 
+## Print a letter
+
+Some kinds of application come with letters of their own, such as a decision letter or a certificate to record at the registry. On those applications a **Letters** section lists them. It appears for staff who can add documents to the application, and only when the application's type has a letter set up. Choose the letter under **Letter**, then **Print the letter**. Chiban fills the letter in from the application, for example the owner's name and the conditions, and adds it to the application's **Documents** for the people on the project. It is not made public. A line shown as ____ is left for you to fill in by hand, for example a registry book and page number.
+
+If the message says the letter could not be filled in, check the template under **Settings**, **Templates** and try again. See [forms, fee schedules and letters](../administrator/forms-fee-schedules-and-letters.md).
+
 ## Correct a permit
 
 If the contractor, the license number, an answer or the project title is wrong on an issued permit, open **Correct this permit** in the side panel.

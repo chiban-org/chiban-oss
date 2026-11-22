@@ -75,7 +75,11 @@ Leave notes for the rest of the office under **Staff notes** with **Add a note**
 
 ### 6. Record the decision
 
-When the requirements are met, **Do this now** says **Record the decision**. Choose it and the application becomes **Decided**.
+When the requirements are met, **Do this now** says **Approve the application**. Choose it and the application becomes **Decided**. Chiban prints a **Decision on your application** letter into the record's **Documents**, for the people on the project, and adds the decision to the **Appeals** register under **Boards**, which starts the time to appeal it.
+
+To refuse the application instead, choose **Deny the application**. It asks for a **Reason for the denial** of at least 10 characters, which is printed on the decision letter. A denial without a reason is refused. A permit issued straight from submitted, where the type allows it, still enters the Appeals register when it is issued, but has no decision letter.
+
+Applications decided by a board keep **Record the decision**, because the board's vote is the decision. See [decisions](../boards/decisions.md).
 
 If the permit type collects its fee at approval, the fee is assessed now. The people on the project are emailed that a fee is due.
 

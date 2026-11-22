@@ -33,7 +33,7 @@ Staff see your request in their list marked **Online**, with the same deadline a
 
 - The town's letter about your request is emailed to you as a PDF.
 - If staff release the records by email, you get the files attached to the email. When the files are large, you get a link instead.
-- A link opens a page titled "Records for request" and your number, where you open each file. The link works for 30 days. See [looking up parcels, meetings and released records](./looking-things-up.md) for what that page shows. If it has expired, call the land use office and ask for a new one.
+- A link opens a page titled "Records for request" and your number, where you open each file. The page shows "This link works until" and the date. After that date it says the link has expired and to ask the town office for a new one. See [looking up parcels, meetings and released records](./looking-things-up.md) for what that page shows. If it has expired, call the town office and ask for a new one.
 - Records can also be shown at the town office or sent on paper. In those cases the letter still comes by email.
 
 If the town denies the request, its letter names each record it withheld and the exemption that applies.

@@ -39,7 +39,7 @@ Below the account is a form with its own **Save draft** and **Put into use** but
 
 - **Convenience fee passed to the payer**: a **Percent of the payment** plus a set amount. Enter 0 for either to leave it out. The page works out an example from your settings, such as how much more the payer pays on a $100.00 payment.
 - **Charge it on**: **Online card payments**, **Card payments at the counter**, or both.
-- **Checks payable to**: printed on invoices and receipts, for example Town of Alder Pond.
+- **Checks payable to**: printed on invoices and receipts. The hint under the field gives your town's name as an example.
 - **Receipt footer**: a line printed at the bottom of every receipt.
 
 The convenience fee is passed to the payer on card payments only. It shows on its own line and is not town fee revenue. Cash and check payments carry no convenience fee.

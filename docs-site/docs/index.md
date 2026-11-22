@@ -24,7 +24,7 @@ The records custodian logs Right-to-Know requests, redacts documents, and keeps 
 
 ## What residents see
 
-The town's public site lets anyone look up a parcel and its public records, read meeting and hearing notices, apply for a permit and report a problem. Applicants and contractors sign in with a link sent by email, so they have no password to forget. Once signed in, they can follow their applications, add documents, pay fees and ask for inspections.
+The town's public site lets anyone look up a parcel and its public records, read meeting and hearing notices, apply for a permit and report a problem. Applicants and contractors sign in with a link sent by email, so they have no password to forget. Once signed in, they can follow their applications, add documents, pay fees where the town takes card payments online, and ask for inspections.
 
 ## The town keeps its data
 
