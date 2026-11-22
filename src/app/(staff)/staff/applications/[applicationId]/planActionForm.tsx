@@ -22,6 +22,11 @@ export type PlanFormInput = Pick<
   'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license' | 'hearings'
 >
 
+function boardSummary(kind: 'set_board_meeting' | 'record_board_vote', zoning: boolean): string {
+  if (kind === 'set_board_meeting') return zoning ? 'Schedule the hearing' : 'Set the meeting'
+  return zoning ? 'Open the hearing' : 'Record the completeness vote'
+}
+
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
   switch (action.kind) {
     case 'assign_reviewer':
@@ -35,9 +40,8 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_payment':
       return 'Take a payment'
     case 'set_board_meeting':
-      return input.board?.boardKind === 'zba' ? 'Schedule the hearing' : 'Set the meeting'
     case 'record_board_vote':
-      return input.board?.boardKind === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
+      return boardSummary(action.kind, input.board?.boardKind === 'zba')
     case 'record_board_regional_impact':
       return 'Record the regional impact determination'
     case 'open_abutter_list':
