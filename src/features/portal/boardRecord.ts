@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { boardDecisions, boardMeetings, boards, clocks, hearings } from '@/db/schema'
+import { boardDecisions, boardMeetings, boards, clocks, hearings, noticeItems } from '@/db/schema'
 import { canViewApplication } from '@/features/access/queries'
 import type { Actor } from '@/features/auth/actor'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
@@ -24,14 +24,20 @@ export interface PortalBoardRecord {
 
 const MAIL_CHANNELS: readonly string[] = ['verified_mail', 'certified_mail', 'first_class_mail']
 const POSTING_CHANNELS: readonly string[] = ['public_posting', 'bulletin_board']
+const OWNER_ROLE = 'abutter_owner'
 
 function latestProof(items: readonly NoticeStatusItem[]): string | null {
   const dates = items.flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
   return dates.sort().at(-1) ?? null
 }
 
-function noticeLines(items: readonly NoticeStatusItem[]): string[] {
-  const mailed = items.filter((i) => MAIL_CHANNELS.includes(i.channel) && i.proof !== null)
+function noticeLines(
+  items: readonly NoticeStatusItem[],
+  ownerItems: ReadonlySet<string>,
+): string[] {
+  const mailed = items.filter(
+    (i) => MAIL_CHANNELS.includes(i.channel) && i.proof !== null && ownerItems.has(i.itemId),
+  )
   const postedOn = latestProof(items.filter((i) => POSTING_CHANNELS.includes(i.channel)))
   const newspaper = items.filter((i) => i.channel === 'newspaper')
   const publishedOn = latestProof(newspaper)
@@ -59,7 +65,19 @@ async function latestNotice(
 ): Promise<string[]> {
   const last = held.at(-1)
   if (last === undefined) return []
-  return noticeLines((await noticeStatus(db, last.hearing.noticeSetId, signal)).items)
+  const { items } = await noticeStatus(db, last.hearing.noticeSetId, signal)
+  if (items.length === 0) return []
+  const roles = await db
+    .select({ id: noticeItems.id, roles: noticeItems.roles })
+    .from(noticeItems)
+    .where(
+      inArray(
+        noticeItems.id,
+        items.map((i) => i.itemId),
+      ),
+    )
+  const owners = new Set(roles.filter((r) => r.roles.includes(OWNER_ROLE)).map((r) => r.id))
+  return noticeLines(items, owners)
 }
 
 const CONFIRMED = ' The board confirmed it was properly noticed.'

@@ -48,6 +48,7 @@ async function scheduledWithThreeOwners() {
     recipient(1),
     recipient(2),
     recipient(3),
+    recipient(4, ['applicant']),
   ])
   const [meeting] = await handle.db
     .select({ id: boardMeetings.id })
