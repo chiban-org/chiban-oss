@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test'
 import { demoTitle, expectConfirmation, expectRefusedBeside, openApplication } from './support'
 
 const PERMIT = demoTitle('Bittern Meadow frontage variance')
-const PLANNING = demoTitle('Osprey Point site plan')
+const PLANNING = demoTitle('Brookview minor site plan')
 
 test.describe
   .serial('abutter lists from the application page', () => {
