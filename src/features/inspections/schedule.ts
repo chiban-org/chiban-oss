@@ -8,19 +8,16 @@ import { isSuspended } from '@/features/appeals/suspension'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayActOnInspection, userMayActOnInspection } from '@/features/authz/classificationScope'
-import { queueCalendarPush } from '@/features/calendar/queuePush'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import { lockInspectionAfterApplication } from '@/features/inspections/lockInspection'
+import { announceCancel, queueBookingNotices } from '@/features/inspections/scheduleNotices'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
-import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { schedulingDates, slotStarts } from '@/features/inspections/slots'
 import { PORTAL_PARTY_ROLES } from '@/features/inspections/types'
-import { localToUtc, minutesToClock, utcToLocal } from '@/features/inspections/zonedTime'
-import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
+import { localToUtc, utcToLocal } from '@/features/inspections/zonedTime'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -91,52 +88,6 @@ function slotError(input: ScheduleInput, rules: Rules): ScheduleError | null {
 function isUniqueViolation(e: unknown): boolean {
   const cause = (e as { cause?: { code?: string } }).cause
   return cause?.code === UNIQUE_VIOLATION
-}
-
-async function queueBookingPushes(
-  tx: Tx,
-  locked: typeof inspections.$inferSelect,
-  input: ScheduleInput,
-  sequence: number,
-  rules: Rules,
-  signal: AbortSignal,
-): Promise<string[]> {
-  const pushIds: string[] = []
-  const previousInspector = locked.inspectorUserId
-  const handedOver =
-    locked.status === 'scheduled' &&
-    previousInspector !== null &&
-    previousInspector !== input.inspectorUserId
-  if (handedOver) {
-    const cancelId = await queueCalendarPush(
-      tx,
-      {
-        inspectionId: input.inspectionId,
-        sequence: locked.calendarSequence,
-        op: 'cancel',
-        inspectorUserId: previousInspector,
-        slot: {
-          date: locked.scheduledDate ?? input.date,
-          startMinute: locked.startMinute ?? input.startMinute,
-          durationMinutes: locked.durationMinutes ?? rules.settings.slotMinutes,
-        },
-      },
-      signal,
-    )
-    if (cancelId !== null) pushIds.push(cancelId)
-  }
-  const publishId = await queueCalendarPush(
-    tx,
-    {
-      inspectionId: input.inspectionId,
-      sequence,
-      op: 'publish',
-      inspectorUserId: input.inspectorUserId,
-    },
-    signal,
-  )
-  if (publishId !== null) pushIds.push(publishId)
-  return pushIds
 }
 
 function bookingConflict(
@@ -220,20 +171,10 @@ async function bookInTransaction(
     }
     throw e
   }
-  const pushIds = await queueBookingPushes(tx, locked, input, sequence, rules, signal)
-  await queueForParties(
+  const pushIds = await queueBookingNotices(
     tx,
-    {
-      event: 'inspection_scheduled',
-      applicationId: locked.applicationId,
-      discriminator: `${locked.id}:${sequence}`,
-      extra: {
-        inspectionLabel: inspectionTypeLabel(locked.inspectionType),
-        onDate: formatCivilDate(input.date),
-        atTime: minutesToClock(input.startMinute),
-      },
-      roles: INSPECTION_PARTY_ROLES,
-    },
+    locked,
+    { ...input, sequence, slotMinutes: rules.settings.slotMinutes },
     signal,
   )
   await writeAudit(
@@ -341,52 +282,17 @@ export async function cancelInspection(
     if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
     if (locked.status !== 'requested' && locked.status !== 'scheduled')
       return err('not_cancellable')
-    const pushIds: string[] = []
-    if (locked.status === 'scheduled' && locked.inspectorUserId !== null) {
-      const pushId = await queueCalendarPush(
-        tx,
-        {
-          inspectionId: locked.id,
-          sequence: locked.calendarSequence,
-          op: 'cancel',
-          inspectorUserId: locked.inspectorUserId,
-        },
-        signal,
-      )
-      if (pushId !== null) pushIds.push(pushId)
-    }
+    const reason = isStaff ? input.reason : 'requester'
     await tx
       .update(inspections)
       .set({
         status: 'cancelled',
-        cancelReason: isStaff ? input.reason : 'requester',
+        cancelReason: reason,
         rowVersion: locked.rowVersion + 1,
         updatedAt: new Date(),
       })
       .where(eq(inspections.id, locked.id))
-    await queueForParties(
-      tx,
-      {
-        event: 'inspection_cancelled',
-        applicationId: locked.applicationId,
-        discriminator: `${locked.id}:cancelled`,
-        extra: { inspectionLabel: inspectionTypeLabel(locked.inspectionType) },
-        roles: INSPECTION_PARTY_ROLES,
-      },
-      signal,
-    )
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'inspection.cancel',
-        entityType: 'inspection',
-        entityId: locked.id,
-        before: { status: locked.status },
-        after: { status: 'cancelled', reason: isStaff ? input.reason : 'requester' },
-      },
-      signal,
-    )
+    const pushIds = await announceCancel(tx, actor, { locked, reason }, signal)
     return ok({ pushIds })
   })
 }
