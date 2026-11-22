@@ -95,7 +95,7 @@ export function editorContext(
     const summary = ruleSummary(rule)
     townRules[rule.key] = {
       label: summary.label,
-      policy: policyText(rule.overridePolicy),
+      policy: policyText(rule),
       settable:
         rule.overridePolicy.policy !== 'fixed' &&
         rule.overridePolicy.policy !== 'locally_prohibited',
