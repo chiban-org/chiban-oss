@@ -74,10 +74,10 @@ function TakeRequestLink({
   number: string
   variant: Variant
 }) {
-  const reinspect = action.reinspect === undefined ? '' : `&reinspect=${action.reinspect}`
+  const asked = action.reinspect === undefined ? '&final=1' : `&reinspect=${action.reinspect}`
   return (
     <Button asChild variant={variant} className="self-start">
-      <Link href={`/staff/inspections?number=${encodeURIComponent(number)}${reinspect}`}>
+      <Link href={`/staff/inspections?number=${encodeURIComponent(number)}${asked}`}>
         {requestLabel(action)}
       </Link>
     </Button>
