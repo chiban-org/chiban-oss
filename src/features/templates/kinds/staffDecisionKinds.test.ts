@@ -11,6 +11,7 @@ import { APPLICATION_FIELDS, FRAME_FIELDS } from '@/features/templates/kinds/kin
 import { RTK_RESPONSE_KIND } from '@/features/templates/kinds/officeKinds'
 import { isMergeField, type MergeField } from '@/features/templates/mergeFields'
 import { mergeFieldLabelsFor } from '@/features/templates/mergeFieldWords'
+import { checkTemplate } from '@/features/templates/templateChecks'
 import { TEMPLATE_KINDS } from '@/features/templates/templateSchema'
 import { SIGNER_ROLES } from '@/features/town/profileSchema'
 import { signerRoleLabels } from '@/features/town/signerRoleLabels'
@@ -46,7 +47,10 @@ function rendered(
   values: Record<string, string> = VALUES,
 ): string {
   return JSON.stringify(
-    docToBlocks(defaultDoc(kind), { values: { ...values, 'decision.appealRights': APPEAL } }),
+    docToBlocks(defaultDoc(kind), {
+      values,
+      locked: new Map([['decision.appealRights', APPEAL]]),
+    }),
   )
 }
 
@@ -103,7 +107,6 @@ describe('staff decision kinds', () => {
       'decision.votedOn',
       'decision.reasons',
       'decision.reasonsSection',
-      'decision.appealRights',
     ] as const) {
       expect(letter.has(f), f).toBe(true)
     }
@@ -160,6 +163,24 @@ describe('staff decision kinds', () => {
     expect(application?.fields.map((f) => f.name)).toEqual(
       expect.arrayContaining(['incomplete.reason', 'incomplete.sentOn']),
     )
+  })
+
+  it('locks the appeal rights so a town copy cannot drop them', () => {
+    expect(documentKind('permit_decision_letter').locked).toEqual(['decision.appealRights'])
+    const base = {
+      key: 'fernhollow-decision',
+      label: 'Fernhollow decision letter',
+      kind: 'permit_decision_letter' as const,
+      format: 'doc' as const,
+    }
+    expect(checkTemplate({ ...base, doc: defaultDoc('permit_decision_letter') })).toBeNull()
+    const dropped = {
+      type: 'doc' as const,
+      content: defaultDoc('permit_decision_letter').content.filter((n) => n.type !== 'lockedBlock'),
+    }
+    expect(checkTemplate({ ...base, doc: dropped })).toEqual({
+      missingLockedBlocks: ['decision.appealRights'],
+    })
   })
 
   it('prints an approval with no reasons paragraph', () => {

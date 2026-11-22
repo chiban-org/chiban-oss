@@ -1,4 +1,4 @@
-import { doc, fields, heading, para, signature } from '@/features/templates/doc/build'
+import { doc, fields, heading, locked, para, signature } from '@/features/templates/doc/build'
 import { APPLICATION_FIELDS, type DocumentKindDef } from '@/features/templates/kinds/kindTypes'
 
 export const PERMIT_DECISION_LETTER_KIND: DocumentKindDef = {
@@ -12,10 +12,9 @@ export const PERMIT_DECISION_LETTER_KIND: DocumentKindDef = {
     'decision.votedOn',
     'decision.reasons',
     'decision.reasonsSection',
-    'decision.appealRights',
   ],
   sections: [],
-  locked: [],
+  locked: ['decision.appealRights'],
   defaultDoc: doc(
     fields([
       ['Application', 'application.number'],
@@ -27,7 +26,7 @@ export const PERMIT_DECISION_LETTER_KIND: DocumentKindDef = {
     ]),
     para('{{decision.reasonsSection}}'),
     heading('How to appeal'),
-    para('{{decision.appealRights}}'),
+    locked('decision.appealRights'),
     signature('building_official'),
   ),
 }
