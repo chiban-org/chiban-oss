@@ -1,5 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { ledgerEntries } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
+import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { postEntry } from '@/features/ledger/postEntry'
+import { receiptPdfResponse } from '@/features/ledger/receiptAccess'
 import { listVisibleEntries } from '@/features/ledger/visibility'
 import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
@@ -12,6 +17,7 @@ import {
   type TradeFixture,
 } from '@/test/ledgerFixtures'
 import { staffActor } from '@/test/parcels'
+import { staffWith } from '@/test/staffUsers'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -110,5 +116,36 @@ describe('ledgerEntryVisibleTo', () => {
   it('a null actor sees nothing', async () => {
     await payFor(await submittedTrade(handle.db, world))
     expect(await listVisibleEntries(handle.db, null, { limit: 25 }, signal)).toHaveLength(0)
+  })
+})
+
+async function collect(collector: Actor, trade: TradeFixture): Promise<string> {
+  const paid = await recordCounterPayment(
+    handle.db,
+    collector,
+    {
+      method: 'cash',
+      amountCents: 4500,
+      payerName: 'Wren Holloway',
+      allocations: [lineAllocation(trade, 4500)],
+    },
+    signal,
+    new Date('2027-03-02T15:00:00Z'),
+  )
+  if (!paid.ok) throw new Error(paid.error)
+  const [entry] = await handle.db
+    .select({ receiptId: ledgerEntries.receiptId })
+    .from(ledgerEntries)
+    .where(eq(ledgerEntries.id, paid.value.entryId))
+  return entry?.receiptId ?? ''
+}
+
+describe('receipts for the person who collected the payment', () => {
+  it('a plumbing inspector opens the receipt they collected but not one another user collected', async () => {
+    const plumber = await staffWith(handle.db, ['plumbing_inspector'])
+    const theirs = await collect(plumber, await submittedTrade(handle.db, world))
+    const someoneElses = await collect(world.staff, await submittedTrade(handle.db, world))
+    expect((await receiptPdfResponse(handle.db, plumber, theirs, signal)).status).toBe(200)
+    expect((await receiptPdfResponse(handle.db, plumber, someoneElses, signal)).status).toBe(403)
   })
 })
