@@ -2,18 +2,10 @@ import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { parcels, projectParties, projects, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { namedParty, PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
+import { PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
-
-export function accountPartyName(displayName: string | null, email: string | null): string | null {
-  const name = namedParty(displayName ?? '')
-  if (name === null || email === null) return name
-  const lowered = name.toLowerCase()
-  const address = email.toLowerCase()
-  return lowered === address || lowered === address.split('@')[0] ? null : name
-}
 
 export async function createProject(
   db: DbOrTx,
@@ -35,14 +27,13 @@ export async function createProject(
     const projectId = project?.id ?? ''
     if (actor.kind === 'public') {
       const [account] = await tx
-        .select({ name: users.displayName, email: users.email })
+        .select({ email: users.email })
         .from(users)
         .where(eq(users.id, actor.userId))
       await tx.insert(projectParties).values({
         projectId,
         userId: actor.userId,
-        name:
-          accountPartyName(account?.name ?? null, account?.email ?? null) ?? PLACEHOLDER_PARTY_NAME,
+        name: PLACEHOLDER_PARTY_NAME,
         email: account?.email ?? null,
         role: 'applicant',
         addedBy: actor.userId,

@@ -17,7 +17,6 @@ import { attachDocument, defaultSeriesForApplication } from '@/features/document
 import { sha256Hex, storeGeneratedBytes } from '@/features/files/ingest'
 import type { FormBody } from '@/features/forms/formSchema'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import { accountPartyName } from '@/features/projects/projects'
 import { assignSeries } from '@/features/records/assignments'
 import { canonicalJson } from '@/features/snapshots/canonicalJson'
 import {
@@ -30,6 +29,14 @@ import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore
 import { townTimeZone } from '@/features/town/timeZone'
 
 export type SnapshotReason = 'submission' | 'amendment' | 'correction'
+
+function accountPartyName(displayName: string | null, email: string | null): string | null {
+  const name = namedParty(displayName ?? '')
+  if (name === null || email === null) return name
+  const lowered = name.toLowerCase()
+  const address = email.toLowerCase()
+  return lowered === address || lowered === address.split('@')[0] ? null : name
+}
 
 async function partiesOf(tx: Tx, projectId: string): Promise<SnapshotParty[]> {
   const rows = await tx
