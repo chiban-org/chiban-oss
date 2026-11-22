@@ -2,7 +2,7 @@ import { ME_PACK } from '@packs/me'
 import { describe, expect, it } from 'vitest'
 import type { Capability } from '@/constants/capabilities'
 import { withPackForTest } from '@/features/packs/registry'
-import { accountLinksFor, primaryNav } from '@/features/publicSite/navForViewer'
+import { accountLinksFor, homeAudience, primaryNav } from '@/features/publicSite/navForViewer'
 import {
   accountLinksAt,
   currentNavHref,
@@ -118,5 +118,29 @@ describe('public navigation', () => {
     expect(labels(accountLinksAt(accountLinksFor(null), '/board'))).toEqual(['Sign in'])
     const member = accountLinksFor({ kind: 'public', roles: ['board_member'] })
     expect(accountLinksAt(member, '/board/packets/abc')).toEqual(member)
+  })
+})
+
+describe('home page audience', () => {
+  it('sends staff whose start page is the staff site to the staff site', () => {
+    expect(homeAudience({ kind: 'staff', roles: ['staff'] })).toBe('staff')
+    expect(
+      homeAudience({
+        kind: 'staff',
+        roles: ['board_member'],
+        capabilities: new Set<Capability>(['board.record']),
+      }),
+    ).toBe('staff')
+  })
+
+  it('gives a board member whose staff start page is the board no staff site task', () => {
+    expect(
+      homeAudience({ kind: 'staff', roles: ['board_member'], capabilities: new Set<Capability>() }),
+    ).toBe('resident')
+  })
+
+  it('treats signed-in residents and visitors as before', () => {
+    expect(homeAudience({ kind: 'public', roles: ['applicant'] })).toBe('resident')
+    expect(homeAudience(null)).toBe('visitor')
   })
 })

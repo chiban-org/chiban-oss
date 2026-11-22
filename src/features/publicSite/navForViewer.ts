@@ -27,6 +27,11 @@ function opensStaffSite(viewer: NavViewer): boolean {
   return start.kind !== 'redirect' || start.to !== '/board'
 }
 
+export function homeAudience(viewer: NavViewer | null): 'visitor' | 'resident' | 'staff' {
+  if (viewer === null) return 'visitor'
+  return opensStaffSite(viewer) ? 'staff' : 'resident'
+}
+
 export function accountLinksFor(viewer: NavViewer | null): NavLink[] {
   if (viewer === null) return [SIGN_IN]
   return [
