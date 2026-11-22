@@ -48,7 +48,7 @@ export default async function PaymentSettingsPage() {
           configKey="default"
           initialBody={state.body}
           resetKey={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
-          context={editorContext()}
+          context={{ ...editorContext(), townName: town.ok ? town.value.name : '' }}
           saveAction={saveDraftAction}
           publishAction={publishAction}
           {...discardOffer(state.versions, discardDraftAction)}
