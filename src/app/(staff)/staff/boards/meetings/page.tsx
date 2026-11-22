@@ -114,7 +114,7 @@ export default async function MeetingsPage({
       <ListHeader
         title="Meetings"
         lead={leadText(when === 'upcoming', list.usualLocation)}
-        actions={<AddMeeting boards={[...activeNames]} />}
+        actions={<AddMeeting boards={[...activeNames]} today={today} />}
       />
       <FilterTabs label="Meetings" tabs={tabs} />
       <div className="toolbar">
