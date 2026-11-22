@@ -13,8 +13,13 @@ test('the records custodian sees the acknowledged FOAA request', async ({ page }
     .click()
   await expect(page).toHaveURL(/\/staff\/records\/requests\/[0-9a-f-]{36}$/)
   await expect(page.getByText('FOAA request', { exact: true })).toBeVisible()
+  const keyFacts = page.getByRole('region', { name: 'Key facts' })
+  await expect(keyFacts.getByRole('term').filter({ hasText: /^Acknowledged$/ })).toBeVisible()
   await expect(
-    page.getByRole('definition').filter({ hasText: /^Receipt acknowledged, \w+ \d{1,2}, \d{4}$/ }),
+    keyFacts
+      .getByRole('definition')
+      .filter({ hasText: /^\w+ \d{1,2}, \d{4}$/ })
+      .first(),
   ).toBeVisible()
   await expectNoNhTerms(page)
 })

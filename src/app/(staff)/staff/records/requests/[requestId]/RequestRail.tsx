@@ -27,17 +27,22 @@ function given<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined
 }
 
-function acknowledgedFact(request: RtkRequestView): Fact[] {
-  if (!given(request.acknowledgedOn) || !given(request.followUpOn)) return []
-  return [{ label: ACKNOWLEDGED_LABEL, value: formatCivilDate(request.acknowledgedOn) }]
+function acknowledgedFacts(request: RtkRequestView, acknowledgedOn: CivilDate): Fact[] {
+  const facts: Fact[] = [{ label: ACKNOWLEDGED_LABEL, value: formatCivilDate(acknowledgedOn) }]
+  const label = responseLabel(request.firstResponseKind)
+  if (given(request.followUpOn) && label !== null) {
+    facts.push({ label: 'Response', value: `${label}, ${formatCivilDate(request.followUpOn)}` })
+  }
+  return facts
 }
 
 function responseFact(request: RtkRequestView): Fact[] {
+  if (given(request.acknowledgedOn)) return acknowledgedFacts(request, request.acknowledgedOn)
   const label = responseLabel(request.firstResponseKind)
   if (label === null) return []
   const date = responseDateOf(request)
   const on = date === null ? '' : `, ${formatCivilDate(date)}`
-  return [...acknowledgedFact(request), { label: 'First response', value: `${label}${on}` }]
+  return [{ label: 'First response', value: `${label}${on}` }]
 }
 
 function answeredFact(request: RtkRequestView): Fact[] {
