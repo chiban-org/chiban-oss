@@ -62,7 +62,9 @@ function ApprovalRow({ approval, canManage }: { approval: RequestApproval; canMa
     <li className="record-item flex flex-col gap-1">
       <p className="m-0">{`${approval.title}: ${roleLabel(approval.role)}`}</p>
       <p className="m-0 text-sm text-ink-secondary">{approvalState(approval)}</p>
-      {canManage && approval.revokedAt === null ? <RevokeForm approval={approval} /> : null}
+      {canManage && approval.revokedAt === null && approval.releasedIn === null ? (
+        <RevokeForm approval={approval} />
+      ) : null}
     </li>
   )
 }

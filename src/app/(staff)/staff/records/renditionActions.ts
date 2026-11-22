@@ -41,7 +41,7 @@ export async function approveRenditionAction(formData: FormData): Promise<Action
         getObjectStore(),
       ),
       'Version approved.',
-      { wrong_role: 'versionId', not_ready: 'versionId' },
+      { wrong_role: 'versionId', not_ready: 'versionId', redaction_not_cited: 'versionId' },
     ),
   )
 }
