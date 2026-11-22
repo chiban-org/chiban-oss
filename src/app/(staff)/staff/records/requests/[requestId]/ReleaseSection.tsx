@@ -5,7 +5,7 @@ import { TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
 import type { ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
 import { formatCivilDate } from '@/lib/formatDate'
-import { revokeApprovalAction } from '../../renditionActions'
+import { revokeApprovalAction, stopReleaseLinkAction } from '../../renditionActions'
 import { type LinkContext, ReleaseLink } from './ReleaseLink'
 import { originRoleLabel } from './versionLabels'
 
@@ -57,14 +57,56 @@ function RevokeForm({ approval }: { approval: RequestApproval }) {
   )
 }
 
+function StopLinkForm({ approval }: { approval: RequestApproval }) {
+  return (
+    <details>
+      <summary className="text-sm">Stop the download link</summary>
+      <ActionForm
+        action={stopReleaseLinkAction}
+        submitLabel="Stop the download link"
+        confirm={{
+          title: 'Stop the download link for this copy?',
+          body: 'The requester can no longer download this copy from the link, and its approval is revoked.',
+          confirmLabel: 'Stop the download link',
+        }}
+      >
+        <input type="hidden" name="approvalId" value={approval.approvalId} />
+        <TextField label="Why the link is being stopped" name="reason" required />
+      </ActionForm>
+    </details>
+  )
+}
+
+function releasedByLink(approval: RequestApproval, releases: readonly ReleaseSummary[]): boolean {
+  return releases.some(
+    (r) =>
+      r.method === 'electronic_link' &&
+      r.items.some((i) => i.approvalId === approval.approvalId && !i.withdrawn),
+  )
+}
+
+function ApprovalControl({
+  approval,
+  releases,
+}: {
+  approval: RequestApproval
+  releases: readonly ReleaseSummary[]
+}) {
+  if (approval.revokedAt !== null) return null
+  if (approval.releasedIn === null) return <RevokeForm approval={approval} />
+  return releasedByLink(approval, releases) ? <StopLinkForm approval={approval} /> : null
+}
+
 function ApprovalRow({
   approval,
   canManage,
   requestId,
+  releases,
 }: {
   approval: RequestApproval
   canManage: boolean
   requestId: string
+  releases: readonly ReleaseSummary[]
 }) {
   const label = originRoleLabel(approval.role, {
     madeFor: approval.madeFor,
@@ -74,9 +116,7 @@ function ApprovalRow({
     <li className="record-item flex flex-col gap-1">
       <p className="m-0">{`${approval.title}: ${label}`}</p>
       <p className="m-0 text-sm text-ink-secondary">{approvalState(approval)}</p>
-      {canManage && approval.revokedAt === null && approval.releasedIn === null ? (
-        <RevokeForm approval={approval} />
-      ) : null}
+      {canManage ? <ApprovalControl approval={approval} releases={releases} /> : null}
     </li>
   )
 }
@@ -127,6 +167,7 @@ export function ReleaseSection({
                 approval={a}
                 canManage={canManage}
                 requestId={requestId}
+                releases={releases}
               />
             ))}
           </ul>
