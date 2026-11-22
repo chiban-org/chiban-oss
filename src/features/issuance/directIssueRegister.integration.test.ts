@@ -167,3 +167,20 @@ describe('a permit approved and then issued', () => {
     expect(register.letters).toBe(1)
   })
 })
+
+describe('a permit decided before the register existed and issued now', () => {
+  it('enters the register on the decision date, not the issuance date', async () => {
+    const { applicationId } = await makeApplication(
+      handle.db,
+      world,
+      { state: 'decided', decidedOn: '2027-03-04' },
+      NOW,
+    )
+    await issued(applicationId)
+    const register = await registerOf(applicationId)
+    expect(register.issuedOn).not.toBe('2027-03-04')
+    expect(register.nodes).toEqual([
+      { kind: 'administrative_decision', outcome: 'approved', on: '2027-03-04' },
+    ])
+  })
+})

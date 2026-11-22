@@ -184,7 +184,7 @@ export async function recordIssuedDecisionTx(
     tx,
     {
       applicationId,
-      occurredOn: app.issuedOn,
+      occurredOn: app.decidedOn ?? app.issuedOn,
       createdBy: actor.userId,
       outcome: recordedOutcome(false, data?.conditions ?? []),
     },
