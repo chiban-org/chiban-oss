@@ -1,3 +1,8 @@
+import type { Capability } from '@/constants/capabilities'
+import type { Role } from '@/constants/roles'
+import { recordsRequest } from '@/features/packs/vocabulary'
+import { startPageFor } from '@/features/staffHome/startPage'
+
 export interface NavLink {
   href: string
   label: string
@@ -7,7 +12,8 @@ export interface NavLink {
 
 export interface NavViewer {
   kind: 'staff' | 'public'
-  roles: readonly string[]
+  roles: readonly Role[]
+  capabilities?: ReadonlySet<Capability>
 }
 
 function link(href: string, label: string, sections: readonly string[] = [href]): NavLink {
@@ -21,7 +27,26 @@ export const PRIMARY_NAV: readonly NavLink[] = [
   { ...link('/portal/apply', 'Apply for a permit'), emphasis: true },
 ]
 
+export function primaryNav(): NavLink[] {
+  const request = recordsRequest()
+  const records = link(
+    '/records/request',
+    `${request.charAt(0).toUpperCase()}${request.slice(1)}`,
+    ['/records'],
+  )
+  return [...PRIMARY_NAV.slice(0, -1), records, ...PRIMARY_NAV.slice(-1)]
+}
+
 const SIGN_IN = link('/sign-in', 'Sign in')
+
+function opensStaffSite(viewer: NavViewer): boolean {
+  if (viewer.kind !== 'staff') return false
+  const start = startPageFor({
+    roles: viewer.roles,
+    capabilities: viewer.capabilities ?? new Set(),
+  })
+  return start.kind !== 'redirect' || start.to !== '/board'
+}
 
 export function accountLinksFor(viewer: NavViewer | null): NavLink[] {
   if (viewer === null) return [SIGN_IN]
@@ -31,7 +56,7 @@ export function accountLinksFor(viewer: NavViewer | null): NavLink[] {
       ? [link('/portal/contractor', 'Contractor projects')]
       : []),
     ...(viewer.roles.includes('board_member') ? [link('/board', 'Your board')] : []),
-    ...(viewer.kind === 'staff' ? [link('/staff', 'Staff site')] : []),
+    ...(opensStaffSite(viewer) ? [link('/staff', 'Staff site')] : []),
     link('/account', 'Account'),
   ]
 }
