@@ -98,13 +98,15 @@ Some permit types close the moment they are issued. Others stay **Issued** until
 ### 9. After the permit is issued
 
 - **Inspections.** The **Inspections** panel lists each inspection and its result. Choose **Take an inspection request for this permit** when someone calls for one. Inspectors record the results.
-- **Closing.** A building permit closes when the final inspection has passed and the certificate of occupancy is issued. **Do this now** walks you through it: **Book the final inspection**, then, after a pass, **Issue the certificate of occupancy**. A permit type that closes in other ways has **Close the permit** under **More actions**.
+- **Closing.** A building permit closes when the final inspection has passed and the certificate of occupancy is issued. **Do this now** walks you through it: **Book the final inspection**, then, after a pass, **Issue the certificate of occupancy**. The link on that step opens the inspection request with the final checklist already first in the list. Where a permit type's final checklist is not named final, the step names the checklist instead, for example **Book the inspection: Occupancy walkthrough**. A permit type that closes in other ways has **Close the permit** under **More actions**.
 - **Renewing.** Under **More actions**, **Renew the permit** asks for the **Renewed on** date. The renewal fee is added to the fees.
 - **Fixing a mistake.** Use **Correct this permit**. See [Printing a permit or placard](./permits-and-placards.md).
 
 ## Requirements you cannot meet
 
 When a requirement blocks the application and the cause cannot be fixed, such as a document that does not apply, land use staff can open **Override this requirement** under it, enter a reason of at least ten characters and choose **Override with reason**. The override is recorded with your name and the reason, and **Revoke override** puts the requirement back.
+
+When the requirement is a missing document, the override stays visible after the permit is issued. On the **Documents** checklist the row reads **Gone ahead without the document**, with "Overridden", the reason, your name and the date. The applicant sees the row marked **Accepted by the town**, without the reason. The application's history records "Overrode a gate" with the requirement and the reason.
 
 This works for requirements the town sets for itself. A requirement that comes from state law cannot be overridden by land use staff. Only an administrator can clear one, by recording a statutory exception with its legal authority.
 

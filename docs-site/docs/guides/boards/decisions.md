@@ -33,7 +33,7 @@ Select **Record decision** and confirm. The outcome, votes and findings become t
 
 Chiban checks every name against the board's roster. Only members whose term includes the date of the vote can vote. If a name is not seated on that date, Chiban lists it and asks you to check the names against the board members page. Fix a spelling, a term date or a missing member there. See [board members](./board-members.md).
 
-Recording the decision closes the board's decision deadline and moves the application out of review. A denial closes the application as denied. An approval marks it decided. It also starts the clocks that follow a vote, which are the filing deadline for the minutes and written decision and the periods for appeals.
+Recording the decision closes the board's decision deadline and moves the application out of review. A denial closes the application as denied. An approval marks it decided. On the application, the step that follows a board approval reads **Mark the approval in effect**. It also starts the clocks that follow a vote, which are the filing deadline for the minutes and written decision and the periods for appeals.
 
 ## Conditions
 

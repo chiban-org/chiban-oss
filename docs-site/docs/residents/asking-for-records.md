@@ -23,9 +23,9 @@ If the form says "Too many requests were sent from here. Wait an hour and try ag
 
 ## What you get right away
 
-The page that follows is titled **Request received**. It shows your request number, which looks like RK-2026-0001, and the date the town will answer by. Chiban also emails you a receipt with the same number and date. If the receipt email could not be sent, the page says so. Keep the number if you need to ask about your request.
+The page that follows is titled **Request received**. It shows your request number, which looks like RK-2026-0001 (FOAA-2026-0001 in Maine), and the date the town will answer by. Chiban also emails you a receipt with the same number and date. If the receipt email could not be sent, the page says so. Keep the number if you need to ask about your request.
 
-The town has five business days from the day it received the request. Weekends and the town's holidays do not count. Within that time it will make the records available, deny the request in writing, or tell you in writing when it will answer.
+The town has five business days from the day it received the request. Weekends and the town's holidays do not count. Within that time it will make the records available, deny the request in writing, or tell you in writing when it will answer. In a town whose state has the town acknowledge a request first, the receipt says so instead: the town will acknowledge your request by that date, may ask you to clarify which records you want, and will tell you in writing when it expects to respond.
 
 ## How the town answers
 

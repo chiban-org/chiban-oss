@@ -17,7 +17,7 @@ Open **Boards**, then **Board applications**. The page lists every board applica
 
 ![The Board applications page, with the deadline and type filters above a table of Planning Board applications](/img/shots/boards/boards.png)
 
-Each row shows the application number and type, its status, the date it was filed, the meeting it is set for and its **Next deadline**. A deadline that has passed says "overdue" beside it.
+Each row shows the application number and type, its status, the date it was filed, the meeting it is set for and its **Next deadline**. The meeting is the one for the hearing still to be held. If no hearing is scheduled, it is the meeting of the most recent hearing held, and failing that the meeting set for acceptance. A deadline that has passed says "overdue" beside it.
 
 Three filters sit above the tables.
 
@@ -84,9 +84,21 @@ If a requirement is still blocking the application, such as the abutter list, th
 
 ## From filing to acceptance at the Zoning Board of Adjustment
 
-The Zoning Board of Adjustment has no completeness step. Under **Hearing**, choose the **Hearing meeting** and select **Set the meeting**. Record the regional impact and water body findings, and issue the abutter list, the same way as above. Once the meeting has taken place, **Open the hearing** records the board's vote with the outcome **Accepted for hearing** or **Not accepted**.
+The Zoning Board of Adjustment has no completeness step, and no separate vote to accept the application. Record the regional impact and water body findings, and issue the abutter list, the same way as above. Then choose the **Hearing meeting** under **Schedule the hearing** in the **Requirements** list and select **Schedule the hearing**. That one step sets the meeting, schedules the public hearing and moves the application to **Under review**. If the abutter list has not been issued, Chiban says "Issue the abutter list before scheduling a hearing."
 
-Scheduling a hearing for a submitted variance application, from the **Hearings and decisions** section, also opens the hearing and moves the application to **Under review**.
+Scheduling a hearing from the **Hearings and decisions** section does the same.
+
+## Deciding without a hearing
+
+Where the town's rules let a board decide some applications without a hearing, the application's **Hearings and decisions** section has **Record a decision without a hearing**. Choose the **Meeting** where the board decided, then fill in the decision as usual. The list offers only meetings on or after the day the board accepted the application, or on or after the day it was received when there is no acceptance date.
+
+Chiban refuses a vote date that is too early:
+
+- "The date cannot be before the meeting."
+- "The date cannot be before the application was received."
+- "The date cannot be before the board accepted the application."
+
+Each message appears beside the vote date. If a hearing is already scheduled for the application, recording the decision cancels that hearing. A hearing that was already held is not affected.
 
 ## The deadlines that start
 
@@ -98,6 +110,8 @@ These clocks run on board applications. They are explained, with the days they r
 | A meeting is set | The filing deadline before the acceptance meeting, and the notice deadlines for that meeting |
 | The board accepts a Planning Board application | The Planning Board decision deadline |
 | The board votes on a decision | The minutes and written decision filing deadline, and the appeal periods |
+
+Once every notice item for a hearing has proof recorded and the hearing is held, or is scheduled and marked properly noticed, the notice deadline on the application's **Clocks** card shows a **Met** chip and "Due" with the date and "Every notice item has proof recorded." Before that it shows what is still missing.
 
 Adding or cancelling a regular meeting recalculates the dates that depend on it. Staff who may extend or waive a clock can do so under **Adjust this clock** on the application, where the rule allows it.
 

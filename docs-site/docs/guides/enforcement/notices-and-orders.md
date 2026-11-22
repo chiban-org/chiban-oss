@@ -14,12 +14,24 @@ Once a finding is on record, the town writes to the owner. The first letter is a
 On a case at **Violation found**, **Do this now** reads **Send a notice of violation**. The form asks for:
 
 - **Findings to include**, the findings the notice covers.
+- **Recipient name** and **Recipient mailing address**, filled in from the owner of record when the case has a parcel. You can change them.
 - **Date sent**, which starts as today.
+- **Correct the violation by**, an optional date. It cannot be before the date sent.
 - **How it was sent**: **Handed to the recipient**, **First class mail**, **Certified mail**, **Posted on the property** or **Email**.
 
-Choose **Send notice of violation**. Chiban writes the notice as a PDF and files it under **Documents and photos** as **Notice of violation for** the case number. The notice is listed under **Notices of violation** with how and when it was sent, and **Open notice** shows it.
+Choose **Record notice of violation**. Chiban writes the notice as a PDF and files it under **Documents and photos** as **Notice of violation for** the case number. The PDF prints a **To** line when a recipient is filled in, **Correct the violation by** with the date when you gave one, and an **Authority** line where the town's rules name the law the notice rests on. The notice is listed under **Notices of violation** with how and when it was sent, and **Open notice** shows it.
 
-Chiban does not mail or email the notice. Send it the way you chose, then record the date.
+Chiban does not mail or email the notice. The button note says "Chiban makes the notice PDF. Send it yourself, then record how it went." Send it the way you chose, then record the date.
+
+Where the town enforces a building code, each building code finding shows "Code in force on the inspection date" with the edition that applied on that finding's inspection date.
+
+### Cure notices
+
+Some towns' rules call for a cure notice before a notice of violation, for example for shoreland violations. Where one is available, the case has a **Cure notice** section. Use **Choose the procedure** to pick it, then **Send a cure notice**. The form asks for the **Owner name** and **Owner mailing address** (filled in from the parcel's owner), an occupant if one applies, and the **Date mailed**. Chiban writes one letter for each recipient and files it under **Documents and photos**. Each notice in the list has an **Open notice** link, the date the cure period ends, and **Record return receipt** for the date on the return receipt. While no cure procedure has been chosen and no notice has been sent, the **Do this now** card adds a note to choose the cure notice first if it applies. On a closed case the cure forms are hidden and the procedure cannot be changed.
+
+### While the town waits for the correction date
+
+If the latest notice carries a **Correct the violation by** date that is still ahead, **Do this now** reads "Wait for the correction date" and the date, with no form. It moves to the next step once that date has passed.
 
 ## Record when it was received
 
