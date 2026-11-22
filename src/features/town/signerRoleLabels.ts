@@ -1,5 +1,11 @@
 import { activePack } from '@/features/packs/registry'
-import type { SignerRole } from '@/features/town/profileSchema'
+import { packRoles } from '@/features/packs/roles'
+import { SIGNER_ROLES, type SignerRole } from '@/features/town/profileSchema'
+
+export function packSignerRoles(): readonly SignerRole[] {
+  const plumbing = packRoles().classifications.plumbingInspectorOwns.length > 0
+  return SIGNER_ROLES.filter((role) => role !== 'plumbing_inspector' || plumbing)
+}
 
 export function signerRoleLabels(): Record<SignerRole, string> {
   const boards = activePack().boardKinds
