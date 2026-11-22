@@ -4,8 +4,8 @@ import { formatCivilDate } from '@/lib/formatDate'
 
 function statusLine(request: PortalRecordsRequest): string {
   if (request.endedOn !== null) return `${request.status} on ${formatCivilDate(request.endedOn)}.`
-  if (request.responseDueOn === null) return `${request.status}.`
-  return `${request.status}. Response due ${formatCivilDate(request.responseDueOn)}.`
+  if (request.due === null) return `${request.status}.`
+  return `${request.status}. ${request.due.label} ${formatCivilDate(request.due.on)}.`
 }
 
 export function RecordsRequestsSection({ requests }: { requests: PortalRecordsRequest[] }) {

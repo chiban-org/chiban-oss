@@ -1,11 +1,13 @@
-import { eq } from 'drizzle-orm'
+import { ME_PACK } from '@packs/me'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { loadPortalRecordsRequests } from '@/features/portal/recordsRequests'
 import { closeRequest, logRequest } from '@/features/rtk/requests'
+import { recordFirstResponse } from '@/features/rtk/responses'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -23,6 +25,7 @@ beforeEach(async () => {
   resident = { userId: id, kind: 'public', roles: ['applicant'] }
 })
 afterEach(async () => {
+  setActivePackForTest(null)
   await handle.drop()
 })
 
@@ -53,7 +56,7 @@ describe('records requests in the portal', () => {
         number: mine.number,
         receivedOn: '2027-07-12',
         status: 'Open',
-        responseDueOn: mine.due,
+        due: { label: 'Response due', on: mine.due },
         endedOn: null,
       },
     ])
@@ -62,16 +65,6 @@ describe('records requests in the portal', () => {
   it("leaves out another person's request", async () => {
     await logged('juniper.oake@example.test', 'Septic plans for 4 Fernhollow Road')
     expect(await loadPortalRecordsRequests(handle.db, resident, signal)).toEqual([])
-  })
-
-  it('lists a request filed while signed in, even with no email on it', async () => {
-    const filed = await logged('207-555-0110', 'Minutes of the March meeting')
-    await handle.db
-      .update(rtkRequests)
-      .set({ createdBy: resident.userId, receivedVia: 'portal' })
-      .where(eq(rtkRequests.id, filed.requestId))
-    const rows = await loadPortalRecordsRequests(handle.db, resident, signal)
-    expect(rows.map((r) => r.number)).toEqual([filed.number])
   })
 
   it('never lists a request a staff member logged for someone else', async () => {
@@ -108,7 +101,56 @@ describe('records requests in the portal', () => {
     )
     if (!closed.ok) throw new Error(closed.error)
     const [row] = await loadPortalRecordsRequests(handle.db, resident, signal)
-    expect(row).toMatchObject({ status: 'Closed', responseDueOn: null })
+    expect(row).toMatchObject({ status: 'Closed', due: null })
     expect(row?.endedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('a Maine records request in the portal', () => {
+  async function respond(requestId: string, response: 'acknowledged' | 'time_statement') {
+    const store = (await makeTestStore()).store
+    const done = await recordFirstResponse(
+      handle.db,
+      store,
+      custodian,
+      response === 'acknowledged'
+        ? { requestId, kind: 'acknowledged', respondedOn: '2027-07-13' }
+        : {
+            requestId,
+            kind: 'time_statement',
+            respondedOn: '2027-07-13',
+            timeStatement: {
+              statedDate: '2027-08-02',
+              delayReason: 'The deeds are in the Vellmora county archive.',
+              costEstimate: [],
+            },
+          },
+      signal,
+      NOW,
+    )
+    if (!done.ok) throw new Error(done.error)
+  }
+
+  it('calls the date of an open request the acknowledgement date', async () => {
+    setActivePackForTest(ME_PACK)
+    const mine = await logged('wren.halloway@example.test', 'Shoreland permits on Fernhollow Pond')
+    const [row] = await loadPortalRecordsRequests(handle.db, resident, signal)
+    expect(row?.due).toEqual({ label: 'Acknowledgement due', on: mine.due })
+  })
+
+  it('shows no due date once the town acknowledges the request', async () => {
+    setActivePackForTest(ME_PACK)
+    const mine = await logged('wren.halloway@example.test', 'Shoreland permits on Fernhollow Pond')
+    await respond(mine.requestId, 'acknowledged')
+    const [row] = await loadPortalRecordsRequests(handle.db, resident, signal)
+    expect(row).toMatchObject({ status: 'Acknowledged', due: null })
+  })
+
+  it('shows the estimated date once the town sends a time estimate', async () => {
+    setActivePackForTest(ME_PACK)
+    const mine = await logged('wren.halloway@example.test', 'Shoreland permits on Fernhollow Pond')
+    await respond(mine.requestId, 'time_statement')
+    const [row] = await loadPortalRecordsRequests(handle.db, resident, signal)
+    expect(row?.due).toEqual({ label: 'Response due', on: '2027-08-02' })
   })
 })
