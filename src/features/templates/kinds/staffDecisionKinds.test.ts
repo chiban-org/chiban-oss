@@ -41,12 +41,12 @@ const VALUES = {
   'incomplete.sentOn': 'March 4, 2027',
 }
 
-function rendered(kind: 'permit_decision_letter' | 'incomplete_notice'): string {
+function rendered(
+  kind: 'permit_decision_letter' | 'incomplete_notice',
+  values: Record<string, string> = VALUES,
+): string {
   return JSON.stringify(
-    docToBlocks(defaultDoc(kind), {
-      values: VALUES,
-      locked: new Map([['decision.appealRights', APPEAL]]),
-    }),
+    docToBlocks(defaultDoc(kind), { values: { ...values, 'decision.appealRights': APPEAL } }),
   )
 }
 
@@ -160,5 +160,17 @@ describe('staff decision kinds', () => {
     expect(application?.fields.map((f) => f.name)).toEqual(
       expect.arrayContaining(['incomplete.reason', 'incomplete.sentOn']),
     )
+  })
+
+  it('prints an approval with no reasons paragraph', () => {
+    const blocks = rendered('permit_decision_letter', {
+      ...VALUES,
+      'decision.outcome': 'Approved',
+      'decision.reasonsSection': '',
+    })
+    expect(blocks).toContain('Approved')
+    expect(blocks).toContain(APPEAL)
+    expect(blocks).not.toContain('Not recorded')
+    expect(blocks).not.toContain('"text":""')
   })
 })
