@@ -12,6 +12,8 @@ export const STACKED_CELL =
 
 const CARD_CELL = 'max-md:block max-md:p-0'
 
+const DESCRIPTION_CHARS = 80
+
 function days(count: number): string {
   return `${count} ${count === 1 ? 'day' : 'days'}`
 }
@@ -32,7 +34,10 @@ export function ParcelCell({ row }: { row: WorkQueueRow }) {
 
 export function ReceivedCell({ row }: { row: WorkQueueRow }) {
   return (
-    <td data-label="Received" className={cn(STACKED_CELL, 'whitespace-nowrap tabular-nums')}>
+    <td
+      data-label="Received"
+      className={cn(STACKED_CELL, 'whitespace-nowrap tabular-nums md:min-w-24')}
+    >
       {row.receivedDate === null ? (
         <span className="text-muted-foreground">Not received</span>
       ) : (
@@ -51,6 +56,11 @@ export function ApplicationCell({ row }: { row: WorkQueueRow }) {
       >
         {row.number}
       </Link>
+      {row.description === undefined || row.description === '' ? null : (
+        <span className="block max-w-72 truncate" title={row.description}>
+          {row.description.slice(0, DESCRIPTION_CHARS)}
+        </span>
+      )}
       <span className="block max-w-72 truncate text-muted-foreground" title={row.projectTitle}>
         {row.projectTitle}
       </span>
@@ -114,7 +124,10 @@ export function DueCell({ row }: { row: WorkQueueRow }) {
   const detail = dueDetail(row)
   const empty = row.nextDue === null && row.noticeDue === null && row.filingDue === null
   return (
-    <td data-label="Due" className={cn(CARD_CELL, empty ? 'max-md:hidden' : STACKED_CELL)}>
+    <td
+      data-label="Due"
+      className={cn(CARD_CELL, 'md:min-w-36', empty ? 'max-md:hidden' : STACKED_CELL)}
+    >
       {empty ? null : (
         <div className="flex flex-col items-start gap-0.5">
           <DueHeadline row={row} />
