@@ -6,11 +6,13 @@ import {
   COUNSEL_PURPOSES,
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   documents,
   type EnforcementStatus,
   enforcementCases,
   enforcementOrders,
   violationFindings,
+  violationNotices,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -31,6 +33,27 @@ const ReferSchema = z.object({
   referredOn: civilDateSchema,
 })
 
+async function counselNoticeSent(tx: Tx, caseId: string): Promise<boolean> {
+  const findings = await tx
+    .select({ status: violationFindings.status, provisionKind: violationFindings.provisionKind })
+    .from(violationFindings)
+    .where(eq(violationFindings.caseId, caseId))
+  if (orderAvailableForFindings(findings)) return true
+  const [[violation], [cure]] = await Promise.all([
+    tx
+      .select({ id: violationNotices.id })
+      .from(violationNotices)
+      .where(eq(violationNotices.caseId, caseId))
+      .limit(1),
+    tx
+      .select({ id: cureNotices.id })
+      .from(cureNotices)
+      .where(eq(cureNotices.caseId, caseId))
+      .limit(1),
+  ])
+  return violation !== undefined || cure !== undefined
+}
+
 export async function referToCounsel(
   db: Db,
   store: ObjectStore,
@@ -41,7 +64,7 @@ export async function referToCounsel(
 ): Promise<
   Result<
     { referralId: string; packetDocumentId: string },
-    'forbidden' | 'invalid' | 'not_found' | 'case_closed'
+    'forbidden' | 'invalid' | 'not_found' | 'case_closed' | 'counsel_notice_required'
   >
 > {
   signal.throwIfAborted()
@@ -58,6 +81,7 @@ export async function referToCounsel(
       .for('update')
     if (caseRow === undefined) return err('not_found')
     if (caseRow.status === 'closed') return err('case_closed')
+    if (!(await counselNoticeSent(tx, value.caseId))) return err('counsel_notice_required')
     const bytes = await buildCounselPacket(tx, value.caseId, value.referredOn, now, signal)
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(
