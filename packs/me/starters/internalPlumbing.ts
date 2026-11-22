@@ -83,6 +83,5 @@ export const INTERNAL_PLUMBING_STARTER = permitStarter({
   ],
   documents: [],
   closesOn: 'final_inspection_passed',
-  permitDetails:
-    'Plumber {{permit.contractorWithLicense}}. Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}.',
+  permitDetails: 'Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}.',
 })

@@ -146,7 +146,7 @@ export function permitStarter(input: PermitStarterInput): StarterBundle {
       key: `${slug}-permit`,
       label,
       kind: 'permit' as const,
-      body: `{{town.name}} ${label} {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. ${input.permitDetails} Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.`,
+      body: `{{town.name}} ${label} {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. ${input.permitDetails} Fees: {{fees.totalFormatted}}.`,
     },
     denialLetter(slug, label),
   ]
