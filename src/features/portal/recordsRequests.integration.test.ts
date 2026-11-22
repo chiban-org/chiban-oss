@@ -84,7 +84,7 @@ describe('records requests in the portal', () => {
       handle.db,
       custodian,
       {
-        receivedOn: '2027-07-12' as CivilDate,
+        receivedOn: '2027-07-12',
         receivedVia: 'portal',
         requesterName: 'Juniper Oake',
         requesterContact: 'juniper.oake@example.test',
