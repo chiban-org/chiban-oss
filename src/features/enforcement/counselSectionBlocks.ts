@@ -227,12 +227,20 @@ export async function findingsBlocks(db: DbOrTx, caseId: string): Promise<PdfBlo
       kind: 'table',
       columns: ['Notice sent', 'Received'],
       rows: [
-        ...notices.map((n) => [formatCivilDate(n.sentOn), received(n.receivedOn)]),
-        ...cures.map((c) => [
-          `Cure notice to ${c.recipientRole} ${c.recipientName}, ${formatCivilDate(c.sentOn)}`,
-          received(c.returnReceiptOn),
-        ]),
-      ],
+        ...notices.map((n) => ({
+          sentOn: n.sentOn,
+          row: [formatCivilDate(n.sentOn), received(n.receivedOn)],
+        })),
+        ...cures.map((c) => ({
+          sentOn: c.sentOn,
+          row: [
+            `Cure notice to ${c.recipientRole} ${c.recipientName}, ${formatCivilDate(c.sentOn)}`,
+            received(c.returnReceiptOn),
+          ],
+        })),
+      ]
+        .sort((a, b) => a.sentOn.localeCompare(b.sentOn))
+        .map((entry) => entry.row),
     },
   ]
 }

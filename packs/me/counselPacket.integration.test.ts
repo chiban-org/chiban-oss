@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { violationNotices } from '@/db/schema'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { recordCivilAction } from '@/features/enforcement/civilActions'
 import { buildCounselPacket } from '@/features/enforcement/counselPacket'
@@ -11,8 +12,8 @@ import { placeDevelopmentHold } from '@/features/enforcement/developmentHolds'
 import { recordFinding } from '@/features/enforcement/findings'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/objectStore'
 import { type EnforcementWorld, setupEnforcementWorld } from '@/test/enforcementFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel } from '@/test/parcels'
 import { pdfWording } from '@/test/pdfWording'
 import type { CivilDate } from '@/types/civilDate'
@@ -125,5 +126,21 @@ describe('the Maine counsel packet', () => {
     expect(text).toContain('Civil action filed March 15, 2027')
     expect(text).toContain('Court Vellmora District Court')
     expect(text).toContain('Docket VD-2027-0042')
+  })
+
+  it('lists notice of violation and cure notice rows together in date order', async () => {
+    const caseId = await shorelandCaseWithRemedies()
+    await handle.db.insert(violationNotices).values([
+      { caseId, sentOn: '2027-03-10', method: 'first_class_mail', sentBy: world.staff.userId },
+      { caseId, sentOn: '2027-02-25', method: 'in_hand', sentBy: world.staff.userId },
+    ])
+    const bytes = await buildCounselPacket(handle.db, caseId, d('2027-03-20'), LATER, signal)
+    const text = (await pdfWording(bytes)).replace(/\s+/g, ' ')
+    const early = text.indexOf('February 25, 2027')
+    const cure = text.indexOf('Cure notice to owner')
+    const late = text.indexOf('March 10, 2027')
+    expect(early).toBeGreaterThan(-1)
+    expect(cure).toBeGreaterThan(early)
+    expect(late).toBeGreaterThan(cure)
   })
 })
