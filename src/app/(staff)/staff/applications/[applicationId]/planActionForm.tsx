@@ -5,7 +5,7 @@ import { isTerminalState } from '@/features/applications/states'
 import { hasBoardClassification, moveTask } from '@/features/applications/workPlan'
 import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
+import { BoardRegionalForm, MeetingForm, ScheduleHearingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
 import { IssueCertificateForm } from './inspectionsPanel'
 import { RecordResultLink } from './inspectorSections'
@@ -19,7 +19,7 @@ import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
 export type PlanFormInput = Pick<
   RecordPanelsInput,
-  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license'
+  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license' | 'hearings'
 >
 
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
@@ -35,7 +35,7 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_payment':
       return 'Take a payment'
     case 'set_board_meeting':
-      return 'Set the meeting'
+      return input.board?.boardKind === 'zba' ? 'Schedule the hearing' : 'Set the meeting'
     case 'record_board_vote':
       return input.board?.boardKind === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
     case 'record_board_regional_impact':
@@ -85,14 +85,25 @@ type Variant = 'default' | 'outline'
 function BoardActionForm({
   kind,
   board,
+  hearings,
   clocks,
   variant,
 }: {
   kind: 'set_board_meeting' | 'record_board_vote' | 'record_board_regional_impact'
   board: BoardPanelData
+  hearings: PlanFormInput['hearings']
   clocks: PlanFormInput['view']['clocks']
   variant: Variant
 }) {
+  if (kind === 'set_board_meeting' && board.boardKind === 'zba') {
+    return hearings === null ? null : (
+      <ScheduleHearingForm
+        hearings={hearings}
+        deadline={meetingDeadline(clocks, board.boardKind)}
+        variant={variant}
+      />
+    )
+  }
   if (kind === 'set_board_meeting') {
     return (
       <MeetingForm
@@ -150,7 +161,13 @@ export function PlanActionForm({
     case 'record_board_vote':
     case 'record_board_regional_impact':
       return board === null ? null : (
-        <BoardActionForm kind={action.kind} board={board} clocks={view.clocks} variant={variant} />
+        <BoardActionForm
+          kind={action.kind}
+          board={board}
+          hearings={input.hearings}
+          clocks={view.clocks}
+          variant={variant}
+        />
       )
     case 'open_abutter_list':
       return board === null ? null : <OpenDraftList board={board} variant={variant} />

@@ -9,11 +9,13 @@ import {
   meetingOptionText,
 } from '@/features/applications/meetingDeadline'
 import type { BoardPanelData } from '@/features/boards/panelData'
+import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import {
   boardRegionalImpactAction,
   completenessVoteAction,
   setAcceptanceMeetingAction,
 } from '../../boards/actions'
+import { scheduleHearingAction } from '../../boards/hearings/actions'
 import { MeetingSelect } from './meetingSelect'
 
 type Variant = 'default' | 'outline'
@@ -50,6 +52,37 @@ export function MeetingForm({
           hint: meetingHint(m, deadline),
         }))}
         defaultValue={chosenMeeting(data, target)}
+      />
+    </ActionForm>
+  )
+}
+
+export function ScheduleHearingForm({
+  hearings,
+  deadline,
+  variant = 'outline',
+}: {
+  hearings: Pick<ApplicationHearingsPanel, 'applicationId' | 'scheduleMeetings'>
+  deadline: MeetingDeadline | null
+  variant?: Variant
+}) {
+  return (
+    <ActionForm
+      action={scheduleHearingAction}
+      submitLabel="Schedule the hearing"
+      variant={variant}
+      className="max-w-md"
+    >
+      <input type="hidden" name="applicationId" value={hearings.applicationId} />
+      <input type="hidden" name="kind" value="public_hearing" />
+      <MeetingSelect
+        label="Hearing meeting"
+        options={hearings.scheduleMeetings.map((m) => ({
+          value: m.id,
+          text: meetingOptionText(m, deadline),
+          hint: meetingHint(m, deadline),
+        }))}
+        defaultValue=""
       />
     </ActionForm>
   )

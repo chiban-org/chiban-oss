@@ -125,6 +125,7 @@ function groupRows(view: PlanView, board: PlanBoard | null, to: CoreState, extra
   const rows = results.map((gate) => gateRow(gate, facts))
   if (board === null || view.state !== 'submitted' || to !== 'under_review') return rows
   const unmet = rows.some((r) => !r.done)
+  if (board.boardKind === 'zba') return [...rows, boardMeetingRow(board, extras.abilities)]
   return [
     boardMeetingRow(board, extras.abilities),
     ...rows,

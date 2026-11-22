@@ -10,15 +10,8 @@ import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/a
 import { DecisionFields } from '../../boards/hearings/DecisionFields'
 import { recordDecisionWithoutHearingAction } from '../../boards/hearings/decisionActions'
 
-function noHearingText(meetingOnBoard: boolean): string {
-  return meetingOnBoard
-    ? 'The hearing meeting is shown under Hearing above.'
-    : 'No hearing is scheduled yet.'
-}
-
 export function HearingsPanel({
   data,
-  meetingOnBoard = false,
   deadline = null,
 }: {
   data: ApplicationHearingsPanel | null
@@ -29,7 +22,7 @@ export function HearingsPanel({
   return (
     <section aria-label="Hearings and decisions" id="hearings">
       <h2>Hearings and decisions</h2>
-      {data.hearings.length === 0 ? <p>{noHearingText(meetingOnBoard)}</p> : null}
+      {data.hearings.length === 0 ? <p>No hearing is scheduled yet.</p> : null}
       <ul className="list-none space-y-1 p-0">
         {data.hearings.map((h) => (
           <li key={h.id}>

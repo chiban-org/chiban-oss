@@ -15,10 +15,25 @@ export function meetingIsAhead(board: Pick<PlanBoard, 'acceptanceDate' | 'today'
   return board.acceptanceDate !== null && board.acceptanceDate > board.today
 }
 
+function hearingRow(abilities: ReadonlySet<PlanActionKind>): Requirement {
+  return {
+    key: 'board.meeting',
+    label: 'Hearing scheduled',
+    done: false,
+    detail: '',
+    task: 'Schedule the hearing',
+    actor: 'town',
+    anchor: 'board',
+    action: offered('set_board_meeting', abilities),
+    gate: null,
+  }
+}
+
 export function boardMeetingRow(
   board: BoardFacts,
   abilities: ReadonlySet<PlanActionKind>,
 ): Requirement {
+  if (board.boardKind === 'zba') return hearingRow(abilities)
   const planning = board.boardKind === 'planning_board'
   const done = board.acceptanceMeetingId !== null
   return {
