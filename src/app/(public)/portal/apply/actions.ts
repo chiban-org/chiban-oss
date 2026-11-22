@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { HELD_PARCEL_COPY } from '@/features/enforcement/holdCopy'
 import { recordId, requiredText } from '@/features/input/schemas'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { RETIRED_PARCEL_COPY, startApplication } from '@/features/portal/drafts'
 import type { ActionResult } from '@/server/actionRunner'
 import { parseForm } from '@/server/formInput'
@@ -35,7 +35,7 @@ export async function startApplicationAction(formData: FormData): Promise<Action
     const { parcelId, typeKey: applicationTypeKey } = parsed.value
     const started = await startApplication(db, actor, { parcelId, applicationTypeKey }, signal)
     if (started.ok) return { ok: true as const, message: started.value.applicationId }
-    const office = (await loadTownProfile(db, signal))?.officeName ?? 'land use office'
+    const office = await loadOfficeName(db, signal)
     return fail(startCopy(office)[started.error])
   })
   if (created.ok) redirect(`/portal/applications/${created.message}`)

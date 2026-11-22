@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { openRelease } from '@/features/rtk/releaseLinks'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -22,7 +22,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ token:
   const opened = await openRelease(db, token, new Date(), signal)
   if (!opened.ok && opened.error === 'invalid') notFound()
   if (!opened.ok) {
-    const office = (await loadTownProfile(db, signal))?.officeName ?? 'land use office'
+    const office = await loadOfficeName(db, signal)
     return (
       <main className="space-y-4">
         <meta name="robots" content="noindex" />

@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { users } from '@/db/schema'
 import { recordId } from '@/features/input/schemas'
 import { startOnlinePayment } from '@/features/payments/startPayment'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { parseForm } from '@/server/formInput'
 import { withPortalActor } from '@/server/portalAction'
 
@@ -44,7 +44,7 @@ export async function startPaymentAction(formData: FormData): Promise<PaymentRes
         signal,
       )
       if (started.ok) return { ok: true, redirectUrl: started.value.redirectUrl }
-      const office = (await loadTownProfile(db, signal))?.officeName ?? 'land use office'
+      const office = await loadOfficeName(db, signal)
       const known = typeof started.error === 'string' ? payCopy(office)[started.error] : undefined
       return { ok: false, error: known ?? 'The payment service had a problem. Try again later.' }
     },

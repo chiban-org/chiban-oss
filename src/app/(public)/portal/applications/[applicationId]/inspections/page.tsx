@@ -13,7 +13,7 @@ import {
 } from '@/features/inspections/portalInspections'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { contactDefaults } from '@/features/portal/contactDefaults'
 import { portalInspectionLabel } from '@/features/portal/inspectionLabel'
 import { formatWeekdayMonthDay } from '@/lib/formatDate'
@@ -129,7 +129,7 @@ export default async function PortalInspectionsPage({
     ? await findReinspectionTarget(ctx.db, ctx.actor, applicationId, reinspect, ctx.signal)
     : null
   const offered = reinspection !== null || view.types.length > 0
-  const officeName = (await loadTownProfile(ctx.db, ctx.signal))?.officeName ?? 'land use office'
+  const officeName = await loadOfficeName(ctx.db, ctx.signal)
   return (
     <main className="flex flex-col gap-6">
       <PageHeader

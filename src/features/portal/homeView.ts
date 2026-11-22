@@ -12,7 +12,7 @@ import type { ConfigPins } from '@/features/config/bindings'
 import { reinspectableFailureIds } from '@/features/inspections/lookup'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { missingDocumentsByApplication } from '@/features/portal/homeDocuments'
 import { type HomeGroup, homeGroup, homeNextStep } from '@/features/portal/homeGroups'
 
@@ -68,7 +68,7 @@ async function boardApplications(db: DbOrTx, ids: string[]): Promise<Set<string>
 
 async function officeForPayment(db: DbOrTx, signal: AbortSignal): Promise<string | null> {
   if ((await getActiveProcessor(db, signal)).state === 'known') return null
-  return (await loadTownProfile(db, signal))?.officeName ?? 'land use office'
+  return await loadOfficeName(db, signal)
 }
 
 export async function loadPortalHome(

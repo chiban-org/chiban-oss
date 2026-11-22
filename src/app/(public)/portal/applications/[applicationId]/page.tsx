@@ -8,6 +8,7 @@ import { loadDocumentChecklist } from '@/features/applications/documentChecklist
 import { isSettledStatus } from '@/features/applications/liveChecklist'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { officeNameOf } from '@/features/pdf/officeName'
 import { applicantStatus, missingNow } from '@/features/portal/applicantStatus'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
@@ -117,7 +118,7 @@ export default async function PortalApplicationPage({ params }: Props) {
     loadTownProfile(ctx.db, ctx.signal),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
-  const officeName = profile?.officeName ?? 'land use office'
+  const officeName = officeNameOf(profile)
   const status = applicantStatus({
     state: view.state,
     board: view.record.board,

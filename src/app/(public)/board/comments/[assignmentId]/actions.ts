@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { NOTE_MAX_LENGTH } from '@/features/applications/noteLimits'
 import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { recordId, requiredText } from '@/features/input/schemas'
-import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { addReviewComment } from '@/features/reviews/assignments'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { parseForm } from '@/server/formInput'
@@ -31,7 +31,7 @@ export async function postBoardCommentAction(formData: FormData): Promise<Action
     const posted = await addReviewComment(db, actor, parsed.value, signal)
     if (!posted.ok) return fail(COPY[posted.error])
     revalidatePath('/board', 'layout')
-    const office = (await loadTownProfile(db, signal))?.officeName ?? 'land use office'
+    const office = await loadOfficeName(db, signal)
     return { ok: true, message: `Comment posted. The ${office} can read it now.` }
   })
 }
