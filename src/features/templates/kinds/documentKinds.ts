@@ -19,6 +19,10 @@ import {
 } from '@/features/templates/kinds/enforcementKinds'
 import { type DocumentKindDef, FRAME_FIELDS } from '@/features/templates/kinds/kindTypes'
 import { RECEIPT_KIND, RTK_RESPONSE_KIND } from '@/features/templates/kinds/officeKinds'
+import {
+  INCOMPLETE_NOTICE_KIND,
+  PERMIT_DECISION_LETTER_KIND,
+} from '@/features/templates/kinds/staffDecisionKinds'
 import type { MergeField } from '@/features/templates/mergeFields'
 import type { TemplateKind } from '@/features/templates/templateSchema'
 
@@ -37,6 +41,8 @@ export const DOCUMENT_KINDS: Record<TemplateKind, DocumentKindDef> = {
   certificate: CERTIFICATE_KIND,
   board_packet_cover: BOARD_PACKET_COVER_KIND,
   trc_summary: TRC_SUMMARY_KIND,
+  permit_decision_letter: PERMIT_DECISION_LETTER_KIND,
+  incomplete_notice: INCOMPLETE_NOTICE_KIND,
 }
 
 const BY_KIND: ReadonlyMap<string, DocumentKindDef> = new Map(Object.entries(DOCUMENT_KINDS))

@@ -16,6 +16,8 @@ export const TEMPLATE_KINDS = [
   'certificate',
   'board_packet_cover',
   'trc_summary',
+  'permit_decision_letter',
+  'incomplete_notice',
 ] as const
 export type TemplateKind = (typeof TEMPLATE_KINDS)[number]
 

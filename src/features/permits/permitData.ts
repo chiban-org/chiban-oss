@@ -147,6 +147,15 @@ export async function loadPermitData(
   }
 }
 
+function answerText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function descriptionOf(values: Readonly<Record<string, unknown>>): string {
+  const description = answerText(values.description)
+  return description === '' ? answerText(values.project_description) : description
+}
+
 export function mergeContextOf(data: PermitData): MergeContext {
   return {
     'town.name': data.townName,
@@ -154,6 +163,7 @@ export function mergeContextOf(data: PermitData): MergeContext {
     'application.typeLabel': data.application.typeBody.label,
     'application.issuedOn': data.issuedOn,
     'application.expiresOn': data.expiresOn,
+    'application.description': descriptionOf(data.application.values),
     'parcel.displayId': data.parcelDisplayId,
     'parcel.siteAddress': data.siteAddress,
     'parcel.ownerName': data.ownerName,

@@ -10,5 +10,6 @@ export function signerRoleLabels(): Record<SignerRole, string> {
     zba_chair: `${boards.zba.label} chair`,
     code_enforcement_officer: 'Code enforcement officer',
     town_clerk: 'Town clerk',
+    plumbing_inspector: 'Plumbing inspector',
   }
 }

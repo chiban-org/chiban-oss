@@ -19,6 +19,7 @@ export const SIGNER_ROLES = [
   'zba_chair',
   'code_enforcement_officer',
   'town_clerk',
+  'plumbing_inspector',
 ] as const
 export const SignerRoleSchema = z.enum(SIGNER_ROLES)
 export type SignerRole = z.infer<typeof SignerRoleSchema>

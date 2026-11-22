@@ -17,6 +17,7 @@ const GROUP_OF_PREFIX: ReadonlyMap<string, string> = new Map([
   ['fees', 'Application'],
   ['conditions', 'Application'],
   ['codeEdition', 'Application'],
+  ['incomplete', 'Application'],
   ['permit', 'Application'],
   ['certificate', 'Certificate'],
   ['board', 'Meeting and notice'],

@@ -38,6 +38,8 @@ export const FRAME_FIELDS: readonly MergeField[] = [
   'signer.code_enforcement_officer.title',
   'signer.town_clerk.name',
   'signer.town_clerk.title',
+  'signer.plumbing_inspector.name',
+  'signer.plumbing_inspector.title',
 ]
 
 export const APPLICATION_FIELDS: readonly MergeField[] = [
@@ -45,6 +47,7 @@ export const APPLICATION_FIELDS: readonly MergeField[] = [
   'application.typeLabel',
   'application.issuedOn',
   'application.expiresOn',
+  'application.description',
   'parcel.displayId',
   'parcel.siteAddress',
   'parcel.ownerName',

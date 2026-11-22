@@ -25,7 +25,13 @@ export const RTK_RESPONSE_KIND: DocumentKindDef = {
     return rtkResponseWords(packVocabulary()).record
   },
   scale: 'document',
-  fields: ['rtk.number', 'rtk.receivedOn', 'rtk.description'],
+  fields: [
+    'rtk.number',
+    'rtk.receivedOn',
+    'rtk.description',
+    'rtk.letterDate',
+    'rtk.requesterName',
+  ],
   sections: [
     { name: 'rtk.response', label: 'How the town is responding' },
     { name: 'rtk.timeStatements', label: 'Time the town needs' },
