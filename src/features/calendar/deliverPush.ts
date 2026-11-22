@@ -14,6 +14,7 @@ import type { CalendarError, CalendarPublisher } from '@/features/calendar/publi
 import { MAX_PUSH_ATTEMPTS } from '@/features/calendar/queuePush'
 import { inspectionTypeLabel, loadSiteInfo } from '@/features/inspections/siteInfo'
 import { localToUtc } from '@/features/inspections/zonedTime'
+import { resolveSender } from '@/features/mail/mailbox'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -87,7 +88,18 @@ async function previousRefFor(db: DbOrTx, push: CalendarPushRow): Promise<string
   return cancelledSince === undefined ? (latest?.ref ?? null) : null
 }
 
-async function buildBooking(
+export async function configuredSender(db: DbOrTx, signal: AbortSignal): Promise<string> {
+  return await resolveSender({
+    mailFrom: env.MAIL_FROM,
+    baseUrl: env.BASE_URL,
+    townName: async () => {
+      const town = await getTownSettings(db, signal)
+      return town.ok ? town.value.name : ''
+    },
+  })
+}
+
+export async function buildBooking(
   db: DbOrTx,
   push: CalendarPushRow,
   attendeeEmail: string,
@@ -129,7 +141,7 @@ async function buildBooking(
     summary: `${inspectionTypeLabel(inspection.inspectionType)} inspection, ${site.applicationNumber}`,
     description,
     location: address ?? `Parcel ${parcel}`,
-    organizerEmail: env.MAIL_FROM,
+    organizerEmail: await configuredSender(db, signal),
     organizerName: town.ok ? town.value.name : '',
     attendeeEmail,
     attendeeName,

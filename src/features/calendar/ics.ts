@@ -1,3 +1,5 @@
+import { parseMailbox } from '@/features/mail/mailbox'
+
 export interface CalendarBooking {
   uid: string
   sequence: number
@@ -35,13 +37,6 @@ function escapeText(value: string): string {
 
 function escapeParam(value: string): string {
   return value.replace(/[";:,]/g, ' ')
-}
-
-function parseMailbox(value: string, fallbackName: string): { name: string; address: string } {
-  const match = /^\s*(.*?)\s*<([^<>]+)>\s*$/.exec(value)
-  if (match === null) return { name: fallbackName, address: value.trim() }
-  const name = (match[1] ?? '').replace(/^"|"$/g, '').trim()
-  return { name: name === '' ? fallbackName : name, address: (match[2] ?? '').trim() }
 }
 
 function organizerLine(booking: CalendarBooking): string {
