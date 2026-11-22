@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { defaultWordingFor } from '@/features/notifications/wording/wordingStandard'
+import { setActivePackForTest } from '@/features/packs/registry'
+import { ACKNOWLEDGING_PACK } from '@/test/packs/acknowledgingPack'
 import RequestReceivedPage from './page'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  setActivePackForTest(null)
+})
 
 async function show(params: Record<string, string>) {
   render(await RequestReceivedPage({ searchParams: Promise.resolve(params) }))
@@ -31,5 +37,36 @@ describe('RequestReceivedPage', () => {
     expect(screen.queryByText('<b>fake</b>')).toBeNull()
     expect(screen.queryByText(/will answer by/)).toBeNull()
     expect(screen.getByRole('heading', { level: 1, name: 'Request received' })).toBeTruthy()
+  })
+
+  it('under an acknowledging pack promises an acknowledgement, not an answer', async () => {
+    setActivePackForTest(ACKNOWLEDGING_PACK)
+    await show({ ref: 'RK-2027-0004', due: '2027-07-09', emailed: '1' })
+    expect(
+      screen.getByText(
+        'The town will acknowledge your request by July 9, 2027. It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.',
+      ),
+    ).toBeTruthy()
+    expect(screen.queryByText(/will answer by/)).toBeNull()
+    expect(screen.queryByText(/deny the request in writing/)).toBeNull()
+  })
+
+  it('under an acknowledging pack without a date still says what happens next', async () => {
+    setActivePackForTest(ACKNOWLEDGING_PACK)
+    await show({ ref: 'RK-2027-0004', emailed: '1' })
+    expect(
+      screen.getByText(
+        'It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.',
+      ),
+    ).toBeTruthy()
+  })
+
+  it('under an acknowledging pack the receipt email makes the same promise', () => {
+    setActivePackForTest(ACKNOWLEDGING_PACK)
+    const body = defaultWordingFor({ recordsRequest: 'records request' }).rtk_request_received.body
+    expect(body).toContain(
+      'The town will acknowledge your request by {{request.due}}. It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.',
+    )
+    expect(body).not.toContain('deny the request in writing')
   })
 })

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { receiptPromise } from '@/features/notifications/wording/wordingStandard'
+import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { receivedThanks } from '@/features/rtk/requestCopy'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -10,6 +12,19 @@ const LINK = 'tap-target inline-flex items-center'
 
 function single(value: string | string[] | undefined, shape: RegExp): string | null {
   return typeof value === 'string' && shape.test(value) ? value : null
+}
+
+function NextSteps({ due }: { due: string | null }) {
+  const { promise, next } = receiptPromise(due === null ? '' : formatCivilDate(due))
+  if (due !== null && acknowledgementEnabled()) {
+    return <p className="max-w-[65ch]">{`${promise} ${next}`}</p>
+  }
+  return (
+    <>
+      {due === null ? null : <p className="max-w-[65ch]">{promise}</p>}
+      <p className="max-w-[65ch]">{next}</p>
+    </>
+  )
 }
 
 export default async function RequestReceivedPage({
@@ -38,13 +53,7 @@ export default async function RequestReceivedPage({
       )}
       <section aria-labelledby="next-heading">
         <h2 id="next-heading">What happens next</h2>
-        {due === null ? null : (
-          <p className="max-w-[65ch]">{`The town will answer by ${formatCivilDate(due)}.`}</p>
-        )}
-        <p className="max-w-[65ch]">
-          It will make the records available, deny the request in writing, or tell you in writing
-          when it will answer.
-        </p>
+        <NextSteps due={due} />
         <p className="max-w-[65ch]">
           {params.emailed === '0'
             ? 'The receipt email could not be sent. Keep this number to ask about your request.'
