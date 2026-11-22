@@ -25,7 +25,7 @@ export function receiptPromise(due: string): { promise: string; next: string } {
 }
 
 export function receiptNextWithoutDate(): string {
-  return acknowledgementEnabled() ? `The town ${ACKNOWLEDGEMENT_NEXT}` : `It ${ANSWER_NEXT}`
+  return `The town ${acknowledgementEnabled() ? ACKNOWLEDGEMENT_NEXT : ANSWER_NEXT}`
 }
 
 function receiptPromiseText(due: string): string {
