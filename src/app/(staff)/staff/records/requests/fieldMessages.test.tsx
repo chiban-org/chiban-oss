@@ -166,6 +166,7 @@ describe('request forms show a refusal beside its field', () => {
     refuseWith('reason', 'Enter a reason of at least 10 characters.')
     inProvider(
       <ReleaseSection
+        requestId="r1"
         releases={[]}
         approvals={[approval]}
         canManage

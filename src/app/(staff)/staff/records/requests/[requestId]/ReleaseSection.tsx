@@ -7,7 +7,7 @@ import type { ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage
 import { formatCivilDate } from '@/lib/formatDate'
 import { revokeApprovalAction } from '../../renditionActions'
 import { type LinkContext, ReleaseLink } from './ReleaseLink'
-import { roleLabel } from './versionLabels'
+import { originRoleLabel } from './versionLabels'
 
 function ReleaseRow({ release, ctx }: { release: ReleaseSummary; ctx: LinkContext }) {
   return (
@@ -57,10 +57,22 @@ function RevokeForm({ approval }: { approval: RequestApproval }) {
   )
 }
 
-function ApprovalRow({ approval, canManage }: { approval: RequestApproval; canManage: boolean }) {
+function ApprovalRow({
+  approval,
+  canManage,
+  requestId,
+}: {
+  approval: RequestApproval
+  canManage: boolean
+  requestId: string
+}) {
+  const label = originRoleLabel(approval.role, {
+    madeFor: approval.madeFor,
+    currentRequestId: requestId,
+  })
   return (
     <li className="record-item flex flex-col gap-1">
-      <p className="m-0">{`${approval.title}: ${roleLabel(approval.role)}`}</p>
+      <p className="m-0">{`${approval.title}: ${label}`}</p>
       <p className="m-0 text-sm text-ink-secondary">{approvalState(approval)}</p>
       {canManage && approval.revokedAt === null && approval.releasedIn === null ? (
         <RevokeForm approval={approval} />
@@ -77,6 +89,7 @@ export function releasesEmpty(
 }
 
 export function ReleaseSection({
+  requestId,
   releases,
   approvals,
   canManage,
@@ -84,6 +97,7 @@ export function ReleaseSection({
   timeZone,
   requesterEmail,
 }: {
+  requestId: string
   releases: readonly ReleaseSummary[]
   approvals: readonly RequestApproval[]
   canManage: boolean
@@ -108,7 +122,12 @@ export function ReleaseSection({
           <h3>Approved for this request</h3>
           <ul aria-label="Approved for this request" className="list-none p-0">
             {approvals.map((a) => (
-              <ApprovalRow key={a.approvalId} approval={a} canManage={canManage} />
+              <ApprovalRow
+                key={a.approvalId}
+                approval={a}
+                canManage={canManage}
+                requestId={requestId}
+              />
             ))}
           </ul>
         </>

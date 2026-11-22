@@ -107,6 +107,7 @@ export default async function RequestPage({
         node: (
           <ReleaseSection
             key="releases"
+            requestId={requestId}
             releases={releases}
             approvals={approvals}
             canManage={canManage}

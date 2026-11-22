@@ -15,7 +15,7 @@ export interface VersionOrigin {
   currentRequestId: string
 }
 
-function labelFor(role: string, origin: VersionOrigin | undefined): string {
+export function originRoleLabel(role: string, origin: VersionOrigin | undefined): string {
   const madeFor = origin?.madeFor ?? null
   if (role !== 'release_redacted' || madeFor === null) return roleLabel(role)
   if (madeFor.requestId === origin?.currentRequestId) return roleLabel(role)
@@ -32,5 +32,5 @@ export function versionLabel(
     role === 'original'
       ? formatInstantDate(createdAt, timeZone)
       : formatInstantLong(createdAt, timeZone)
-  return `${labelFor(role, origin)}, ${when}`
+  return `${originRoleLabel(role, origin)}, ${when}`
 }
