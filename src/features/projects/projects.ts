@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { parcels, projectParties, projects } from '@/db/schema'
+import { parcels, projectParties, projects, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
+import { namedParty, PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
@@ -26,10 +26,15 @@ export async function createProject(
       .returning({ id: projects.id })
     const projectId = project?.id ?? ''
     if (actor.kind === 'public') {
+      const [account] = await tx
+        .select({ name: users.displayName, email: users.email })
+        .from(users)
+        .where(eq(users.id, actor.userId))
       await tx.insert(projectParties).values({
         projectId,
         userId: actor.userId,
-        name: PLACEHOLDER_PARTY_NAME,
+        name: namedParty(account?.name ?? '') ?? PLACEHOLDER_PARTY_NAME,
+        email: account?.email ?? null,
         role: 'applicant',
         addedBy: actor.userId,
       })

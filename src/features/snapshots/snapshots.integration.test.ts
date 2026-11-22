@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applicationSnapshots, applications, documentVersions } from '@/db/schema'
+import {
+  applicationSnapshots,
+  applications,
+  documentVersions,
+  projectParties,
+  users,
+} from '@/db/schema'
 import {
   amendApplication,
   attestationHash,
@@ -212,5 +218,35 @@ describe('application snapshots', () => {
       .where(eq(applications.id, app.applicationId))
     expect(row?.state).toBe('draft')
     expect(await snapshots(app.applicationId)).toHaveLength(0)
+  })
+
+  it("a portal-filed application's snapshot names the applicant account with its email", async () => {
+    const [account] = await handle.db
+      .select({ name: users.displayName, email: users.email })
+      .from(users)
+      .where(eq(users.id, world.applicant.userId))
+    const app = await makeApplication(handle.db, world)
+    await submit(app.applicationId)
+    const [snap] = await snapshots(app.applicationId)
+    expect((snap?.body as ApplicationSnapshotBody).parties).toEqual([
+      { role: 'applicant', name: account?.name, email: account?.email },
+    ])
+  })
+
+  it('an older portal party with the placeholder name falls back to the account', async () => {
+    await handle.db
+      .update(projectParties)
+      .set({ name: 'Applicant', email: null })
+      .where(eq(projectParties.projectId, world.projectId))
+    const [account] = await handle.db
+      .select({ name: users.displayName, email: users.email })
+      .from(users)
+      .where(eq(users.id, world.applicant.userId))
+    const app = await makeApplication(handle.db, world)
+    await submit(app.applicationId)
+    const [snap] = await snapshots(app.applicationId)
+    expect((snap?.body as ApplicationSnapshotBody).parties).toEqual([
+      { role: 'applicant', name: account?.name, email: account?.email },
+    ])
   })
 })
