@@ -122,8 +122,6 @@ const COPY: Record<string, string> = {
   method_not_allowed: 'That way of delivering the decision is not one the rules allow.',
   before_receipt: 'The date cannot be before the application was received.',
   before_acceptance: 'The date cannot be before the board accepted the application.',
-  hearing_scheduled:
-    'A hearing is scheduled for this application. Cancel it or hold it before recording a decision without a hearing.',
   board_application:
     "That application is decided by a board, so its decision is recorded from the board's vote.",
 }
