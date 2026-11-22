@@ -25,7 +25,7 @@ import {
 } from '@/db/schema'
 import { getPublished } from '@/features/config/store'
 import { varianceValidity } from '@/features/decisions/recording'
-import { DEMO_USERS } from '@/features/demo/demoUsers'
+import { demoUsers } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { FERNHOLLOW_STORIES } from '@/features/demo/me/maineStories'
 import { seedDemo } from '@/features/demo/seedDemo'
@@ -118,10 +118,16 @@ describe('the Fernhollow demo town', () => {
     }
   })
 
+  it('seats the Board of Appeals member as boa.member and seeds no zba address', async () => {
+    const emails = (await handle.db.select({ email: users.email }).from(users)).map((u) => u.email)
+    expect(emails).toContain(`boa.member@${DEMO_DOMAIN}`)
+    expect(emails.filter((e) => e.includes('zba'))).toEqual([])
+  })
+
   it('has the NH staff roles plus a plumbing inspector who is the code enforcement officer', async () => {
     const seeded = await handle.db.select({ email: users.email, kind: users.kind }).from(users)
     const kinds = new Map(seeded.map((u) => [u.email, u.kind]))
-    for (const user of DEMO_USERS) expect(kinds.get(user.email), user.email).toBe(user.kind)
+    for (const user of demoUsers()) expect(kinds.get(user.email), user.email).toBe(user.kind)
     const plumber = await rolesOf('plumbing')
     expect(plumber.map((r) => r.role).sort()).toEqual(['inspector', 'plumbing_inspector'])
     expect(plumber.every((r) => r.kind === 'staff')).toBe(true)

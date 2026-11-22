@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { Db } from '@/db/client'
-import { DEMO_USERS, type DemoUser, seedTownAndUsers } from '@/features/demo/demoUsers'
+import { DEMO_USERS, type DemoUser, demoUsers, seedTownAndUsers } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedMaineDemo } from '@/features/demo/me/seedMaineDemo'
 import {
@@ -90,7 +90,7 @@ export async function seedDemo(
   signal.throwIfAborted()
   if (activePack().manifest.id === 'me') return await seedMaineDemo(db, signal, deps)
   const name = overlayTownName(deps.overlay)
-  const base = await seedTownAndUsers(db, { name, stateCode: 'NH', users: DEMO_USERS }, signal)
+  const base = await seedTownAndUsers(db, { name, stateCode: 'NH', users: demoUsers() }, signal)
   const overlay =
     deps.overlay === undefined ? null : await applyOverlayBeforeStory(db, deps.overlay, signal)
   const now = deps.now ?? new Date()

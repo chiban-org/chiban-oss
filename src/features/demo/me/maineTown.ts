@@ -1,5 +1,5 @@
 import type { Db } from '@/db/client'
-import { DEMO_USERS, type DemoUser, seedTownAndUsers } from '@/features/demo/demoUsers'
+import { type DemoUser, demoUsers, seedTownAndUsers } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 
 export const FERNHOLLOW = {
@@ -18,7 +18,7 @@ export const PLUMBING_INSPECTOR: DemoUser = {
 }
 
 export function maineUsers(): readonly DemoUser[] {
-  return [...DEMO_USERS, PLUMBING_INSPECTOR]
+  return [...demoUsers(), PLUMBING_INSPECTOR]
 }
 
 export async function seedMaineBase(db: Db, signal: AbortSignal) {
