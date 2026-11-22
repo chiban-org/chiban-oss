@@ -87,3 +87,22 @@ describe('recent activity on an application', () => {
     }
   })
 })
+
+describe('the approval in the history of a permit with no board', () => {
+  it('reads approved rather than decided', async () => {
+    const applicationId = await submitted()
+    await writeAudit(
+      handle.db,
+      {
+        actor: { kind: 'user', userId: world.staff.userId },
+        action: 'application.transition',
+        entityType: 'application',
+        entityId: applicationId,
+        after: { state: 'decided' },
+      },
+      signal,
+    )
+    const rows = await recentApplicationActivity(handle.db, world.staff, applicationId, signal)
+    expect(rows.map((r) => r.what)).toContain('Moved the application to Approved')
+  })
+})
