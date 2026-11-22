@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { AccountNav } from '@/components/public/AccountNav'
 import { MenuDisclosure } from '@/components/public/MenuDisclosure'
 import { NavLinks } from '@/components/public/NavLinks'
-import { type NavLink, PRIMARY_NAV } from '@/features/publicSite/publicNav'
+import { type NavLink, primaryNav } from '@/features/publicSite/publicNav'
 import type { PublicTown } from '@/features/town/publicTown'
 
 interface TownHeaderProps {
@@ -31,7 +31,8 @@ function TownBrand({ town }: { town: PublicTown }) {
 }
 
 export function TownHeader({ town, account }: TownHeaderProps) {
-  const scope = [...PRIMARY_NAV, ...(account?.links ?? [])]
+  const main = primaryNav()
+  const scope = [...main, ...(account?.links ?? [])]
   return (
     <header className="border-b border-hairline bg-surface">
       <div className="mx-auto flex w-full max-w-[var(--content-max-width)] flex-wrap items-center gap-x-6 gap-y-1 px-4 pt-2 md:pb-1">
@@ -41,7 +42,7 @@ export function TownHeader({ town, account }: TownHeaderProps) {
             aria-label="Main"
             className="flex flex-col md:order-2 md:basis-full md:flex-row md:items-center md:gap-2 md:border-t md:border-hairline md:pt-1"
           >
-            <NavLinks links={PRIMARY_NAV} scope={scope} />
+            <NavLinks links={main} scope={scope} />
           </nav>
           {account === undefined ? null : (
             <AccountNav links={account.links} scope={scope} signOut={account.signOut} />
