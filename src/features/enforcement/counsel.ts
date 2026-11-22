@@ -39,7 +39,10 @@ export async function referToCounsel(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
-  Result<{ referralId: string; packetDocumentId: string }, 'forbidden' | 'invalid' | 'not_found'>
+  Result<
+    { referralId: string; packetDocumentId: string },
+    'forbidden' | 'invalid' | 'not_found' | 'case_closed'
+  >
 > {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.refer_counsel', signal)
@@ -49,10 +52,12 @@ export async function referToCounsel(
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
     const [caseRow] = await tx
-      .select({ number: enforcementCases.number })
+      .select({ number: enforcementCases.number, status: enforcementCases.status })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
+      .for('update')
     if (caseRow === undefined) return err('not_found')
+    if (caseRow.status === 'closed') return err('case_closed')
     const bytes = await buildCounselPacket(tx, value.caseId, value.referredOn, now, signal)
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(

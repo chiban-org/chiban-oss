@@ -106,11 +106,12 @@ export function CureSection({
   const { cure } = detail
   if (cure.choices.length === 0 && cure.rule === null) return null
   const uncovered = uncoveredOpenFindings(detail.findings, cure.notices).length > 0
+  const manage = can.manage && detail.staff.row.status !== 'closed'
   return (
     <>
       <h3>Cure notice</h3>
       <p>{cure.rule === null ? 'No cure procedure is chosen for this case.' : cure.rule.label}</p>
-      {can.manage && cure.notices.length === 0 ? (
+      {manage && cure.notices.length === 0 ? (
         <details>
           <summary>Choose the procedure</summary>
           <ApplyCureForm detail={detail} />
@@ -119,11 +120,11 @@ export function CureSection({
       {cure.notices.length === 0 ? null : (
         <ul className="list-none space-y-2 p-0">
           {cure.notices.map((n) => (
-            <CureNoticeItem key={n.id} notice={n} detail={detail} canReceive={can.manage} />
+            <CureNoticeItem key={n.id} notice={n} detail={detail} canReceive={manage} />
           ))}
         </ul>
       )}
-      {can.manage && cure.rule !== null && uncovered && !hosted.has('send_cure_notice') ? (
+      {manage && cure.rule !== null && uncovered && !hosted.has('send_cure_notice') ? (
         <details>
           <summary>Send a cure notice</summary>
           <SendCureNoticeForm detail={detail} variant="outline" />

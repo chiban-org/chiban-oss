@@ -36,7 +36,9 @@ export async function applyCureProcedure(
   actor: Actor,
   input: { caseId: string; ruleKey: string | null },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found' | 'unknown_rule' | 'notice_sent'>> {
+): Promise<
+  Result<void, 'forbidden' | 'not_found' | 'unknown_rule' | 'notice_sent' | 'case_closed'>
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
   if (!allowed.ok) return err('forbidden')
@@ -48,6 +50,7 @@ export async function applyCureProcedure(
       .where(eq(enforcementCases.id, input.caseId))
       .for('update')
     if (row === undefined) return err('not_found')
+    if (row.status === 'closed') return err('case_closed')
     if (await noticeOrOrderExists(tx, input.caseId)) return err('notice_sent')
     await tx
       .update(enforcementCases)
