@@ -1,4 +1,5 @@
-import { primaryAbutterParams } from '@/features/abutters/packParams'
+import { primaryAbutterParams, supportsProjection } from '@/features/abutters/packParams'
+import { filingLeadRule } from '@/features/boards/filingLead'
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { RuleChoiceGroups } from '@/features/config/ruleChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
@@ -49,6 +50,8 @@ export interface EditorContext {
   template?: TemplateBuilderData
   townName?: string
   townBuffer?: { defaultFt: number | null; maxFt: number }
+  filingLeadPackDays?: number | null
+  projectionSupported?: boolean
 }
 
 interface PackRuleLabelSource {
@@ -117,6 +120,8 @@ export function editorContext(
     boards,
     reviewers,
     townRules,
+    filingLeadPackDays: packRoles().rules.filingLead === null ? null : filingLeadRule().packDays,
+    projectionSupported: supportsProjection(primaryAbutterParams()),
     ...(townBuffer === undefined ? {} : { townBuffer }),
   }
 }
