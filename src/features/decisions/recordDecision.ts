@@ -1,19 +1,16 @@
-import { and, eq, ne } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
   applicationConditions,
   applications,
   boardDecisions,
-  boardMeetings,
-  boards,
   type DecisionCondition,
   type DecisionVotes,
-  hearings,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { recordDecisionNode } from '@/features/appeals/graph'
 import { declareFinalApproval } from '@/features/appeals/projectFinality'
-import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
+import { loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -22,16 +19,14 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { boardDecisionClockKeys } from '@/features/decisions/decisionClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
+import { resolveVenue } from '@/features/decisions/decisionVenue'
 import { planDeliveries } from '@/features/decisions/delivery'
-import {
-  classificationOfApplication,
-  hearingIsOptional,
-} from '@/features/decisions/hearingOptional'
+import { classificationOfApplication } from '@/features/decisions/hearingOptional'
 import { storedSignificance } from '@/features/decisions/significance'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
-import { type CivilDate, compareCivil } from '@/types/civilDate'
+import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export interface RecordDecisionInput {
@@ -60,6 +55,9 @@ export type DecisionError =
   | 'before_meeting'
   | 'future_date'
   | 'already_final'
+  | 'before_receipt'
+  | 'before_acceptance'
+  | 'hearing_scheduled'
   | { notSeated: string[] }
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
@@ -81,99 +79,6 @@ async function applyConditions(
       changedBy: actor.userId,
     })
   }
-}
-
-function voteTiming(
-  hearing: { status: string; heldOn: string | null },
-  votedOn: CivilDate,
-): 'hearing_not_held' | 'before_meeting' | null {
-  if (hearing.status !== 'held') return 'hearing_not_held'
-  if (hearing.heldOn !== null && compareCivil(votedOn, hearing.heldOn as CivilDate) < 0) {
-    return 'before_meeting'
-  }
-  return null
-}
-
-interface DecisionVenue {
-  hearingId: string | null
-  meetingId: string
-  boardId: string | null
-}
-
-async function hearingVenue(
-  tx: Tx,
-  input: RecordDecisionInput,
-  hearingId: string,
-): Promise<Result<DecisionVenue, DecisionError>> {
-  const [hearing] = await tx.select().from(hearings).where(eq(hearings.id, hearingId))
-  if (hearing === undefined || hearing.applicationId !== input.applicationId)
-    return err('not_found')
-  const timing = voteTiming(hearing, input.votedOn)
-  if (timing !== null) return err(timing)
-  const [already] = await tx
-    .select({ id: boardDecisions.id })
-    .from(boardDecisions)
-    .where(eq(boardDecisions.hearingId, hearing.id))
-  if (already !== undefined) return err('invalid_state')
-  const [meeting] = await tx
-    .select({ boardId: boardMeetings.boardId })
-    .from(boardMeetings)
-    .where(eq(boardMeetings.id, hearing.meetingId))
-  return ok({
-    hearingId: hearing.id,
-    meetingId: hearing.meetingId,
-    boardId: meeting?.boardId ?? null,
-  })
-}
-
-async function meetingVenue(
-  tx: Tx,
-  app: ApplicationContext,
-  input: RecordDecisionInput,
-): Promise<Result<DecisionVenue, DecisionError>> {
-  const classification = classificationOfApplication(app)
-  if (classification === undefined || !hearingIsOptional(classification))
-    return err('hearing_required')
-  if (input.meetingId === undefined) return err('meeting_required')
-  const [meeting] = await tx
-    .select({
-      id: boardMeetings.id,
-      boardId: boardMeetings.boardId,
-      meetingDate: boardMeetings.meetingDate,
-      status: boardMeetings.status,
-      kind: boards.kind,
-    })
-    .from(boardMeetings)
-    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
-    .where(eq(boardMeetings.id, input.meetingId))
-  if (
-    meeting === undefined ||
-    meeting.status !== 'scheduled' ||
-    meeting.kind !== classification.boardKind
-  )
-    return err('not_found')
-  if (compareCivil(input.votedOn, meeting.meetingDate as CivilDate) < 0)
-    return err('before_meeting')
-  const [already] = await tx
-    .select({ id: boardDecisions.id })
-    .from(boardDecisions)
-    .where(
-      and(
-        eq(boardDecisions.applicationId, input.applicationId),
-        ne(boardDecisions.outcome, 'rehearing_granted'),
-      ),
-    )
-  if (already !== undefined) return err('invalid_state')
-  return ok({ hearingId: null, meetingId: meeting.id, boardId: meeting.boardId })
-}
-
-async function resolveVenue(
-  tx: Tx,
-  app: ApplicationContext,
-  input: RecordDecisionInput,
-): Promise<Result<DecisionVenue, DecisionError>> {
-  if (input.hearingId !== null) return await hearingVenue(tx, input, input.hearingId)
-  return await meetingVenue(tx, app, input)
 }
 
 export async function recordDecision(

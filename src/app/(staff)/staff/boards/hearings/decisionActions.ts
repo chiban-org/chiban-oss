@@ -59,6 +59,8 @@ export async function recordDecisionWithoutHearingAction(
       return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
         future_date: 'votedOn',
         before_meeting: 'votedOn',
+        before_receipt: 'votedOn',
+        before_acceptance: 'votedOn',
         not_found: 'meetingId',
         already_final: 'finalMunicipalApproval',
       })

@@ -10,6 +10,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { boardForKind } from '@/features/boards/townBoards'
+import { earliestDecisionDate } from '@/features/decisions/decisionVenue'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import {
   classificationOfApplication,
@@ -62,7 +63,13 @@ async function noHearingForm(
     return null
   if (ctx.boardId === null) return null
   if (ctx.decisions.some((d) => d.outcome !== 'rehearing_granted')) return null
-  const past = ctx.meetings.filter((m) => m.status === 'scheduled' && m.meetingDate <= ctx.today)
+  const earliest = earliestDecisionDate(app)
+  const past = ctx.meetings.filter(
+    (m) =>
+      m.status === 'scheduled' &&
+      m.meetingDate <= ctx.today &&
+      (earliest === null || m.meetingDate >= earliest),
+  )
   return {
     meetings: past.map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })).reverse(),
     seatedMembers: await seatedMemberNames(db, ctx.boardId, ctx.today),
