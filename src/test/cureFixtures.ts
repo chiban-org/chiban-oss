@@ -6,7 +6,9 @@ import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { applyCureProcedure, sendCureNotice } from '@/features/enforcement/cureNotices'
 import { recordFinding } from '@/features/enforcement/findings'
 import { planCaseWork } from '@/features/enforcement/workPlan'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { type EnforcementWorld, FIXTURE_NOW } from '@/test/enforcementFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import { XX_CURE_RULE_KEY } from '@/test/packs/xx/cure'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -22,7 +24,7 @@ function fail(what: string, error: string): never {
   throw new AppError(ErrorIds.DB_INVARIANT, `${what} failed: ${error}`)
 }
 
-export function cureHelpers(db: Db, world: EnforcementWorld) {
+export function cureHelpers(db: Db, world: EnforcementWorld, store?: ObjectStore) {
   async function addFinding(caseId: string, n: number): Promise<string> {
     const made = await recordFinding(
       db,
@@ -66,13 +68,14 @@ export function cureHelpers(db: Db, world: EnforcementWorld) {
     if (!applied.ok) fail('cure procedure', applied.error)
   }
 
-  function send(
+  async function send(
     caseId: string,
     findingIds: string[],
     occupant: typeof CURE_OCCUPANT | 'none' = 'none',
   ) {
-    return sendCureNotice(
+    return await sendCureNotice(
       db,
+      store ?? (await makeTestStore()).store,
       world.staff,
       {
         caseId,
@@ -80,7 +83,6 @@ export function cureHelpers(db: Db, world: EnforcementWorld) {
         owner: CURE_OWNER,
         occupant,
         sentOn: CURE_SENT,
-        documentId: null,
       },
       signal,
       CURE_NOW,
