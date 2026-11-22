@@ -120,7 +120,28 @@ describe('request requirements', () => {
     expect(titles(planRequestWork(input({})))).toEqual([
       'First response: First response sent=false',
       'Before a denial: A withheld record with its exemption and explanation=false',
-      'Before records are released: Each version approved for this request=false, Each redacted copy has its exemptions drawn=true',
+      'Before records are released: Each version approved for this request=false, Each redacted copy has its exemptions drawn=false',
+    ])
+  })
+
+  it('with no approvals neither release row is done, and after release both stay done', () => {
+    const released: PlanApproval = { ...pending, releasedIn: 1 }
+    const releasedRedacted: PlanApproval = {
+      ...pending,
+      releasedIn: 1,
+      redacted: true,
+      cited: true,
+    }
+    const revoked: PlanApproval = { ...pending, revoked: true }
+    const releaseRows = (approvals: PlanApproval[]) =>
+      planRequestWork(input({}, approvals))
+        .groups.find((g) => g.key === 'release')
+        ?.items.map((i) => `${i.key}=${i.done}`)
+    expect(releaseRows([])).toEqual(['approved=false', 'cited=false'])
+    expect(releaseRows([revoked])).toEqual(['approved=false', 'cited=false'])
+    expect(releaseRows([released, releasedRedacted, revoked])).toEqual([
+      'approved=true',
+      'cited=true',
     ])
   })
 

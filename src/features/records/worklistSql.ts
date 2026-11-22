@@ -88,6 +88,7 @@ classified as (
       when d.holds > 0 then 'on_hold'
       when d.eligible_on is null then 'awaiting_event'
       when d.eligible_on <= ${asOf}::date then 'eligible'
+      when d.eligible_on > ${asOf}::date then 'scheduled'
     end as state,
     case when d.kind = 'application_snapshot'
       then 'Application ' || d.app_number || ', snapshot ' || d.snap_seq

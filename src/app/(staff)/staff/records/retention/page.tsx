@@ -10,7 +10,12 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { pageHref, type RawSearchParams, tableHref } from '@/features/dataTable/params'
 import { filterTabs } from '@/features/dataTable/quickFilters'
 import { sortLinks } from '@/features/dataTable/sort'
-import { retentionWorklist, WORKLIST_SORT, type WorklistPage } from '@/features/records/worklist'
+import {
+  retentionWorklist,
+  WORKLIST_SORT,
+  type WorklistPage,
+  type WorklistState,
+} from '@/features/records/worklist'
 import { RETENTION_PATH, readRetentionView } from '@/features/records/worklistParams'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
@@ -28,13 +33,14 @@ const PAGE_SIZE = 25
 const BATCH_PREVIEW = 10
 
 function stateTabs(view: ReturnType<typeof readRetentionView>, list: WorklistPage) {
-  const count = (state: 'eligible' | 'awaiting_event' | 'on_hold') => list.counts.get(state) ?? 0
+  const count = (state: WorklistState) => list.counts.get(state) ?? 0
   return filterTabs(RETENTION_PATH, view.params, {
     param: 'state',
     label: 'Retention lists',
     defaultTab: 'eligible',
     options: [
       { value: 'eligible', label: 'Eligible now', count: count('eligible') },
+      { value: 'scheduled', label: 'Eligible later', count: count('scheduled') },
       { value: 'awaiting_event', label: 'Waiting for an event', count: count('awaiting_event') },
       { value: 'on_hold', label: 'On legal hold', count: count('on_hold') },
     ],
@@ -68,6 +74,7 @@ async function loadBatches(db: Db, all: boolean) {
 
 function emptyText(state: string): string {
   if (state === 'eligible') return 'No record can be disposed of yet.'
+  if (state === 'scheduled') return 'No record has a later eligible date.'
   if (state === 'awaiting_event') return 'No record is waiting for an event.'
   return 'No record is on legal hold.'
 }

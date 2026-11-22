@@ -7,6 +7,7 @@ import {
   documents,
   documentVersions,
   preservationRecords,
+  redactionBoxes,
   renditionApprovals,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -73,7 +74,27 @@ export async function insertSystemApproval(
     .onConflictDoNothing()
 }
 
-export type ApproveError = 'forbidden' | 'invalid' | 'not_found' | 'wrong_role' | 'not_ready'
+export type ApproveError =
+  | 'forbidden'
+  | 'invalid'
+  | 'not_found'
+  | 'wrong_role'
+  | 'not_ready'
+  | 'redaction_not_cited'
+
+async function redactionCited(
+  tx: Tx,
+  version: { role: string; redactionJobId: string | null },
+): Promise<boolean> {
+  if (version.role === 'original') return true
+  if (version.redactionJobId === null) return false
+  const [box] = await tx
+    .select({ id: redactionBoxes.id })
+    .from(redactionBoxes)
+    .where(eq(redactionBoxes.jobId, version.redactionJobId))
+    .limit(1)
+  return box !== undefined
+}
 
 export async function approveRendition(
   db: Db,
@@ -90,7 +111,11 @@ export async function approveRendition(
   const staleKeys: string[] = []
   const result = await transactionResult<{ approvalId: string }, ApproveError>(db, async (tx) => {
     const [version] = await tx
-      .select({ documentId: documentVersions.documentId, role: documentVersions.role })
+      .select({
+        documentId: documentVersions.documentId,
+        role: documentVersions.role,
+        redactionJobId: documentVersions.redactionJobId,
+      })
       .from(documentVersions)
       .where(eq(documentVersions.id, value.versionId))
     if (version === undefined) return err('not_found')
@@ -101,6 +126,9 @@ export async function approveRendition(
       .for('update')
     const allowedRoles = value.purpose === 'public' ? PUBLIC_ROLES : RELEASE_ROLES
     if (!allowedRoles.includes(version.role)) return err('wrong_role')
+    if (value.purpose === 'rtk_release' && !(await redactionCited(tx, version))) {
+      return err('redaction_not_cited')
+    }
     const [pending] = await tx
       .select({ id: preservationRecords.id })
       .from(preservationRecords)

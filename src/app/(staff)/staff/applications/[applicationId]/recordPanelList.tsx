@@ -9,6 +9,7 @@ import { InspectionsPanel } from './inspectionsPanel'
 import { LicenseCheckPanel } from './licensePanel'
 import type { RecordPanelsInput } from './panelSet'
 import { ConditionsPanel, PartiesPanel } from './panels'
+import { PrintLetterPanel } from './printLetterPanel'
 import { mayAddToRecord } from './recordStage'
 import { RecordsPanel } from './recordsPanels'
 import { RequiredDocuments } from './requiredDocuments'
@@ -103,6 +104,13 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
           }
         />
       ),
+    },
+    {
+      key: 'letters',
+      empty: false,
+      node: records.canManageDocuments ? (
+        <PrintLetterPanel key="letters" applicationId={view.id} />
+      ) : null,
     },
     {
       key: 'parties',

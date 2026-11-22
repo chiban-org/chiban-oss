@@ -8,12 +8,14 @@ import { mayOpen } from '@/features/staffNav/navItems'
 
 const REQUESTS = '/staff/records/requests'
 
-export function overdueRequestsLabel(): string {
-  return `${recordsRequest()}s past their response day`
+export function overdueRequestsLabel(count?: number): string {
+  return count === 1
+    ? `${recordsRequest()} past its response day`
+    : `${recordsRequest()}s past their response day`
 }
 
-export function dueThisWeekLabel(): string {
-  return `${recordsRequest()}s due this week`
+export function dueThisWeekLabel(count?: number): string {
+  return count === 1 ? `${recordsRequest()} due this week` : `${recordsRequest()}s due this week`
 }
 
 export function openRecordsLabel(): string {
@@ -41,17 +43,11 @@ async function requestRows(ctx: HomeContext): Promise<HomeRow[]> {
     { filters: {}, today: ctx.today },
     ctx.signal,
   )
+  const overdue = facets.due.get('overdue') ?? 0
+  const week = facets.due.get('week') ?? 0
   return [
-    {
-      label: overdueRequestsLabel(),
-      count: facets.due.get('overdue') ?? 0,
-      href: `${REQUESTS}?due=overdue`,
-    },
-    {
-      label: dueThisWeekLabel(),
-      count: facets.due.get('week') ?? 0,
-      href: `${REQUESTS}?due=week`,
-    },
+    { label: overdueRequestsLabel(overdue), count: overdue, href: `${REQUESTS}?due=overdue` },
+    { label: dueThisWeekLabel(week), count: week, href: `${REQUESTS}?due=week` },
   ]
 }
 

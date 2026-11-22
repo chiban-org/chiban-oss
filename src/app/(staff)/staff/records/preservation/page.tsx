@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { awaitingFirstCopyText, countAwaitingFirstCopy } from '@/features/preservation/pendingCount'
 import { type IncompleteRow, listPreservationIncomplete } from '@/features/preservation/preserve'
 import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
 import { listPreservationRetrying, type RetryingRow } from '@/features/preservation/retryQueue'
@@ -53,17 +54,29 @@ function Problem({ row }: { row: IncompleteRow }) {
   )
 }
 
+function NothingFailed({ waiting }: { waiting: number }) {
+  const note = awaitingFirstCopyText(waiting)
+  return (
+    <div className="px-5 py-8">
+      <p className="m-0">No archival copy has failed.</p>
+      {note === null ? null : <p className="mt-2 mb-0">{note}</p>}
+    </div>
+  )
+}
+
 function IncompleteTable({
   rows,
   links,
+  waiting,
 }: {
   rows: IncompleteRow[]
   links: ReadonlyMap<string, string>
+  waiting: number
 }) {
   return (
     <div className="table-panel">
       {rows.length === 0 ? (
-        <p className="px-5 py-8">Every document that needs an archival copy has one.</p>
+        <NothingFailed waiting={waiting} />
       ) : (
         <table className="w-full min-w-[44rem] text-left">
           <thead>
@@ -144,6 +157,7 @@ export default async function PreservationQueuePage() {
   }
   const retrying = await listPreservationRetrying(ctx.db, ctx.actor, ctx.signal)
   const waiting = retrying.ok ? retrying.value : []
+  const untried = await countAwaitingFirstCopy(ctx.db, ctx.actor, ctx.signal)
   const links = await documentRecordLinks(ctx.db, [
     ...queue.value.rows.map((r) => r.documentId),
     ...waiting.map((r) => r.documentId),
@@ -152,7 +166,11 @@ export default async function PreservationQueuePage() {
     <main data-wide="">
       <h1>Preservation incomplete</h1>
       <p>These documents have no archival copy yet. Fix the file or try again.</p>
-      <IncompleteTable rows={queue.value.rows} links={links} />
+      <IncompleteTable
+        rows={queue.value.rows}
+        links={links}
+        waiting={untried.ok ? untried.value : 0}
+      />
       <RetryingList rows={waiting} links={links} />
     </main>
   )

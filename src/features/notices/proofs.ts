@@ -1,5 +1,5 @@
 import { and, eq, inArray, notInArray, sql } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import {
   documents,
   noticeItems,
@@ -12,6 +12,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { syncTransmittalClock, TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
+import { isPrintedLetter } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { channelLabel, type NoticeChannel } from '@/features/notices/channels'
 import { methodAllowed, type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
@@ -35,6 +36,30 @@ export interface ProofInput {
   reference: string | null
   effectiveOn: CivilDate
   documentId: string
+}
+
+async function proofDocumentRefusal(
+  tx: Tx,
+  documentId: string,
+  applicationIds: readonly (string | null)[],
+): Promise<'document_not_found' | 'wrong_document' | null> {
+  const [doc] = await tx
+    .select({
+      id: documents.id,
+      recordKind: documents.recordKind,
+      recordId: documents.recordId,
+      docKind: documents.docKind,
+    })
+    .from(documents)
+    .where(eq(documents.id, documentId))
+  const owners = [...new Set(applicationIds)].filter((a): a is string => a !== null)
+  const belongs =
+    doc !== undefined &&
+    doc.recordKind === 'application' &&
+    (owners.length === 0 || owners.every((a) => a === doc.recordId))
+  if (!belongs) return 'document_not_found'
+  if (!isEvidenceKind(doc.docKind)) return 'wrong_document'
+  return (await isPrintedLetter(tx, doc.id)) ? 'wrong_document' : null
 }
 
 export async function recordProof(
@@ -70,23 +95,12 @@ export async function recordProof(
     if (referenceRequired(input.method) && reference === '') return err('reference_required')
     const today = await townToday(tx, now, signal)
     if (compareCivil(input.effectiveOn, today) > 0) return err('future_date')
-    const applicationIds = new Set(items.map((i) => i.applicationId))
-    const [doc] = await tx
-      .select({
-        id: documents.id,
-        recordKind: documents.recordKind,
-        recordId: documents.recordId,
-        docKind: documents.docKind,
-      })
-      .from(documents)
-      .where(eq(documents.id, input.documentId))
-    const owners = [...applicationIds].filter((a): a is string => a !== null)
-    const belongs =
-      doc !== undefined &&
-      doc.recordKind === 'application' &&
-      (owners.length === 0 || owners.every((a) => a === doc.recordId))
-    if (!belongs) return err('document_not_found')
-    if (!isEvidenceKind(doc.docKind)) return err('wrong_document')
+    const docRefused = await proofDocumentRefusal(
+      tx,
+      input.documentId,
+      items.map((i) => i.applicationId),
+    )
+    if (docRefused !== null) return err(docRefused)
     const live = await tx
       .select({ id: noticeProofs.id, itemId: noticeProofs.itemId })
       .from(noticeProofs)

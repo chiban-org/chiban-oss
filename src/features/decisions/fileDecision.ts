@@ -10,7 +10,7 @@ import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, resolveClockLength, startClocksFor } from '@/features/clocks/startClocks'
 import { deliverDecisionLetter } from '@/features/decisions/letterDelivery'
-import { noticeProofDocumentIds } from '@/features/documents/evidence'
+import { isPrintedLetter, noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -94,6 +94,7 @@ export async function fileDecision(
       return err('document_not_found')
     }
     if (!isEvidenceKind(minutes.docKind)) return err('wrong_document')
+    if (await isPrintedLetter(tx, input.minutesDocumentId)) return err('wrong_document')
     if ((await noticeProofDocumentIds(tx, [input.minutesDocumentId])).size > 0) {
       return err('wrong_document')
     }

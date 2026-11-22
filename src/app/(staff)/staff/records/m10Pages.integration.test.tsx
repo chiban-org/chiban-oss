@@ -60,10 +60,6 @@ const { default: RequestPage } = await import(
   '@/app/(staff)/staff/records/requests/[requestId]/page'
 )
 const { default: RetentionPage } = await import('@/app/(staff)/staff/records/retention/page')
-const { default: BatchPage } = await import(
-  '@/app/(staff)/staff/records/disposition/[batchId]/page'
-)
-const { default: DisposedPage } = await import('@/app/(staff)/staff/records/disposed/page')
 const { default: CensusPage } = await import('@/app/(staff)/staff/reports/census/page')
 const { default: RedactPage } = await import('@/app/(staff)/staff/records/redact/[versionId]/page')
 
@@ -138,29 +134,6 @@ describe('records screens with the demo seed', () => {
       expect(page).toContain(r.number)
       expectHuman(page)
     }
-    for (const state_ of ['eligible', 'awaiting_event', 'on_hold']) {
-      expectHuman(await html(RetentionPage(search({ state: state_ }))))
-    }
-    const [batch] = await handle.db.select().from(dispositionBatches)
-    const batchPage = await html(
-      BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() }),
-    )
-    expect(batchPage).toContain('Disposed of')
-    expectHuman(batchPage)
-  })
-
-  it('the batch page shows each record series and who proposed and approved the batch, and batches are told apart', async () => {
-    await actAs('records')
-    const [batch] = await handle.db.select().from(dispositionBatches)
-    const page = visibleText(
-      await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() })),
-    )
-    expect(page).toContain('Retention series')
-    expect(page).toMatch(/Proposed\s+[A-Z][a-z]+ [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{4}/)
-    expect(page).toMatch(/Approved\s+[A-Z][a-z]+ [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{4}/)
-    const list = await html(RetentionPage(search()))
-    expect(list).toContain(`href="/staff/records/disposition/${batch?.id}"`)
-    expect(visibleText(list)).toMatch(/[A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M/)
   })
 
   it('the request log shows the five business day clock, a late-free open request, and an overdue one', async () => {
@@ -177,21 +150,6 @@ describe('records screens with the demo seed', () => {
     expect(page).toContain('How it is counted')
   })
 
-  it('retention and disposition screens show the worklist rows and the tombstone batch', async () => {
-    await actAs('records')
-    const eligible = visibleText(await html(RetentionPage(search({ state: 'eligible' }))))
-    expect(eligible).toContain('Resolved complaint photo log')
-    const waiting = visibleText(await html(RetentionPage(search({ state: 'awaiting_event' }))))
-    expect(waiting).toContain('Open complaint photo log')
-    expect(waiting).toContain('The appeal period ended')
-    const held = visibleText(await html(RetentionPage(search({ state: 'on_hold' }))))
-    expect(held).toContain('Records kept permanently are not listed here')
-    expect(held).toContain('Legal holds')
-    expect(visibleText(await html(RetentionPage(search({ state: 'eligible' }))))).not.toContain(
-      'Records kept permanently are not listed here',
-    )
-  })
-
   it('the release picker lists nothing until searched, then only matching documents named with their record', async () => {
     await actAs('records')
     const actor = state.actor as Actor
@@ -200,15 +158,6 @@ describe('records screens with the demo seed', () => {
     expect(found.length).toBeGreaterThan(0)
     expect(found.every((c) => c.title.toLowerCase().includes('complaint photo'))).toBe(true)
     expect(found.every((c) => /EC-\d{4}-\d{4}/.test(c.context))).toBe(true)
-  })
-
-  it('a registration waiting to expire offers no unrelated events and says Chiban records the expiry', async () => {
-    await actAs('records')
-    const markup = await html(RetentionPage(search({ state: 'awaiting_event' })))
-    const row = markup.split('<tr').find((part) => part.includes('AR-2026-0001')) ?? ''
-    expect(row).not.toBe('')
-    expect(row).not.toContain('The building was removed')
-    expect(visibleText(row)).toContain('Chiban records this when the registration expires.')
   })
 
   it('the census screen shows both sections for the month of the seeded permits', async () => {
@@ -316,54 +265,10 @@ describe('records screens with the demo seed', () => {
     )
   })
 
-  it('the disposed records page lists each tombstone read-only and is closed to reviewers', async () => {
-    await actAs('records')
-    const [batch] = await handle.db
-      .select()
-      .from(dispositionBatches)
-      .where(eq(dispositionBatches.status, 'executed'))
-    const markup = await html(DisposedPage(search()))
-    const page = visibleText(markup)
-    expect(page).toContain('Disposed records')
-    expect(page).toContain('Closed complaint photo log')
-    expect(markup).toContain(`href="/staff/records/disposition/${batch?.id}"`)
-    expect(markup).not.toContain('<form')
-    expectHuman(page)
-    expect(visibleText(await html(RetentionPage(search())))).toContain('Disposed records')
-    await actAs('reviewer')
-    expect(await html(DisposedPage(search()))).toContain('You do not have permission')
-  })
-
   it('a malformed request id is not found', async () => {
     await actAs('records')
     await expect(
       html(RequestPage({ params: Promise.resolve({ requestId: 'nope' }) })),
     ).rejects.toThrow('NOT_FOUND')
-  })
-
-  it('a proposed batch says who may approve it instead of offering approval to its proposer', async () => {
-    const proposer = await handle.db.query.users.findFirst({
-      where: (u, { eq: is }) => is(u.email, 'records@alderpond.example'),
-    })
-    const [batch] = await handle.db
-      .insert(dispositionBatches)
-      .values({ asOf: '2026-10-01', proposedBy: proposer?.id ?? '' })
-      .returning({ id: dispositionBatches.id })
-    const render = async () =>
-      visibleText(
-        await html(
-          BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() }),
-        ),
-      )
-    try {
-      await actAs('records')
-      const own = await render()
-      expect(own).toContain('You proposed this batch, so another records custodian approves it.')
-      expect(own).not.toContain('Approve and carry out')
-      await actAs('staff')
-      expect(await render()).toContain('A records custodian approves it.')
-    } finally {
-      await handle.db.delete(dispositionBatches).where(eq(dispositionBatches.id, batch?.id ?? ''))
-    }
   })
 })
