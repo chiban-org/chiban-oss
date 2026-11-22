@@ -51,7 +51,7 @@ Most of what changes is wording and law, which the staff pages cover. A few diff
 
 ## Check which pack is running
 
-`/api/version` answers with `pack`, the pack's id, version and hash, as described in [upgrading](../operations/upgrading.md). In the application, **Settings**, **State law** shows a line such as "Jurisdiction pack me version 0.9.0, fingerprint" followed by the first 12 characters of the hash.
+`/api/version` answers with `pack`, the pack's id, version and hash, as described in [upgrading](../operations/upgrading.md). In the application, **Settings**, **State law** shows a line such as "Jurisdiction pack me version 0.10.0, fingerprint" followed by the first 12 characters of the hash.
 
 ## The demo
 

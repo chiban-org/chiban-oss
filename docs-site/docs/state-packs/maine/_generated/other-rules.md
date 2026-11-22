@@ -26,7 +26,7 @@ generated_from:
 | Planning Board and subdivision | Subdivision hearing notice to the applicant | [30-A MRSA §4403(4)(A)](https://legislature.maine.gov/statutes/30-A/title30-Asec4403.html) |
 | Planning Board and subdivision | Site plan decision period in days (Chiban starting value) | Town rule |
 | Planning Board and subdivision | Days before a site plan hearing to give public notice (Chiban starting value) | Town rule |
-| Planning Board and subdivision | Site plan hearing public notice | Town rule |
+| Planning Board and subdivision | Site plan hearing public notice: how it is given | Town rule |
 | Board of Appeals | Days before a Board of Appeals hearing to mail notice (Chiban starting value) | Town rule |
 | Board of Appeals | Board of Appeals hearing notice to the parties | [30-A MRSA §4353(3)](https://legislature.maine.gov/statutes/30-A/title30-Asec4353.html) |
 | Board of Appeals | Board of Appeals hearing notice to abutters | Town rule |
