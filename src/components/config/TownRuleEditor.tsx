@@ -12,12 +12,22 @@ interface Props {
     policy: string
     settable?: boolean
     unit: string | null
+    min?: number
+    max?: number
     citation: { label: string; url: string | null }
   }
 }
 
 export function TownRuleEditor({ body, onChange, errors, rule }: Props) {
   const settable = rule.settable !== false
+  const range =
+    rule.min === undefined || rule.max === undefined
+      ? null
+      : {
+          min: rule.min,
+          max: rule.max,
+          hint: `A whole number from ${String(rule.min)} to ${String(rule.max)}${rule.unit === null ? '' : ` ${rule.unit}`}.`,
+        }
   return (
     <>
       <p className="m-0 text-sm">
@@ -34,7 +44,9 @@ export function TownRuleEditor({ body, onChange, errors, rule }: Props) {
       <FieldGroup name="value" label="The town's value" errors={errors}>
         <Input
           label={rule.unit === null ? 'Value' : `Value, in ${rule.unit}`}
+          {...(range === null ? {} : { hint: range.hint, min: range.min, max: range.max })}
           type="number"
+          step={1}
           disabled={!settable}
           value={body.value}
           onChange={(e) => onChange({ ...body, value: Number(e.target.value) })}
