@@ -28,6 +28,6 @@ If none fits, the row says the archival copy could not be made. **Technical deta
 
 Download the file and look at it. A password-protected PDF or an unreadable scan will not convert. Attach a good copy to the record if you can get one, then choose **Retry**. Chiban says it will try again within a minute. Documents waiting for that next try appear under **Waiting to be tried again** and leave the list once they are preserved. If the retry fails, they come back to the top list.
 
-The same **Retry preservation** button is under **Manage** on the document in its record. When the page reads "No archival copy has failed.", there is nothing to retry. Under it, a line such as "2 documents are waiting for their first archival copy." counts documents Chiban has not yet tried to convert. They leave that count on their own once Chiban has made the copy or reported a problem.
+The same **Retry preservation** button is under **Manage** on the document in its record. When the page reads "No archival copy has failed.", there is nothing to retry. If some documents are already waiting for another try, it reads "Nothing needs fixing right now." and the documents appear under **Waiting to be tried again**. Under either line, a line such as "2 documents are waiting for their first archival copy." counts documents Chiban has not yet tried to convert. They leave that count on their own once Chiban has made the copy or reported a problem.
 
 Documents that need no archival copy, for example some correspondence, are labeled **Preservation not required** in the record.

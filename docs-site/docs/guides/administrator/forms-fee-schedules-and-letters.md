@@ -19,7 +19,7 @@ Add a question with one of the buttons under **Add a question**: **Short answer*
 - **Required**, and for numbers a **Smallest allowed** and **Largest allowed**.
 - **Show only when**: show this question only when an earlier answer is, is not, or is any of the values you choose.
 - **Required only when**: the same kind of rule for a question that is required in some cases.
-- **Advanced**: the question's short key, a **Staff only** box, and a **Used by** list showing what relies on the question, such as a fee schedule, a required document or another question's rules. It warns that changing the key stops them from finding the answer.
+- **Advanced**: the question's short key, a **Fact** setting that copies the answer into the project facts the town's rules read, a **Staff only** box, and a **Used by** list showing what relies on the question, such as a fee schedule, a required document or another question's rules. It warns that changing the key stops them from finding the answer. On the appeal form's decision date question, **Fact** is set to the appealed decision date. The hint there says the late appeal warning reads the answer as the date of the decision being appealed, and that it is not copied into the project facts. **Used by** lists it as the late appeal warning.
 - **Move up**, **Move down** and **Remove question**.
 
 Choose **Preview as applicant** above the questions to see the form as the applicant will.

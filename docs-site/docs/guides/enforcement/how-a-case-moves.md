@@ -39,7 +39,7 @@ A case can also end at **No violation found** when the investigation turns up no
 
 ### Holds and counsel
 
-Where the town has placed a development hold, **Do this now** reads **Release the hold**, with the note "Release it under Development hold before resolving the case." Chiban refuses to resolve or close the case until the hold is released: "Release the enforcement hold before resolving or closing the case." Where the town's rules have no order to issue, a case moves to **In court** on a counsel outcome, **Do this now** waits on town counsel, and the strip leaves out **Order issued**. Once a case is closed, Chiban no longer accepts a cure procedure or a counsel referral for it.
+Where the town has placed a development hold, **Do this now** reads **Release the hold**, with the note "Release it under Development hold before resolving the case." While a hold is active, Resolve and Close are not offered. When the current step is something else, a note in the case's actions reads "Release the development hold before resolving or closing the case." Chiban also refuses the move until the hold is released: "Release the enforcement hold before resolving or closing the case." Where the town's rules have no order to issue, a case moves to **In court** on a counsel outcome, **Do this now** waits on town counsel, and the strip leaves out **Order issued**. Once a case is closed, Chiban no longer accepts a cure procedure or a counsel referral for it.
 
 ## Do this now, and Requirements
 
