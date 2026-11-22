@@ -1,8 +1,9 @@
-import { inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { users } from '@/db/schema'
+import { gateOverrides, users } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import {
+  gatedStages,
   type ItemStatus,
   itemStatus,
   stageOpenFor,
@@ -22,6 +23,7 @@ import type { Condition } from '@/features/forms/condition'
 import { describeCondition } from '@/features/forms/conditionRules'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
 import { plainNeededWhen } from '@/features/forms/plainCondition'
+import { DOCUMENT_GATE_KEYS } from '@/features/gates/documentGates'
 
 const DOCUMENT_LIMIT = 200
 
@@ -51,6 +53,7 @@ export interface ChecklistRow {
   open: boolean
   waiver: ChecklistNote | null
   accepted: ChecklistNote | null
+  override: ChecklistNote | null
 }
 
 export interface ChecklistStage {
@@ -68,12 +71,21 @@ export interface DocumentChecklistView {
   missingToFile: string[]
 }
 
-async function namesOf(db: DbOrTx, records: Map<string, StoredItemRecord>) {
-  const ids = [...records.values()].flatMap((r) =>
-    [r.row?.acceptedBy, r.row?.waiverRequestedBy].filter(
-      (id): id is string => typeof id === 'string',
+type OverrideRow = { gateKey: string; reason: string | null; createdBy: string; createdAt: Date }
+
+async function namesOf(
+  db: DbOrTx,
+  records: Map<string, StoredItemRecord>,
+  overrides: readonly OverrideRow[],
+) {
+  const ids = [
+    ...[...records.values()].flatMap((r) =>
+      [r.row?.acceptedBy, r.row?.waiverRequestedBy].filter(
+        (id): id is string => typeof id === 'string',
+      ),
     ),
-  )
+    ...overrides.map((o) => o.createdBy),
+  ]
   if (ids.length === 0) return new Map<string, string>()
   const rows = await db
     .select({ id: users.id, name: users.displayName })
@@ -99,6 +111,39 @@ interface RowContext {
   visible: Map<string, string>
   names: Map<string, string>
   state: Parameters<typeof stageOpenFor>[1]
+  overrideOf: (stage: DocumentStage) => OverrideRow | null
+}
+
+const GATED_STATES = ['submitted', 'decided', 'issued', 'closed'] as const
+
+async function activeDocumentOverrides(db: DbOrTx, applicationId: string): Promise<OverrideRow[]> {
+  return await db
+    .select({
+      gateKey: gateOverrides.gateKey,
+      reason: gateOverrides.reason,
+      createdBy: gateOverrides.createdBy,
+      createdAt: gateOverrides.createdAt,
+    })
+    .from(gateOverrides)
+    .where(
+      and(
+        eq(gateOverrides.applicationId, applicationId),
+        isNull(gateOverrides.revokedAt),
+        inArray(gateOverrides.gateKey, Object.values(DOCUMENT_GATE_KEYS)),
+      ),
+    )
+}
+
+function stageOverrides(
+  overrides: readonly OverrideRow[],
+  closesOn: Parameters<typeof gatedStages>[1],
+): (stage: DocumentStage) => OverrideRow | null {
+  return (stage) => {
+    const keys = GATED_STATES.filter((to) => gatedStages(to, closesOn).includes(stage)).map(
+      (to) => DOCUMENT_GATE_KEYS[to],
+    )
+    return overrides.find((o) => keys.some((k) => k === o.gateKey)) ?? null
+  }
 }
 
 function rowOf(item: DocumentItem, ctx: RowContext): ChecklistRow {
@@ -127,7 +172,12 @@ function rowOf(item: DocumentItem, ctx: RowContext): ChecklistRow {
     open: stageOpenFor(item.stage, ctx.state),
     waiver: note(row?.waiverReason, row?.waiverRequestedBy, row?.waiverRequestedAt, ctx.names),
     accepted: note(row?.acceptedReason, row?.acceptedBy, row?.acceptedAt, ctx.names),
+    override: status === 'missing' ? overrideNote(ctx.overrideOf(item.stage), ctx.names) : null,
   }
+}
+
+function overrideNote(found: OverrideRow | null, names: Map<string, string>): ChecklistNote | null {
+  return found === null ? null : note(found.reason, found.createdBy, found.createdAt, names)
 }
 
 export async function loadDocumentChecklist(
@@ -140,7 +190,7 @@ export async function loadDocumentChecklist(
   if (app === null) return null
   const items = documentItemsOf(app.typeBody)
   if (items.length === 0) return null
-  const [formVersion, listed, records] = await Promise.all([
+  const [formVersion, listed, records, overrides] = await Promise.all([
     getVersion(db, app.pins.form, signal),
     listDocuments(
       db,
@@ -149,6 +199,7 @@ export async function loadDocumentChecklist(
       signal,
     ),
     loadItemRecords(db, applicationId),
+    activeDocumentOverrides(db, applicationId),
   ])
   const form = formVersion?.body as FormBody | undefined
   const filed = listed.rows.filter((r) => r.docKind === 'attachment')
@@ -158,8 +209,9 @@ export async function loadDocumentChecklist(
     fields: form?.fields ?? [],
     records,
     visible,
-    names: await namesOf(db, records),
+    names: await namesOf(db, records, overrides),
     state: app.state,
+    overrideOf: stageOverrides(overrides, app.typeBody.workflow.closesOn),
   }
   const rows = items.map((item) => rowOf(item, ctx))
   const linked = new Set(rows.flatMap((r) => r.files.map((f) => f.documentId)))

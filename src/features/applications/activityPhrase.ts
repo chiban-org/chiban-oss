@@ -5,6 +5,7 @@ import {
   type CertificationOutcome,
   certificationActivity,
 } from '@/features/boards/certificationWords'
+import { gateByKey } from '@/features/gates/registry'
 import { activePack } from '@/features/packs/registry'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
@@ -92,7 +93,18 @@ function stateWord(state: unknown, board: boolean): string | undefined {
   return !board && state === 'decided' ? APPROVED : STATE_PHRASES.get(state)
 }
 
+function overridePhrase(after: unknown): string {
+  const key = field(after, 'gateKey')
+  const reason = field(after, 'reason')
+  const label = typeof key === 'string' ? gateByKey(key)?.label : undefined
+  const named = label === undefined ? 'Overrode a gate' : `Overrode a gate: ${label}`
+  return typeof reason === 'string' && reason.trim() !== ''
+    ? `${named}. Reason: ${reason.trim()}`
+    : named
+}
+
 export function activityPhrase(action: string, after: unknown, board = true): string {
+  if (action === 'gate.override') return overridePhrase(after)
   if (action === 'application.transition') {
     const label = stateWord(field(after, 'state'), board)
     return label === undefined

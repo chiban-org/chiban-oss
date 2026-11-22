@@ -43,6 +43,7 @@ function row(overrides: Partial<ChecklistRow>): ChecklistRow {
     open: true,
     waiver: null,
     accepted: null,
+    override: null,
     ...overrides,
   }
 }
@@ -129,6 +130,19 @@ describe('DocumentChecklist for the applicant', () => {
     expect(within(item('Landscaping plan')).getByText('Request a waiver')).toBeTruthy()
     expect(item('State septic approval').textContent).toContain('Missing. Can come later')
     expect(screen.queryByText('Accept without the document')).toBeNull()
+  })
+
+  it('says a document can come later only while its stage is open', () => {
+    const closed = {
+      ...VIEW,
+      stages: VIEW.stages.map((s) => ({
+        ...s,
+        rows: s.rows.map((r) => (r.stage === 'before_issue' ? { ...r, open: false } : r)),
+      })),
+    }
+    renderAs('applicant', { view: closed })
+    expect(item('State septic approval').textContent).toContain('Missing')
+    expect(item('State septic approval').textContent).not.toContain('Can come later')
   })
 
   it('folds documents this project does not need into one counted group, with a plain reason', () => {
