@@ -7,6 +7,7 @@ import {
   enforcementAppeals,
   enforcementFines,
   enforcementOrders,
+  parcels,
   perilCertifications,
   restrainingOrders,
   users,
@@ -51,8 +52,14 @@ export interface CureDetail {
   civilActionFiled?: boolean
 }
 
+export interface ParcelOwner {
+  name: string | null
+  mailingAddress: string | null
+}
+
 export interface CaseDetail {
   staff: StaffCaseView
+  parcelOwner: ParcelOwner | null
   today: CivilDate
   stay: StayState
   banner: string | null
@@ -74,6 +81,15 @@ export interface CaseDetail {
   attachable?: AttachableComplaint[]
   payments?: CasePayments | null
   remedies?: CaseRemedies
+}
+
+async function parcelOwnerOf(db: DbOrTx, parcelId: string | null): Promise<ParcelOwner | null> {
+  if (parcelId === null) return null
+  const [row] = await db
+    .select({ name: parcels.ownerName, mailingAddress: parcels.mailingAddress })
+    .from(parcels)
+    .where(eq(parcels.id, parcelId))
+  return row ?? null
 }
 
 async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, string>> {
@@ -190,6 +206,7 @@ export async function loadCaseDetail(
     appeals.find((a) => a.certification !== null)?.certification?.certifiedOn ?? null
   return ok({
     staff: view.value,
+    parcelOwner: await parcelOwnerOf(db, view.value.row.parcelId),
     today,
     stay,
     banner: stayBanner(
