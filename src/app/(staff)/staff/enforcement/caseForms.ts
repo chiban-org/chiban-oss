@@ -5,6 +5,8 @@ import { optionalEmail } from '@/features/input/optionalEmail'
 import {
   choice,
   civilDate,
+  endNotBefore,
+  optionalCivilDate,
   optionalText,
   recordId,
   requiredText,
@@ -61,13 +63,20 @@ export const recordFindingForm = (today: CivilDate) =>
     inspectionDate: civilDate('the inspection date', { latest: today }),
   })
 
+const CORRECT_BY_BEFORE_SENT = 'The correct by date is before the date sent.'
+
 export const sendNoticeForm = (today: CivilDate) =>
-  z.object({
-    caseId: recordId('a case'),
-    findingIds: recordIdList('Choose at least one finding.'),
-    sentOn: civilDate('the date sent', { latest: today }),
-    method: choice('how it was sent', NOTICE_METHODS),
-  })
+  z
+    .object({
+      caseId: recordId('a case'),
+      findingIds: recordIdList('Choose at least one finding.'),
+      sentOn: civilDate('the date sent', { latest: today }),
+      method: choice('how it was sent', NOTICE_METHODS),
+      recipientName: optionalText('the recipient name', { max: 200 }),
+      recipientAddress: optionalText('the recipient mailing address', { max: 500 }),
+      correctBy: optionalCivilDate('the correct by date'),
+    })
+    .superRefine(endNotBefore('sentOn', 'correctBy', CORRECT_BY_BEFORE_SENT))
 
 export const recordReceiptForm = (today: CivilDate) =>
   z.object({

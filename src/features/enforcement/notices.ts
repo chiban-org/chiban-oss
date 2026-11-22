@@ -7,6 +7,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
+import { casePenaltyOf } from '@/features/enforcement/casePenalty'
 import { renderNoticePdf } from '@/features/enforcement/orderPdf'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { civilDateSchema } from '@/features/packs/schema'
@@ -14,12 +15,17 @@ import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
-const SendSchema = z.object({
-  caseId: z.string().uuid(),
-  findingIds: z.array(z.string().uuid()).min(1),
-  sentOn: civilDateSchema,
-  method: z.enum(NOTICE_METHODS),
-})
+const SendSchema = z
+  .object({
+    caseId: z.string().uuid(),
+    findingIds: z.array(z.string().uuid()).min(1),
+    sentOn: civilDateSchema,
+    method: z.enum(NOTICE_METHODS),
+    recipientName: z.string().trim().min(1).max(200).nullish(),
+    recipientAddress: z.string().trim().min(1).max(500).nullish(),
+    correctBy: civilDateSchema.nullish(),
+  })
+  .refine((v) => v.correctBy == null || v.correctBy >= v.sentOn)
 
 export async function sendViolationNotice(
   db: Db,
@@ -58,12 +64,19 @@ export async function sendViolationNotice(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
+    const recipientName = value.recipientName ?? null
+    const recipientAddress = value.recipientAddress ?? null
+    const correctBy = value.correctBy ?? null
     const bytes = await renderNoticePdf({
       frame: await documentFrame(tx, {}, signal, store),
       caseNumber: caseRow.number,
       locationText: caseRow.locationText,
       findings,
       sentOn: value.sentOn,
+      recipientName,
+      recipientAddress,
+      correctBy,
+      authority: casePenaltyOf(null, caseRow.cureRuleKey)?.rule.citation.label ?? null,
     })
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(
@@ -90,6 +103,9 @@ export async function sendViolationNotice(
         method: value.method,
         sentBy: actor.userId,
         documentId: attached.documentId,
+        recipientName,
+        recipientAddress,
+        correctBy,
       })
       .returning({ id: violationNotices.id })
     await writeAudit(
