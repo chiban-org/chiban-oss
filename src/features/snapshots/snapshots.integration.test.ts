@@ -16,6 +16,7 @@ import {
 import { setPublic } from '@/features/documents/publish'
 import { resolveRendition } from '@/features/documents/visibility'
 import { sha256Hex } from '@/features/files/ingest'
+import { createProject } from '@/features/projects/projects'
 import { canonicalJson } from '@/features/snapshots/canonicalJson'
 import type { ApplicationSnapshotBody } from '@/features/snapshots/publicView'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -247,6 +248,40 @@ describe('application snapshots', () => {
     const [snap] = await snapshots(app.applicationId)
     expect((snap?.body as ApplicationSnapshotBody).parties).toEqual([
       { role: 'applicant', name: account?.name, email: account?.email },
+    ])
+  })
+
+  it('never uses a display name made from the email address as the party name', async () => {
+    const [account] = await handle.db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, world.applicant.userId))
+    const email = account?.email ?? ''
+    await handle.db
+      .update(users)
+      .set({ displayName: email.split('@')[0] ?? email })
+      .where(eq(users.id, world.applicant.userId))
+    const project = await createProject(
+      handle.db,
+      world.applicant,
+      { parcelId: world.parcelId, title: 'Woodshed' },
+      signal,
+    )
+    if (!project.ok) throw new Error(project.error)
+    const [party] = await handle.db
+      .select({ name: projectParties.name, email: projectParties.email })
+      .from(projectParties)
+      .where(eq(projectParties.projectId, project.value.projectId))
+    expect(party).toEqual({ name: 'Applicant', email })
+    await handle.db
+      .update(projectParties)
+      .set({ name: 'Applicant', email: null })
+      .where(eq(projectParties.projectId, world.projectId))
+    const app = await makeApplication(handle.db, world)
+    await submit(app.applicationId)
+    const [snap] = await snapshots(app.applicationId)
+    expect((snap?.body as ApplicationSnapshotBody).parties).toEqual([
+      { role: 'applicant', name: 'Applicant', email },
     ])
   })
 })

@@ -7,6 +7,14 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
 
+export function accountPartyName(displayName: string | null, email: string | null): string | null {
+  const name = namedParty(displayName ?? '')
+  if (name === null || email === null) return name
+  const lowered = name.toLowerCase()
+  const address = email.toLowerCase()
+  return lowered === address || lowered === address.split('@')[0] ? null : name
+}
+
 export async function createProject(
   db: DbOrTx,
   actor: Actor,
@@ -33,7 +41,8 @@ export async function createProject(
       await tx.insert(projectParties).values({
         projectId,
         userId: actor.userId,
-        name: namedParty(account?.name ?? '') ?? PLACEHOLDER_PARTY_NAME,
+        name:
+          accountPartyName(account?.name ?? null, account?.email ?? null) ?? PLACEHOLDER_PARTY_NAME,
         email: account?.email ?? null,
         role: 'applicant',
         addedBy: actor.userId,

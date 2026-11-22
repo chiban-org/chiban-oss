@@ -17,6 +17,7 @@ import { attachDocument, defaultSeriesForApplication } from '@/features/document
 import { sha256Hex, storeGeneratedBytes } from '@/features/files/ingest'
 import type { FormBody } from '@/features/forms/formSchema'
 import { documentFrame } from '@/features/pdf/documentFrame'
+import { accountPartyName } from '@/features/projects/projects'
 import { assignSeries } from '@/features/records/assignments'
 import { canonicalJson } from '@/features/snapshots/canonicalJson'
 import {
@@ -44,7 +45,7 @@ async function partiesOf(tx: Tx, projectId: string): Promise<SnapshotParty[]> {
     .where(and(eq(projectParties.projectId, projectId), isNull(projectParties.removedAt)))
   return rows.map((r) => ({
     role: r.role,
-    name: namedParty(r.name) ?? r.accountName ?? r.name,
+    name: namedParty(r.name) ?? accountPartyName(r.accountName, r.accountEmail) ?? r.name,
     email: r.email ?? r.accountEmail,
   }))
 }
