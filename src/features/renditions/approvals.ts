@@ -228,9 +228,15 @@ export async function revokeApproval(
       return err('released_offline')
     }
     const now = new Date()
+    const publicOnly = approval.purpose === 'public'
     const revoked = await revokeActive(
       tx,
-      eq(renditionApprovals.versionId, approval.versionId),
+      publicOnly
+        ? and(
+            eq(renditionApprovals.versionId, approval.versionId),
+            eq(renditionApprovals.purpose, 'public'),
+          )
+        : eq(renditionApprovals.versionId, approval.versionId),
       actor.userId,
       input.reason.trim(),
       now,
@@ -245,7 +251,12 @@ export async function revokeApproval(
       staleKeys.push(
         ...(await onApprovalRevoked(
           tx,
-          { approvalId: row.id, versionId: row.versionId, revokedAt: now, kind: 'revoked' },
+          {
+            approvalId: row.id,
+            versionId: row.versionId,
+            revokedAt: now,
+            kind: publicOnly ? 'public_revoked' : 'revoked',
+          },
           signal,
         )),
       )

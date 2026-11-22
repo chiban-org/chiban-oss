@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { renditionApprovals } from '@/db/schema'
+import { renditionApprovals, rtkReleaseItems } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { approveRendition, revokeApproval } from '@/features/renditions/approvals'
@@ -188,7 +188,7 @@ describe('revoking an approval whose copy was already released', () => {
 })
 
 describe('revoking a public approval of a version a requester got on paper', () => {
-  it('is not refused by the offline release', async () => {
+  it('revokes only the public approval and leaves the requester copy alone', async () => {
     const doc = await uploadRedactionFixture(
       handle.db,
       store,
@@ -243,5 +243,11 @@ describe('revoking a public approval of a version a requester got on paper', () 
       ),
     ).toEqual({ ok: true, value: undefined })
     expect(await revokedAt(forPublic.value.approvalId)).not.toBeNull()
+    expect(await revokedAt(forRequest.value.approvalId)).toBeNull()
+    const [item] = await handle.db
+      .select({ withdrawnAt: rtkReleaseItems.withdrawnAt })
+      .from(rtkReleaseItems)
+      .where(eq(rtkReleaseItems.approvalId, forRequest.value.approvalId))
+    expect(item).toEqual({ withdrawnAt: null })
   })
 })
