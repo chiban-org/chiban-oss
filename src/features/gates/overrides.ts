@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications, gateOverrides } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -17,6 +18,18 @@ export interface LegalAuthority {
   explanation: string
 }
 
+async function mayOverride(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  return (
+    (await hasCapability(db, actor.userId, 'gate.override_admin', signal)) ||
+    (await mayActAsPlumbingOwnerOf(db, actor, applicationId, signal))
+  )
+}
+
 export async function overrideAdministrativeGate(
   db: Db,
   actor: Actor,
@@ -26,8 +39,7 @@ export async function overrideAdministrativeGate(
   Result<void, 'forbidden' | 'reason_required' | 'statutory_requires_authority' | 'unknown_gate'>
 > {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'gate.override_admin', signal)))
-    return err('forbidden')
+  if (!(await mayOverride(db, actor, input.applicationId, signal))) return err('forbidden')
   const gate = gateByKey(input.gateKey)
   if (gate === undefined) return err('unknown_gate')
   if (gate.kind === 'statutory') return err('statutory_requires_authority')
@@ -114,9 +126,11 @@ export async function revokeGateOverride(
   signal.throwIfAborted()
   const [row] = await db.select().from(gateOverrides).where(eq(gateOverrides.id, overrideId))
   if (row === undefined) return err('not_found')
-  const capability =
-    row.kind === 'statutory_exception' ? 'gate.record_statutory_exception' : 'gate.override_admin'
-  if (!(await hasCapability(db, actor.userId, capability, signal))) return err('forbidden')
+  const allowed =
+    row.kind === 'statutory_exception'
+      ? await hasCapability(db, actor.userId, 'gate.record_statutory_exception', signal)
+      : await mayOverride(db, actor, row.applicationId, signal)
+  if (!allowed) return err('forbidden')
   return await transactionResult(db, async (tx) => {
     const updated = await tx
       .update(gateOverrides)

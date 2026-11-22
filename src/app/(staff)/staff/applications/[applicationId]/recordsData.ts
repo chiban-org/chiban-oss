@@ -1,7 +1,9 @@
 import { asc, eq } from 'drizzle-orm'
 import { applicationSnapshots } from '@/db/schema'
 import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
+import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import { hasCapability } from '@/features/authz/capabilities'
+import { mayMarkComplete } from '@/features/building/completeness'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import { applicationHolds } from '@/features/records/holds'
 import { assignableBoards } from '@/features/reviews/boardAssignments'
@@ -33,7 +35,7 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
   const can = (capability: Parameters<typeof hasCapability>[2]) =>
     hasCapability(ctx.db, ctx.actor.userId, capability, ctx.signal)
   const [
-    canAssign,
+    canAssignBoards,
     town,
     reviewers,
     choices,
@@ -47,6 +49,7 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     boards,
     checklist,
     canAcceptItems,
+    canMarkComplete,
   ] = await Promise.all([
     can('review.assign'),
     getTownSettings(ctx.db, ctx.signal),
@@ -64,13 +67,16 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     assignableBoards(ctx.db, applicationId, ctx.signal),
     loadDocumentChecklist(ctx.db, ctx.actor, applicationId, ctx.signal),
     can('application.manage'),
+    mayMarkComplete(ctx.db, ctx.actor, applicationId, ctx.signal),
   ])
+  const canAssign =
+    canAssignBoards || (await mayActAsPlumbingOwnerOf(ctx.db, ctx.actor, applicationId, ctx.signal))
   return {
     reviewers,
     canAssign,
     choices: canAssign ? choices : [],
     boardAssignments,
-    boardChoices: canAssign ? boards.map((b) => ({ id: b.id, name: b.name })) : [],
+    boardChoices: canAssignBoards ? boards.map((b) => ({ id: b.id, name: b.name })) : [],
     documents,
     canPublish,
     canManageDocuments,
@@ -79,6 +85,7 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     appHolds,
     checklist,
     canAcceptItems,
+    canMarkComplete,
     zone: town.ok ? town.value.timeZone : FALLBACK_ZONE,
   }
 }
