@@ -19,7 +19,7 @@ Complaints come in three ways, and Chiban records which:
 
 Each complaint opens its own case, numbered like EC-2026-0001, with the complaint attached and numbered like CP-2026-0001. The case starts at **Received** and nobody is assigned. The staff home page counts **Open cases with no one assigned** so these do not wait.
 
-To enter a complaint yourself, choose **Enter a complaint** on the enforcement list. Fill in **What was reported?**, optionally the parcel and **Where is the property?**, and the complainant's name, phone and email if they gave them. If you leave **Where is the property?** blank, Chiban uses the parcel's site address, or the parcel number when the parcel has no site address. With no location and no parcel, Chiban says "Enter where the property is, or pick a parcel." Choose **Record complaint**. Chiban opens the new case.
+To enter a complaint yourself, choose **Enter a complaint** on the enforcement list. Fill in **What was reported?**, optionally the parcel and **Where is the property?**, and the complainant's name, phone and email if they gave them. If you leave **Where is the property?** blank, Chiban uses the parcel's site address, or the parcel ID when the parcel has no site address. With no location and no parcel, Chiban says "Enter where the property is, or pick a parcel." Choose **Record complaint**. Chiban opens the new case.
 
 Each report starts a case of its own. When a second report concerns a case you already have, move it there, as described below.
 
@@ -37,7 +37,7 @@ On the case, **Complaints** shows the original report and, for a named complaint
 
 ## Open a case yourself
 
-If you see a problem yourself, choose **Open a case**. Enter **Where is the property?** and, if you know it, the parcel. You can leave the location blank when you pick a parcel, and Chiban uses the parcel's site address. Without a parcel, Chiban links the parcel whose site address matches exactly. If the text matches no parcel or more than one, it tells you and asks for the parcel number.
+If you see a problem yourself, choose **Open a case**. Enter **Where is the property?** and, if you know it, the parcel. You can leave the location blank when you pick a parcel, and Chiban uses the parcel's site address, or its parcel ID when it has none. Without a parcel, Chiban links the parcel whose site address matches exactly. If the text matches no parcel or more than one, it tells you and asks for the parcel number.
 
 The case opens assigned to you. A case with no parcel linked is not on any parcel page. Choose **Link a parcel** on the case to fix that.
 

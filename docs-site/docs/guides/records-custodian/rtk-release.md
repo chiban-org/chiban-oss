@@ -54,6 +54,8 @@ To send a new one, open the request and find the release. Once the link has expi
 
 Under **Approved for this request**, **Revoke approval** takes a version off the table. Give a reason of at least 10 characters. A version that has not been released cannot be released until someone approves it again. **Revoke approval** appears only beside an approval that is still waiting. Once a version has been released, its row reads "Released in release" and a number, and has no **Revoke approval**.
 
+A copy released by link has **Stop the download link** instead. Enter **Why the link is being stopped** and confirm. The requester can then no longer download that copy from the link, the requester's page says the town withdrew it, and the approval is revoked. The same revoke also takes the version out of any other release or packet that uses it. A copy released by email, on paper or by inspection has no such control and cannot be withdrawn. If the action is attempted on one, Chiban says "That copy was not released by link, so there is no link to stop."
+
 ## Close the request
 
 When nothing approved is waiting, the **Do this now** card offers **Close the request**. Choose **Closed** or **Withdrawn by the requester** under **Close it as**. The same two choices are under **More actions** at any time while the request is open. Nothing more can be released on a closed request.
