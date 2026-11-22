@@ -4,6 +4,10 @@ import type { Db, Tx } from '@/db/client'
 import { applications, clocks, decisionNotices, deemedRefusals, documents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { addAdministrativeDecisionTx } from '@/features/appeals/adminAppeals'
+import {
+  checklistDocumentIds,
+  mayBeDecisionNotice,
+} from '@/features/applications/decisionNoticeDocuments'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -25,6 +29,7 @@ export type DecisionNoticeError =
   | 'already_recorded'
   | 'future_date'
   | 'document_not_found'
+  | 'not_a_decision_document'
   | 'no_decision'
 
 function packRefusesBySilence(): boolean {
@@ -57,7 +62,7 @@ export async function recordDecisionNotice(
     if (app === undefined) return err('not_found')
     if (REFUSABLE.includes(app.state)) return err('no_decision')
     const [doc] = await tx
-      .select({ id: documents.id })
+      .select({ id: documents.id, docKind: documents.docKind })
       .from(documents)
       .where(
         and(
@@ -67,6 +72,10 @@ export async function recordDecisionNotice(
         ),
       )
     if (doc === undefined) return err('document_not_found')
+    const filed = await checklistDocumentIds(tx, app.id)
+    if (!mayBeDecisionNotice({ documentId: doc.id, docKind: doc.docKind }, filed)) {
+      return err('not_a_decision_document')
+    }
     const [existing] = await tx
       .select({ id: decisionNotices.applicationId })
       .from(decisionNotices)

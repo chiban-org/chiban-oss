@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { applications, clocks, documents } from '@/db/schema'
+import { applicationDocumentLinks, applications, clocks, documents } from '@/db/schema'
 import { recordDecisionNotice, refuseBySilence } from '@/features/applications/deemedRefusal'
 import { STAFF_DECISION_LETTER_TITLE } from '@/features/applications/staffDecision'
 import { startClocksFor } from '@/features/clocks/startClocks'
@@ -101,14 +101,17 @@ async function page(): Promise<string> {
   )
 }
 
-async function addDocument(title: string): Promise<string> {
+async function addDocument(
+  title: string,
+  docKind: (typeof documents.$inferInsert)['docKind'] = 'attachment',
+): Promise<string> {
   const [doc] = await handle.db
     .insert(documents)
     .values({
       recordKind: 'application',
       recordId: applicationId,
       title,
-      docKind: 'attachment',
+      docKind,
       createdByKind: 'system',
     })
     .returning({ id: documents.id })
@@ -210,5 +213,53 @@ describe('the written decision notice section', () => {
   it('does not appear under a pack with no refusal consequence', async () => {
     setActivePackForTest(XX_PACK)
     expect(sectionOf(await page(), LABEL)).toBeNull()
+  })
+})
+
+describe('the documents offered as the written decision notice', () => {
+  async function filedOnChecklist(title: string): Promise<string> {
+    const documentId = await addDocument(title)
+    await handle.db
+      .insert(applicationDocumentLinks)
+      .values({ applicationId, itemKey: 'site_plan', documentId, linkedBy: world.staff.userId })
+    return documentId
+  }
+
+  it('offers the decision letter and decision documents, not the snapshot, permit or filed plans', async () => {
+    await addDocument(STAFF_DECISION_LETTER_TITLE)
+    await addDocument('Board decision on the appeal', 'board_material')
+    await addDocument('Signed decision from the counter')
+    await addDocument('Application snapshot', 'application_snapshot')
+    await addDocument('Issued permit', 'issued_permit')
+    await filedOnChecklist('Site plan from the applicant')
+    await decide()
+    const section = sectionOf(await page(), LABEL) ?? ''
+    expect(section).toContain(STAFF_DECISION_LETTER_TITLE)
+    expect(section).toContain('Board decision on the appeal')
+    expect(section).toContain('Signed decision from the counter')
+    expect(section).not.toContain('Application snapshot')
+    expect(section).not.toContain('Issued permit')
+    expect(section).not.toContain('Site plan from the applicant')
+  })
+
+  it('refuses to record the snapshot or a filed plan as the notice', async () => {
+    await decide()
+    const record = async (documentId: string) =>
+      await recordDecisionNotice(
+        handle.db,
+        world.staff,
+        { applicationId, documentId, mailedOn: '2026-03-15' as CivilDate },
+        signal,
+      )
+    expect(await record(await addDocument('Application snapshot', 'application_snapshot'))).toEqual(
+      { ok: false, error: 'not_a_decision_document' },
+    )
+    expect(await record(await filedOnChecklist('Site plan from the applicant'))).toEqual({
+      ok: false,
+      error: 'not_a_decision_document',
+    })
+    expect(
+      (await record(await addDocument('Board decision on the appeal', 'board_material'))).ok,
+    ).toBe(true)
   })
 })

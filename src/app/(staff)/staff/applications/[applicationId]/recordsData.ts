@@ -1,5 +1,6 @@
 import { asc, eq } from 'drizzle-orm'
 import { applicationSnapshots } from '@/db/schema'
+import { decisionNoticeDocuments } from '@/features/applications/decisionNoticeDocuments'
 import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
 import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -70,6 +71,7 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     mayMarkComplete(ctx.db, ctx.actor, applicationId, ctx.signal),
   ])
   const plumbingOwner = await mayActAsPlumbingOwnerOf(ctx.db, ctx.actor, applicationId, ctx.signal)
+  const noticeDocuments = await decisionNoticeDocuments(ctx.db, applicationId, documents)
   const canAssign = canAssignBoards || plumbingOwner
   return {
     reviewers,
@@ -78,6 +80,7 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     boardAssignments,
     boardChoices: canAssignBoards ? boards.map((b) => ({ id: b.id, name: b.name })) : [],
     documents,
+    noticeDocuments,
     canPublish,
     canManageDocuments,
     canHold,

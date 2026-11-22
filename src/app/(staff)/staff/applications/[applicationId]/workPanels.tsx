@@ -93,7 +93,11 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
       empty: false,
       node:
         view.decisionNotice == null ? null : (
-          <DecisionNoticePanel key="decisionNotice" view={view} documents={records.documents} />
+          <DecisionNoticePanel
+            key="decisionNotice"
+            view={view}
+            documents={records.noticeDocuments}
+          />
         ),
     },
     {
