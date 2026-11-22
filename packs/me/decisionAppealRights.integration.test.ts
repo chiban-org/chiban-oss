@@ -6,6 +6,7 @@ import {
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { NOT_RECORDED } from '@/features/templates/renderTemplate'
+import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { type BoardWorld, boardTypeBody, setupBoardWorld } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -28,6 +29,7 @@ import { pdfWording } from '@/test/pdfWording'
 import { ME_PACK } from './index'
 
 const signal = new AbortController().signal
+const CHAIR_LINE = 'Rowan Quill, Chair, Board of Appeals'
 let handle: TestDb
 let world: BoardWorld
 let store: ObjectStore
@@ -66,6 +68,25 @@ beforeEach(async () => {
   await publishSubdivisionType(handle.db, world)
   await publishStarterTemplates('me.starter.boa_variance', 'me.boa_variance', BOA_VARIANCE_TYPE)
   await publishStarterTemplates('me.starter.pb_subdivision', 'me.pb_subdivision', SUBDIVISION_TYPE)
+  const signers = await publishTownProfileSection(
+    handle.db,
+    world.admin,
+    {
+      section: 'signers',
+      slice: {
+        signers: [
+          {
+            role: 'zba_chair',
+            name: 'Rowan Quill',
+            title: 'Chair, Board of Appeals',
+            signature: null,
+          },
+        ],
+      },
+    },
+    signal,
+  )
+  if (!signers.ok) throw new Error(JSON.stringify(signers.error))
 })
 afterEach(async () => {
   setActivePackForTest(null)
@@ -104,7 +125,9 @@ describe('Maine decision documents state the appeal windows', () => {
     expect(rights).not.toContain('last municipal approval')
     const notice = await noticeWording(made.decisionId)
     for (const sentence of rights.split(/(?<=\)\.)\s/)) expect(notice).toContain(sentence)
-    expect(notice.slice(notice.indexOf(rights.slice(0, 40)))).not.toContain(NOT_RECORDED)
+    const tail = notice.slice(notice.indexOf(rights.slice(0, 40)))
+    expect(tail).not.toContain(NOT_RECORDED)
+    expect(tail).toContain(`${rights.split(' ').slice(-3).join(' ')} ${CHAIR_LINE}`)
   })
 
   it('a Planning Board approval that is not last waits for the last municipal approval', async () => {
