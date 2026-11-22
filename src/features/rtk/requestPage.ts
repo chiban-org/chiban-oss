@@ -5,10 +5,12 @@ import {
   documents,
   documentVersions,
   recordEvents,
+  redactionJobs,
   renditionApprovals,
   rtkReleaseItems,
   rtkReleaseLinks,
   rtkReleases,
+  rtkRequests,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
@@ -33,7 +35,13 @@ export interface ReleaseCandidate {
   title: string
   context: string
   originalVersionId: string | null
-  versions: { id: string; role: string; filename: string; createdAt: string }[]
+  versions: {
+    id: string
+    role: string
+    filename: string
+    createdAt: string
+    madeFor?: { requestId: string; number: string } | null
+  }[]
 }
 
 export interface RequestApproval {
@@ -107,8 +115,12 @@ export async function loadReleaseCandidates(
       role: documentVersions.role,
       filename: documentVersions.filename,
       createdAt: documentVersions.createdAt,
+      madeForId: rtkRequests.id,
+      madeForNumber: rtkRequests.number,
     })
     .from(documentVersions)
+    .leftJoin(redactionJobs, eq(redactionJobs.resultVersionId, documentVersions.id))
+    .leftJoin(rtkRequests, eq(rtkRequests.id, redactionJobs.rtkRequestId))
     .where(
       and(
         inArray(
@@ -132,7 +144,14 @@ export async function loadReleaseCandidates(
         .filter((x) => x !== null)
         .join(' '),
       originalVersionId: own.find((v) => v.role === 'original')?.id ?? null,
-      versions: own.map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
+      versions: own.map(({ createdAt, madeForId, madeForNumber, ...v }) => ({
+        ...v,
+        createdAt: createdAt.toISOString(),
+        madeFor:
+          madeForId === null || madeForNumber === null
+            ? null
+            : { requestId: madeForId, number: madeForNumber },
+      })),
     }
   })
 }
