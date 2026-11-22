@@ -117,10 +117,12 @@ export default async function PortalApplicationPage({ params }: Props) {
     loadTownProfile(ctx.db, ctx.signal),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const officeName = profile?.officeName ?? 'land use office'
   const status = applicantStatus({
     state: view.state,
     board: view.record.board,
-    dueCents: view.canPay ? view.fees.dueCents : 0,
+    dueCents: view.canPay || view.payAtOffice ? view.fees.dueCents : 0,
+    payAtOffice: view.payAtOffice ? officeName : null,
     missingDocuments: missingNow(checklist?.stages.flatMap((s) => s.rows) ?? [], view.state),
     decisionDue: view.decisionDue?.date ?? null,
     decisionLate: view.decisionDue?.late ?? false,
@@ -176,7 +178,7 @@ export default async function PortalApplicationPage({ params }: Props) {
         </section>
       ) : null}
 
-      <FeesPanel view={view} officeName={profile?.officeName ?? 'land use office'} />
+      <FeesPanel view={view} officeName={officeName} />
       <EndingActions view={view} />
     </main>
   )
