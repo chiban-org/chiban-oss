@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { ENDABLE_FROM, type Ending } from '@/features/portal/endApplication'
 import type { PortalApplicationView } from '@/features/portal/portalView'
+import { formatCents } from '@/lib/money'
 import type { ActionResult } from '@/server/actionRunner'
 import { deleteDraftAction, withdrawApplicationAction } from './endingActions'
 
@@ -45,6 +46,13 @@ function endingFor(view: PortalApplicationView): Ending | null {
   return ENDABLE_FROM.withdraw.includes(view.state) ? 'withdraw' : null
 }
 
+function confirmFor(ending: Ending, view: PortalApplicationView): EndingCopy['confirm'] {
+  const { confirm } = COPY[ending]
+  if (ending !== 'withdraw' || view.fees.dueCents <= 0) return confirm
+  const owed = `Fees of ${formatCents(view.fees.dueCents)} already charged are still owed.`
+  return { ...confirm, body: `${confirm.body} ${owed}` }
+}
+
 export function EndingActions({ view }: { view: PortalApplicationView }) {
   const ending = endingFor(view)
   if (ending === null) return null
@@ -57,7 +65,7 @@ export function EndingActions({ view }: { view: PortalApplicationView }) {
         action={copy.action}
         submitLabel={copy.submitLabel}
         variant="destructive"
-        confirm={copy.confirm}
+        confirm={confirmFor(ending, view)}
       >
         <input type="hidden" name="applicationId" value={view.applicationId} />
         <input type="hidden" name="expectedRowVersion" value={view.record.rowVersion} />
