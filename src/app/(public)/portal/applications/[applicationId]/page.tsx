@@ -65,6 +65,16 @@ function BoardRecordSection({ record }: { record: PortalBoardRecord }) {
           <li key={line}>{line}</li>
         ))}
       </ul>
+      {record.notice.length === 0 ? null : (
+        <>
+          <h3>Notice of the hearing</h3>
+          <ul className="space-y-1">
+            {record.notice.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   )
 }
