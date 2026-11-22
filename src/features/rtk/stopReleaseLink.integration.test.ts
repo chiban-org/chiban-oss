@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
-import { approveRendition } from '@/features/renditions/approvals'
+import { approveRendition, revokeApproval } from '@/features/renditions/approvals'
 import { openReleaseVersion } from '@/features/rtk/releaseLinks'
 import { createRelease, type ReleaseInput } from '@/features/rtk/releases'
 import { logRequest } from '@/features/rtk/requests'
@@ -148,5 +148,41 @@ describe('stopping the download link of a released copy', () => {
       ),
     ).toEqual({ ok: false, error: 'not_link_release' })
     expect(await revokedAt(copy.approvalId)).toBeNull()
+  })
+})
+
+describe('revoking an approval whose copy was already released', () => {
+  it.each([
+    'paper',
+    'email',
+    'inspection',
+  ] as const)('refuses a copy released by %s and leaves the approval in place', async (method) => {
+    const copy = await released(
+      method === 'email' ? { method, recipientEmail: 'marlo@example.test' } : { method },
+    )
+    expect(
+      await revokeApproval(
+        handle.db,
+        custodian,
+        { approvalId: copy.approvalId, reason: REASON },
+        signal,
+        store,
+      ),
+    ).toEqual({ ok: false, error: 'released_offline' })
+    expect(await revokedAt(copy.approvalId)).toBeNull()
+  })
+
+  it('still revokes a copy released by link', async () => {
+    const copy = await released({ method: 'electronic_link', recipientEmail: 'marlo@example.test' })
+    expect(
+      await revokeApproval(
+        handle.db,
+        custodian,
+        { approvalId: copy.approvalId, reason: REASON },
+        signal,
+        store,
+      ),
+    ).toEqual({ ok: true, value: undefined })
+    expect(await revokedAt(copy.approvalId)).not.toBeNull()
   })
 })

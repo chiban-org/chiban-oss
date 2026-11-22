@@ -40,6 +40,8 @@ export const RECORDS_COPY: Record<string, string> = {
   not_ready: 'The archival copy is still being made. Try again in a minute.',
   reason_required: 'Enter a reason of at least 10 characters.',
   already_revoked: 'That approval was already revoked.',
+  released_offline:
+    'That copy was already released by email, on paper or for inspection, so it cannot be called back.',
   not_link_release: 'That copy was not released by link, so there is no link to stop.',
   kind_not_for_target: 'That event does not apply to this kind of record.',
   nothing_eligible: 'No records are eligible on that date.',

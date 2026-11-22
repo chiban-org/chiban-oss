@@ -15,6 +15,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { deleteDerivedObjects, onApprovalRevoked } from '@/features/renditions/propagate'
+import { releasedOffline } from '@/features/renditions/releasedOffline'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
@@ -198,6 +199,7 @@ export type RevokeError =
   | 'not_found'
   | 'reason_required'
   | 'already_revoked'
+  | 'released_offline'
 
 export async function revokeApproval(
   db: Db,
@@ -222,6 +224,7 @@ export async function revokeApproval(
     if (input.reason.trim().length < MIN_REASON) return err('reason_required')
     const supersededOnly = approval.revokedAt !== null && approval.revokeReason === 'superseded'
     if (approval.revokedAt !== null && !supersededOnly) return err('already_revoked')
+    if (await releasedOffline(tx, approval.versionId)) return err('released_offline')
     const now = new Date()
     const revoked = await revokeActive(
       tx,
