@@ -78,7 +78,11 @@ describe('the location field', () => {
     fireEvent.click(screen.getByRole('button', { name: dialog }))
     const location = screen.getByLabelText('Where is the property?')
     expect(location).toHaveProperty('required', false)
-    expect(screen.getByText("Leave blank to use the parcel's site address.")).toBeTruthy()
+    expect(
+      screen.getByText(
+        "Leave blank to use the parcel's site address, or its parcel ID when it has no site address.",
+      ),
+    ).toBeTruthy()
   })
 })
 

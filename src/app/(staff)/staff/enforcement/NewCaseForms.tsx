@@ -5,7 +5,8 @@ import { TextField } from '@/components/staff/fields'
 import { openCaseAction, staffComplaintAction } from './actions'
 
 const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address matches exactly.'
-const LOCATION_HINT = "Leave blank to use the parcel's site address."
+const LOCATION_HINT =
+  "Leave blank to use the parcel's site address, or its parcel ID when it has no site address."
 
 export function NewCaseForms() {
   return (
