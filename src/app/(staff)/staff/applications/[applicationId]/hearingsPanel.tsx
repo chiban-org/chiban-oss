@@ -15,7 +15,6 @@ export function HearingsPanel({
   deadline = null,
 }: {
   data: ApplicationHearingsPanel | null
-  meetingOnBoard?: boolean
   deadline?: MeetingDeadline | null
 }) {
   if (data === null) return null

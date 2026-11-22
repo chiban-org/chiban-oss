@@ -73,14 +73,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
     {
       key: 'hearings',
       empty: hearingsEmpty(hearings),
-      node: (
-        <HearingsPanel
-          key="hearings"
-          data={hearings}
-          meetingOnBoard={board?.boardKind === 'zba' && board.acceptanceMeetingId !== null}
-          deadline={deadline}
-        />
-      ),
+      node: <HearingsPanel key="hearings" data={hearings} deadline={deadline} />,
     },
     {
       key: 'completeness',
