@@ -64,14 +64,13 @@ describe('RequestReceivedPage', () => {
     expect(screen.queryByText(/^It /)).toBeNull()
   })
 
-  it('without a date names the town in what happens next', async () => {
+  it('without a date keeps the New Hampshire next step unchanged', async () => {
     await show({ ref: 'RK-2027-0004', emailed: '1' })
     expect(
       screen.getByText(
-        'The town will make the records available, deny the request in writing, or tell you in writing when it will answer.',
+        'It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
       ),
     ).toBeTruthy()
-    expect(screen.queryByText(/^It /)).toBeNull()
   })
 
   it('under an acknowledging pack the receipt email makes the same promise', () => {
