@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { DateField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { cureMethodPhrase } from '@/features/enforcement/cureRules'
 import { uncoveredOpenFindings } from '@/features/enforcement/cureStanding'
@@ -47,13 +47,7 @@ export function SendCureNoticeForm({ detail, variant }: { detail: CaseDetail; va
       <TextField label="Owner mailing address" name="ownerAddress" required />
       <TextField label="Occupant name, if one applies" name="occupantName" />
       <TextField label="Occupant mailing address" name="occupantAddress" />
-      <TextField
-        label="Date mailed"
-        name="sentOn"
-        type="date"
-        defaultValue={detail.today}
-        required
-      />
+      <DateField label="Date mailed" name="sentOn" today={detail.today} />
     </ActionForm>
   )
 }
@@ -66,13 +60,7 @@ function CureReceiptForm({ detail, noticeId }: { detail: CaseDetail; noticeId: s
       variant="outline"
     >
       <Hidden name="cureNoticeId" value={noticeId} />
-      <TextField
-        label="Date on the return receipt"
-        name="receivedOn"
-        type="date"
-        defaultValue={detail.today}
-        required
-      />
+      <DateField label="Date on the return receipt" name="receivedOn" today={detail.today} />
     </ActionForm>
   )
 }
