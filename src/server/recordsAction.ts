@@ -48,6 +48,8 @@ export const RECORDS_COPY: Record<string, string> = {
   not_approved: 'That batch is not approved.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   already_closed: 'This request is already closed.',
+  no_clarification_question: 'This request has no open question to answer.',
+  before_acknowledgement: 'The answer cannot be dated before the request was acknowledged.',
   units_do_not_fit_category:
     'The housing units do not fit that kind of structure: one per building for a single-family house, two per building for a two-unit building, three or four per building, or five or more per building.',
   excluded_reason_required: 'Choose why the permit is left out of the count.',

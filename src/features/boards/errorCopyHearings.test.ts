@@ -78,4 +78,19 @@ describe('boardErrorCopy for hearings, decisions, and notices', () => {
       'These departments have no active reviewer: Fire, Police. Add one in the Technical Review Committee settings.',
     )
   })
+
+  it.each([
+    ['before_receipt', 'The date cannot be before the application was received.'],
+    ['before_acceptance', 'The date cannot be before the board accepted the application.'],
+    [
+      'hearing_scheduled',
+      'A hearing is scheduled for this application. Cancel it or hold it before recording a decision without a hearing.',
+    ],
+    [
+      'board_application',
+      "That application is decided by a board, so its decision is recorded from the board's vote.",
+    ],
+  ])('words the date and hearing refusal %s', (code, copy) => {
+    expect(boardErrorCopy(code)).toBe(copy)
+  })
 })
