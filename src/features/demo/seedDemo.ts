@@ -1,6 +1,6 @@
 import path from 'node:path'
 import type { Db } from '@/db/client'
-import { DEMO_USERS, type DemoUser, demoUsers, seedTownAndUsers } from '@/features/demo/demoUsers'
+import { type DemoUser, demoUsers, seedTownAndUsers } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedMaineDemo } from '@/features/demo/me/seedMaineDemo'
 import {
@@ -41,7 +41,7 @@ import { activePack } from '@/features/packs/registry'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 
-export { DEMO_DOMAIN, DEMO_USERS, type DemoUser }
+export { DEMO_DOMAIN, type DemoUser, demoUsers }
 
 export interface SeedOperationsDeps {
   store?: ObjectStore

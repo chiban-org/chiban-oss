@@ -2,13 +2,13 @@ import { ME_PACK } from '@packs/me'
 import { afterEach, describe, expect, it } from 'vitest'
 import { maineUsers } from '@/features/demo/me/maineTown'
 import { demoPersonas, personaFor } from '@/features/demo/personas'
-import { DEMO_USERS } from '@/features/demo/seedDemo'
+import { demoUsers } from '@/features/demo/seedDemo'
 import { setActivePackForTest } from '@/features/packs/registry'
 
 describe('demo personas', () => {
   it('each one is a seeded demo user of the same kind', () => {
     for (const persona of demoPersonas()) {
-      const seeded = DEMO_USERS.find((u) => u.email === persona.email)
+      const seeded = demoUsers().find((u) => u.email === persona.email)
       expect(seeded?.kind, persona.email).toBe(persona.kind)
     }
   })

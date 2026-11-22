@@ -18,7 +18,7 @@ import {
 } from '@/db/schema'
 import { CORE_STATES } from '@/features/applications/states'
 import { withStoryCalendar } from '@/features/demo/seedCalendar'
-import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
+import { demoUsers, seedDemo } from '@/features/demo/seedDemo'
 import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
@@ -92,7 +92,7 @@ describe('the town boards in the demo', () => {
       'concom.member@alderpond.example',
       'concom.pike@alderpond.example',
     ])
-    expect(DEMO_USERS.map((u) => u.email)).toContain('concom.member@alderpond.example')
+    expect(demoUsers().map((u) => u.email)).toContain('concom.member@alderpond.example')
   })
 
   it('gives the Conservation Commission a past meeting with approved minutes and an upcoming one with a shown agenda', async () => {

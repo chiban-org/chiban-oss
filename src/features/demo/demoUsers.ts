@@ -93,8 +93,6 @@ export function demoUsers(): readonly DemoUser[] {
   return usersWithAppealsLocal(appealsMemberLocal())
 }
 
-export const DEMO_USERS: readonly DemoUser[] = usersWithAppealsLocal('zba.member')
-
 export interface DemoTown {
   name: string
   stateCode: string
