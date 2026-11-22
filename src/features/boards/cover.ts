@@ -43,7 +43,7 @@ export function packetCoverInput(view: CoverView, frame: DocumentFrame): Documen
           [
             {
               kind: 'table',
-              columns: ['Item', 'Document'],
+              columns: ['No.', 'Document'],
               rows: contentsOrder(view).map((item, i) => [String(i + 1), item.title]),
             },
           ],

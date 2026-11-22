@@ -49,6 +49,7 @@ function contents(view: PacketReaderView) {
 describe('the packet cover contents', () => {
   it('orders documents by the agenda position of their case, then the rest', () => {
     expect(contents(VIEW)).toMatchObject({
+      columns: ['No.', 'Document'],
       rows: [
         ['1', 'Fernhollow Road site plan narrative'],
         ['2', 'Alder Pond subdivision plat'],
