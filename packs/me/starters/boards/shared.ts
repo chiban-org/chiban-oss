@@ -44,6 +44,8 @@ export interface BoardStarterInput {
   extraTemplates?: TextTemplateBody[]
 }
 
+const NOT_THE_OWNER = { field: 'is_owner', op: 'not_equals', value: 'yes' } as const
+
 const SHARED_FIELDS: FormField[] = [
   {
     key: 'project_description',
@@ -68,7 +70,9 @@ const SHARED_FIELDS: FormField[] = [
     key: 'owner_authorization',
     label: 'The owner has authorized this application',
     type: 'checkbox',
-    required: true,
+    required: false,
+    showIf: NOT_THE_OWNER,
+    requireIf: NOT_THE_OWNER,
   },
 ]
 
