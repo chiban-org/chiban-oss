@@ -14,7 +14,7 @@ function renderWith(onPatch: (patch: Partial<FormField>) => void) {
       field={FIELD}
       frozen={false}
       references={[]}
-      onKey={() => {}}
+      onKey={vi.fn()}
       onPatch={onPatch}
     />,
   )
