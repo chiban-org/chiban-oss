@@ -38,7 +38,7 @@ async function quickIssued(): Promise<string> {
     signal,
     { now: NOW, store: (await makeTestStore()).store },
   )
-  if (!r.ok) throw new Error(r.error)
+  if (!r.ok) throw new Error(JSON.stringify(r.error))
   expect(r.value.state).toBe('issued')
   return r.value.applicationId
 }
