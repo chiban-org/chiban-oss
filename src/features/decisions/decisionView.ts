@@ -30,6 +30,7 @@ import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidenc
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
+import { loadPack } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import { boardShort } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -78,6 +79,7 @@ export interface DecisionView {
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
   offerFinalApproval: boolean
+  recordingPeriod: string | null
 }
 
 export interface FilingDue {
@@ -144,6 +146,21 @@ export async function checklistFor(
           },
     state: i.state,
   }))
+}
+
+const PERIOD_UNITS = {
+  days: ['day', 'days'],
+  months: ['month', 'months'],
+  business_days: ['business day', 'business days'],
+} as const
+
+function recordingPeriod(): string | null {
+  for (const rule of loadPack().rules) {
+    if (rule.kind !== 'clock' || rule.consequence.kind !== 'void_unless_recorded') continue
+    const [one, many] = PERIOD_UNITS[rule.length.unit]
+    return `${rule.length.value} ${rule.length.value === 1 ? one : many}`
+  }
+  return null
 }
 
 function blankToNull(value: string | null): string | null {
@@ -222,6 +239,7 @@ export async function loadDecisionView(
           },
     graph,
     offerFinalApproval: packWaitsForFinalApproval(),
+    recordingPeriod: recordingPeriod(),
     nodeChoices: nodes.map((n, i) => ({
       id: n.id,
       label: `${graph[i]?.kindLabel ?? ''}, ${graph[i]?.dateText ?? ''}`,
