@@ -5,7 +5,7 @@ import type { GateRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export type GateOutcome =
-  | { status: 'pass' }
+  | { status: 'pass'; notApplicable?: true }
   | { status: 'blocked'; reason: string }
   | { status: 'unknown'; reason: string }
 
