@@ -3,7 +3,7 @@ import { type CivilDate, compareCivil, daysBetween } from '@/types/civilDate'
 import { cureStanding, uncoveredOpenFindings } from './cureStanding'
 import { orderAvailableForFindings } from './orderAvailability'
 import { type CasePlanInput, draftOrderOf } from './workPlanInput'
-import type { Step } from './workPlanSteps'
+import type { Step } from './workPlanNoOrder'
 import type { CaseAction, CaseDue } from './workPlanTypes'
 
 export function remedyActions(input: CasePlanInput): CaseAction[] {

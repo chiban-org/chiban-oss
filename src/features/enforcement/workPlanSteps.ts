@@ -3,7 +3,6 @@ import { ROLE_LABELS } from '@/features/enforcement/labels'
 import type { RecipientRole } from '@/features/packs/schema'
 import { boardAbbrev } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
-import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
 import { orderAvailableForFindings } from './orderAvailability'
 import { cureStep } from './workPlanCure'
@@ -21,32 +20,19 @@ import {
   stepOf,
   unservedFor,
 } from './workPlanInput'
-import type { CaseAction, CaseActor, CaseNowStep } from './workPlanTypes'
+import {
+  judgmentStep,
+  noOrderCounselStep,
+  resolveStep,
+  type Step,
+  town,
+  waiting,
+} from './workPlanNoOrder'
 
-export type Step = Omit<CaseNowStep, 'warnings'>
+export type { Step }
 
 export function roleName(item: { role: RecipientRole }): string {
   return ROLE_LABELS[item.role].toLowerCase()
-}
-
-function town(key: string, task: string, action: CaseAction | null, note: string | null = null) {
-  return { key, task, ask: task, actor: 'town' as const, actorName: null, note, action }
-}
-
-interface Waiting {
-  key: string
-  actor: CaseActor
-  ask: string
-  task: string
-  note?: string | null
-}
-
-function waiting(w: Waiting): Step {
-  return { ...w, actorName: null, note: w.note ?? null, action: null }
-}
-
-function resolveStep(): Step {
-  return town('move:resolved', 'Resolve the case', { kind: 'move', to: 'resolved' })
 }
 
 function issueStep(draft: CasePlanOrder): Step {
@@ -107,21 +93,6 @@ function violationStep(input: CasePlanInput): Step {
   return town('order.drafted', 'Draft a cease and desist order', { kind: 'draft_order' })
 }
 
-function noOrderCounselStep(input: CasePlanInput): Step {
-  const counsel = counselState(input)
-  if (counsel === 'won') return judgmentStep(input)
-  if (counsel === 'ended') return resolveStep()
-  if (counsel === 'open') {
-    return waiting({
-      key: 'counsel.referred',
-      actor: 'counsel',
-      ask: 'Take the case to court',
-      task: 'Wait for town counsel',
-    })
-  }
-  return town('counsel.referred', 'Refer the case to town counsel', null)
-}
-
 function serviceStep(order: CasePlanOrder): Step | null {
   const roles = order.rule.recipientRoles
   const gap = [...order.status.missing].sort(
@@ -156,15 +127,6 @@ function serviceStep(order: CasePlanOrder): Step | null {
     kind: 'record_service',
     orderId,
     recipientId: unserved.id,
-  })
-}
-
-function judgmentStep(input: CasePlanInput): Step {
-  const owed = input.fines.find((f) => f.dueCents > 0)
-  if (owed === undefined) return resolveStep()
-  return town('fines.paid', `Collect the ${formatCents(owed.dueCents)} fine balance`, {
-    kind: 'record_fine_payment',
-    fineId: owed.row.id,
   })
 }
 
