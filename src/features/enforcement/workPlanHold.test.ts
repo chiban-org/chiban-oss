@@ -27,12 +27,18 @@ function heldCase(
 const SETTLED = [{ outcomes: [{ kind: 'settled' }] }]
 
 describe('the case moves while a development hold is active', () => {
-  it('offers no resolve or close on a case in court with the hold in place', () => {
+  it('offers no resolve on a case in court with the hold in place', () => {
     withPackForTest(ME_PACK, () => {
       const plan = planFor(heldCase('in_court', true, { referrals: SETTLED }))
       expect(plan.moves).not.toContain('resolved')
-      expect(plan.moves).not.toContain('closed')
       expect(plan.now).toMatchObject({ key: 'hold.release', task: 'Release the hold' })
+    })
+  })
+
+  it('offers no close on a no violation case that would offer it without the hold', () => {
+    withPackForTest(ME_PACK, () => {
+      expect(planFor(heldCase('no_violation', false)).moves).toContain('closed')
+      expect(planFor(heldCase('no_violation', true)).moves).not.toContain('closed')
     })
   })
 
