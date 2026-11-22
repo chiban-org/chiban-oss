@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { DateField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { cureMethodPhrase } from '@/features/enforcement/cureRules'
@@ -92,7 +93,12 @@ function CureNoticeItem({
         {`Cure period ends ${formatCivilDate(notice.due)}. `}
         {notice.returnReceiptOn === null
           ? 'Return receipt not recorded.'
-          : `Return receipt dated ${formatCivilDate(notice.returnReceiptOn)}.`}
+          : `Return receipt dated ${formatCivilDate(notice.returnReceiptOn)}.`}{' '}
+        {notice.documentId === null ? null : (
+          <a {...NEW_TAB} href={`/api/documents/${notice.documentId}`}>
+            Open notice
+          </a>
+        )}
       </p>
       {canReceive && notice.returnReceiptOn === null ? (
         <details>

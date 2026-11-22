@@ -86,6 +86,17 @@ describe('the cure section on a case', () => {
     findingIds: ['f9'],
   }
 
+  it('links each sent notice to its letter', () => {
+    const detail = cureDetail({
+      staff: staffRow('violation_found'),
+      cure: { choices: [], rule: RULE, notices: [sent] },
+    })
+    renderForm(<CureSection detail={detail} can={ALL_CAN} hosted={new Set()} />)
+    expect(screen.getByRole('link', { name: 'Open notice' }).getAttribute('href')).toBe(
+      '/api/documents/doc1',
+    )
+  })
+
   it('offers the procedure and notice forms on an open case', () => {
     const detail = cureDetail({ staff: staffRow('violation_found') })
     renderForm(<CureSection detail={detail} can={ALL_CAN} hosted={new Set()} />)
