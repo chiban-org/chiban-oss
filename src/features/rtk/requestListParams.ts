@@ -1,4 +1,4 @@
-import { RTK_STATUSES, type RtkStatus } from '@/db/schema'
+import { RTK_STATUSES } from '@/db/schema'
 import {
   type RawSearchParams,
   readTableParams,
@@ -19,8 +19,14 @@ export const REQUEST_SORT: SortConfig<RequestSortKey> = {
 
 export const REQUEST_FILTER_PARAMS = ['status', 'due'] as const
 
+export const ACKNOWLEDGED_FILTER = 'acknowledged'
+
+export const REQUEST_STATUS_FILTERS = [...RTK_STATUSES, ACKNOWLEDGED_FILTER] as const
+
+export type RequestStatusFilter = (typeof REQUEST_STATUS_FILTERS)[number]
+
 export interface RequestListFilters {
-  statuses?: RtkStatus[]
+  statuses?: RequestStatusFilter[]
   due?: DueFilter[]
 }
 
@@ -36,7 +42,7 @@ export function readRequestsView(raw: RawSearchParams): RequestsView {
     params,
     sort: parseSort(REQUEST_SORT, params),
     filters: {
-      ...whenAny('statuses', filterValues(params, 'status', RTK_STATUSES)),
+      ...whenAny('statuses', filterValues(params, 'status', REQUEST_STATUS_FILTERS)),
       ...whenAny('due', singleValue(params, 'due', DUE_FILTERS)),
     },
   }
