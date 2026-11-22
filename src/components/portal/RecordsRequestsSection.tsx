@@ -13,7 +13,7 @@ export function RecordsRequestsSection({ requests }: { requests: PortalRecordsRe
   return (
     <section aria-labelledby="records-requests-heading">
       <h2 id="records-requests-heading">{`Your ${recordsRequest()}s`}</h2>
-      <ul className="m-0 list-none divide-y p-0">
+      <ul className="list-none divide-y p-0">
         {requests.map((request) => (
           <li key={request.number} className="flex flex-col gap-0.5 py-3">
             <span className="font-semibold">{request.number}</span>
