@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationConditions,
@@ -11,6 +11,7 @@ import {
 import { formApplicantName, namedParty } from '@/features/applications/applicantName'
 import type { ApplicationContext } from '@/features/applications/context'
 import { loadApplicationContext } from '@/features/applications/context'
+import { lapseRuleKeys } from '@/features/applications/expiryDates'
 import { getVersion } from '@/features/config/store'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -18,10 +19,9 @@ import { correctionMark } from '@/features/permits/correction/mark'
 import type { MergeContext } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
-const EXPIRATION_RULE_KEY = 'town.bp.expiration'
 export const NOT_APPLICABLE = 'Not applicable'
 
 export interface PermitData {
@@ -73,17 +73,19 @@ async function feeFigures(db: DbOrTx, applicationId: string, signal: AbortSignal
 }
 
 async function expiresOn(db: DbOrTx, applicationId: string): Promise<string> {
+  const keys = lapseRuleKeys()
+  if (keys.length === 0) return NOT_APPLICABLE
   const [clock] = await db
     .select({ currentDue: clocks.currentDue })
     .from(clocks)
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, EXPIRATION_RULE_KEY),
+        inArray(clocks.ruleKey, keys),
         isNull(clocks.supersededBy),
       ),
     )
-    .orderBy(desc(clocks.createdAt))
+    .orderBy(desc(clocks.createdAt), desc(clocks.id))
     .limit(1)
   return clock === undefined ? NOT_APPLICABLE : formatCivilDate(clock.currentDue)
 }
@@ -139,7 +141,7 @@ export async function loadPermitData(
     issuedOn: application.issuedOn === null ? '' : formatCivilDate(application.issuedOn),
     expiresOn: await expiresOn(db, applicationId),
     conditions: conditions.map((c) => c.textSnapshot),
-    codeEdition: edition[0]?.label ?? '',
+    codeEdition: humanizeIsoDates(edition[0]?.label ?? ''),
     feesTotal: fees.total,
     feeStatus: fees.status,
     permitTemplate: await permitTemplate(db, application.pins.templates, signal),

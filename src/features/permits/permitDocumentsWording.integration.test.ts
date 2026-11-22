@@ -1,8 +1,13 @@
+import { and, eq, isNull } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applicationConditions } from '@/db/schema'
+import { applicationConditions, clocks } from '@/db/schema'
+import { startClocksFor } from '@/features/clocks/startClocks'
+import { adoptStarter } from '@/features/config/adoptStarter'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { buildPermitPdf, buildPlacardPdf } from '@/features/permits/permitDocuments'
 import { publishTownProfileSection } from '@/features/town/profileSettings'
+import { formatCivilDate } from '@/lib/formatDate'
+import { makeApplication, type PermitWorld } from '@/test/applicationFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
@@ -13,11 +18,13 @@ import {
   tryIssue,
 } from '@/test/ledgerFixtures'
 import { pdfWording } from '@/test/pdfWording'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const NOON = new Date('2027-03-02T17:00:00Z')
 let handle: TestDb
 let trade: TradeFixture
+let world: PermitWorld
 
 const TEMPLATE = {
   key: 'el-permit',
@@ -28,7 +35,7 @@ const TEMPLATE = {
 
 beforeEach(async () => {
   handle = await makeTestDb()
-  const { world } = await setupTradeWorld(handle.db)
+  world = (await setupTradeWorld(handle.db)).world
   await saveAndPublish(handle.db, world.admin, 'template', 'el-permit', TEMPLATE)
   for (const [section, slice] of [
     [
@@ -134,9 +141,6 @@ describe('permit and placard wording', () => {
       Expires
       Not applicable
 
-      Code edition
-      Not recorded
-
       Fees
       $45.00, paid in full
 
@@ -181,4 +185,48 @@ describe('permit and placard wording', () => {
       "
     `)
   })
+})
+
+async function issuedLocalPermit(starter: string, typeKey: string): Promise<string> {
+  const adopted = await adoptStarter(handle.db, world.admin, starter, signal)
+  if (!adopted.ok) throw new Error(JSON.stringify(adopted.error))
+  const issuedOn = '2027-03-10' as CivilDate
+  const made = await makeApplication(handle.db, world, { state: 'issued', issuedOn }, NOON, typeKey)
+  await handle.db.transaction((tx) =>
+    startClocksFor(tx, made.applicationId, 'permit_issued', issuedOn, signal),
+  )
+  return made.applicationId
+}
+
+async function clockDue(applicationId: string, ruleKey: string): Promise<string> {
+  const [clock] = await handle.db
+    .select({ due: clocks.currentDue })
+    .from(clocks)
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        eq(clocks.ruleKey, ruleKey),
+        isNull(clocks.supersededBy),
+      ),
+    )
+  if (clock === undefined) throw new Error(`no ${ruleKey} clock`)
+  return formatCivilDate(clock.due)
+}
+
+describe('the expiry date on registrations and temporary permits', () => {
+  for (const [starter, typeKey, ruleKey] of [
+    ['nh.starter.alarm_registration', 'AR', 'town.registration.expiration'],
+    ['nh.starter.temporary_structure', 'TS', 'town.temporary.expiration'],
+  ] as const) {
+    it(`${typeKey} prints its ${ruleKey} date`, async () => {
+      const applicationId = await issuedLocalPermit(starter, typeKey)
+      const due = await clockDue(applicationId, ruleKey)
+      const built = await buildPermitPdf(handle.db, applicationId, signal)
+      if (!built.ok) throw new Error(built.error)
+      const lines = (await pdfWording(built.value)).split('\n')
+      expect(lines[lines.indexOf('Expires') + 1]).toBe(due)
+      expect(lines).not.toContain('Not applicable')
+      expect(lines).not.toContain('Code edition')
+    })
+  }
 })

@@ -97,6 +97,12 @@ function townProfile(): TownProfileBody {
         signature: null,
       },
       {
+        role: 'plumbing_inspector',
+        name: 'Lee Piper',
+        title: 'Local Plumbing Inspector',
+        signature: null,
+      },
+      {
         role: 'town_clerk',
         name: 'Rae Records',
         title: 'Town Clerk',
