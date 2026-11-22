@@ -179,6 +179,29 @@ describe('FeeLinesEditor', () => {
 })
 
 describe('TownRuleEditor', () => {
+  it('limits the value field to the range and says the range', () => {
+    render(
+      <TownRuleEditor
+        body={{ ruleKey: 'town.bp.validity', value: 18 }}
+        onChange={vi.fn()}
+        errors={{}}
+        rule={{
+          label: 'Building permit validity period',
+          policy: 'The town chooses. Default 12.',
+          unit: 'months',
+          min: 6,
+          max: 120,
+          citation: { label: 'Town rule', url: null },
+        }}
+      />,
+    )
+    const field = screen.getByLabelText('Value, in months')
+    expect(field.getAttribute('min')).toBe('6')
+    expect(field.getAttribute('max')).toBe('120')
+    expect(field.getAttribute('step')).toBe('1')
+    expect(screen.getByText('A whole number from 6 to 120 months.')).toBeTruthy()
+  })
+
   it('shows policy violations beside the value and the adoption record', () => {
     render(
       <TownRuleEditor
@@ -192,6 +215,8 @@ describe('TownRuleEditor', () => {
           label: 'Building permit validity period',
           policy: 'The town chooses. Default 12.',
           unit: 'months',
+          min: 1,
+          max: 120,
           citation: { label: 'Town rule', url: null },
         }}
       />,

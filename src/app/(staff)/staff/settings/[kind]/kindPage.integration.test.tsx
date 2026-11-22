@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { adoptStarter } from '@/features/config/adoptStarter'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -116,5 +117,17 @@ describe('settings kind page', () => {
   it('keeps one published choice at a time', async () => {
     const html = await render(await staffActor(handle.db, 'admin'), { published: 'published' })
     expect(html).toContain('href="/staff/settings/application_type?published=unpublished"')
+  })
+
+  it('shows the value a published town rule is using beside its version', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    await saveAndPublish(handle.db, admin, 'town_rule_setting', 'town.bp.validity', {
+      ruleKey: 'town.bp.validity',
+      value: 18,
+      adoptingAuthority: 'Town Meeting',
+      adoptedOn: '2027-03-10',
+    })
+    const html = await render(admin, {}, 'town_rule_setting')
+    expect(html).toContain('Version 1 in use: 18 months')
   })
 })

@@ -8,6 +8,7 @@ import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 
 interface Props {
   body: PaymentSettingsBody
+  townName: string
   onChange: (next: PaymentSettingsBody) => void
   errors: FieldErrors
 }
@@ -17,7 +18,7 @@ const CHANNELS = [
   ['card_present', 'Card payments at the counter'],
 ] as const
 
-export function PaymentSettingsEditor({ body, onChange, errors }: Props) {
+export function PaymentSettingsEditor({ body, townName, onChange, errors }: Props) {
   const fee = body.convenienceFee
   const setFee = (next: Partial<typeof fee>) =>
     onChange({ ...body, convenienceFee: { ...fee, ...next } })
@@ -63,7 +64,11 @@ export function PaymentSettingsEditor({ body, onChange, errors }: Props) {
       </fieldset>
       <Input
         label="Checks payable to"
-        hint="Printed on invoices and receipts, for example Town of Alder Pond."
+        hint={
+          townName === ''
+            ? 'Printed on invoices and receipts.'
+            : `Printed on invoices and receipts, for example ${townName}.`
+        }
         value={body.checksPayableTo}
         onChange={(e) => onChange({ ...body, checksPayableTo: e.target.value })}
       />

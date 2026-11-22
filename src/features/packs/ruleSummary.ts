@@ -1,4 +1,4 @@
-import type { Pack } from '@/features/packs/loadPack'
+import { loadPack, type Pack } from '@/features/packs/loadPack'
 import type { OverridePolicy, PackRule, ProceedingClassification } from '@/features/packs/schema'
 
 export interface RuleSummary {
@@ -10,7 +10,13 @@ export interface RuleSummary {
   unit: string | null
 }
 
-export function policyText(policy: OverridePolicy): string {
+const TOWN_RULE_CITATION = 'Town rule'
+
+function settingLabel(key: string): string {
+  return loadPack().rules.find((r) => r.key === key)?.label ?? key
+}
+
+function overrideText(policy: OverridePolicy): string {
   switch (policy.policy) {
     case 'fixed':
       return 'Fixed by statute. The town cannot change it.'
@@ -27,13 +33,26 @@ export function policyText(policy: OverridePolicy): string {
   }
 }
 
+export function policyText(rule: PackRule): string {
+  if (rule.kind === 'clock' && 'fromSetting' in rule.length) {
+    return `Follows the town setting "${settingLabel(rule.length.fromSetting)}".`
+  }
+  if (rule.kind === 'notice_requirement' && typeof rule.channel === 'object') {
+    return 'The town chooses posting or newspaper.'
+  }
+  if (rule.overridePolicy.policy === 'fixed' && rule.citation.label === TOWN_RULE_CITATION) {
+    return "Chiban's starting rule. The town cannot change it here."
+  }
+  return overrideText(rule.overridePolicy)
+}
+
 export function ruleSummary(rule: PackRule): RuleSummary {
   return {
     key: rule.key,
     version: rule.version,
     label: rule.label,
     citation: rule.citation,
-    policy: policyText(rule.overridePolicy),
+    policy: policyText(rule),
     unit: rule.kind === 'town_setting' ? rule.unit : null,
   }
 }
