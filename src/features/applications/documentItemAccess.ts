@@ -5,6 +5,7 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stageOpenFor } from '@/features/applications/documentChecklist'
 import { type DocumentItem, documentItemsOf } from '@/features/applications/documentItemSchema'
+import { mayActAsPlumbingOwner } from '@/features/applications/plumbingOwner'
 import { isTerminalState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -34,13 +35,12 @@ async function roleAllowed(
   signal: AbortSignal,
 ): Promise<ItemError | null> {
   const { role } = target
-  if (role === 'staff_accepts') {
-    return (await hasCapability(db, actor.userId, 'application.manage', signal))
-      ? null
-      : 'forbidden'
-  }
-  if (role === 'staff_files') {
-    return (await hasCapability(db, actor.userId, 'document.manage', signal)) ? null : 'forbidden'
+  if (role === 'staff_accepts' || role === 'staff_files') {
+    const capability = role === 'staff_accepts' ? 'application.manage' : 'document.manage'
+    const allowed =
+      (await hasCapability(db, actor.userId, capability, signal)) ||
+      (await mayActAsPlumbingOwner(db, actor, target.app.typeBody.classification, signal))
+    return allowed ? null : 'forbidden'
   }
   if (hasFullRecordAccess(actor) || !(await isActiveParty(db, actor.userId, target.app.projectId)))
     return 'forbidden'

@@ -53,6 +53,7 @@ export type TemplateDoc = z.infer<typeof TemplateDocSchema>
 export interface FieldTableRow {
   label: string
   field: string
+  optional?: boolean
 }
 
 export function stringAttr(node: DocNode, name: string): string {
@@ -65,8 +66,9 @@ export function fieldTableRows(node: DocNode): FieldTableRow[] {
   if (!Array.isArray(rows)) return []
   return rows.flatMap((row: unknown) => {
     if (typeof row !== 'object' || row === null) return []
-    const { label, field } = row as Record<string, unknown>
-    return typeof label === 'string' && typeof field === 'string' ? [{ label, field }] : []
+    const { label, field, optional } = row as Record<string, unknown>
+    if (typeof label !== 'string' || typeof field !== 'string') return []
+    return [optional === true ? { label, field, optional: true } : { label, field }]
   })
 }
 

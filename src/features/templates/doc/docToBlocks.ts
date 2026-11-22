@@ -17,6 +17,7 @@ export interface DocRenderContext {
   locked?: ReadonlyMap<string, string>
   conditions?: readonly string[]
   people?: ReadonlyMap<SignerRole, SignaturePerson>
+  signerRole?: SignerRole
 }
 
 const DATA_NODES: ReadonlySet<string> = new Set(['conditionsList', 'lockedBlock', 'recordSection'])
@@ -99,14 +100,15 @@ function lockedBlocks(node: DocNode, ctx: DocRenderContext): PdfBlock[] {
 }
 
 function signatureBlocks(node: DocNode, ctx: DocRenderContext): PdfBlock[] {
-  const role = SignerRoleSchema.safeParse(node.attrs?.role)
-  if (!role.success) return []
-  const person = ctx.people?.get(role.data)
+  const parsed = SignerRoleSchema.safeParse(node.attrs?.role)
+  if (!parsed.success) return []
+  const role = ctx.signerRole ?? parsed.data
+  const person = ctx.people?.get(role)
   return [
     {
       kind: 'signature',
-      role: role.data,
-      label: signatureLabel(role.data),
+      role,
+      label: signatureLabel(role),
       ...(person === undefined ? {} : { person }),
     },
   ]
@@ -139,10 +141,10 @@ function rawValue(name: string, values: MergeContext): string {
 }
 
 function fieldBlocks(node: DocNode, ctx: DocRenderContext): PdfBlock[] {
-  const rows = fieldTableRows(node).map((row) => ({
-    label: row.label,
-    value: rawValue(row.field, ctx.values),
-  }))
+  const rows = fieldTableRows(node).flatMap((row) => {
+    const value = rawValue(row.field, ctx.values)
+    return row.optional === true && value === '' ? [] : [{ label: row.label, value }]
+  })
   return rows.length === 0 ? [] : [{ kind: 'fields', rows }]
 }
 

@@ -90,6 +90,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           key="completeness"
           view={view}
           formElsewhere={hosted.has('mark_complete')}
+          canMarkComplete={records.canMarkComplete}
         />
       ) : null,
     },

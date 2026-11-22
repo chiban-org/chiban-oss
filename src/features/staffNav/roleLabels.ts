@@ -6,8 +6,8 @@ const STAFF_ROLE_ORDER: readonly Role[] = [
   'records_custodian',
   'staff',
   'finance',
-  'inspector',
   'plumbing_inspector',
+  'inspector',
   'reviewer',
   'board_member',
 ]

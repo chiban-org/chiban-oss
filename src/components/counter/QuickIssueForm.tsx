@@ -23,6 +23,9 @@ import { focusFirstRefused } from '@/components/formValidity'
 import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
 import { RequiredNote } from '@/components/ui/required-mark'
+import { computeFees } from '@/features/fees/computeFees'
+import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import type { FieldValue } from '@/features/forms/validateSubmission'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import { attempt } from '@/lib/attempt'
@@ -35,6 +38,7 @@ interface Props {
   summary: ReactNode
   fields: WorkField[]
   baseCents: number
+  feeSchedule?: FeeScheduleBody
   convenienceFee: PaymentSettingsBody['convenienceFee']
   cardAvailable: boolean
   readerSimulated: boolean
@@ -46,6 +50,38 @@ interface Props {
 }
 
 const NO_FIELD_ERRORS: FieldErrors = {}
+const VALUE_PREFIX = 'value.'
+
+function workValues(form: HTMLFormElement): Record<string, FieldValue> {
+  const entries: [string, FieldValue][] = []
+  for (const [key, raw] of new FormData(form).entries()) {
+    if (!key.startsWith(VALUE_PREFIX) || typeof raw !== 'string') continue
+    const name = key.slice(VALUE_PREFIX.length)
+    if (raw === 'on') entries.push([name, true])
+    else if (raw.trim() !== '') entries.push([name, raw.trim()])
+  }
+  return Object.fromEntries(entries)
+}
+
+function permitFeeCents(props: Props, values: Record<string, FieldValue> | null): number {
+  if (props.feeSchedule === undefined || values === null) return props.baseCents
+  const answers = new Map(Object.entries(values))
+  const afterTheFact = props.fields.some(
+    (f) => f.fact === 'afterTheFact' && answers.get(f.key) === true,
+  )
+  try {
+    const computed = computeFees(props.feeSchedule, {
+      values,
+      facts: { classification: null, dwellingUnits: null, afterTheFact },
+      counts: { abutters: { state: 'unknown' } },
+      stage: 'at_intake',
+      overrides: [],
+    })
+    return computed.totalCents ?? props.baseCents
+  } catch {
+    return props.baseCents
+  }
+}
 
 function openPrintouts(result: CounterOutcome): void {
   if (!result.ok || result.state !== 'issued' || result.links === null) return
@@ -85,6 +121,7 @@ export function QuickIssueForm(props: Props) {
   const [declinedApplicationId, setDeclinedApplicationId] = useState<string | null>(null)
   const [receipt, setReceipt] = useState<IssuedReceipt | null>(null)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>(NO_FIELD_ERRORS)
+  const [values, setValues] = useState<Record<string, FieldValue> | null>(null)
   const form = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
@@ -92,7 +129,8 @@ export function QuickIssueForm(props: Props) {
   }, [fieldErrors])
 
   const channel = method === 'card' ? 'card_present' : method
-  const convenienceCents = computeConvenienceFee(props.baseCents, props.convenienceFee, channel)
+  const baseCents = permitFeeCents(props, values)
+  const convenienceCents = computeConvenienceFee(baseCents, props.convenienceFee, channel)
 
   const show = (result: CounterOutcome) => {
     setOutcome(result)
@@ -103,7 +141,7 @@ export function QuickIssueForm(props: Props) {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     data.set('csrf_token', csrf)
-    setReceipt(receiptFor(props, data, method, props.baseCents + convenienceCents))
+    setReceipt(receiptFor(props, data, method, baseCents + convenienceCents))
     if (declinedApplicationId !== null) data.set('applicationId', declinedApplicationId)
     setDeclinedApplicationId(null)
     setFieldErrors(NO_FIELD_ERRORS)
@@ -127,7 +165,11 @@ export function QuickIssueForm(props: Props) {
       ref={form}
       noValidate
       onSubmit={(event) => void submit(event)}
-      onInput={() => setFieldErrors(NO_FIELD_ERRORS)}
+      onInput={(event) => {
+        setFieldErrors(NO_FIELD_ERRORS)
+        setValues(workValues(event.currentTarget))
+      }}
+      onChange={(event) => setValues(workValues(event.currentTarget))}
       className="space-y-6"
     >
       {props.summary}
@@ -144,7 +186,7 @@ export function QuickIssueForm(props: Props) {
         />
         <WorkSection fields={props.fields} />
         <FeeSection
-          baseCents={props.baseCents}
+          baseCents={baseCents}
           convenienceCents={convenienceCents}
           card={method === 'card'}
         />

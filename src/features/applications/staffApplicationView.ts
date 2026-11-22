@@ -21,12 +21,6 @@ import {
 } from '@/features/applications/states'
 import { actorMayMove, needsBoardVote } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
-import {
-  mayActOnClassification,
-  mayRecordAppealOn,
-  packHasPlumbingScope,
-} from '@/features/authz/classificationScope'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
 import { codeEditionApplies } from '@/features/building/codeEditionApplies'
@@ -55,6 +49,8 @@ import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { type DecisionNoticeView, loadDecisionNotice } from './decisionNoticeView'
+import { type IncompleteNoticeRow, listIncompleteNotices } from './incompleteNotice'
+import { permissionsOf, type StaffViewPermissions } from './staffViewPermissions'
 import { evaluateViewGates, type GateGroups } from './viewGates'
 import { loadViewParties, type ViewParty } from './viewParties'
 
@@ -113,40 +109,8 @@ export interface StaffApplicationView {
   varianceValidity: VarianceValidity
   reliance: RelianceView | null
   decisionNotice: DecisionNoticeView | null
-  permissions: {
-    canIssue: boolean
-    canRecordAppeal: boolean
-    canAdjustClock: boolean
-    canOverrideGate: boolean
-    canRecordStatutoryException: boolean
-    canOverrideFee: boolean
-    canDetermineRegionalImpact: boolean
-    canManageWorkflow: boolean
-    canOpenHearings: boolean
-  }
-}
-
-async function permissionsOf(
-  db: Db,
-  actor: Actor,
-  classification: string | undefined,
-  signal: AbortSignal,
-) {
-  const has = (c: Parameters<typeof hasCapability>[2]) => hasCapability(db, actor.userId, c, signal)
-  const canIssue = await mayActOnClassification(db, actor, 'permit.issue', classification, signal)
-  return {
-    canIssue,
-    canRecordAppeal: packHasPlumbingScope()
-      ? await mayRecordAppealOn(db, actor, classification, signal)
-      : canIssue,
-    canAdjustClock: await has('clock.adjust'),
-    canOverrideGate: await has('gate.override_admin'),
-    canRecordStatutoryException: await has('gate.record_statutory_exception'),
-    canOverrideFee: await has('fee.override'),
-    canDetermineRegionalImpact: await has('regional_impact.determine'),
-    canManageWorkflow: await has('application.manage'),
-    canOpenHearings: await has('board.record'),
-  }
+  incompleteNotices: IncompleteNoticeRow[]
+  permissions: StaffViewPermissions
 }
 
 function offersMove(app: ApplicationContext, to: CoreState): boolean {
@@ -303,6 +267,7 @@ export async function getStaffApplicationView(
     varianceValidity: await varianceValidity(db, app.id, signal),
     reliance: await loadRelianceView(db, app.id, project.parcelId, signal),
     decisionNotice: await loadDecisionNotice(db, app),
+    incompleteNotices: await listIncompleteNotices(db, app.id),
     permissions: await permissionsOf(db, actor, app.typeBody.classification, signal),
   }
 }
