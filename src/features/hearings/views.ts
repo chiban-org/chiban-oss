@@ -8,10 +8,12 @@ import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoard } from '@/features/boards/townBoards'
-import { classificationOfApplication } from '@/features/decisions/hearingOptional'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { seatedMemberNames } from '@/features/decisions/seatedVoters'
-import { type SignificanceQuestion, significanceQuestion } from '@/features/decisions/significance'
+import {
+  loadSignificanceQuestion,
+  type SignificanceQuestion,
+} from '@/features/decisions/significance'
 import { evidenceOf } from '@/features/documents/evidence'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { channelLabel } from '@/features/notices/channels'
@@ -193,7 +195,7 @@ export async function loadHearingView(
       (row.hearing.heldOn ?? row.meeting.meetingDate) as CivilDate,
     ),
     offerFinalApproval: packWaitsForFinalApproval(),
-    significanceQuestion: significanceQuestion(classificationOfApplication(app)),
+    significanceQuestion: await loadSignificanceQuestion(db, app, signal),
   }
 }
 

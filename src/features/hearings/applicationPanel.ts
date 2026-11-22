@@ -18,7 +18,10 @@ import {
 } from '@/features/decisions/hearingOptional'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { seatedMemberNames } from '@/features/decisions/seatedVoters'
-import { type SignificanceQuestion, significanceQuestion } from '@/features/decisions/significance'
+import {
+  loadSignificanceQuestion,
+  type SignificanceQuestion,
+} from '@/features/decisions/significance'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { hearingText, loadApplicationAppealNodes } from '@/features/hearings/views'
 import { type TrcDepartmentSummary, trcSummary } from '@/features/reviews/trcSummary'
@@ -75,7 +78,7 @@ async function noHearingForm(
     seatedMembers: await seatedMemberNames(db, ctx.boardId, ctx.today),
     today: ctx.today,
     offerFinalApproval: packWaitsForFinalApproval(),
-    significanceQuestion: significanceQuestion(classificationOfApplication(app)),
+    significanceQuestion: await loadSignificanceQuestion(db, app, ctx.signal),
   }
 }
 
