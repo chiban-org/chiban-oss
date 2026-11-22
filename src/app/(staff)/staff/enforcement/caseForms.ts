@@ -22,7 +22,7 @@ export const rowVersion = () =>
   wholeNumber('the version of this record', { min: 1, max: MAX_ROW_VERSION })
 
 export const OPEN_CASE_FORM = z.object({
-  locationText: requiredText('where the property is', { max: 300 }),
+  locationText: optionalText('where the property is', { max: 300 }),
   parcelRef: optionalText(PARCEL, { max: 200 }),
 })
 
@@ -32,7 +32,7 @@ export const SET_CASE_PARCEL_FORM = z.object({
 })
 
 export const STAFF_COMPLAINT_FORM = z.object({
-  locationText: requiredText('where the property is', { max: 300 }),
+  locationText: optionalText('where the property is', { max: 300 }),
   description: requiredText('what was reported', { max: MAX_COMPLAINT_CHARS }),
   parcelRef: optionalText(PARCEL, { max: 200 }),
   name: optionalText('the complainant name', { max: 200 }),

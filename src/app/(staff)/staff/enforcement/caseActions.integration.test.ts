@@ -41,6 +41,13 @@ beforeAll(async () => {
 const UNKNOWN_PARCEL = 'No parcel has that number or site address. Check it on the parcel page.'
 const PARCEL_NOUN = 'a parcel number or site address'
 const LOCATION_NOUN = 'where the property is'
+const NO_LOCATION = 'Enter where the property is, or pick a parcel.'
+
+const locationRefusal = (variant: InvalidVariant) =>
+  refuseField(
+    'locationText',
+    variant.kind === 'too_long' ? textMessage(LOCATION_NOUN, 300, variant) : NO_LOCATION,
+  )
 const STATUS_VERSION = { min: 1, max: 2_147_483_647 }
 
 const casesAt = (location: string) =>
@@ -48,7 +55,7 @@ const casesAt = (location: string) =>
 
 function openRefusal(variant: InvalidVariant) {
   return variant.field === 'locationText'
-    ? refuseField('locationText', textMessage(LOCATION_NOUN, 300, variant))
+    ? locationRefusal(variant)
     : refuseField('parcelRef', textMessage(PARCEL_NOUN, 200, variant))
 }
 
@@ -101,7 +108,7 @@ describe('openCaseAction refusals and repeats', () => {
   it('names the location field for a location of spaces and for one over 300 characters (C-07)', async () => {
     h.signIn(world.staff)
     expect(await actions.openCaseAction(h.form({ locationText: '   ' }))).toEqual(
-      refuseField('locationText', 'Enter where the property is.'),
+      refuseField('locationText', NO_LOCATION),
     )
     expect(await actions.openCaseAction(h.form({ locationText: 'x'.repeat(301) }))).toEqual(
       refuseField('locationText', 'Enter where the property is of 300 characters or fewer.'),
@@ -121,7 +128,7 @@ describe('openCaseAction refusals and repeats', () => {
 function complaintRefusal(variant: InvalidVariant) {
   switch (variant.field) {
     case 'locationText':
-      return refuseField('locationText', textMessage(LOCATION_NOUN, 300, variant))
+      return locationRefusal(variant)
     case 'description':
       return refuseField(
         'description',
