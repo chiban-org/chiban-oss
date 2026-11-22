@@ -14,6 +14,7 @@ import {
   renderForm,
   stubDetail,
 } from '@/test/enforcementRender'
+import { XX_PACK } from '@/test/packs/xx'
 
 vi.mock('../appealActions', () => ({
   appealAction: vi.fn(),
@@ -136,5 +137,43 @@ describe('the appeals heading', () => {
     renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
     expect(screen.getByRole('heading', { name: 'Appeals to the board of appeals' })).toBeTruthy()
     expect(screen.queryByText(/zoning board/i)).toBeNull()
+  })
+})
+
+describe('the stay controls on an appeal', () => {
+  const summaries = () =>
+    screen.queryAllByText(/./, { selector: 'summary' }).map((s) => s.textContent)
+
+  it('offers peril and restraining order controls where an appeal stays enforcement', () => {
+    setActivePackForTest(NH_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(summaries()).toEqual(
+      expect.arrayContaining(['Certify imminent peril', 'Record a restraining order']),
+    )
+  })
+
+  it.each([
+    ['Maine', ME_PACK],
+    ['a pack with no stay rule', XX_PACK],
+  ])('offers neither under %s', (_name, pack) => {
+    setActivePackForTest(pack)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(summaries()).not.toContain('Certify imminent peril')
+    expect(summaries()).not.toContain('Record a restraining order')
+    expect(screen.getByRole('button', { name: 'Record decision' })).toBeTruthy()
+  })
+})
+
+describe('the notice of violation as an appeal target', () => {
+  it('names the date, method and provisions of the notice', () => {
+    const withNotice = stubDetail({
+      findings: [{ id: 'f1', provisionKind: 'zoning_ordinance', provisionRef: 'Section 4.2' }],
+      notices: [{ id: 'n1', findingIds: ['f1'], method: 'certified_mail', sentOn: '2027-07-03' }],
+    })
+    renderForm(<AppealsSection detail={withNotice} can={ALL_CAN} />)
+    openSection('Record an appeal')
+    expect(screen.getByRole('option', { name: /^Notice of violation/ }).textContent).toBe(
+      'Notice of violation sent July 3, 2027 by certified mail, Section 4.2',
+    )
   })
 })
