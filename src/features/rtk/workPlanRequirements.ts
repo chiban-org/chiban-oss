@@ -11,7 +11,9 @@ export function isPending(a: PlanApproval): boolean {
   return !a.revoked && a.releasedIn === null
 }
 
-function firstResponseDetail(request: RequestPlanInput['request']): string {
+export function firstResponseDetail(
+  request: Pick<RequestPlanInput['request'], 'timeliness'>,
+): string {
   const t = request.timeliness
   switch (t.kind) {
     case 'responded_late':

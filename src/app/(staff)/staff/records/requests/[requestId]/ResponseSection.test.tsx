@@ -113,7 +113,7 @@ describe('recorded first response', () => {
       acknowledgedOn: null,
       followUpOn: null,
       clarificationQuestion: null,
-      timeliness: { kind: 'responded_on_time' },
+      timeliness: { kind: 'responded_on_time', respondedOn: '2026-11-05' },
       timeStatements: [],
       ...patch,
     } as unknown as RtkRequestView
@@ -144,6 +144,23 @@ describe('recorded first response', () => {
     expect(screen.getByText(/^Records are posted on the town website/).textContent).toBe(
       'Records are posted on the town website, November 12, 2026.',
     )
+  })
+
+  it('says the first response was sent on time, as the requirements list does', () => {
+    renderRecorded({})
+    expect(screen.getByText('Sent on time, November 5, 2026.')).toBeTruthy()
+    expect(screen.queryByText('Answered on time.')).toBeNull()
+  })
+
+  it('says the first response was sent late, with the due and sent dates', () => {
+    renderRecorded({
+      timeliness: {
+        kind: 'responded_late',
+        dueOn: '2026-11-03' as CivilDate,
+        respondedOn: '2026-11-05' as CivilDate,
+      },
+    } as unknown as Partial<RtkRequestView>)
+    expect(screen.getByText('Sent late: due November 3, 2026, sent November 5, 2026.')).toBeTruthy()
   })
 
   it('records a denial made after the time statement', () => {
