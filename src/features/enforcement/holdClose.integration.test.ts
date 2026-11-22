@@ -1,10 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { enforcementCases } from '@/db/schema'
+import { listCaseQueue } from '@/features/enforcement/caseQueue'
 import { setCaseStatus } from '@/features/enforcement/cases'
 import { recordCounselOutcome, referToCounsel } from '@/features/enforcement/counsel'
 import { releaseDevelopmentHold } from '@/features/enforcement/developmentHolds'
-import { markFindingCorrected } from '@/features/enforcement/findingChanges'
+import { markFindingCorrected, withdrawFinding } from '@/features/enforcement/findingChanges'
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { PackRule, StatePack } from '@/features/packs/schema'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -137,5 +138,75 @@ describe('a counsel motion on a case with an order path', () => {
       signal,
     )
     expect(moved).toEqual({ ok: false, error: 'invalid_transition' })
+  })
+})
+
+describe('closing a case that still has a hold', () => {
+  beforeEach(async () => {
+    await start(XX_CURE)
+  })
+
+  async function move(caseId: string, to: 'resolved' | 'closed' | 'no_violation') {
+    const { rowVersion } = await statusOf(caseId)
+    return await setCaseStatus(
+      handle.db,
+      world.permit.staff,
+      { caseId, to, reason: 'Work restored.', expectedRowVersion: rowVersion },
+      signal,
+    )
+  }
+
+  async function correctedHeldCase() {
+    const held = await hold.heldCase()
+    const corrected = await markFindingCorrected(
+      handle.db,
+      world.permit.staff,
+      { findingId: held.findingId, correctedOn: '2027-03-20', note: '' },
+      signal,
+    )
+    if (!corrected.ok) throw new Error(corrected.error)
+    return held
+  }
+
+  it('cannot be resolved while the hold is active, and can be once it is released', async () => {
+    const { caseId, holdId } = await correctedHeldCase()
+    expect(await move(caseId, 'resolved')).toEqual({ ok: false, error: 'hold_active' })
+    const released = await releaseDevelopmentHold(
+      handle.db,
+      world.permit.staff,
+      { holdId, releasedOn: d('2027-03-21') },
+      signal,
+    )
+    if (!released.ok) throw new Error(released.error)
+    expect((await move(caseId, 'resolved')).ok).toBe(true)
+    expect((await move(caseId, 'closed')).ok).toBe(true)
+  })
+
+  it('cannot be closed while the hold is active', async () => {
+    const { caseId, findingId } = await hold.heldCase()
+    const withdrawn = await withdrawFinding(
+      handle.db,
+      world.permit.staff,
+      { findingId, reason: 'Recorded on the wrong parcel.' },
+      signal,
+    )
+    if (!withdrawn.ok) throw new Error(withdrawn.error)
+    expect((await move(caseId, 'no_violation')).ok).toBe(true)
+    expect(await move(caseId, 'closed')).toEqual({ ok: false, error: 'hold_active' })
+  })
+
+  it('asks for the hold to be released before resolving, on the case page and in the queue', async () => {
+    const { caseId } = await correctedHeldCase()
+    const plan = await world.cure.planOn(caseId, d('2027-03-21'))
+    expect(plan.now).toMatchObject({ key: 'hold.release', task: 'Release the hold', action: null })
+    const queue = await listCaseQueue(
+      handle.db,
+      world.permit.staff,
+      { filters: {}, limit: 50, offset: 0 },
+      d('2027-03-21'),
+      signal,
+    )
+    const row = queue.rows.find((r) => r.caseId === caseId)
+    expect(row?.nextStep).toEqual({ actor: 'Town', ask: 'release the hold' })
   })
 })
