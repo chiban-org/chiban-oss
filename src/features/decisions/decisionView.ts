@@ -157,8 +157,10 @@ const PERIOD_UNITS = {
 function recordingPeriod(): string | null {
   for (const rule of loadPack().rules) {
     if (rule.kind !== 'clock' || rule.consequence.kind !== 'void_unless_recorded') continue
-    const [one, many] = PERIOD_UNITS[rule.length.unit]
-    return `${rule.length.value} ${rule.length.value === 1 ? one : many}`
+    const length = rule.length
+    if (!('value' in length)) return null
+    const [one, many] = PERIOD_UNITS[length.unit]
+    return `${length.value} ${length.value === 1 ? one : many}`
   }
   return null
 }
