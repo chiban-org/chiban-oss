@@ -165,7 +165,7 @@ describe('a staff denial from the work plan', () => {
 
   it('denies with a reason, attaches the letter and adds the appeals register entry', async () => {
     const denied = await deny('The porch sits inside the front setback.')
-    expect(denied.result).toEqual({ ok: true, message: 'Moved to denied.' })
+    expect(denied.result).toEqual({ ok: true, message: 'Denied. The decision letter is attached.' })
     expect(denied).toMatchObject({ letters: 1, nodes: [{ outcome: 'denied' }], state: 'denied' })
   })
 })

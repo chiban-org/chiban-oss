@@ -65,24 +65,34 @@ async function hasNoBoard(db: Db, applicationId: string, signal: AbortSignal): P
   return app !== null && boardOfApplication(app) === null
 }
 
+const APPROVED_MESSAGE = 'Approved. The decision letter is attached.'
+const DENIED_MESSAGE = 'Denied. The decision letter is attached.'
+
+function movedMessage(to: string): string {
+  return `Moved to ${to.replaceAll('_', ' ')}.`
+}
+
 async function moveApplication(db: Db, actor: Actor, input: TransitionForm, signal: AbortSignal) {
   const { applicationId, to, expectedRowVersion } = input
   if (to === 'issued') {
-    return await issueApplication(db, actor, { applicationId, expectedRowVersion }, signal)
+    const issued = await issueApplication(db, actor, { applicationId, expectedRowVersion }, signal)
+    return { result: issued, message: movedMessage(to) }
   }
   if ((to === 'decided' || to === 'denied') && (await hasNoBoard(db, applicationId, signal))) {
     const decidedOn = await townToday(db, new Date(), signal)
-    return await decideStaffApplication(
+    const decided = await decideStaffApplication(
       db,
       actor,
       { applicationId, outcome: to, expectedRowVersion, reason: input.reason, decidedOn },
       getObjectStore(),
       signal,
     )
+    return { result: decided, message: to === 'denied' ? DENIED_MESSAGE : APPROVED_MESSAGE }
   }
-  return await db.transaction((tx) =>
+  const moved = await db.transaction((tx) =>
     transitionApplication(tx, actor, { applicationId, to, expectedRowVersion }, signal),
   )
+  return { result: moved, message: movedMessage(to) }
 }
 
 export async function transitionAction(formData: FormData): Promise<ActionResult> {
@@ -91,8 +101,8 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
     if (await isBareBoardDecision(db, actor, applicationId, to, signal)) {
       return { ok: false, error: BOARD_DECISION_ONLY }
     }
-    const result = await moveApplication(db, actor, input, signal)
-    if (result.ok) return { ok: true, message: `Moved to ${to.replaceAll('_', ' ')}.` }
+    const { result, message } = await moveApplication(db, actor, input, signal)
+    if (result.ok) return { ok: true, message }
     if (result.error === 'parcel_held') return { ok: false, error: HELD_ISSUE_COPY }
     if (result.error === 'reason_required') return refuseField('reason', REASON_REQUIRED)
     if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }

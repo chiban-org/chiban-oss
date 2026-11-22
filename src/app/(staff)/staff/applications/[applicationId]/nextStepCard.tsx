@@ -14,12 +14,16 @@ const ENDING_VERBS: ReadonlyMap<CoreState, string> = new Map([
   ['expired', 'Expire'],
 ])
 
-function moveConfirm(view: StaffApplicationView, to: CoreState): ConfirmStep | undefined {
+const ENDS = 'This ends the application. It cannot be undone.'
+const ENDS_WITH_LETTER =
+  'This ends the application and makes the decision letter for the people on the project. It cannot be undone.'
+
+export function moveConfirm(view: StaffApplicationView, to: CoreState): ConfirmStep | undefined {
   const board = hasBoardClassification(view.classification)
   if (isTerminalState(to)) {
     return {
       title: `${ENDING_VERBS.get(to) ?? moveTask(to, board)} ${view.number}?`,
-      body: 'This ends the application. It cannot be undone.',
+      body: to === 'denied' && !board ? ENDS_WITH_LETTER : ENDS,
       confirmLabel: moveTask(to, board),
     }
   }
