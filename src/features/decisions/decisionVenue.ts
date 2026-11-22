@@ -68,13 +68,18 @@ function datedTooEarly(
   return null
 }
 
-export async function cancelScheduledHearings(tx: Tx, applicationId: string): Promise<string[]> {
+export async function cancelUnheldHearings(
+  tx: Tx,
+  venue: { hearingId: string | null },
+  applicationId: string,
+): Promise<{ cancelledHearingIds?: string[] }> {
+  if (venue.hearingId !== null) return {}
   const cancelled = await tx
     .update(hearings)
     .set({ status: 'cancelled' })
     .where(and(eq(hearings.applicationId, applicationId), eq(hearings.status, 'scheduled')))
     .returning({ id: hearings.id })
-  return cancelled.map((h) => h.id)
+  return cancelled.length === 0 ? {} : { cancelledHearingIds: cancelled.map((h) => h.id) }
 }
 
 async function meetingVenue(

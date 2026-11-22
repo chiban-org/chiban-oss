@@ -19,7 +19,7 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { boardDecisionClockKeys } from '@/features/decisions/decisionClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
-import { cancelScheduledHearings, resolveVenue } from '@/features/decisions/decisionVenue'
+import { cancelUnheldHearings, resolveVenue } from '@/features/decisions/decisionVenue'
 import { planDeliveries } from '@/features/decisions/delivery'
 import { classificationOfApplication } from '@/features/decisions/hearingOptional'
 import { storedSignificance } from '@/features/decisions/significance'
@@ -142,7 +142,7 @@ export async function recordDecision(
       })
       .returning({ id: boardDecisions.id })
     await applyConditions(tx, actor, app.id, input.conditions ?? [])
-    const cancelledHearingIds = hearingId === null ? await cancelScheduledHearings(tx, app.id) : []
+    const cancelled = await cancelUnheldHearings(tx, { hearingId }, app.id)
     const boardKind = boardOfApplication(app)
     if (boardKind !== null && !input.outcome.startsWith('rehearing')) {
       await recordDecisionNode(tx, {
@@ -183,7 +183,7 @@ export async function recordDecision(
           decisionId: row?.id,
           outcome: input.outcome,
           votedOn: input.votedOn,
-          ...(cancelledHearingIds.length === 0 ? {} : { cancelledHearingIds }),
+          ...cancelled,
         },
       },
       signal,
