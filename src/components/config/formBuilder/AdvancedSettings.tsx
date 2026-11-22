@@ -2,6 +2,7 @@
 
 import { ReferenceList } from '@/components/config/formBuilder/ReferenceList'
 import { Check, Input, Pick } from '@/components/config/primitives'
+import { usePackText } from '@/components/PackTextProvider'
 import type { FieldReference } from '@/features/forms/formReferences'
 import type { FormField } from '@/features/forms/formSchema'
 import { FACT_CHOICES } from '@/features/forms/questionTypes'
@@ -23,6 +24,7 @@ export function AdvancedSettings({
   onPatch: (patch: Partial<FormField>) => void
 }) {
   const isQuestion = field.type !== 'section'
+  const { significanceQuestion } = usePackText()
   return (
     <details className="rounded-md border border-hairline p-3">
       <summary className="cursor-pointer text-sm font-medium">Advanced</summary>
@@ -51,11 +53,13 @@ export function AdvancedSettings({
               checked={field.staffOnly === true}
               onChange={(on) => onPatch({ staffOnly: on ? true : undefined })}
             />
-            <Check
-              label="Shown beside the significance question"
-              checked={field.significanceFact === true}
-              onChange={(on) => onPatch({ significanceFact: on ? true : undefined })}
-            />
+            {significanceQuestion ? (
+              <Check
+                label="Shown beside the significance question"
+                checked={field.significanceFact === true}
+                onChange={(on) => onPatch({ significanceFact: on ? true : undefined })}
+              />
+            ) : null}
           </>
         ) : null}
         <div>

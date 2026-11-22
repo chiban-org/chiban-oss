@@ -18,6 +18,7 @@ export const NEUTRAL_PACK_TEXT: PackText = {
   lockedTexts: {},
   environmentalAgency: 'State environmental agency',
   receiptNotices: false,
+  significanceQuestion: false,
   vocabulary: {
     recordsLaw: 'Public Records',
     recordsRequest: 'Public Records request',

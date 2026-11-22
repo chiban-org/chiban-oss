@@ -174,6 +174,7 @@ describe('contract 0.10.0 starter fields', () => {
       )
       expect(FormFieldSchema.safeParse({ ...field, significanceFact: true }).success).toBe(true)
       expect(FormFieldSchema.safeParse({ ...field, significanceFact: 'yes' }).success).toBe(false)
+      expect(FormFieldSchema.safeParse({ ...field, fact: 'decisionDate' }).success).toBe(false)
     })
   })
 

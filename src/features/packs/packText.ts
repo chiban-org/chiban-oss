@@ -8,6 +8,7 @@ export interface PackText {
   lockedTexts: Readonly<Record<string, string>>
   environmentalAgency: string
   receiptNotices: boolean
+  significanceQuestion: boolean
   vocabulary: Vocabulary
 }
 
@@ -18,6 +19,9 @@ export function packText(): PackText {
     environmentalAgency: activePack().labels.environmentalAgency,
     receiptNotices: activePack().manifest.rules.some(
       (r) => r.kind === 'notice_requirement' && r.stage === 'on_receipt',
+    ),
+    significanceQuestion: activePack().manifest.classifications.some(
+      (c) => c.significanceApplies === true,
     ),
     vocabulary: packVocabulary(),
   }
