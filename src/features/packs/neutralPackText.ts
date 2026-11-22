@@ -21,6 +21,7 @@ export const NEUTRAL_PACK_TEXT: PackText = {
   environmentalAgency: 'State environmental agency',
   receiptNotices: false,
   significanceQuestion: false,
+  recordsAcknowledgement: false,
   vocabulary: {
     recordsLaw: 'Public Records',
     recordsRequest: 'Public Records request',

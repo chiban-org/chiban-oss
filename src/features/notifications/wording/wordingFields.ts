@@ -82,6 +82,12 @@ export const FIELD_LABELS: Record<WordingField, string> = {
   'records.linkNote': 'Why a link was sent, filled in by Chiban',
 }
 
+export function wordingFieldLabels(recordsAcknowledgement: boolean): Record<WordingField, string> {
+  return recordsAcknowledgement
+    ? { ...FIELD_LABELS, 'request.due': 'Date the town will acknowledge the request by' }
+    : FIELD_LABELS
+}
+
 export type WordingValues = Partial<Record<WordingField, string>>
 
 const KNOWN: ReadonlySet<string> = new Set(WORDING_FIELDS)

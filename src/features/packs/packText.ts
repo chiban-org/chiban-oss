@@ -1,5 +1,9 @@
 import { activePack } from '@/features/packs/registry'
-import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
+import {
+  acknowledgementEnabled,
+  packVocabulary,
+  type Vocabulary,
+} from '@/features/packs/vocabulary'
 import { lockedTexts } from '@/features/templates/doc/lockedTexts'
 import type { SignerRole } from '@/features/town/profileSchema'
 import { packSignerRoles, signerRoleLabels } from '@/features/town/signerRoleLabels'
@@ -11,6 +15,7 @@ export interface PackText {
   environmentalAgency: string
   receiptNotices: boolean
   significanceQuestion: boolean
+  recordsAcknowledgement: boolean
   vocabulary: Vocabulary
 }
 
@@ -26,6 +31,7 @@ export function packText(): PackText {
     significanceQuestion: activePack().manifest.classifications.some(
       (c) => c.significanceApplies === true,
     ),
+    recordsAcknowledgement: acknowledgementEnabled(),
     vocabulary: packVocabulary(),
   }
 }
