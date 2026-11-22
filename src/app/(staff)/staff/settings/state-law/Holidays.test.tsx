@@ -26,7 +26,7 @@ describe('Holidays', () => {
     for (const row of rows) {
       const cells = within(row).getAllByRole('cell')
       expect(cells).toHaveLength(3)
-      expect(cells[2]?.textContent?.trim()).not.toBe('')
+      expect(cells[2]?.textContent.trim()).not.toBe('')
     }
   })
 })

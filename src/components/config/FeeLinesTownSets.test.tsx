@@ -84,7 +84,7 @@ describe('fee lines the town sets', () => {
         },
       ],
     }
-    show(body as FeeScheduleBody)
+    show(body)
     expect(
       screen.getByText(
         'A value of 2 doubles the fee. It applies when staff tick Work started before permit on the record.',
