@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
 import { PublicPager } from '@/components/public/PublicPager'
 import { db } from '@/db/client'
-import { loadPastMeetings, loadUpcomingMeetings } from '@/features/hearings/publicMeetings'
+import {
+  loadPastMeetings,
+  loadUpcomingMeetings,
+  townClock,
+} from '@/features/hearings/publicMeetings'
 import { loadPublicHearingNotices } from '@/features/hearings/publicNotices'
 import { loadPublicDecisions } from '@/features/hearings/publicRecords'
-import { townToday } from '@/features/town/today'
 import { HearingNoticeRow } from './noticeSections'
 import { DecisionRow, PastRow, UpcomingRow } from './sections'
 
@@ -37,11 +40,11 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
   const params = await searchParams
   const pages = { past: pageFrom(params.past), decisions: pageFrom(params.decisions) }
   const signal = AbortSignal.timeout(TIMEOUT_MS)
-  const today = await townToday(db, new Date(), signal)
+  const { today, minute } = await townClock(db, new Date(), signal)
   const [upcoming, notices, past, decisions] = await Promise.all([
-    loadUpcomingMeetings(db, today, signal),
+    loadUpcomingMeetings(db, today, signal, minute),
     loadPublicHearingNotices(db, today, signal),
-    loadPastMeetings(db, { today, page: pages.past }, signal),
+    loadPastMeetings(db, { today, page: pages.past, nowMinute: minute }, signal),
     loadPublicDecisions(db, { page: pages.decisions }, signal),
   ])
   return (
@@ -71,7 +74,12 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
       </section>
       <section aria-labelledby="past-heading">
         <h2 id="past-heading">Past meetings and minutes</h2>
-        {past.meetings.length === 0 ? <p>No past agendas or minutes are posted yet.</p> : null}
+        {past.meetings.length === 0 ? (
+          <p>
+            No past agendas or approved meeting minutes are posted yet. Minutes filed with a
+            decision are listed under Decisions.
+          </p>
+        ) : null}
         <ul className="list-none p-0">
           {past.meetings.map((m) => (
             <PastRow key={m.meetingId} meeting={m} />

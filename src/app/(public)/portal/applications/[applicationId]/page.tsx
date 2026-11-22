@@ -7,6 +7,7 @@ import type { DocumentChecklistView } from '@/features/applications/documentChec
 import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
 import { isSettledStatus } from '@/features/applications/liveChecklist'
 import { displayFieldValue } from '@/features/forms/displayValue'
+import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { applicantStatus, missingNow } from '@/features/portal/applicantStatus'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
@@ -64,6 +65,16 @@ function BoardRecordSection({ record }: { record: PortalBoardRecord }) {
           <li key={line}>{line}</li>
         ))}
       </ul>
+      {record.notice.length === 0 ? null : (
+        <>
+          <h3>Notice of the hearing</h3>
+          <ul className="space-y-1">
+            {record.notice.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   )
 }
@@ -99,16 +110,19 @@ export default async function PortalApplicationPage({ params }: Props) {
   const result = await getPortalApplicationView(ctx.db, ctx.actor, applicationId, ctx.signal)
   if (!result.ok) notFound()
   const view = result.value
-  const [town, board, checklist] = await Promise.all([
+  const [town, board, checklist, profile] = await Promise.all([
     getTownSettings(ctx.db, ctx.signal),
     loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadDocumentChecklist(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadTownProfile(ctx.db, ctx.signal),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const officeName = profile?.officeName ?? 'land use office'
   const status = applicantStatus({
     state: view.state,
     board: view.record.board,
-    dueCents: view.canPay ? view.fees.dueCents : 0,
+    dueCents: view.canPay || view.payAtOffice ? view.fees.dueCents : 0,
+    payAtOffice: view.payAtOffice ? officeName : null,
     missingDocuments: missingNow(checklist?.stages.flatMap((s) => s.rows) ?? [], view.state),
     decisionDue: view.decisionDue?.date ?? null,
     decisionLate: view.decisionDue?.late ?? false,
@@ -164,7 +178,7 @@ export default async function PortalApplicationPage({ params }: Props) {
         </section>
       ) : null}
 
-      <FeesPanel view={view} />
+      <FeesPanel view={view} officeName={officeName} />
       <EndingActions view={view} />
     </main>
   )

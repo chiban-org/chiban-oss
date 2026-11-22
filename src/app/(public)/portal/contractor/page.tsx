@@ -54,13 +54,13 @@ function EmptyState({ email, filtered }: { email: string | null; filtered: boole
           : `No projects name ${email} as the contractor yet.`}
       </p>
       <p>
-        {
-          'Give the town the email this account uses, and the project shows here once the town records it. Or '
-        }
+        Give the town the email this account uses, and the project shows here once the town records
+        it. An application you start yourself is listed under Your applications.
+      </p>
+      <p>
         <Link href="/portal/apply" className={LINK}>
-          start an application
+          Start an application
         </Link>
-        {' yourself.'}
       </p>
     </div>
   )

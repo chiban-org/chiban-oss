@@ -7,7 +7,9 @@ import {
   documents,
   documentVersions,
   projectParties,
+  users,
 } from '@/db/schema'
+import { namedParty } from '@/features/applications/applicantName'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
@@ -28,11 +30,31 @@ import { townTimeZone } from '@/features/town/timeZone'
 
 export type SnapshotReason = 'submission' | 'amendment' | 'correction'
 
+function accountPartyName(displayName: string | null, email: string | null): string | null {
+  const name = namedParty(displayName ?? '')
+  if (name === null || email === null) return name
+  const lowered = name.toLowerCase()
+  const address = email.toLowerCase()
+  return lowered === address || lowered === address.split('@')[0] ? null : name
+}
+
 async function partiesOf(tx: Tx, projectId: string): Promise<SnapshotParty[]> {
-  return await tx
-    .select({ role: projectParties.role, name: projectParties.name, email: projectParties.email })
+  const rows = await tx
+    .select({
+      role: projectParties.role,
+      name: projectParties.name,
+      email: projectParties.email,
+      accountName: users.displayName,
+      accountEmail: users.email,
+    })
     .from(projectParties)
+    .leftJoin(users, eq(users.id, projectParties.userId))
     .where(and(eq(projectParties.projectId, projectId), isNull(projectParties.removedAt)))
+  return rows.map((r) => ({
+    role: r.role,
+    name: namedParty(r.name) ?? accountPartyName(r.accountName, r.accountEmail) ?? r.name,
+    email: r.email ?? r.accountEmail,
+  }))
 }
 
 async function attachmentsOf(tx: Tx, applicationId: string) {

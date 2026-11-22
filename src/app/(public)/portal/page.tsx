@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { RecordsRequestsSection } from '@/components/portal/RecordsRequestsSection'
 import { StatusChip } from '@/components/StatusChip'
 import { Button } from '@/components/ui/button'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { HomeGroup } from '@/features/portal/homeGroups'
 import { type HomeRow, loadPortalHome } from '@/features/portal/homeView'
+import { loadPortalRecordsRequests } from '@/features/portal/recordsRequests'
 import { requirePortalContext } from '@/server/requirePortal'
 
 export const metadata: Metadata = { title: 'Your applications' }
@@ -67,7 +69,10 @@ function Group({ group, rows }: { group: HomeGroup; rows: HomeRow[] }) {
 
 export default async function PortalHomePage() {
   const ctx = await requirePortalContext('/portal')
-  const rows = await loadPortalHome(ctx.db, ctx.actor, ctx.signal)
+  const [rows, requests] = await Promise.all([
+    loadPortalHome(ctx.db, ctx.actor, ctx.signal),
+    loadPortalRecordsRequests(ctx.db, ctx.actor, ctx.signal),
+  ])
   return (
     <main className="flex flex-col gap-6">
       <h1>Your applications</h1>
@@ -95,6 +100,7 @@ export default async function PortalHomePage() {
           <Group key={group} group={group} rows={rows.filter((r) => r.group === group)} />
         ))
       )}
+      <RecordsRequestsSection requests={requests} />
     </main>
   )
 }

@@ -45,6 +45,7 @@ export const XX_NO_BUILDING: StatePack = xxPackWith({
   pack: {
     ruleAreas: [{ title: 'All rules', rules: withoutBuilding }],
     buildingCodes: { choices: [], defaultChoice: null, requiredAbove: null },
+    portal: { commonJobs: [], officeClassifications: [] },
   },
 })
 

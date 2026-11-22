@@ -1,3 +1,6 @@
+import type { Capability } from '@/constants/capabilities'
+import type { Role } from '@/constants/roles'
+
 export interface NavLink {
   href: string
   label: string
@@ -7,34 +10,26 @@ export interface NavLink {
 
 export interface NavViewer {
   kind: 'staff' | 'public'
-  roles: readonly string[]
+  roles: readonly Role[]
+  capabilities?: ReadonlySet<Capability>
 }
 
-function link(href: string, label: string, sections: readonly string[] = [href]): NavLink {
+export function navLink(
+  href: string,
+  label: string,
+  sections: readonly string[] = [href],
+): NavLink {
   return { href, label, sections }
 }
 
+export const SIGN_IN = navLink('/sign-in', 'Sign in')
+
 export const PRIMARY_NAV: readonly NavLink[] = [
-  link('/parcels', 'Parcels'),
-  link('/meetings', 'Meetings'),
-  link('/complaints/new', 'Report a problem', ['/complaints', '/report-anonymously']),
-  { ...link('/portal/apply', 'Apply for a permit'), emphasis: true },
+  navLink('/parcels', 'Parcels'),
+  navLink('/meetings', 'Meetings'),
+  navLink('/complaints/new', 'Report a problem', ['/complaints', '/report-anonymously']),
+  { ...navLink('/portal/apply', 'Apply for a permit'), emphasis: true },
 ]
-
-const SIGN_IN = link('/sign-in', 'Sign in')
-
-export function accountLinksFor(viewer: NavViewer | null): NavLink[] {
-  if (viewer === null) return [SIGN_IN]
-  return [
-    link('/portal', 'Your applications'),
-    ...(viewer.roles.includes('contractor')
-      ? [link('/portal/contractor', 'Contractor projects')]
-      : []),
-    ...(viewer.roles.includes('board_member') ? [link('/board', 'Your board')] : []),
-    ...(viewer.kind === 'staff' ? [link('/staff', 'Staff site')] : []),
-    link('/account', 'Account'),
-  ]
-}
 
 function within(pathname: string, section: string): boolean {
   return pathname === section || pathname.startsWith(`${section}/`)

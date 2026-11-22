@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { documentVisibleTo } from '@/features/documents/visibility'
+import { utcToLocal } from '@/features/inspections/zonedTime'
+import { getTownSettings } from '@/features/town/settings'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface PublicPage {
@@ -26,6 +28,17 @@ export interface PublicPastMeeting {
   minutes: { documentId: string; approvedOn: CivilDate | null } | null
 }
 
+export interface TownClock {
+  today: CivilDate
+  minute: number
+}
+
+export async function townClock(db: DbOrTx, now: Date, signal: AbortSignal): Promise<TownClock> {
+  const town = await getTownSettings(db, signal)
+  const local = utcToLocal(now, town.ok ? town.value.timeZone : 'UTC')
+  return { today: local.date, minute: local.minute }
+}
+
 export const UPCOMING_LIMIT = 25
 export const PAST_PAGE_SIZE = 20
 
@@ -47,13 +60,15 @@ export async function loadUpcomingMeetings(
   db: DbOrTx,
   today: CivilDate,
   signal: AbortSignal,
+  nowMinute = 0,
 ): Promise<PublicUpcomingMeeting[]> {
   signal.throwIfAborted()
   const res = await db.execute<UpcomingRow>(sql`
     select m.id as meeting_id, b.short_name, m.meeting_date, m.starts_at_minute, m.location,
       m.status, ${PUBLIC_AGENDA} as agenda_document_id
     from board_meetings m join boards b on b.id = m.board_id
-    where m.meeting_date >= ${today}
+    where m.meeting_date > ${today}
+      or (m.meeting_date = ${today} and m.starts_at_minute >= ${nowMinute})
     order by m.meeting_date, m.starts_at_minute, m.id
     limit ${UPCOMING_LIMIT}`)
   return res.rows.map((r) => ({
@@ -78,14 +93,14 @@ interface PastRow extends Record<string, unknown> {
 
 export async function loadPastMeetings(
   db: DbOrTx,
-  options: { today: CivilDate; page: number },
+  options: { today: CivilDate; page: number; nowMinute?: number },
   signal: AbortSignal,
 ): Promise<{ meetings: PublicPastMeeting[]; page: PublicPage }> {
   signal.throwIfAborted()
   const page = Math.max(1, Math.floor(options.page))
   const res = await db.execute<PastRow>(sql`
     select * from (
-      select m.id as meeting_id, b.short_name, m.meeting_date,
+      select m.id as meeting_id, b.short_name, m.meeting_date, m.starts_at_minute,
         ${PUBLIC_AGENDA} as agenda_document_id,
         mm.document_id as minutes_document_id, mm.approved_on
       from board_meetings m
@@ -95,7 +110,8 @@ export async function loadPastMeetings(
           and ${documentVisibleTo(null)})
     ) t
     where t.minutes_document_id is not null
-      or (t.meeting_date < ${options.today} and t.agenda_document_id is not null)
+      or (t.agenda_document_id is not null and (t.meeting_date < ${options.today}
+        or (t.meeting_date = ${options.today} and t.starts_at_minute < ${options.nowMinute ?? 0})))
     order by t.meeting_date desc, t.meeting_id desc
     limit ${PAST_PAGE_SIZE + 1} offset ${(page - 1) * PAST_PAGE_SIZE}`)
   const rows = res.rows.slice(0, PAST_PAGE_SIZE)

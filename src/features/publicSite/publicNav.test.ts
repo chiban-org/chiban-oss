@@ -1,8 +1,12 @@
+import { ME_PACK } from '@packs/me'
 import { describe, expect, it } from 'vitest'
+import type { Capability } from '@/constants/capabilities'
+import { withPackForTest } from '@/features/packs/registry'
+import { accountLinksFor, primaryNav } from '@/features/publicSite/navForViewer'
 import {
   accountLinksAt,
-  accountLinksFor,
   currentNavHref,
+  type NavViewer,
   PRIMARY_NAV,
 } from '@/features/publicSite/publicNav'
 
@@ -46,18 +50,55 @@ describe('public navigation', () => {
     expect(links.find((l) => l.label === 'Your board')?.href).toBe('/board')
   })
 
-  it('adds the staff site for staff, and both for a staff board member', () => {
+  it('adds the staff site for staff, and both for a board member who also keeps board records', () => {
     expect(labels(accountLinksFor({ kind: 'staff', roles: ['staff'] }))).toEqual([
       'Your applications',
       'Staff site',
       'Account',
     ])
+    expect(
+      labels(
+        accountLinksFor({
+          kind: 'staff',
+          roles: ['board_member'],
+          capabilities: new Set(['board.record']),
+        }),
+      ),
+    ).toEqual(['Your applications', 'Your board', 'Staff site', 'Account'])
+  })
+
+  it('gives a board member whose staff start page is the board no staff site link', () => {
+    const viewer: NavViewer = {
+      kind: 'staff',
+      roles: ['board_member'],
+      capabilities: new Set<Capability>(),
+    }
+    expect(labels(accountLinksFor(viewer))).toEqual(['Your applications', 'Your board', 'Account'])
     expect(labels(accountLinksFor({ kind: 'staff', roles: ['board_member'] }))).toEqual([
       'Your applications',
       'Your board',
-      'Staff site',
       'Account',
     ])
+  })
+
+  it('keeps the staff site for a board member who also reviews', () => {
+    expect(labels(accountLinksFor({ kind: 'staff', roles: ['board_member', 'reviewer'] }))).toEqual(
+      ['Your applications', 'Your board', 'Staff site', 'Account'],
+    )
+  })
+
+  it("links the records request in the pack's words, before applying for a permit", () => {
+    expect(labels(primaryNav())).toEqual([
+      'Parcels',
+      'Meetings',
+      'Report a problem',
+      'Right-to-Know request',
+      'Apply for a permit',
+    ])
+    expect(primaryNav().find((l) => l.href === '/records/request')?.emphasis).toBeUndefined()
+    withPackForTest(ME_PACK, () => {
+      expect(primaryNav().find((l) => l.href === '/records/request')?.label).toBe('FOAA request')
+    })
   })
 
   it('marks the most specific entry that contains the current path', () => {
