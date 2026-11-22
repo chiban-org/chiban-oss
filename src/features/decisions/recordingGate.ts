@@ -38,6 +38,7 @@ const reliedVarianceRecorded: GateEvaluator = async (tx, app, _today, signal) =>
     .innerJoin(applications, eq(applications.id, relianceLinks.varianceApplicationId))
     .where(eq(relianceLinks.planningApplicationId, app.id))
     .orderBy(applications.number)
+  if (links.length === 0) return { status: 'pass', notApplicable: true }
   const reasons: string[] = []
   for (const link of links) {
     const validity = await varianceValidity(tx, link.id, signal)

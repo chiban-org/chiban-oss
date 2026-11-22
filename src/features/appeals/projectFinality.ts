@@ -1,11 +1,17 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
-import type { DbOrTx, Tx } from '@/db/client'
-import { appealNodes, applications, projects } from '@/db/schema'
+import type { Db, DbOrTx, Tx } from '@/db/client'
+import { appealNodes, applications, boardDecisions, projects } from '@/db/schema'
+import { transactionResult } from '@/db/transactionResult'
+import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
+import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { loadPack, type Pack } from '@/features/packs/loadPack'
 import { type BoardKind, BoardKindSchema } from '@/features/packs/schema'
-import type { CivilDate } from '@/types/civilDate'
+import { isAfterTownToday } from '@/features/town/today'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export const PROJECT_FINAL_APPROVAL = 'project_final_approval'
@@ -197,4 +203,50 @@ export async function declareFinalApproval(
     signal,
   )
   return ok(undefined)
+}
+
+export type MarkFinalApprovalError =
+  | 'forbidden'
+  | 'not_found'
+  | 'invalid_state'
+  | 'future_date'
+  | 'before_vote'
+  | 'already_final'
+
+export async function markLastMunicipalApproval(
+  db: Db,
+  actor: Actor,
+  input: { decisionId: string; approvedOn: CivilDate },
+  signal: AbortSignal,
+  now: Date = new Date(),
+): Promise<Result<void, MarkFinalApprovalError>> {
+  signal.throwIfAborted()
+  if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.approvedOn, now, signal)) return err('future_date')
+  return await transactionResult<void, MarkFinalApprovalError>(db, async (tx) => {
+    const [decision] = await tx
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.id, input.decisionId))
+    if (decision === undefined) return err('not_found')
+    const app = await loadApplicationContext(tx, decision.applicationId, signal)
+    if (app === null) return err('not_found')
+    const boardKind = boardOfApplication(app)
+    if (boardKind === null || !isApprovingOutcome(decision.outcome) || !packWaitsForFinalApproval())
+      return err('invalid_state')
+    if (compareCivil(input.approvedOn, decision.votedOn as CivilDate) < 0) return err('before_vote')
+    return await declareFinalApproval(
+      tx,
+      {
+        declared: true,
+        applicationId: app.id,
+        outcome: decision.outcome,
+        votedOn: input.approvedOn,
+        boardKind,
+        actorUserId: actor.userId,
+        decisionId: decision.id,
+      },
+      signal,
+    )
+  })
 }

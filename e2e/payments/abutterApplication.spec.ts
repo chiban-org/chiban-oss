@@ -2,6 +2,7 @@ import { expect, test } from '../fixtures/test'
 import { demoTitle, expectConfirmation, expectRefusedBeside, openApplication } from './support'
 
 const PERMIT = demoTitle('Bittern Meadow frontage variance')
+const PLANNING = demoTitle('Brookview minor site plan')
 
 test.describe
   .serial('abutter lists from the application page', () => {
@@ -9,6 +10,13 @@ test.describe
 
     test.describe('as staff', () => {
       test.use({ role: 'staff' })
+
+      test('offers no professional form on a variance', async ({ page, db }) => {
+        await openApplication(page, db, PERMIT)
+        const lists = page.getByRole('region', { name: 'Abutter lists' })
+        await expect(lists.getByRole('button', { name: 'Draw a new list' })).toBeVisible()
+        await expect(lists.getByText('Add a professional whose seal is on the plat')).toHaveCount(0)
+      })
 
       test('draws a new list and stores a draft for the application', async ({ page, db }) => {
         const applicationId = await openApplication(page, db, PERMIT)
@@ -31,17 +39,18 @@ test.describe
         page,
         db,
       }) => {
-        const applicationId = await openApplication(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PLANNING)
+        const professionals = async () =>
+          await db.rows('select id from application_professionals where application_id = $1', [
+            applicationId,
+          ])
+        const before = await professionals()
         const lists = page.getByRole('region', { name: 'Abutter lists' })
         await lists.getByText('Add a professional whose seal is on the plat').click()
         await lists.getByLabel('Business address').fill('9 Heron Row, Alder Pond NH 03999')
         await lists.getByRole('button', { name: 'Add professional' }).click()
         await expectRefusedBeside(lists.getByLabel(/^Name/), 'Fill in: Name.')
-        const rows = await db.rows(
-          'select 1 from application_professionals where application_id = $1',
-          [applicationId],
-        )
-        expect(rows).toEqual([])
+        expect(await professionals()).toEqual(before)
       })
 
       test('adds a professional and stores the profession and seal', async ({
@@ -50,7 +59,7 @@ test.describe
         suffix,
       }) => {
         const name = `Pat Surveyor ${suffix}`
-        const applicationId = await openApplication(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PLANNING)
         const lists = page.getByRole('region', { name: 'Abutter lists' })
         await lists.getByText('Add a professional whose seal is on the plat').click()
         await lists.getByLabel(/^Name/).fill(name)
