@@ -19,7 +19,7 @@ describe('me pack', () => {
     expect(parsed.error?.issues ?? []).toEqual([])
     withPackForTest(ME_PACK, () => {
       expect(loadPack().id).toBe('me')
-      expect(loadPack().version).toBe('0.9.0')
+      expect(loadPack().version).toBe('0.10.0')
     })
   })
 

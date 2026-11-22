@@ -18,7 +18,7 @@ import type { PackManifest } from '@/features/packs/schema'
 
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.9.0',
+  version: '0.10.0',
   rules: [
     ...BUILDING_RULES,
     ...APPEAL_RULES,

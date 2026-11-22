@@ -11,7 +11,36 @@ import { NH_RULE_AREAS } from '@packs/nh/ruleAreas'
 import { NH_INSPECTION_SETTINGS_DEFAULT, NH_STARTERS } from '@packs/nh/starters'
 import { NH_ORDER_TEXTS } from '@packs/nh/starters/enforcementTemplates'
 import { NH_RULE_TRANSITIONS } from '@packs/nh/transitions'
-import type { StatePack } from '@/features/packs/schema'
+import type { PackCommonJob, StatePack } from '@/features/packs/schema'
+
+const NH_COMMON_JOBS: readonly PackCommonJob[] = [
+  {
+    key: 'BP',
+    title: 'Build, add on or tear down',
+    description: 'A new building, an addition, a deck, garage, shed or fence, or a demolition.',
+  },
+  {
+    key: 'EL',
+    title: 'Electrical work',
+    description: 'Wiring, a new service or panel, or a generator.',
+  },
+  {
+    key: 'PL',
+    title: 'Plumbing',
+    description: 'New or moved fixtures, a water heater, or water and drain piping.',
+  },
+  {
+    key: 'MG',
+    title: 'Gas or heating equipment',
+    description: 'Gas piping, a furnace or boiler, or other fuel-burning equipment.',
+  },
+  {
+    key: 'DW',
+    title: 'Driveway',
+    description: 'A new driveway, or a change where one meets the road.',
+  },
+  { key: 'SG', title: 'Sign', description: 'A new sign, or a change to an existing one.' },
+]
 
 export const NH_PACK: StatePack = {
   manifest: NH_PACK_MANIFEST,
@@ -39,6 +68,10 @@ export const NH_PACK: StatePack = {
   orderTexts: NH_ORDER_TEXTS,
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   recordsRequests: { acknowledgement: false },
+  portal: {
+    commonJobs: NH_COMMON_JOBS,
+    officeClassifications: ['nh.building_permit', 'nh.trade_permit'],
+  },
   labels: {
     environmentalAgency: 'NH Department of Environmental Services',
     environmentalAgencyShort: 'NH DES',
@@ -49,6 +82,9 @@ export const NH_PACK: StatePack = {
     rehearing: { noun: 'rehearing', capitalised: 'Rehearing' },
     significantDecisionQuestion: null,
     significantDecisionHelp: null,
+    administrativeOfficials: ['building inspector', 'zoning administrator'],
+    recordsRequestPrefix: 'RK',
+    timeStatementDateLabel: 'Response by',
     citations: {
       exerciseFloorAuthority: 'RSA 674:33 I-a(a) and IV(b)',
       abutterListIssued: {

@@ -94,6 +94,10 @@ export const XX_PACK: StatePack = {
   },
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   recordsRequests: { acknowledgement: false },
+  portal: {
+    commonJobs: [{ key: 'BP', title: 'Build something', description: 'A new Vellmora building.' }],
+    officeClassifications: ['xx.building_permit', 'xx.trade_permit'],
+  },
   labels: {
     environmentalAgency: 'Vellmora Water Office',
     environmentalAgencyShort: 'the Water Office',
@@ -104,6 +108,9 @@ export const XX_PACK: StatePack = {
     rehearing: { noun: 'reconsideration', capitalised: 'Reconsideration' },
     significantDecisionQuestion: null,
     significantDecisionHelp: null,
+    administrativeOfficials: ['permit warden'],
+    recordsRequestPrefix: 'VR',
+    timeStatementDateLabel: 'Answer expected by',
     citations: {
       exerciseFloorAuthority: 'Vellmora Land Act 12',
       abutterListIssued: { label: 'Vellmora Land Act 9', url: null },

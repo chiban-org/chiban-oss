@@ -15,7 +15,7 @@ import type { PackManifest } from '@/features/packs/schema'
 
 export const ME_PACK_MANIFEST: PackManifest = {
   id: 'me',
-  version: '0.9.0',
+  version: '0.10.0',
   rules: [
     ...BUILDING_RULES,
     ...LOCAL_PERMIT_RULES,

@@ -62,7 +62,21 @@ export interface PackLabels {
   rehearing: { noun: string; capitalised: string }
   significantDecisionQuestion: string | null
   significantDecisionHelp: string | null
+  administrativeOfficials: readonly [string, ...string[]]
+  recordsRequestPrefix: string
+  timeStatementDateLabel: string
   citations: PackCitations
+}
+
+export interface PackCommonJob {
+  key: string
+  title: string
+  description: string
+}
+
+export interface PackPortal {
+  commonJobs: readonly PackCommonJob[]
+  officeClassifications: readonly string[]
 }
 
 export interface PackRecordsRequests {
@@ -106,4 +120,5 @@ export interface StatePack {
   labels: PackLabels
   recordsRequests: PackRecordsRequests
   spatial: PackSpatial
+  portal: PackPortal
 }
