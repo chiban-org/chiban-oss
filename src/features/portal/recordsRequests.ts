@@ -68,14 +68,17 @@ export async function loadPortalRecordsRequests(
     email === null
       ? undefined
       : sql`position(${email} in lower(coalesce(${rtkRequests.requesterContact}, ''))) > 0`
+  const filedByMe = user.kind === 'public' ? filedOnlineBy(user.userId) : undefined
+  const matches = or(filedByMe, contactHas)
+  if (matches === undefined) return []
   const candidates = await db
     .select()
     .from(rtkRequests)
-    .where(or(filedOnlineBy(user.userId), contactHas))
+    .where(matches)
     .orderBy(desc(rtkRequests.receivedOn), desc(rtkRequests.number))
   const mine = candidates.filter(
     (r) =>
-      (r.createdBy === user.userId && r.receivedVia === 'portal') ||
+      (filedByMe !== undefined && r.createdBy === user.userId && r.receivedVia === 'portal') ||
       requesterEmailOf(r.requesterContact) === email,
   )
   const ended = await endedDates(

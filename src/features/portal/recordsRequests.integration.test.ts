@@ -79,6 +79,24 @@ describe('records requests in the portal', () => {
     expect(await loadPortalRecordsRequests(handle.db, custodian, signal)).toEqual([])
   })
 
+  it('never lists a request a staff member keyed in as received online for someone else', async () => {
+    const made = await logRequest(
+      handle.db,
+      custodian,
+      {
+        receivedOn: '2027-07-12' as CivilDate,
+        receivedVia: 'portal',
+        requesterName: 'Juniper Oake',
+        requesterContact: 'juniper.oake@example.test',
+        description: 'Road opening permits for Vellmora Lane',
+      },
+      signal,
+      NOW,
+    )
+    if (!made.ok) throw new Error(made.error)
+    expect(await loadPortalRecordsRequests(handle.db, custodian, signal)).toEqual([])
+  })
+
   it('gives the date a request was closed', async () => {
     const mine = await logged('wren.halloway@example.test', 'Barn permit letters')
     const closed = await closeRequest(
