@@ -6,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { townAppealRightsFromRoutes } from '@/features/decisions/appealRights'
 import { attachDocument } from '@/features/documents/attach'
 import { casePenaltyOf } from '@/features/enforcement/casePenalty'
 import { renderNoticePdf } from '@/features/enforcement/orderPdf'
@@ -26,6 +27,12 @@ const SendSchema = z
     correctBy: civilDateSchema.nullish(),
   })
   .refine((v) => v.correctBy == null || v.correctBy >= v.sentOn)
+
+const ADMINISTRATIVE_DECISION = {
+  kind: 'administrative_decision',
+  outcome: null,
+  significant: null,
+} as const
 
 export async function sendViolationNotice(
   db: Db,
@@ -77,6 +84,7 @@ export async function sendViolationNotice(
       recipientAddress,
       correctBy,
       authority: casePenaltyOf(null, caseRow.cureRuleKey)?.rule.citation.label ?? null,
+      appealRights: await townAppealRightsFromRoutes(tx, ADMINISTRATIVE_DECISION, signal),
     })
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(

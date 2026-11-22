@@ -10,6 +10,7 @@ import { caseWithFinding } from '@/test/enforcementActionFixtures'
 import { useEnforcementClock } from '@/test/enforcementCases'
 import { type EnforcementWorld, setupEnforcementWorld } from '@/test/enforcementFixtures'
 import { downloadObject } from '@/test/objectBytes'
+import { XX_PACK } from '@/test/packs/xx'
 import { pdfWording } from '@/test/pdfWording'
 import { actionHarness } from '@/test/testHarness/actions'
 
@@ -142,5 +143,38 @@ describe('a Maine notice of violation', () => {
       'The town has found a violation at this property. This notice describes what was found.',
     )
     expect(text).not.toMatch(/possible/i)
+  })
+})
+
+async function sentNoticeText(location: string): Promise<string> {
+  h.signIn(world.staff)
+  const { caseId, findingId } = await caseWithFinding(h.db, world, location)
+  const result = await actions.sendNoticeAction(
+    h.form({ caseId, findingIds: [findingId], sentOn: '2027-07-03', method: 'certified_mail' }),
+  )
+  expect(result).toEqual({ ok: true, message: 'Notice of violation recorded.' })
+  return await noticeText(caseId)
+}
+
+describe('the appeal route on a notice of violation', () => {
+  it('prints the Maine route to the Board of Appeals with the town period', async () => {
+    setActivePackForTest(ME_PACK)
+    const text = await sentNoticeText('46 Heron Way')
+    expect(text).toContain(
+      'How to appeal Appeal of an administrative decision to the Board of Appeals: within 30 days after the decision (30-A MRSA §4353(1)).',
+    )
+  })
+
+  it('prints the New Hampshire route to the ZBA', async () => {
+    const text = await sentNoticeText('48 Heron Way')
+    expect(text).toContain(
+      'How to appeal Appeal of an administrative decision to the ZBA: within 30 days after the decision (RSA 676:5 I).',
+    )
+  })
+
+  it('prints nothing about an appeal when the pack has no route', async () => {
+    setActivePackForTest(XX_PACK)
+    const text = await sentNoticeText('50 Heron Way')
+    expect(text).not.toMatch(/appeal/i)
   })
 })
