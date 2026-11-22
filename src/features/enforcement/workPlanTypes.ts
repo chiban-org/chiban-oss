@@ -72,6 +72,7 @@ export interface CaseWorkPlan {
   remedies: CaseAction[]
   groups: CaseRequirementGroup[]
   moves: CaseMove[]
+  heldNote: string | null
 }
 
 export function actionKey(action: CaseAction): string {

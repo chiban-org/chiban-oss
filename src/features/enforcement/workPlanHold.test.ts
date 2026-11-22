@@ -70,4 +70,22 @@ describe('the case moves while a development hold is active', () => {
       expect(plan.now).toBeNull()
     })
   })
+
+  it('names the hold beside the moves when the current step is something else', () => {
+    withPackForTest(ME_PACK, () => {
+      const plan = planFor(heldCase('violation_found', true))
+      expect(plan.now?.key).not.toBe('hold.release')
+      expect(plan.heldNote).toBe(
+        'Release the development hold before resolving or closing the case.',
+      )
+    })
+  })
+
+  it('names the hold only once when it is already the current step', () => {
+    withPackForTest(ME_PACK, () => {
+      expect(planFor(heldCase('no_violation', true)).heldNote).toBeNull()
+      expect(planFor(heldCase('in_court', true, { referrals: SETTLED })).heldNote).toBeNull()
+      expect(planFor(heldCase('violation_found', false)).heldNote).toBeNull()
+    })
+  })
 })

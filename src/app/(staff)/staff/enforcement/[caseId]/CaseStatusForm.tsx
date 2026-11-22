@@ -79,15 +79,18 @@ export function CloseForm({ detail }: { detail: CaseDetail }) {
 export function CaseMoreActions({
   detail,
   moves,
+  note = null,
 }: {
   detail: CaseDetail
   moves: readonly CaseMove[]
+  note?: string | null
 }) {
-  if (moves.length === 0) return null
+  if (moves.length === 0 && note === null) return null
   return (
     <details className="more-actions">
       <summary className="text-sm">More actions</summary>
       <div className="flex flex-col gap-3">
+        {note === null ? null : <p className="m-0 text-sm text-muted-foreground">{note}</p>}
         {moves.map((to) =>
           to === 'closed' ? (
             <details key={to}>

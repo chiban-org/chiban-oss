@@ -46,4 +46,11 @@ describe('changing the case status', () => {
     const resolve = screen.getByRole('button', { name: 'Resolve the case' })
     expect(resolve.closest('form')?.querySelector('[name="reason"]')).toBeNull()
   })
+
+  it('shows why resolve and close are not offered while a hold is active', () => {
+    const note = 'Release the development hold before resolving or closing the case.'
+    renderForm(<CaseMoreActions detail={stubDetail()} moves={[]} note={note} />)
+    expect(screen.getByText(note)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Resolve the case' })).toBeNull()
+  })
 })

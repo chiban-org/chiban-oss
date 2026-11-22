@@ -120,6 +120,16 @@ function movesOf(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlan
   )
 }
 
+const HELD_NOTE = 'Release the development hold before resolving or closing the case.'
+
+function heldNote(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlanExtras) {
+  if (!holdActive(input) || !extras.abilities.has('move') || now?.key === 'hold.release') {
+    return null
+  }
+  const endings = CASE_TRANSITIONS[input.staff.row.status].filter((to) => ENDINGS.includes(to))
+  return endings.length > 0 ? HELD_NOTE : null
+}
+
 function holdFirst(step: Step | null, input: CasePlanInput): Step | null {
   if (!holdActive(input)) return step
   const closes = step === null || (step.action?.kind === 'move' && step.action.to === 'closed')
@@ -142,5 +152,6 @@ export function planCaseWork(input: CasePlanInput, extras: CasePlanExtras): Case
     remedies: remedyActions(input).filter((a) => extras.abilities.has(a.kind)),
     groups: requirementGroups(input),
     moves: movesOf(input, now, extras),
+    heldNote: heldNote(input, now, extras),
   }
 }

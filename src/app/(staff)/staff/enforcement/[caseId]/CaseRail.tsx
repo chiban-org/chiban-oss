@@ -65,7 +65,7 @@ export function FactsAndActions(props: CaseRailProps) {
   return (
     <div className="flex flex-col gap-4">
       <CaseFacts detail={props.detail} can={props.can} assignee={props.assignee} />
-      <CaseMoreActions detail={props.detail} moves={props.plan.moves} />
+      <CaseMoreActions detail={props.detail} moves={props.plan.moves} note={props.plan.heldNote} />
     </div>
   )
 }
@@ -73,9 +73,9 @@ export function FactsAndActions(props: CaseRailProps) {
 export function CaseRail({ detail, can, assignee, plan }: CaseRailProps) {
   return (
     <>
-      {plan.moves.length === 0 ? null : (
+      {plan.moves.length === 0 && plan.heldNote === null ? null : (
         <div className="rail-card">
-          <CaseMoreActions detail={detail} moves={plan.moves} />
+          <CaseMoreActions detail={detail} moves={plan.moves} note={plan.heldNote} />
         </div>
       )}
       <CaseAssignee caseId={detail.staff.row.id} data={assignee} canManage={can.manage} />
