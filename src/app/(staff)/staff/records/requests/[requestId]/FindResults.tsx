@@ -16,7 +16,10 @@ function ApproveVersion({
   candidate: ReleaseCandidate
   version: Version
 }) {
-  const label = versionLabel(version.role, new Date(version.createdAt), context.timeZone)
+  const label = versionLabel(version.role, new Date(version.createdAt), context.timeZone, {
+    madeFor: version.madeFor,
+    currentRequestId: context.requestId,
+  })
   return (
     <li className="record-item flex flex-col gap-2">
       <p className="m-0 font-medium">{label}</p>
