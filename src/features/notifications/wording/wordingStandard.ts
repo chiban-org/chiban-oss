@@ -11,14 +11,21 @@ const INSPECTION_LABEL = '{{inspection.type}}'
 const DETAILS = 'Open the application for the details.'
 const REQUEST = '{{request.number}}'
 const ACKNOWLEDGEMENT_NEXT =
-  'It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.'
+  'may ask you to clarify which records you want, and will tell you in writing when it expects to respond.'
 const ANSWER_NEXT =
-  'It will make the records available, deny the request in writing, or tell you in writing when it will answer.'
+  'will make the records available, deny the request in writing, or tell you in writing when it will answer.'
 
 export function receiptPromise(due: string): { promise: string; next: string } {
   return acknowledgementEnabled()
-    ? { promise: `The town will acknowledge your request by ${due}.`, next: ACKNOWLEDGEMENT_NEXT }
-    : { promise: `The town will answer by ${due}.`, next: ANSWER_NEXT }
+    ? {
+        promise: `The town will acknowledge your request by ${due}.`,
+        next: `It ${ACKNOWLEDGEMENT_NEXT}`,
+      }
+    : { promise: `The town will answer by ${due}.`, next: `It ${ANSWER_NEXT}` }
+}
+
+export function receiptNextWithoutDate(): string {
+  return `The town ${acknowledgementEnabled() ? ACKNOWLEDGEMENT_NEXT : ANSWER_NEXT}`
 }
 
 function receiptPromiseText(due: string): string {

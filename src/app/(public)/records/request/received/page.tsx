@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
-import { receiptPromise } from '@/features/notifications/wording/wordingStandard'
+import {
+  receiptNextWithoutDate,
+  receiptPromise,
+} from '@/features/notifications/wording/wordingStandard'
 import { activePack } from '@/features/packs/registry'
 import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { receivedThanks } from '@/features/rtk/requestCopy'
@@ -20,13 +23,12 @@ function single(value: string | string[] | undefined, shape: RegExp): string | n
 }
 
 function NextSteps({ due }: { due: string | null }) {
-  const { promise, next } = receiptPromise(due === null ? '' : formatCivilDate(due))
-  if (due !== null && acknowledgementEnabled()) {
-    return <p className="max-w-[65ch]">{`${promise} ${next}`}</p>
-  }
+  if (due === null) return <p className="max-w-[65ch]">{receiptNextWithoutDate()}</p>
+  const { promise, next } = receiptPromise(formatCivilDate(due))
+  if (acknowledgementEnabled()) return <p className="max-w-[65ch]">{`${promise} ${next}`}</p>
   return (
     <>
-      {due === null ? null : <p className="max-w-[65ch]">{promise}</p>}
+      <p className="max-w-[65ch]">{promise}</p>
       <p className="max-w-[65ch]">{next}</p>
     </>
   )
