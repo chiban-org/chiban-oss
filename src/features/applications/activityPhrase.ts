@@ -1,5 +1,6 @@
 import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
+import { APPROVED } from '@/features/applications/statusText'
 import {
   type CertificationOutcome,
   certificationActivity,
@@ -85,10 +86,14 @@ function field(after: unknown, key: string): unknown {
     : undefined
 }
 
-export function activityPhrase(action: string, after: unknown): string {
+function stateWord(state: unknown, board: boolean): string | undefined {
+  if (typeof state !== 'string') return undefined
+  return !board && state === 'decided' ? APPROVED : STATE_PHRASES.get(state)
+}
+
+export function activityPhrase(action: string, after: unknown, board = true): string {
   if (action === 'application.transition') {
-    const state = field(after, 'state')
-    const label = typeof state === 'string' ? STATE_PHRASES.get(state) : undefined
+    const label = stateWord(field(after, 'state'), board)
     return label === undefined
       ? 'Moved the application to a new status'
       : `Moved the application to ${label}`

@@ -1,8 +1,9 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import type { ConfirmStep } from '@/components/useConfirmStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type CoreState, isTerminalState } from '@/features/applications/states'
-import { moveTask } from '@/features/applications/workPlan'
+import { hasBoardClassification, moveTask } from '@/features/applications/workPlan'
 import { setSubstepAction, transitionAction } from './actions'
 import { renewAction } from './buildingActions'
 
@@ -12,6 +13,23 @@ const ENDING_VERBS: ReadonlyMap<CoreState, string> = new Map([
   ['withdrawn', 'Withdraw'],
   ['expired', 'Expire'],
 ])
+
+function moveConfirm(view: StaffApplicationView, to: CoreState): ConfirmStep | undefined {
+  const board = hasBoardClassification(view.classification)
+  if (isTerminalState(to)) {
+    return {
+      title: `${ENDING_VERBS.get(to) ?? moveTask(to, board)} ${view.number}?`,
+      body: 'This ends the application. It cannot be undone.',
+      confirmLabel: moveTask(to, board),
+    }
+  }
+  if (to !== 'decided' || board) return undefined
+  return {
+    title: `Approve ${view.number}?`,
+    body: "This records the town's approval and makes the decision letter.",
+    confirmLabel: moveTask(to, board),
+  }
+}
 
 export function MoveForm({
   view,
@@ -30,15 +48,7 @@ export function MoveForm({
       submitLabel={label}
       variant={variant}
       compact
-      confirm={
-        isTerminalState(to)
-          ? {
-              title: `${ENDING_VERBS.get(to) ?? moveTask(to)} ${view.number}?`,
-              body: 'This ends the application. It cannot be undone.',
-              confirmLabel: moveTask(to),
-            }
-          : undefined
-      }
+      confirm={moveConfirm(view, to)}
     >
       <input type="hidden" name="applicationId" value={view.id} />
       <input type="hidden" name="to" value={to} />
@@ -106,7 +116,13 @@ export function MoreActions({ view, moves }: { view: StaffApplicationView; moves
       <div className="flex flex-col gap-3">
         <RenewForm view={view} />
         {moves.map((to) => (
-          <MoveForm key={to} view={view} to={to} label={moveTask(to)} variant="destructive" />
+          <MoveForm
+            key={to}
+            view={view}
+            to={to}
+            label={moveTask(to, hasBoardClassification(view.classification))}
+            variant="destructive"
+          />
         ))}
         <SubstepForm view={view} />
       </div>

@@ -1,5 +1,6 @@
 import { completenessCopy, offersCompleteness } from '@/features/applications/completenessStep'
 import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
+import { loadPack } from '@/features/packs/loadPack'
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
 import { type NextStepPlan, planNextStep } from './nextStep'
@@ -54,8 +55,25 @@ const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
   ['withdrawn', 'Withdraw the application'],
 ])
 
-export function moveTask(to: CoreState): string {
-  return MOVE_TASKS.get(to) ?? to
+const STAFF_MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
+  ['decided', 'Approve the application'],
+])
+
+const BOARD_MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
+  ['issued', 'Mark the approval in effect'],
+])
+
+export function moveTask(to: CoreState, board: boolean): string {
+  const own = (board ? BOARD_MOVE_TASKS : STAFF_MOVE_TASKS).get(to)
+  return own ?? MOVE_TASKS.get(to) ?? to
+}
+
+export function hasBoardClassification(classification: string | null | undefined): boolean {
+  return loadPack().classifications.find((c) => c.key === classification)?.boardKind != null
+}
+
+function isBoardPlan(view: PlanView, board: PlanBoard | null): boolean {
+  return board !== null || hasBoardClassification(view.classification)
 }
 
 function groupTitle(to: CoreState, board: boolean): string {
@@ -145,12 +163,17 @@ function stepFrom(row: Requirement, secondary: PlanAction[]): NowStep {
   }
 }
 
-function moveStep(moves: NextStepPlan, secondary: PlanAction[], held: boolean): NowStep | null {
+function moveStep(
+  moves: NextStepPlan,
+  secondary: PlanAction[],
+  facts: { held: boolean; board: boolean },
+): NowStep | null {
   if (moves.lead === null) return null
   const { to } = moves.lead
+  const { held } = facts
   const step = {
     key: `move:${to}`,
-    task: moveTask(to),
+    task: moveTask(to, facts.board),
     actor: 'town' as const,
     secondary,
     warnings: [],
@@ -186,7 +209,10 @@ function nowStep(
       warnings: [],
     }
   }
-  return moveStep(moves, secondary, view.heldParcel === true)
+  return moveStep(moves, secondary, {
+    held: view.heldParcel === true,
+    board: isBoardPlan(view, board),
+  })
 }
 
 function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | null {

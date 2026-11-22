@@ -61,7 +61,7 @@ test.describe('moving an application through its workflow', () => {
       const blockers = page.getByRole('list', { name: 'Before the decision' })
       await expect(blockers).toContainText('Reviews signed off')
       await expect(blockers).toContainText('No reviewer is assigned.')
-      await expect(page.getByRole('button', { name: 'Record the decision' })).toHaveCount(0)
+      await expect(page.getByRole('button', { name: 'Approve the application' })).toHaveCount(0)
     })
   })
 

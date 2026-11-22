@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { meetingDeadline } from '@/features/applications/meetingDeadline'
 import { isTerminalState } from '@/features/applications/states'
-import { moveTask } from '@/features/applications/workPlan'
+import { hasBoardClassification, moveTask } from '@/features/applications/workPlan'
 import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
@@ -51,7 +51,7 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_license_check':
       return 'Record the license check'
     case 'move':
-      return moveTask(action.to)
+      return moveTask(action.to, hasBoardClassification(input.view.classification))
   }
 }
 
@@ -176,7 +176,7 @@ export function PlanActionForm({
         <MoveForm
           view={view}
           to={action.to}
-          label={moveTask(action.to)}
+          label={moveTask(action.to, hasBoardClassification(view.classification))}
           variant={isTerminalState(action.to) ? 'destructive' : variant}
         />
       )

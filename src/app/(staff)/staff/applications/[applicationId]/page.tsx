@@ -17,7 +17,7 @@ import {
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
 import { applicationStatusText } from '@/features/applications/statusText'
-import { planWork } from '@/features/applications/workPlan'
+import { hasBoardClassification, planWork } from '@/features/applications/workPlan'
 import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { counterIntakeLine } from '@/features/counter/intake/intakeProvenance'
@@ -159,7 +159,12 @@ export default async function StaffApplicationPage({ params }: Props) {
   const status = (
     <StatusChip
       status={headerStatus(view)}
-      label={applicationStatusText(view.state, view.substep, view.substeps)}
+      label={applicationStatusText(
+        view.state,
+        view.substep,
+        view.substeps,
+        hasBoardClassification(view.classification),
+      )}
     />
   )
   const notice = <BalanceDueNotice notices={balanceNotices} />

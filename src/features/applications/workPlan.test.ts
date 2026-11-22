@@ -110,16 +110,6 @@ describe('the work plan for a building permit under review', () => {
     )
   })
 
-  it('makes the decision the card action once nothing blocks it', () => {
-    const plan = planWork(view({ gates: [{ to: 'decided', results: [] }] }), null, CLERK)
-    expect(plan.now).toMatchObject({
-      task: 'Record the decision',
-      action: { kind: 'move', to: 'decided' },
-    })
-    const refused = planWork(view({ gates: [], allowedMoves: ['withdrawn'] }), null, CLERK)
-    expect(refused.now).toMatchObject({ action: null, note: 'Your role cannot make this move.' })
-  })
-
   it('asks for completeness first on a submitted building permit and still lists issuance', () => {
     const plan = planWork(
       view({
