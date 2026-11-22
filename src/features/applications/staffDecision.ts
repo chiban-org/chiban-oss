@@ -1,14 +1,16 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { applications } from '@/db/schema'
+import { appealNodes, applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { addAdministrativeDecisionTx } from '@/features/appeals/adminAppeals'
+import { loadApplicationContext } from '@/features/applications/context'
 import {
   type TransitionError,
   type TransitionOutcome,
   transitionApplication,
 } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { appealRightsForDecision } from '@/features/decisions/appealRights'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
@@ -144,5 +146,41 @@ export async function decideStaffApplication(
       const decided = await recordStaffDecisionTx(tx, actor, input, store, signal)
       return decided.ok ? moved : decided
     },
+  )
+}
+
+async function onRegister(tx: Tx, applicationId: string): Promise<boolean> {
+  const [node] = await tx
+    .select({ id: appealNodes.id })
+    .from(appealNodes)
+    .where(
+      and(
+        eq(appealNodes.applicationId, applicationId),
+        eq(appealNodes.kind, 'administrative_decision'),
+      ),
+    )
+    .limit(1)
+  return node !== undefined
+}
+
+export async function recordIssuedDecisionTx(
+  tx: Tx,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<void> {
+  const app = await loadApplicationContext(tx, applicationId, signal)
+  if (app === null || app.issuedOn === null || boardOfApplication(app) !== null) return
+  if (await onRegister(tx, applicationId)) return
+  const data = await loadPermitData(tx, applicationId, signal)
+  await addAdministrativeDecisionTx(
+    tx,
+    {
+      applicationId,
+      occurredOn: app.issuedOn,
+      createdBy: actor.userId,
+      outcome: recordedOutcome(false, data?.conditions ?? []),
+    },
+    signal,
   )
 }
