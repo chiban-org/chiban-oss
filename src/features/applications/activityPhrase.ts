@@ -11,6 +11,7 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   Object.entries({
     'application.create': 'Started the application',
     'application.counter_intake': 'Taken at the counter',
+    'application.incomplete_notice': 'Sent an incomplete application notice',
     'application.paper_attestation': 'Recorded that the applicant signed the attestation on paper',
     'application.amend': 'Amended the application',
     'application.substep': 'Changed the workflow step',

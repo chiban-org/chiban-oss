@@ -13,6 +13,12 @@ describe('activity phrases', () => {
     )
   })
 
+  it('names an incomplete application notice', () => {
+    expect(activityPhrase('application.incomplete_notice', null)).toBe(
+      'Sent an incomplete application notice',
+    )
+  })
+
   it('reads the template actions for clocks and board votes', () => {
     expect(activityPhrase('clock.extension', null)).toBe('Extended a deadline')
     expect(activityPhrase('clock.tolling', null)).toBe('Paused a deadline')
