@@ -70,6 +70,11 @@ describe('contract 0.10.0 pack fields', () => {
     })
   }
 
+  it('the fictional pack names only common jobs it has a starter for', () => {
+    const prefixes = new Set(XX_PACK.starters.map((s) => s.applicationType.prefix))
+    for (const job of XX_PACK.portal.commonJobs) expect(prefixes).toContain(job.key)
+  })
+
   it('moves the New Hampshire common jobs into the pack', () => {
     expect(packById('nh').portal.commonJobs.map((j) => j.key)).toEqual([
       'BP',

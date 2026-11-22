@@ -95,7 +95,7 @@ export const XX_PACK: StatePack = {
   spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   recordsRequests: { acknowledgement: false },
   portal: {
-    commonJobs: [{ key: 'BP', title: 'Build something', description: 'A new Vellmora building.' }],
+    commonJobs: [],
     officeClassifications: ['xx.building_permit', 'xx.trade_permit'],
   },
   labels: {
