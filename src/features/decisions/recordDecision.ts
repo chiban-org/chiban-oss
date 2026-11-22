@@ -19,7 +19,7 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { boardDecisionClockKeys } from '@/features/decisions/decisionClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
-import { resolveVenue } from '@/features/decisions/decisionVenue'
+import { cancelScheduledHearings, resolveVenue } from '@/features/decisions/decisionVenue'
 import { planDeliveries } from '@/features/decisions/delivery'
 import { classificationOfApplication } from '@/features/decisions/hearingOptional'
 import { storedSignificance } from '@/features/decisions/significance'
@@ -57,7 +57,7 @@ export type DecisionError =
   | 'already_final'
   | 'before_receipt'
   | 'before_acceptance'
-  | 'hearing_scheduled'
+  | { meetingBefore: 'before_receipt' | 'before_acceptance' }
   | { notSeated: string[] }
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
@@ -142,6 +142,7 @@ export async function recordDecision(
       })
       .returning({ id: boardDecisions.id })
     await applyConditions(tx, actor, app.id, input.conditions ?? [])
+    const cancelledHearingIds = hearingId === null ? await cancelScheduledHearings(tx, app.id) : []
     const boardKind = boardOfApplication(app)
     if (boardKind !== null && !input.outcome.startsWith('rehearing')) {
       await recordDecisionNode(tx, {
@@ -178,7 +179,12 @@ export async function recordDecision(
         action: 'decision.record',
         entityType: 'application',
         entityId: app.id,
-        after: { decisionId: row?.id, outcome: input.outcome, votedOn: input.votedOn },
+        after: {
+          decisionId: row?.id,
+          outcome: input.outcome,
+          votedOn: input.votedOn,
+          ...(cancelledHearingIds.length === 0 ? {} : { cancelledHearingIds }),
+        },
       },
       signal,
     )

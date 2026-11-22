@@ -70,7 +70,15 @@ async function decisionRows(applicationId: string) {
     .where(eq(boardDecisions.applicationId, applicationId))
 }
 
-async function scheduledHearingFor(applicationId: string, meetingId: string): Promise<void> {
+async function hearingStatus(hearingId: string): Promise<string | undefined> {
+  const [row] = await handle.db
+    .select({ status: hearings.status })
+    .from(hearings)
+    .where(eq(hearings.id, hearingId))
+  return row?.status
+}
+
+async function scheduledHearingFor(applicationId: string, meetingId: string): Promise<string> {
   const [set] = await handle.db
     .insert(noticeSets)
     .values({
@@ -80,14 +88,18 @@ async function scheduledHearingFor(applicationId: string, meetingId: string): Pr
       anchorDate: PB_MEETING_DATE,
     })
     .returning({ id: noticeSets.id })
-  await handle.db.insert(hearings).values({
-    applicationId,
-    meetingId,
-    kind: 'public_hearing',
-    status: 'scheduled',
-    noticeSetId: set?.id ?? '',
-    createdBy: world.staff.userId,
-  })
+  const [row] = await handle.db
+    .insert(hearings)
+    .values({
+      applicationId,
+      meetingId,
+      kind: 'public_hearing',
+      status: 'scheduled',
+      noticeSetId: set?.id ?? '',
+      createdBy: world.staff.userId,
+    })
+    .returning({ id: hearings.id })
+  return row?.id ?? ''
 }
 
 async function record(input: RecordDecisionInput) {
@@ -181,12 +193,38 @@ describe('a classification whose hearing is optional', () => {
     expect(await decisionRows(applicationId)).toEqual([])
   })
 
-  it('refuses a vote while a hearing is scheduled', async () => {
+  it('refuses a meeting held before receipt even when the vote is dated later', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    const meetingId = await meetingOn(BEFORE_RECEIPT_MEETING, 'planning_board')
+    expect(
+      await record(noHearingInput(applicationId, meetingId, { votedOn: d('2027-03-05') })),
+    ).toEqual(err({ meetingBefore: 'before_receipt' }))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('refuses a meeting held before acceptance even when the vote is dated later', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    await handle.db
+      .update(applications)
+      .set({ completedDate: '2027-04-20' })
+      .where(eq(applications.id, applicationId))
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    expect(
+      await record(noHearingInput(applicationId, meetingId, { votedOn: d('2027-04-28') })),
+    ).toEqual(err({ meetingBefore: 'before_acceptance' }))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('records a decision while a hearing is scheduled and cancels that hearing', async () => {
     const applicationId = await applicationUnderReview(world.zbaTypeKey)
     const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
-    await scheduledHearingFor(applicationId, await meetingOn('2027-05-12', 'planning_board'))
-    expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('hearing_scheduled'))
-    expect(await decisionRows(applicationId)).toEqual([])
+    const hearingId = await scheduledHearingFor(
+      applicationId,
+      await meetingOn('2027-05-12', 'planning_board'),
+    )
+    expect((await record(noHearingInput(applicationId, meetingId))).ok).toBe(true)
+    expect(await decisionRows(applicationId)).toHaveLength(1)
+    expect(await hearingStatus(hearingId)).toBe('cancelled')
   })
 
   it('offers no meeting dated before the application was received', async () => {
@@ -243,5 +281,16 @@ describe('a classification whose hearing is required', () => {
     expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('hearing_required'))
     const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
     expect(panel?.noHearing).toBeNull()
+  })
+
+  it('leaves a scheduled NH hearing in place when a decision without a hearing is refused', async () => {
+    const applicationId = await applicationUnderReview(world.pbTypeKey)
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    const hearingId = await scheduledHearingFor(
+      applicationId,
+      await meetingOn('2027-05-12', 'planning_board'),
+    )
+    expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('hearing_required'))
+    expect(await hearingStatus(hearingId)).toBe('scheduled')
   })
 })

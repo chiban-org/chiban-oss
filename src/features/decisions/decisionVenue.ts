@@ -68,13 +68,13 @@ function datedTooEarly(
   return null
 }
 
-async function hasScheduledHearing(tx: Tx, applicationId: string): Promise<boolean> {
-  const [scheduled] = await tx
-    .select({ id: hearings.id })
-    .from(hearings)
+export async function cancelScheduledHearings(tx: Tx, applicationId: string): Promise<string[]> {
+  const cancelled = await tx
+    .update(hearings)
+    .set({ status: 'cancelled' })
     .where(and(eq(hearings.applicationId, applicationId), eq(hearings.status, 'scheduled')))
-    .limit(1)
-  return scheduled !== undefined
+    .returning({ id: hearings.id })
+  return cancelled.map((h) => h.id)
 }
 
 async function meetingVenue(
@@ -107,7 +107,8 @@ async function meetingVenue(
     return err('before_meeting')
   const early = datedTooEarly(app, input.votedOn)
   if (early !== null) return err(early)
-  if (await hasScheduledHearing(tx, app.id)) return err('hearing_scheduled')
+  const meetingEarly = datedTooEarly(app, meeting.meetingDate as CivilDate)
+  if (meetingEarly !== null) return err({ meetingBefore: meetingEarly })
   const [already] = await tx
     .select({ id: boardDecisions.id })
     .from(boardDecisions)
