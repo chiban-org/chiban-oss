@@ -14,11 +14,19 @@ Chiban sends email for sign-in links, notices to applicants and contractors, boa
 | Setting | What it does | Reaches the bundled Compose services |
 | --- | --- | --- |
 | `SMTP_URL` | The SMTP server to send through, written as a URL such as `smtp://username:password@smtp.example.org:587`. | Yes |
-| `MAIL_FROM` | The sender of every message, written as `"Town of Example <noreply@town.example.org>"`. Calendar invitations use the same address as their organizer. | Yes |
+| `MAIL_FROM` | The sender of every message, written as `"Town of Example <noreply@town.example.org>"`. Optional. Calendar invitations use the same sender as their organizer. | Yes |
 
 Both are in `deploy/.env.example` and in the shared environment block of `deploy/docker-compose.yml`, so the application, the worker, the migration step and the storage setup step all see them. If the user name or password contains characters that are special in a URL, such as `@` or `/`, write them percent-encoded.
 
-The defaults, used when a setting is absent, are `smtp://localhost:1025` and `Town of Alder Pond <noreply@alderpond.example>`. On a real server, set both. Mail from a domain with no SPF or DKIM record for your SMTP provider usually lands in spam. Fix that with the provider and your DNS.
+The default for `SMTP_URL`, used when it is absent, is `smtp://localhost:1025`. On a real server, set it.
+
+`MAIL_FROM` has no fixed default. A blank value counts as unset. The sender is worked out for each message:
+
+- If `MAIL_FROM` has a display name, such as `"Town of Example <noreply@town.example.org>"`, Chiban uses it as written.
+- If it is a bare address, Chiban sends from that address under the town's name from the town profile.
+- If it is unset, Chiban sends as the town's name from `noreply@` and the host name of `BASE_URL`. For a town named Town of Example and a `BASE_URL` of `https://permits.example.org`, that is `Town of Example <noreply@permits.example.org>`. A port in `BASE_URL` is left out of the address.
+
+Mail from a domain with no SPF or DKIM record for your SMTP provider usually lands in spam. Fix that with the provider and your DNS.
 
 Chiban has one transport: SMTP through nodemailer. It has no setting for an API-based mail service and no second route if SMTP fails. The in-memory transport in the source tree exists for tests and cannot be selected by configuration.
 

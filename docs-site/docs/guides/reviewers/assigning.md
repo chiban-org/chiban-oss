@@ -32,10 +32,12 @@ In the **Reviewers** panel, open **Remove** beside the name and confirm. The per
 
 ## What reviews do to a decision
 
-On a permit that goes through review to a decision, such as a building permit, the requirement **Reviews signed off** blocks **Record the decision** until at least one reviewer is assigned and every assigned reviewer has signed off.
+On a permit that goes through review to a decision, such as a building permit, the requirement **Reviews signed off** blocks **Approve the application** until at least one reviewer is assigned and every assigned reviewer has signed off.
 
 - With nobody assigned, the requirement says **No reviewer is assigned.** and the panel shows **The decision is blocked until a reviewer is assigned and signs off.**
 - With reviewers who have not finished, it says how many reviews are not signed off.
+
+Some application types do not require a reviewer, and the town can switch the rule off for a type with **A reviewer must sign off before the decision** in the type's workflow settings. Where it is off, an application with nobody assigned passes the requirement, but an assigned reviewer who has not signed still blocks it.
 
 If a reviewer is away or no longer needed, **Remove** them. Removing is better than overriding the requirement, which ignores the reviews altogether. Land use staff can override with a recorded reason, as [From intake to issued permit](../land-use-staff/application-life.md) explains.
 

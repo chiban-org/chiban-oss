@@ -39,7 +39,7 @@ For each fee you set:
 - **How it is worked out**: a set amount, an amount for each unit of an answer, or rates that change in bands.
 - For an amount per unit, **Count** which answers, such as finished area or estimated cost of work, with a **Rate for each**. You can count the abutters on the notice list or the dwelling units too.
 - **Charge at least a minimum amount**, with a **Minimum**.
-- **Charge more when work started before the permit was issued**, with a number to multiply the fee by. A 2 doubles it. The applicant says on the form whether work has started.
+- **Charge more when work started before the permit was issued**, with a number to multiply the fee by. A 2 doubles it. It applies when staff tick **Work started before permit** on the record.
 
 The **Worked example** under each fee shows what it comes to. Change the sample answers beside it and the total changes, so you can try a small job and a large one. **Add a fee** adds a line and **Remove this fee** takes one off. The schedule is tied to an application type under [application types and workflow](./application-types-and-workflow.md).
 

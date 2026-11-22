@@ -25,15 +25,15 @@ After a judgment, the page shows the date by which the judgment can be appealed.
 
 ## Refer the case to town counsel
 
-Land use staff and administrators refer a case. Under **Town counsel**, choose **Refer to counsel** and enter:
+Land use staff and administrators refer a case. Where no order is available for the findings, a notice of violation or a cure notice must have been recorded first, or Chiban says "Send a notice of violation or a cure notice before referring the case to counsel." A return receipt is not needed. A closed case cannot be referred, and its counsel controls are hidden. Under **Town counsel**, choose **Refer to counsel** and enter:
 
 - **Counsel**, the attorney's name.
 - **Purpose**: **Motion to enforce**, **Injunction**, **Penalty action** or **Other**.
 - **Date referred**.
 
-Chiban builds a counsel packet, a PDF filed under **Documents and photos** as **Counsel packet for** the case number, and links it as **Open packet**. It contains the case details, the findings and notices, each order with its service checklist, the proof of service on file, appeals and stays, and the penalty exposure. Send it to counsel the way the town normally sends documents. Chiban does not email it. An administrator can change the cover page under **Settings**, **Templates**.
+Chiban builds a counsel packet, a PDF filed under **Documents and photos** as **Counsel packet for** the case number, and links it as **Open packet**. It contains the case details, the findings and notices (cure notices too, each with its return receipt), the remedies where the town's rules have them (the dates a hold was placed and released, and the court, docket and date of any civil action), each order with its service checklist, the proof of service on file, appeals and stays, and the penalty exposure. Send it to counsel the way the town normally sends documents. Chiban does not email it. An administrator can change the cover page under **Settings**, **Templates**.
 
-When counsel reports back, choose **Record an outcome**. **What happened** can be **Motion filed**, **Hearing held**, **Judgment for the town**, **Judgment for the respondent**, **Settled**, **Dismissed**, **Withdrawn** or **Appealed to the superior court**, with the date, court, docket, document and a note. A recorded judgment is what lets a fine be entered.
+When counsel reports back, choose **Record an outcome**. **What happened** can be **Motion filed**, **Hearing held**, **Judgment for the town**, **Judgment for the respondent**, **Settled**, **Dismissed**, **Withdrawn** or **Appealed to the superior court**, with the date, court, docket, document and a note. A recorded judgment is what lets a fine be entered. Where a town's rules have no order to file, a court outcome such as **Motion filed** or **Judgment for the town** moves the case to **In court** by itself.
 
 ## Penalty exposure
 
@@ -47,6 +47,6 @@ The daily amount comes from the town's rules in the state pack, not from anythin
 
 ## Record a fine and payments
 
-Only administrators and [finance staff](../finance/payments-and-receipts.md) can record a fine a court imposed, because it goes on the ledger. Choose **Record a court-imposed fine** and enter **Based on** (the judgment), **Kind**, **Amount in dollars**, **Date imposed**, **Court** and **Docket number**. Chiban asks for a recorded judgment first. It will not record a fine while an appeal stay is in effect.
+Only administrators and [finance staff](../finance/payments-and-receipts.md) can record a fine a court imposed, because it goes on the ledger. Choose **Record a court-imposed fine** and enter **Based on** (the judgment), **Kind**, **Amount in dollars**, **Date imposed**, **Court** and **Docket number**. Chiban asks for a recorded judgment first. It will not record a fine while an appeal stay is in effect. Staff who cannot record fines see "A judgment for the town is recorded. Finance or an administrator records the fine here." when a judgment is on record.
 
 The fine then shows what was paid and the balance, for example **Paid $200.00. Balance due $75.00.** **Do this now** reads **Collect the** amount **fine balance**. Land use staff and finance staff can **Record a payment**: **Amount in dollars**, **Paid by** (**Cash** or **Check**), **Check number** and **Payer name**. When the balance reaches zero the case is ready to resolve.

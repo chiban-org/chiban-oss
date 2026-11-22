@@ -6,7 +6,9 @@ sidebar_position: 4
 
 # Paying fees online
 
-The fee for an application is worked out from your answers on the form. It appears under **Fees and payment** at the bottom of the application, line by line, with what has been paid and the balance. Before the fee is known, the page shows an estimate and when it will be due, for example "when the town approves the application".
+The fee for an application is worked out from your answers on the form. It appears under **Fees and payment** at the bottom of the application, line by line, with what has been paid and the balance. Before the fee is known, the page shows an estimate and when it will be due, for example "when the town approves the application". Once the application is submitted, the page says "No fees are due yet. The town sets the fee when it reviews the application," and gives the estimate from your answers.
+
+If the town does not take card payments online, the page says "Pay" with the amount "at the" town office instead of showing a pay button. The same line is in the **Do this now** box, on your list of applications, and beside any fee that is due. Pay at the counter.
 
 ## Paying
 

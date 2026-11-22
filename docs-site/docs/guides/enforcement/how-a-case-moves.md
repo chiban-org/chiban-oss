@@ -37,6 +37,10 @@ The strip at the top of a case shows which of these stages it is in.
 
 A case can also end at **No violation found** when the investigation turns up nothing, and then it can only be closed.
 
+### Holds and counsel
+
+Where the town has placed a development hold, **Do this now** reads **Release the hold**, with the note "Release it under Development hold before resolving the case." Chiban refuses to resolve or close the case until the hold is released: "Release the enforcement hold before resolving or closing the case." Where the town's rules have no order to issue, a case moves to **In court** on a counsel outcome, **Do this now** waits on town counsel, and the strip leaves out **Order issued**. Once a case is closed, Chiban no longer accepts a cure procedure or a counsel referral for it.
+
 ## Do this now, and Requirements
 
 The top of every case has a **Do this now** card. It names the one thing to do next, and for most steps it holds the form to do it. When the case is waiting on someone else, the card says who and for what, for example **Wait for the ZBA decision**.

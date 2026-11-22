@@ -12,11 +12,13 @@ A record goes to a requester in three steps: find it, approve the exact version 
 
 On the request, the release step has a search box labeled **Find a document by title or application or case number**. Search, then choose **Find**. Each result shows the document's title, the record it belongs to, and its versions. Chiban remembers your recent searches for each request.
 
-The versions you may see are the **Original**, a **Redacted copy for this request** and a **Redacted copy for the public**. If the original has to be blacked out first, choose **Redact for this request** under the result. That opens the redaction page already tied to this request. See [Redact a document](./redaction.md).
+The versions you may see are the **Original**, a **Redacted copy for this request** and a **Redacted copy for the public**. A redacted copy that was made for a different request is labelled with that request's number, for example "Redacted copy made for RK-2026-0002". If the original has to be blacked out first, choose **Redact for this request** under the result. That opens the redaction page already tied to this request. See [Redact a document](./redaction.md).
 
 ## Approve the version
 
 Under the version you want, fill in **What you checked before approving** and choose **Approve**. Write what you actually looked at, for example "Read all three pages; the resident's phone number is covered." The statement is kept with the approval.
+
+A redacted copy for this request can be approved only once its exemptions have been drawn in Chiban. If they have not, Chiban says "A redacted copy needs the exemptions drawn in Chiban before it can be released." Open **Redact for this request** and draw them first. A redacted copy made for the public is not held to this.
 
 Approving a version for this request does not publish it anywhere else. If a document is also approved for the public site, the public approval counts for the request too.
 
@@ -28,7 +30,7 @@ Approved versions wait under **Approved, not yet released**. When a document has
 - **How**: **Inspection at the town office**, **Paper copy**, **Link sent by email** or **Email attachment**.
 - **Requester's email address**, which is required for **Link sent by email** and **Email attachment**. It starts filled in when the request has exactly one email address.
 
-Choose **Release 1 record** (or however many), then confirm. Once released it cannot be called back, though you can withdraw an approval afterward (see below).
+Choose **Release 1 record** (or however many), then confirm. Once released it cannot be called back.
 
 Each release gets a number and its own letter, **Letter for release 1**, filed on the request. If the first release is made while the request is still open, it also records the first response. A request can have many releases. Redacted copies add their exemptions to **Records withheld or redacted**, and a redacted copy cannot be released until every box on it carries an exemption.
 
@@ -46,11 +48,11 @@ The requester gets an email with a link to a page titled "Records for request RK
 
 The link works for 30 days. Each release made by link shows "The link works until" and the date. After that the page tells the requester the link has expired and to ask the land use office for a new one.
 
-To send a new one, open the request and find the release. Once the link has expired, **Send a new link** appears under it. Check the address under **Send it to**, which starts as the requester's email, and choose **Send a new link**. The message reads "A new link was emailed." The new link works for 30 days, the release shows "New link sent to" the address and the date, and the old link stays closed. Chiban will not send a new link while the current one works: it says "The current link still works. Send a new one after it expires." A link turned off by revoking the approval cannot be sent again.
+To send a new one, open the request and find the release. Once the link has expired, **Send a new link** appears under it. Check the address under **Send it to**, which starts as the requester's email, and choose **Send a new link**. The message reads "A new link was emailed." The new link works for 30 days, the release shows "New link sent to" the address and the date, and the old link stays closed. Chiban will not send a new link while the current one works: it says "The current link still works. Send a new one after it expires."
 
 ## Take an approval back
 
-Under **Approved for this request**, **Revoke approval** takes a version off the table. Give a reason of at least 10 characters. A version that has not been released cannot be released until someone approves it again. A version already released through a link is withdrawn on the requester's page, which then says the town withdrew it on that date. Paper and inspection releases cannot be undone this way.
+Under **Approved for this request**, **Revoke approval** takes a version off the table. Give a reason of at least 10 characters. A version that has not been released cannot be released until someone approves it again. **Revoke approval** appears only beside an approval that is still waiting. Once a version has been released, its row reads "Released in release" and a number, and has no **Revoke approval**.
 
 ## Close the request
 
