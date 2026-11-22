@@ -32,3 +32,9 @@ export function closureStage(
   if (latest.status === 'passed') return { stage: 'passed', reinspectId: null }
   return { stage: 'failed', reinspectId: reinspectable.has(latest.id) ? latest.id : null }
 }
+
+export function finalChecklistLabel(
+  checklists: readonly { label: string; final: boolean }[],
+): string | null {
+  return checklists.find((c) => c.final)?.label ?? null
+}

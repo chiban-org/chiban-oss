@@ -2,10 +2,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { meetingDeadline } from '@/features/applications/meetingDeadline'
 import { isTerminalState } from '@/features/applications/states'
-import { moveTask } from '@/features/applications/workPlan'
+import { hasBoardClassification, moveTask } from '@/features/applications/workPlan'
 import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
+import { BoardRegionalForm, MeetingForm, ScheduleHearingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
 import { IssueCertificateForm } from './inspectionsPanel'
 import { RecordResultLink } from './inspectorSections'
@@ -22,6 +22,11 @@ export type PlanFormInput = Pick<
   'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license'
 >
 
+function boardSummary(kind: 'set_board_meeting' | 'record_board_vote', zoning: boolean): string {
+  if (kind === 'set_board_meeting') return zoning ? 'Schedule the hearing' : 'Set the meeting'
+  return zoning ? 'Open the hearing' : 'Record the completeness vote'
+}
+
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
   switch (action.kind) {
     case 'assign_reviewer':
@@ -35,9 +40,8 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_payment':
       return 'Take a payment'
     case 'set_board_meeting':
-      return 'Set the meeting'
     case 'record_board_vote':
-      return input.board?.boardKind === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
+      return boardSummary(action.kind, input.board?.boardKind === 'zba')
     case 'record_board_regional_impact':
       return 'Record the regional impact determination'
     case 'open_abutter_list':
@@ -51,7 +55,7 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_license_check':
       return 'Record the license check'
     case 'move':
-      return moveTask(action.to)
+      return moveTask(action.to, hasBoardClassification(input.view.classification))
   }
 }
 
@@ -70,10 +74,10 @@ function TakeRequestLink({
   number: string
   variant: Variant
 }) {
-  const reinspect = action.reinspect === undefined ? '' : `&reinspect=${action.reinspect}`
+  const asked = action.reinspect === undefined ? '&final=1' : `&reinspect=${action.reinspect}`
   return (
     <Button asChild variant={variant} className="self-start">
-      <Link href={`/staff/inspections?number=${encodeURIComponent(number)}${reinspect}`}>
+      <Link href={`/staff/inspections?number=${encodeURIComponent(number)}${asked}`}>
         {requestLabel(action)}
       </Link>
     </Button>
@@ -93,6 +97,15 @@ function BoardActionForm({
   clocks: PlanFormInput['view']['clocks']
   variant: Variant
 }) {
+  if (kind === 'set_board_meeting' && board.boardKind === 'zba') {
+    return (
+      <ScheduleHearingForm
+        data={board}
+        deadline={meetingDeadline(clocks, board.boardKind)}
+        variant={variant}
+      />
+    )
+  }
   if (kind === 'set_board_meeting') {
     return (
       <MeetingForm
@@ -176,7 +189,7 @@ export function PlanActionForm({
         <MoveForm
           view={view}
           to={action.to}
-          label={moveTask(action.to)}
+          label={moveTask(action.to, hasBoardClassification(view.classification))}
           variant={isTerminalState(action.to) ? 'destructive' : variant}
         />
       )

@@ -1,13 +1,11 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
 import { expectToast } from '../records/requestSupport'
 import { drawAndIssueList } from './abutterList'
-import { confirmWith } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
 import { applicationIdFor, daysFromToday, townToday } from './records'
 import { expectRefused } from './refusal'
 
 const APPLICATION = 'Pintail Way setback variance'
-const SET_MEETING_COPY = 'Meeting set. The filing deadline for it is shown on the clocks.'
 
 async function hearingIdAt(db: E2eDb, applicationId: string, spec: MeetingSpec): Promise<string> {
   const row = await db.one<{ id: string }>(
@@ -42,90 +40,42 @@ test.describe
       applicationId = await applicationIdFor(db, APPLICATION)
     })
 
-    test('issues the abutter list the vote depends on', async ({ page, db }) => {
+    test('issues the abutter list the hearing depends on', async ({ page, db }) => {
       await drawAndIssueList(page, db, applicationId)
     })
 
-    test('refuses setting the hearing meeting before one is chosen', async ({ page, db }) => {
+    test('refuses scheduling the hearing before a meeting is chosen', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
       const hearing = page.getByRole('region', { name: 'Do this now' })
-      await hearing.getByRole('button', { name: 'Set the meeting' }).click()
+      await expect(hearing).toContainText('Schedule the hearing')
+      await hearing.getByRole('button', { name: 'Schedule the hearing' }).click()
       await expectRefused(hearing.getByLabel('Hearing meeting'), 'Fill in: Hearing meeting.')
-      const rows = await db.rows('select 1 from acceptance_schedules where application_id = $1', [
+      const rows = await db.rows('select 1 from hearings where application_id = $1', [
         applicationId,
       ])
       expect(rows).toHaveLength(0)
     })
 
-    test('sets the hearing meeting and stores the schedule', async ({ page, db }) => {
+    test('schedules the public hearing at the later meeting in one step', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
       const hearing = page.getByRole('region', { name: 'Do this now' })
-      const meetingId = await meetingIdFor(db, today)
-      await hearing.getByLabel('Hearing meeting').selectOption(meetingId)
-      await hearing.getByRole('button', { name: 'Set the meeting' }).click()
-      await expectToast(page, SET_MEETING_COPY)
-      const row = await db.one<{ meeting_id: string }>(
-        'select meeting_id from acceptance_schedules where application_id = $1',
-        [applicationId],
+      await hearing.getByLabel('Hearing meeting').selectOption(await meetingIdFor(db, later))
+      await hearing.getByRole('button', { name: 'Schedule the hearing' }).click()
+      await expectToast(page, 'Hearing scheduled. The notice checklist is ready.')
+      const stored = await db.one<{ status: string; kind: string }>(
+        'select status, kind from hearings where id = $1',
+        [await hearingIdAt(db, applicationId, later)],
       )
-      expect(row.meeting_id).toBe(meetingId)
-    })
-
-    test('refuses a vote dated after today and records nothing', async ({ page, db }) => {
-      await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Do this now' })
-      await expect(hearing).toContainText('Open the hearing')
-      await hearing.getByLabel('Date of the vote').fill(await daysFromToday(db, 3))
-      await hearing.getByRole('button', { name: 'Record vote' }).click()
-      await expectRefused(hearing.getByLabel('Date of the vote'), 'Check: Date of the vote.')
-      await expect(page.getByRole('dialog', { name: 'Record this vote?' })).toHaveCount(0)
-      const votes = await db.rows('select 1 from completeness_votes where application_id = $1', [
-        applicationId,
-      ])
-      expect(votes).toHaveLength(0)
-    })
-
-    test('records an accepted vote after the confirmation', async ({ page, db }) => {
-      await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Do this now' })
-      await expect(hearing).toContainText('Open the hearing')
-      await hearing.getByRole('button', { name: 'Record vote' }).click()
-      await confirmWith(page, 'Record this vote?', 'Record vote')
-      await expect
-        .poll(
-          async () =>
-            (
-              await db.rows('select 1 from completeness_votes where application_id = $1', [
-                applicationId,
-              ])
-            ).length,
-        )
-        .toBe(1)
-      const vote = await db.one<{ outcome: string; voted_on: string }>(
-        'select outcome, voted_on::text from completeness_votes where application_id = $1',
-        [applicationId],
-      )
-      expect(vote).toEqual({ outcome: 'accepted', voted_on: today.date })
+      expect(stored).toEqual({ status: 'scheduled', kind: 'public_hearing' })
       const state = await db.one<{ state: string }>(
         'select state from applications where id = $1',
         [applicationId],
       )
       expect(state.state).toBe('under_review')
-    })
-
-    test('schedules a public hearing at the later meeting and stores it', async ({ page, db }) => {
-      await page.goto(`/staff/applications/${applicationId}`)
-      const panel = page.getByRole('region', { name: 'Hearings and decisions' })
-      await panel.getByText('Schedule a hearing', { exact: true }).click()
-      await panel.getByLabel('Meeting').selectOption(await meetingIdFor(db, later))
-      await panel.getByLabel('Kind').selectOption('public_hearing')
-      await panel.getByRole('button', { name: 'Schedule hearing' }).click()
-      await expectToast(page, 'Hearing scheduled. The notice checklist is ready.')
-      const hearing = await db.one<{ status: string; kind: string }>(
-        'select status, kind from hearings where id = $1',
-        [await hearingIdAt(db, applicationId, later)],
-      )
-      expect(hearing).toEqual({ status: 'scheduled', kind: 'public_hearing' })
+      const votes = await db.rows('select 1 from completeness_votes where application_id = $1', [
+        applicationId,
+      ])
+      expect(votes).toHaveLength(0)
     })
 
     test('refuses a continuation announced without saying what was announced', async ({
@@ -172,5 +122,6 @@ test.describe('hearing forms without the capability', () => {
     await expect(page.getByRole('region', { name: 'Board' })).toBeVisible()
     await expect(page.getByText('Schedule a hearing', { exact: true })).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Set the meeting' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Schedule the hearing' })).toHaveCount(0)
   })
 })

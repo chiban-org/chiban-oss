@@ -1,15 +1,18 @@
 import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
+import { APPROVED } from '@/features/applications/statusText'
 import {
   type CertificationOutcome,
   certificationActivity,
 } from '@/features/boards/certificationWords'
+import { gateByKey } from '@/features/gates/registry'
 import { activePack } from '@/features/packs/registry'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   Object.entries({
     'application.create': 'Started the application',
     'application.counter_intake': 'Taken at the counter',
+    'application.incomplete_notice': 'Sent an incomplete application notice',
     'application.paper_attestation': 'Recorded that the applicant signed the attestation on paper',
     'application.amend': 'Amended the application',
     'application.substep': 'Changed the workflow step',
@@ -85,10 +88,25 @@ function field(after: unknown, key: string): unknown {
     : undefined
 }
 
-export function activityPhrase(action: string, after: unknown): string {
+function stateWord(state: unknown, board: boolean): string | undefined {
+  if (typeof state !== 'string') return undefined
+  return !board && state === 'decided' ? APPROVED : STATE_PHRASES.get(state)
+}
+
+function overridePhrase(after: unknown): string {
+  const key = field(after, 'gateKey')
+  const reason = field(after, 'reason')
+  const label = typeof key === 'string' ? gateByKey(key)?.label : undefined
+  const named = label === undefined ? 'Overrode a gate' : `Overrode a gate: ${label}`
+  return typeof reason === 'string' && reason.trim() !== ''
+    ? `${named}. Reason: ${reason.trim()}`
+    : named
+}
+
+export function activityPhrase(action: string, after: unknown, board = true): string {
+  if (action === 'gate.override') return overridePhrase(after)
   if (action === 'application.transition') {
-    const state = field(after, 'state')
-    const label = typeof state === 'string' ? STATE_PHRASES.get(state) : undefined
+    const label = stateWord(field(after, 'state'), board)
     return label === undefined
       ? 'Moved the application to a new status'
       : `Moved the application to ${label}`

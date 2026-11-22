@@ -203,21 +203,22 @@ describe('a variance whose hearing meeting meets its deadline but whose abutter 
     const meetings = await upcoming('zba')
     const html = await page('VAR-2026-0001')
     expect(html).not.toContain('is after this deadline')
-    const board = sectionOf(html, 'Hearing') ?? ''
+    const schedule = sectionOf(html, 'Requirements') ?? ''
+    expect(schedule).toContain('Schedule the hearing')
     expect(
-      optionsOf(board)
+      optionsOf(schedule)
         .filter((o) => o.value !== '')
         .map((o) => o.text),
     ).toEqual(meetings.map((m) => optionText(m, due)))
   })
 
-  it('shows the hearing date once, in the board panel, and the hearings panel does not contradict it', async () => {
+  it('shows the meeting date once, in the board panel, and lists no hearing until one is scheduled', async () => {
     const set = formatCivilDate(await meetingSet('VAR-2026-0001'))
     const html = await page('VAR-2026-0001')
     const outsideOptions = html.replace(/<option[\s\S]*?<\/option>/g, '')
     expect(outsideOptions.split(set)).toHaveLength(2)
     expect(sectionOf(html, 'Hearing') ?? '').toContain(`Hearing meeting: ${set}.`)
-    expect(html).not.toContain('No hearing is scheduled yet.')
+    expect(html).toContain('No hearing is scheduled yet.')
   })
 
   it('asks for the abutter list and offers no way to open the hearing while it is a draft', async () => {

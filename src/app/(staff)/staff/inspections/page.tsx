@@ -26,9 +26,9 @@ function OwedLink({ count }: { count: number }) {
 export default async function ScheduleBoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ number?: string; reinspect?: string; request?: string }>
+  searchParams: Promise<{ number?: string; reinspect?: string; request?: string; final?: string }>
 }) {
-  const { number, reinspect = '', request = null } = await searchParams
+  const { number, reinspect = '', request = null, final } = await searchParams
   const ctx = await requireStaffContext()
   const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal, { pinnedId: request })
   if (!loaded.ok) return <NoPermission title="Inspections" action="schedule inspections" />
@@ -53,7 +53,10 @@ export default async function ScheduleBoardPage({
         inspectors={board.inspectors.map((i) => ({ userId: i.userId, name: i.name }))}
         today={board.today}
         takeRequest={
-          <TakeRequestSection data={await loadTakeRequest(ctx, number, reinspect)} board={board} />
+          <TakeRequestSection
+            data={await loadTakeRequest(ctx, number, reinspect, final === '1')}
+            board={board}
+          />
         }
         scheduleAction={scheduleInspectionAction}
         initialChosenId={request}

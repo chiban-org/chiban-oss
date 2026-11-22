@@ -29,7 +29,16 @@ export interface TakeRequestData {
   reinspectionOf: string | null
 }
 
-async function offeredTypes(ctx: StaffContext, applicationId: string, reinspect: string) {
+function finalFirst<T extends { final: boolean }>(types: readonly T[]): T[] {
+  return [...types.filter((t) => t.final), ...types.filter((t) => !t.final)]
+}
+
+async function offeredTypes(
+  ctx: StaffContext,
+  applicationId: string,
+  ask: { reinspect: string; final: boolean },
+) {
+  const { reinspect } = ask
   const reinspection = await findReinspectionTarget(
     ctx.db,
     ctx.actor,
@@ -38,13 +47,15 @@ async function offeredTypes(ctx: StaffContext, applicationId: string, reinspect:
     ctx.signal,
   )
   if (reinspection !== null) return { offered: [reinspection], reinspection }
-  return { offered: await requestableTypes(ctx.db, applicationId, ctx.signal), reinspection }
+  const types = await requestableTypes(ctx.db, applicationId, ctx.signal)
+  return { offered: ask.final ? finalFirst(types) : types, reinspection }
 }
 
 export async function loadTakeRequest(
   ctx: StaffContext,
   asked: string | undefined,
   reinspect: string,
+  final = false,
 ): Promise<TakeRequestData> {
   const number = asked ?? ''
   const empty = {
@@ -59,7 +70,7 @@ export async function loadTakeRequest(
   const target = await findIssuedApplicationByNumber(ctx.db, ctx.actor, number, ctx.signal)
   if (target === null) return empty
   const blockedCopy = await describeIntakeBlock(ctx.db, target, ctx.signal)
-  const { offered, reinspection } = await offeredTypes(ctx, target.id, reinspect)
+  const { offered, reinspection } = await offeredTypes(ctx, target.id, { reinspect, final })
   return {
     number,
     searched: true,
