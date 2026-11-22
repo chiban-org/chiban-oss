@@ -18,7 +18,11 @@ import {
 } from '@/features/appeals/appealWords'
 import { type GraphNodeRow, loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
 import { nodeWindow } from '@/features/appeals/nodeWindow'
-import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
+import {
+  applicationProjectFinality,
+  isApprovingOutcome,
+  packWaitsForFinalApproval,
+} from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -80,6 +84,9 @@ export interface DecisionView {
   nodeChoices: { id: string; label: string }[]
   offerFinalApproval: boolean
   recordingPeriod: string | null
+  significantText: string | null
+  lastApprovalText: string | null
+  offerLastApprovalLater: boolean
 }
 
 export interface FilingDue {
@@ -204,6 +211,8 @@ export async function loadDecisionView(
       and(eq(noticeSets.subjectKind, TRANSMITTAL_SUBJECT), eq(noticeSets.subjectId, decisionId)),
     )
   const graph = await toGraphNodes(db, nodes, signal)
+  const waits = packWaitsForFinalApproval()
+  const finality = waits ? await applicationProjectFinality(db, app.id, signal) : null
   const transmittalItems =
     transmittal === undefined ? null : await checklistFor(db, transmittal.id, signal)
   return {
@@ -240,8 +249,15 @@ export async function loadDecisionView(
             })),
           },
     graph,
-    offerFinalApproval: packWaitsForFinalApproval(),
+    offerFinalApproval: waits,
     recordingPeriod: recordingPeriod(),
+    significantText: decision.significant === null ? null : decision.significant ? 'Yes' : 'No',
+    lastApprovalText: waits
+      ? finality === null
+        ? 'Not yet'
+        : formatCivilDate(finality.finalOn)
+      : null,
+    offerLastApprovalLater: waits && finality === null && isApprovingOutcome(decision.outcome),
     nodeChoices: nodes.map((n, i) => ({
       id: n.id,
       label: `${graph[i]?.kindLabel ?? ''}, ${graph[i]?.dateText ?? ''}`,
