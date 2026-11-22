@@ -15,6 +15,7 @@ import {
   type PlanAction,
   type PlanActionKind,
   type PlanBoard,
+  type PlanWarning,
   type Requirement,
   type RequirementGroup,
   type WorkPlan,
@@ -230,6 +231,17 @@ function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | n
   }
 }
 
+function missingBoardWarning(board: PlanBoard | null): PlanWarning | null {
+  return board?.missingBoard == null ? null : { key: 'board.missing', text: board.missingBoard }
+}
+
+function withWarnings(plan: WorkPlan, warnings: (PlanWarning | null)[]): WorkPlan {
+  return warnings.reduce<WorkPlan>(
+    (acc, warning) => (warning === null ? acc : addWarning(acc, warning)),
+    plan,
+  )
+}
+
 export function planWork(
   view: PlanView,
   board: PlanBoard | null,
@@ -259,19 +271,10 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
-  const late =
-    extras.lateAppeal == null
-      ? plan
-      : addWarning(plan, { key: 'appeal.late', text: extras.lateAppeal })
-  const held =
-    view.heldParcel === true
-      ? addWarning(late, { key: 'parcel.held', text: HELD_ISSUE_COPY })
-      : late
-  const withConflict =
-    conflict === null
-      ? held
-      : addWarning(held, { key: 'board.meeting.deadline', text: conflict.warning })
-  return board?.missingBoard == null
-    ? withConflict
-    : addWarning(withConflict, { key: 'board.missing', text: board.missingBoard })
+  return withWarnings(plan, [
+    extras.lateAppeal == null ? null : { key: 'appeal.late', text: extras.lateAppeal },
+    view.heldParcel === true ? { key: 'parcel.held', text: HELD_ISSUE_COPY } : null,
+    conflict === null ? null : { key: 'board.meeting.deadline', text: conflict.warning },
+    missingBoardWarning(board),
+  ])
 }

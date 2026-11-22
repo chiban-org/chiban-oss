@@ -2,7 +2,7 @@ import { ME_PACK } from '@packs/me'
 import { NH_PACK } from '@packs/nh'
 import { describe, expect, it } from 'vitest'
 import { lateAppealWarning } from '@/features/applications/appealTimeliness'
-import { type PlanView, planWork } from '@/features/applications/workPlan'
+import { planWork } from '@/features/applications/workPlan'
 import { withPackForTest } from '@/features/packs/registry'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -88,7 +88,7 @@ describe('the late filing warning in the work plan', () => {
         allowsDirectIssue: false,
         clocks: [],
         regionalImpact: { applies: false, determination: null, notices: [] },
-      } as PlanView,
+      },
       null,
       { reviewers: 0, abilities: new Set(), responsible: null, lateAppeal: text },
     )
