@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type CoreState, isTerminalState } from '@/features/applications/states'
 import { moveTask } from '@/features/applications/workPlan'
@@ -43,6 +43,16 @@ export function MoveForm({
       <input type="hidden" name="applicationId" value={view.id} />
       <input type="hidden" name="to" value={to} />
       <input type="hidden" name="expectedRowVersion" value={view.rowVersion} />
+      {to === 'denied' ? (
+        <AreaField
+          label="Reason for the denial"
+          name="reason"
+          hint="At least 10 characters. It is printed on the decision letter."
+          minLength={10}
+          maxLength={2000}
+          required
+        />
+      ) : null}
     </ActionForm>
   )
 }
