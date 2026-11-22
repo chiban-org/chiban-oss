@@ -26,7 +26,7 @@ export function lateNotice(deadlines: readonly NoticeDeadline[]): NoticeDeadline
   return deadlines.find(isNoticeLate) ?? null
 }
 
-interface DeadlineRow {
+type DeadlineRow = {
   hearing_id: string
   meeting_on: string
   due_on: string
