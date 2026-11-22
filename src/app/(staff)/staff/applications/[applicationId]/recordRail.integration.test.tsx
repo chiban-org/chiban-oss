@@ -87,7 +87,7 @@ describe('the next step follows the gates', () => {
     expect(rail).toContain('Before it can be issued')
     expect(rail).toContain('href="#fees-and-payments"')
     expect(rail).toContain('href="#conditions"')
-    expect(filledButtons(rail)).not.toContain('Issue the permit')
+    expect(filledButtons(rail)).not.toContain('Mark the approval in effect')
     expect(filledButtons(rail).length).toBeLessThanOrEqual(1)
   })
 
@@ -120,7 +120,7 @@ describe('the next step follows the gates', () => {
       expect(done).toEqual({ ok: true, value: undefined })
     }
     const rail = nextStep(await page('SPR-2026-0002'))
-    expect(filledButtons(rail)).toEqual(['Issue the permit'])
+    expect(filledButtons(rail)).toEqual(['Mark the approval in effect'])
     expect(sectionOf(rail, 'Before it can be issued') ?? '').not.toContain('Not done: ')
     expect(rail).toContain('Overridden: Cleared for the rail test.')
   })

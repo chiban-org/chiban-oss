@@ -19,7 +19,7 @@ import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
 export type PlanFormInput = Pick<
   RecordPanelsInput,
-  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license' | 'hearings'
+  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license'
 >
 
 function boardSummary(kind: 'set_board_meeting' | 'record_board_vote', zoning: boolean): string {
@@ -89,20 +89,18 @@ type Variant = 'default' | 'outline'
 function BoardActionForm({
   kind,
   board,
-  hearings,
   clocks,
   variant,
 }: {
   kind: 'set_board_meeting' | 'record_board_vote' | 'record_board_regional_impact'
   board: BoardPanelData
-  hearings: PlanFormInput['hearings']
   clocks: PlanFormInput['view']['clocks']
   variant: Variant
 }) {
   if (kind === 'set_board_meeting' && board.boardKind === 'zba') {
-    return hearings === null ? null : (
+    return (
       <ScheduleHearingForm
-        hearings={hearings}
+        data={board}
         deadline={meetingDeadline(clocks, board.boardKind)}
         variant={variant}
       />
@@ -165,13 +163,7 @@ export function PlanActionForm({
     case 'record_board_vote':
     case 'record_board_regional_impact':
       return board === null ? null : (
-        <BoardActionForm
-          kind={action.kind}
-          board={board}
-          hearings={input.hearings}
-          clocks={view.clocks}
-          variant={variant}
-        />
+        <BoardActionForm kind={action.kind} board={board} clocks={view.clocks} variant={variant} />
       )
     case 'open_abutter_list':
       return board === null ? null : <OpenDraftList board={board} variant={variant} />
