@@ -76,8 +76,8 @@ describe('the stated date label on a time statement', () => {
     const wording = await pdfWording(
       await buildResponseLetter(handle.db, requestId, signal, { now: NOW }),
     )
-    expect(wording).toContain(
-      'Estimated response date (a good faith, nonbinding estimate)\nJuly 30, 2027',
+    expect(wording.replace(/\s+/g, ' ')).toContain(
+      'Estimated response date (a good faith, nonbinding estimate) July 30, 2027',
     )
     expect(wording).not.toContain('Response by')
   })
