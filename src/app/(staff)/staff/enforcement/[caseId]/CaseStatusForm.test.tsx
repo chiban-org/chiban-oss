@@ -50,7 +50,14 @@ describe('changing the case status', () => {
   it('shows why resolve and close are not offered while a hold is active', () => {
     const note = 'Release the development hold before resolving or closing the case.'
     renderForm(<CaseMoreActions detail={stubDetail()} moves={[]} note={note} />)
-    expect(screen.getByText(note)).toBeTruthy()
+    expect(screen.getByText(note).closest('details')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Resolve the case' })).toBeNull()
+  })
+
+  it('shows the hold note outside the collapsed panel beside other moves', () => {
+    const note = 'Release the development hold before resolving or closing the case.'
+    renderForm(<CaseMoreActions detail={stubDetail()} moves={['no_violation']} note={note} />)
+    expect(screen.getByText(note).closest('details')).toBeNull()
+    expect(screen.getByText('More actions', { selector: 'summary' })).toBeTruthy()
   })
 })

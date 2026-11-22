@@ -85,23 +85,26 @@ export function CaseMoreActions({
   moves: readonly CaseMove[]
   note?: string | null
 }) {
-  if (moves.length === 0 && note === null) return null
+  const held = note === null ? null : <p className="m-0 text-sm text-muted-foreground">{note}</p>
+  if (moves.length === 0) return held
   return (
-    <details className="more-actions">
-      <summary className="text-sm">More actions</summary>
-      <div className="flex flex-col gap-3">
-        {note === null ? null : <p className="m-0 text-sm text-muted-foreground">{note}</p>}
-        {moves.map((to) =>
-          to === 'closed' ? (
-            <details key={to}>
-              <summary className="text-sm">{MOVE_LABELS.closed}</summary>
-              <CloseForm detail={detail} />
-            </details>
-          ) : (
-            <MoveForm key={to} detail={detail} to={to} variant="outline" />
-          ),
-        )}
-      </div>
-    </details>
+    <>
+      {held}
+      <details className="more-actions">
+        <summary className="text-sm">More actions</summary>
+        <div className="flex flex-col gap-3">
+          {moves.map((to) =>
+            to === 'closed' ? (
+              <details key={to}>
+                <summary className="text-sm">{MOVE_LABELS.closed}</summary>
+                <CloseForm detail={detail} />
+              </details>
+            ) : (
+              <MoveForm key={to} detail={detail} to={to} variant="outline" />
+            ),
+          )}
+        </div>
+      </details>
+    </>
   )
 }

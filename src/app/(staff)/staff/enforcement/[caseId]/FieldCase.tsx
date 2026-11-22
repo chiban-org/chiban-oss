@@ -3,7 +3,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { ORDER_STATUS_LABELS } from '@/features/enforcement/labels'
 import { hostedActions } from '@/features/enforcement/workPlanTypes'
 import { CaseFileUpload } from './CaseFileUpload'
-import { type CaseRailProps, FactsAndActions } from './CaseRail'
+import { CaseHeldNote, type CaseRailProps, FactsAndActions } from './CaseRail'
 import { CaseDoThisNow } from './CaseWork'
 import type { Can } from './can'
 import { arrangeCasePanels, readOnlyPanels } from './casePanels'
@@ -54,12 +54,15 @@ function FieldService({ props, hosted }: { props: CaseRailProps; hosted: Readonl
 
 function FieldFacts(props: CaseRailProps) {
   return (
-    <details data-case-facts="" className="record-history">
-      <summary>Case facts and more actions</summary>
-      <section aria-label="Case facts" data-plain>
-        <FactsAndActions {...props} />
-      </section>
-    </details>
+    <>
+      <CaseHeldNote plan={props.plan} />
+      <details data-case-facts="" className="record-history">
+        <summary>Case facts and more actions</summary>
+        <section aria-label="Case facts" data-plain>
+          <FactsAndActions {...props} />
+        </section>
+      </details>
+    </>
   )
 }
 

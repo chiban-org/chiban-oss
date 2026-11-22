@@ -65,7 +65,7 @@ export function FactsAndActions(props: CaseRailProps) {
   return (
     <div className="flex flex-col gap-4">
       <CaseFacts detail={props.detail} can={props.can} assignee={props.assignee} />
-      <CaseMoreActions detail={props.detail} moves={props.plan.moves} note={props.plan.heldNote} />
+      <CaseMoreActions detail={props.detail} moves={props.plan.moves} />
     </div>
   )
 }
@@ -74,7 +74,7 @@ export function CaseRail({ detail, can, assignee, plan }: CaseRailProps) {
   return (
     <>
       {plan.moves.length === 0 && plan.heldNote === null ? null : (
-        <div className="rail-card">
+        <div className="rail-card flex flex-col gap-3">
           <CaseMoreActions detail={detail} moves={plan.moves} note={plan.heldNote} />
         </div>
       )}
@@ -96,10 +96,16 @@ export function CaseDue({ plan }: { plan: CaseWorkPlan }) {
   )
 }
 
+export function CaseHeldNote({ plan }: { plan: CaseWorkPlan }) {
+  if (plan.heldNote === null) return null
+  return <p className="m-0 text-sm text-muted-foreground">{plan.heldNote}</p>
+}
+
 export function CaseStrip(props: CaseRailProps) {
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
       <CaseDue plan={props.plan} />
+      <CaseHeldNote plan={props.plan} />
       <details>
         <summary className="text-sm">Facts and more actions</summary>
         <FactsAndActions {...props} />
