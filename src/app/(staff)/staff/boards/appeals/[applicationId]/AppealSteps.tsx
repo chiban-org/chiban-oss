@@ -3,24 +3,19 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import {
   appealResultLabel,
   appealStepHint,
-  appealToBoard,
-  boardDecision,
-  motionForRehearing,
-  rehearingDecision,
+  appealStepOptions,
   rehearingGrantedLabel,
 } from '@/features/appeals/appealWords'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
 import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
-function steps(): [string, string][] {
-  return [
-    ['zba_appeal', appealToBoard()],
-    ['zba_decision', boardDecision()],
-    ['rehearing_motion', motionForRehearing()],
-    ['rehearing_outcome', rehearingDecision()],
-    ['court_petition', 'Court petition'],
-  ]
-}
+const STEP_ORDER = [
+  'zba_appeal',
+  'zba_decision',
+  'rehearing_motion',
+  'rehearing_outcome',
+  'court_petition',
+] as const
 
 function results(): [string, string][] {
   return [
@@ -48,7 +43,7 @@ export function AppealSteps({
         name="parentId"
         options={nodeChoices.map((n): [string, string] => [n.id, n.label])}
       />
-      <SelectField label="Step" name="kind" options={steps()} />
+      <SelectField label="Step" name="kind" options={appealStepOptions(STEP_ORDER)} />
       <TextField
         label="Date"
         name="occurredOn"

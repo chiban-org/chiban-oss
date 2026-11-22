@@ -79,3 +79,49 @@ describe('mail transports carry file attachments', () => {
     })
   })
 })
+
+describe('the sender of outgoing mail', () => {
+  const OPTIONS = {
+    townName: () => Promise.resolve('Town of Fernhollow'),
+    baseUrl: 'https://permits.fernhollow.example',
+  }
+
+  async function senderOf(from: string | undefined) {
+    const json = nodemailer.createTransport({ jsonTransport: true })
+    const spy = vi.spyOn(json, 'sendMail')
+    const { icalEvent: _omit, ...plain } = message
+    await createTransportFrom(json, from, OPTIONS).send(plain, signal)
+    return (spy.mock.calls[0]?.[0] as { from: string }).from
+  }
+
+  it('with MAIL_FROM unset, sends as the town from the host of the application', async () => {
+    expect(await senderOf(undefined)).toBe(
+      'Town of Fernhollow <noreply@permits.fernhollow.example>',
+    )
+  })
+
+  it('a bare address takes the town name', async () => {
+    expect(await senderOf('permits@fernhollow.example')).toBe(
+      'Town of Fernhollow <permits@fernhollow.example>',
+    )
+  })
+
+  it('an address with a display name keeps its name', async () => {
+    expect(await senderOf('Fernhollow Permits <permits@fernhollow.example>')).toBe(
+      'Fernhollow Permits <permits@fernhollow.example>',
+    )
+  })
+
+  it('quotes a town name that carries punctuation', async () => {
+    const json = nodemailer.createTransport({ jsonTransport: true })
+    const spy = vi.spyOn(json, 'sendMail')
+    const { icalEvent: _omit, ...plain } = message
+    await createTransportFrom(json, undefined, {
+      ...OPTIONS,
+      townName: () => Promise.resolve('Town of St. Anne'),
+    }).send(plain, signal)
+    expect((spy.mock.calls[0]?.[0] as { from: string }).from).toBe(
+      '"Town of St. Anne" <noreply@permits.fernhollow.example>',
+    )
+  })
+})

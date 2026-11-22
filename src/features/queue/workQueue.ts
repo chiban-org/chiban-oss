@@ -39,6 +39,11 @@ import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
 export const WARNING_DAYS = 5
 
+const DESCRIPTION_SQL = sql<string>`coalesce(
+  nullif(trim(${applications.values}->>'description'), ''),
+  nullif(trim(${applications.values}->>'project_description'), ''),
+  '')`
+
 export interface WorkQueueFilters {
   states?: CoreState[]
   stateKeys?: CoreState[]
@@ -55,6 +60,7 @@ export interface WorkQueueRow {
   applicationId: string
   number: string
   projectTitle: string
+  description?: string
   receivedDate: CivilDate | null
   typeLabel: string
   state: CoreState
@@ -188,6 +194,7 @@ export async function listWorkQueue(
       id: applications.id,
       number: applications.number,
       projectTitle: projects.title,
+      description: DESCRIPTION_SQL,
       receivedDate: applications.receivedDate,
       state: applications.state,
       substep: applications.substep,
@@ -231,6 +238,7 @@ export async function listWorkQueue(
         applicationId: r.id,
         number: r.number,
         projectTitle: r.projectTitle,
+        description: r.description,
         receivedDate: r.receivedDate as CivilDate | null,
         typeLabel: type?.label ?? '',
         state: r.state as CoreState,

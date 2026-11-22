@@ -63,3 +63,29 @@ export function rehearingGrantedLabel(): string {
 export function appealStepResultLabel(): string {
   return `Result, for a ${rehearingWords().noun} decision or a decision after appeal`
 }
+
+export type AppealStepKey =
+  | 'zba_appeal'
+  | 'zba_decision'
+  | 'rehearing_motion'
+  | 'rehearing_outcome'
+  | 'court_petition'
+
+function appealStepLabel(key: AppealStepKey): string {
+  switch (key) {
+    case 'zba_appeal':
+      return appealToBoard()
+    case 'zba_decision':
+      return boardDecision()
+    case 'rehearing_motion':
+      return motionForRehearing()
+    case 'rehearing_outcome':
+      return rehearingDecision()
+    case 'court_petition':
+      return 'Court petition'
+  }
+}
+
+export function appealStepOptions(order: readonly AppealStepKey[]): [string, string][] {
+  return order.map((key): [string, string] => [key, appealStepLabel(key)])
+}

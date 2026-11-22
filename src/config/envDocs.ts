@@ -74,7 +74,7 @@ export const ENV_DOCS = {
   },
   MAIL_FROM: {
     group: 'mail',
-    text: 'The sender of every email Chiban sends, including calendar invitations.',
+    text: 'The sender of every email Chiban sends, including calendar invitations. Leave it unset to send as the town, from `noreply@` followed by the host of `BASE_URL`. An address with no name is sent under the town name. A value that includes a display name, such as `Town of Fernhollow <permits@example.org>`, is used as written.',
   },
   S3_ENDPOINT: {
     group: 'storage',
