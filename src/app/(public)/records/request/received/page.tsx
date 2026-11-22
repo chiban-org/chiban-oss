@@ -1,14 +1,19 @@
 import type { Metadata } from 'next'
 import { receiptPromise } from '@/features/notifications/wording/wordingStandard'
+import { activePack } from '@/features/packs/registry'
 import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { receivedThanks } from '@/features/rtk/requestCopy'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export const metadata: Metadata = { title: 'Request received' }
 
-const REFERENCE = /^RK-\d{4}-\d{1,8}$/
 const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/
 const LINK = 'tap-target inline-flex items-center'
+
+function referenceShape(): RegExp {
+  const prefix = activePack().labels.recordsRequestPrefix.replace(/[^A-Za-z0-9]/g, '')
+  return new RegExp(`^${prefix}-\\d{4}-\\d{1,8}$`)
+}
 
 function single(value: string | string[] | undefined, shape: RegExp): string | null {
   return typeof value === 'string' && shape.test(value) ? value : null
@@ -37,7 +42,7 @@ export default async function RequestReceivedPage({
   }>
 }) {
   const params = await searchParams
-  const reference = single(params.ref, REFERENCE)
+  const reference = single(params.ref, referenceShape())
   const due = single(params.due, CIVIL_DATE)
   return (
     <main>

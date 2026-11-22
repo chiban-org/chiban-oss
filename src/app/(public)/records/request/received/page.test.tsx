@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+
+import { ME_PACK } from '@packs/me'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defaultWordingFor } from '@/features/notifications/wording/wordingStandard'
@@ -68,5 +70,14 @@ describe('RequestReceivedPage', () => {
       'The town will acknowledge your request by {{request.due}}. It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.',
     )
     expect(body).not.toContain('deny the request in writing')
+  })
+
+  it('shows a request number with the pack prefix and refuses another prefix', async () => {
+    setActivePackForTest(ME_PACK)
+    await show({ ref: 'FOAA-2026-0001', due: '2026-07-09', emailed: '1' })
+    expect(screen.getByText('FOAA-2026-0001')).toBeTruthy()
+    cleanup()
+    await show({ ref: 'RK-2026-0001', due: '2026-07-09', emailed: '1' })
+    expect(screen.queryByText('RK-2026-0001')).toBeNull()
   })
 })

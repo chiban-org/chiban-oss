@@ -16,6 +16,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { recordSystemEvent } from '@/features/records/recordEvents'
@@ -91,7 +92,11 @@ export async function insertRequest(
   signal: AbortSignal,
 ): Promise<{ requestId: string; number: string; due: CivilDate }> {
   const due = computeSubjectDue(responseRule(), value.receivedOn, rtkDueContext())
-  const number = await nextNumber(tx, 'RK', civilYear(value.receivedOn))
+  const number = await nextNumber(
+    tx,
+    activePack().labels.recordsRequestPrefix,
+    civilYear(value.receivedOn),
+  )
   const [row] = await tx
     .insert(rtkRequests)
     .values({

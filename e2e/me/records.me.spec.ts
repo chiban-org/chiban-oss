@@ -7,7 +7,10 @@ test('the records custodian sees the acknowledged FOAA request', async ({ page }
   await expect(page.getByRole('heading', { name: 'FOAA requests' })).toBeVisible()
   await expectNoNhTerms(page)
 
-  await page.getByRole('link', { name: /^RK-/ }).first().click()
+  await page
+    .getByRole('link', { name: /^FOAA-/ })
+    .first()
+    .click()
   await expect(page).toHaveURL(/\/staff\/records\/requests\/[0-9a-f-]{36}$/)
   await expect(page.getByText('FOAA request', { exact: true })).toBeVisible()
   await expect(
