@@ -9,12 +9,15 @@ import {
   rtkTimeStatements,
   rtkWithholdings,
 } from '@/db/schema'
+import { activePack } from '@/features/packs/registry'
 import { OTHER_LAW_EXEMPTION_KEY } from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
+import type { FrameContact } from '@/features/pdf/frame'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { OTHER_LAW_EXEMPTION_LABEL, packExemptions } from '@/features/rtk/exemptions'
 import { publishedTemplate } from '@/features/templates/findTemplate'
 import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
+import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
@@ -64,18 +67,54 @@ function withholdingBlocks(withholdings: Withholding[]): PdfBlock[] {
   ]
 }
 
+const RELEASE_SENTENCE = 'The town is releasing the records listed below.'
+const NO_NAME_ADDRESSEE = 'The requester'
+
+export type LetterOccasion = 'response' | 'release' | 'denial'
+
+export interface LetterOptions {
+  occasion?: LetterOccasion
+  now?: Date
+}
+
 type Request = typeof rtkRequests.$inferSelect
 type TimeStatement = typeof rtkTimeStatements.$inferSelect
 
-function responseBlocks(request: Request): PdfBlock[] {
+export function answerLine(contact: Pick<FrameContact, 'email' | 'phone'>): string | null {
+  const parts = [contact.email.trim(), contact.phone.trim()].filter((p) => p !== '')
+  return parts.length === 0 ? null : `Answer the town at ${parts.join(' or ')}.`
+}
+
+function questionBlocks(question: string, contact: FrameContact): PdfBlock[] {
+  const line = answerLine(contact)
+  return [
+    { kind: 'fields', rows: [{ label: 'Question for you', value: question }] },
+    ...(line === null ? [] : [{ kind: 'paragraph' as const, text: line }]),
+  ]
+}
+
+function addresseeOf(name: string | null): string {
+  const trimmed = name?.trim() ?? ''
+  return trimmed === '' ? NO_NAME_ADDRESSEE : trimmed
+}
+
+function leadSentence(request: Request, occasion: LetterOccasion): string | null {
+  if (occasion === 'release') return RELEASE_SENTENCE
+  const kind = request.deniedOn === null ? request.firstResponseKind : 'denied'
+  return kind === null ? null : (KIND_SENTENCES[kind] ?? '')
+}
+
+function responseBlocks(
+  request: Request,
+  occasion: LetterOccasion,
+  contact: FrameContact,
+): PdfBlock[] {
   const kind = request.deniedOn === null ? request.firstResponseKind : 'denied'
   const blocks: PdfBlock[] = []
-  if (kind !== null) blocks.push({ kind: 'paragraph', text: KIND_SENTENCES[kind] ?? '' })
-  if (kind === 'acknowledged' && request.clarificationQuestion !== null) {
-    blocks.push({
-      kind: 'fields',
-      rows: [{ label: 'Question for you', value: request.clarificationQuestion }],
-    })
+  const lead = leadSentence(request, occasion)
+  if (lead !== null) blocks.push({ kind: 'paragraph', text: lead })
+  if (occasion !== 'release' && kind === 'acknowledged' && request.clarificationQuestion !== null) {
+    blocks.push(...questionBlocks(request.clarificationQuestion, contact))
   }
   if (request.deniedOn !== null) {
     blocks.push({
@@ -83,7 +122,7 @@ function responseBlocks(request: Request): PdfBlock[] {
       rows: [{ label: 'Denied on', value: formatCivilDate(request.deniedOn) }],
     })
   }
-  if (kind === 'website_reference' && request.firstResponseUrl !== null) {
+  if (occasion !== 'release' && kind === 'website_reference' && request.firstResponseUrl !== null) {
     blocks.push({
       kind: 'fields',
       rows: [{ label: 'Web address', value: request.firstResponseUrl }],
@@ -99,8 +138,8 @@ function statementHistory(statements: TimeStatement[]): PdfBlock[] {
   }))
 }
 
-function statementBlocks(statements: TimeStatement[], denied: boolean): PdfBlock[] {
-  if (denied) return statementHistory(statements)
+function statementBlocks(statements: TimeStatement[], asHistory: boolean): PdfBlock[] {
+  if (asHistory) return statementHistory(statements)
   const blocks: PdfBlock[] = []
   for (const s of statements) {
     blocks.push({ kind: 'heading', text: 'Time the town needs' })
@@ -108,7 +147,7 @@ function statementBlocks(statements: TimeStatement[], denied: boolean): PdfBlock
       kind: 'fields',
       rows: [
         { label: 'Statement made', value: formatCivilDate(s.statedOn) },
-        { label: 'Response by', value: formatCivilDate(s.statedDate) },
+        { label: activePack().labels.timeStatementDateLabel, value: formatCivilDate(s.statedDate) },
         { label: 'Reason', value: s.delayReason },
       ],
     })
@@ -158,7 +197,9 @@ export async function responseLetterInput(
   db: DbOrTx,
   requestId: string,
   signal: AbortSignal,
+  options: LetterOptions = {},
 ): Promise<DocumentInput> {
+  const { occasion = 'response', now = new Date() } = options
   signal.throwIfAborted()
   const [request] = await db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId))
   if (request === undefined) {
@@ -176,18 +217,22 @@ export async function responseLetterInput(
     .from(rtkWithholdings)
     .where(eq(rtkWithholdings.requestId, requestId))
     .orderBy(asc(rtkWithholdings.createdAt))
+  const frame = await documentFrame(db, {}, signal)
+  const history = request.deniedOn !== null || occasion === 'release'
   return {
     subtitle: request.number,
-    frame: await documentFrame(db, {}, signal),
+    frame,
     context: {
       values: {
         'rtk.number': request.number,
         'rtk.receivedOn': formatCivilDate(request.receivedOn),
         'rtk.description': request.description,
+        'rtk.letterDate': formatCivilDate(await townToday(db, now, signal)),
+        'rtk.requesterName': addresseeOf(request.requesterName),
       },
       sections: new Map([
-        ['rtk.response', responseBlocks(request)],
-        ['rtk.timeStatements', statementBlocks(statements, request.deniedOn !== null)],
+        ['rtk.response', responseBlocks(request, occasion, frame.contact)],
+        ['rtk.timeStatements', statementBlocks(statements, history)],
         ['rtk.released', await releasedBlocks(db, requestId)],
         ['rtk.withheld', withholdingBlocks(withholdings)],
       ]),
@@ -199,8 +244,9 @@ export async function buildResponseLetter(
   db: DbOrTx,
   requestId: string,
   signal: AbortSignal,
+  options: LetterOptions = {},
 ): Promise<Uint8Array> {
-  const input = await responseLetterInput(db, requestId, signal)
+  const input = await responseLetterInput(db, requestId, signal, options)
   const template = await publishedTemplate(db, 'rtk_response', signal)
   return await renderDocumentOrDefault('rtk_response', template, input)
 }

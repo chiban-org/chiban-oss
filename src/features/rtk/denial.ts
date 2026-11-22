@@ -76,11 +76,12 @@ export async function denyRequest(
       .where(eq(rtkRequests.id, request.id))
     const letterDocumentId = await fileRequestLetter(
       tx,
-      { store, actor, signal },
+      { store, actor, signal, now },
       {
         requestId: request.id,
         title: `Denial of request ${request.number}`,
         filename: `${request.number}-denial.pdf`,
+        occasion: 'denial',
       },
     )
     await writeAudit(

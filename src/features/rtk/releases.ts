@@ -191,11 +191,12 @@ export async function createRelease(
     }
     const letterDocumentId = await fileRequestLetter(
       tx,
-      { store, actor, signal },
+      { store, actor, signal, now },
       {
         requestId: request.id,
         title: `Response to request ${request.number}, release ${sequence}`,
         filename: `${request.number}-release-${sequence}.pdf`,
+        occasion: 'release',
       },
     )
     await tx.update(rtkReleases).set({ letterDocumentId }).where(eq(rtkReleases.id, releaseId))
