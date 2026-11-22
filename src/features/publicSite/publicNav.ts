@@ -1,7 +1,5 @@
 import type { Capability } from '@/constants/capabilities'
 import type { Role } from '@/constants/roles'
-import { recordsRequest } from '@/features/packs/vocabulary'
-import { startPageFor } from '@/features/staffHome/startPage'
 
 export interface NavLink {
   href: string
@@ -16,50 +14,22 @@ export interface NavViewer {
   capabilities?: ReadonlySet<Capability>
 }
 
-function link(href: string, label: string, sections: readonly string[] = [href]): NavLink {
+export function navLink(
+  href: string,
+  label: string,
+  sections: readonly string[] = [href],
+): NavLink {
   return { href, label, sections }
 }
 
+export const SIGN_IN = navLink('/sign-in', 'Sign in')
+
 export const PRIMARY_NAV: readonly NavLink[] = [
-  link('/parcels', 'Parcels'),
-  link('/meetings', 'Meetings'),
-  link('/complaints/new', 'Report a problem', ['/complaints', '/report-anonymously']),
-  { ...link('/portal/apply', 'Apply for a permit'), emphasis: true },
+  navLink('/parcels', 'Parcels'),
+  navLink('/meetings', 'Meetings'),
+  navLink('/complaints/new', 'Report a problem', ['/complaints', '/report-anonymously']),
+  { ...navLink('/portal/apply', 'Apply for a permit'), emphasis: true },
 ]
-
-export function primaryNav(): NavLink[] {
-  const request = recordsRequest()
-  const records = link(
-    '/records/request',
-    `${request.charAt(0).toUpperCase()}${request.slice(1)}`,
-    ['/records'],
-  )
-  return [...PRIMARY_NAV.slice(0, -1), records, ...PRIMARY_NAV.slice(-1)]
-}
-
-const SIGN_IN = link('/sign-in', 'Sign in')
-
-function opensStaffSite(viewer: NavViewer): boolean {
-  if (viewer.kind !== 'staff') return false
-  const start = startPageFor({
-    roles: viewer.roles,
-    capabilities: viewer.capabilities ?? new Set(),
-  })
-  return start.kind !== 'redirect' || start.to !== '/board'
-}
-
-export function accountLinksFor(viewer: NavViewer | null): NavLink[] {
-  if (viewer === null) return [SIGN_IN]
-  return [
-    link('/portal', 'Your applications'),
-    ...(viewer.roles.includes('contractor')
-      ? [link('/portal/contractor', 'Contractor projects')]
-      : []),
-    ...(viewer.roles.includes('board_member') ? [link('/board', 'Your board')] : []),
-    ...(opensStaffSite(viewer) ? [link('/staff', 'Staff site')] : []),
-    link('/account', 'Account'),
-  ]
-}
 
 function within(pathname: string, section: string): boolean {
   return pathname === section || pathname.startsWith(`${section}/`)

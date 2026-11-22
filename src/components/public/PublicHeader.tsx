@@ -1,7 +1,8 @@
 import { CsrfField } from '@/components/CsrfField'
 import { TownHeader } from '@/components/public/TownHeader'
 import { SubmitButton } from '@/components/SubmitButton'
-import { accountLinksFor, type NavViewer } from '@/features/publicSite/publicNav'
+import { accountLinksFor } from '@/features/publicSite/navForViewer'
+import type { NavViewer } from '@/features/publicSite/publicNav'
 import type { PublicTown } from '@/features/town/publicTown'
 
 interface PublicHeaderProps {

@@ -2,13 +2,12 @@ import { ME_PACK } from '@packs/me'
 import { describe, expect, it } from 'vitest'
 import type { Capability } from '@/constants/capabilities'
 import { withPackForTest } from '@/features/packs/registry'
+import { accountLinksFor, primaryNav } from '@/features/publicSite/navForViewer'
 import {
   accountLinksAt,
-  accountLinksFor,
   currentNavHref,
   type NavViewer,
   PRIMARY_NAV,
-  primaryNav,
 } from '@/features/publicSite/publicNav'
 
 const labels = (links: readonly { label: string }[]) => links.map((l) => l.label)

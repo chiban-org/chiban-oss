@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { AccountNav } from '@/components/public/AccountNav'
 import { MenuDisclosure } from '@/components/public/MenuDisclosure'
 import { NavLinks } from '@/components/public/NavLinks'
-import { type NavLink, primaryNav } from '@/features/publicSite/publicNav'
+import { primaryNav } from '@/features/publicSite/navForViewer'
+import type { NavLink } from '@/features/publicSite/publicNav'
 import type { PublicTown } from '@/features/town/publicTown'
 
 interface TownHeaderProps {
