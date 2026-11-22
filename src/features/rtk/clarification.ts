@@ -15,6 +15,7 @@ const AnswerSchema = z.object({
   requestId: z.string().uuid(),
   answer: z.string().trim().min(1).max(5000),
   answeredOn: civilDateSchema,
+  expectedRowVersion: z.number().int().min(1),
 })
 
 export type ClarificationAnswerError =
@@ -24,6 +25,8 @@ export type ClarificationAnswerError =
   | 'no_clarification_question'
   | 'before_acknowledgement'
   | 'future_date'
+  | 'stale_version'
+  | 'already_closed'
 
 export async function recordClarificationAnswer(
   db: Db,
@@ -45,6 +48,8 @@ export async function recordClarificationAnswer(
       .where(eq(rtkRequests.id, value.requestId))
       .for('update')
     if (request === undefined) return err('not_found')
+    if (request.rowVersion !== value.expectedRowVersion) return err('stale_version')
+    if (request.status === 'closed' || request.status === 'withdrawn') return err('already_closed')
     if (request.clarificationQuestion === null) return err('no_clarification_question')
     const acknowledgedOn = request.acknowledgedOn as CivilDate | null
     if (acknowledgedOn !== null && daysBetween(acknowledgedOn, value.answeredOn) < 0) {

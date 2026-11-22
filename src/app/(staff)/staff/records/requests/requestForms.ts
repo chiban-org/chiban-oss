@@ -181,4 +181,5 @@ export const clarificationAnswerForm = (today: CivilDate) =>
     requestId: requestIdField(),
     answer: requiredText('the requester answer', { max: 5000 }),
     answeredOn: civilDate('the date of the answer', { latest: today }),
+    expectedRowVersion: wholeNumber('the version of the request', { min: 1, max: MAX_ROW_VERSION }),
   })

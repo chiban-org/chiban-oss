@@ -228,7 +228,12 @@ export async function clarificationAnswerAction(formData: FormData): Promise<Act
         await recordClarificationAnswer(
           db,
           actor,
-          { requestId: input.requestId, answer: input.answer, answeredOn: input.answeredOn },
+          {
+            requestId: input.requestId,
+            answer: input.answer,
+            answeredOn: input.answeredOn,
+            expectedRowVersion: input.expectedRowVersion,
+          },
           signal,
         ),
         'Answer recorded.',

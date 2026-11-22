@@ -8,7 +8,7 @@ import { auditLog, rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { recordClarificationAnswer } from '@/features/rtk/clarification'
-import { logRequest, rtkRequestView } from '@/features/rtk/requests'
+import { closeRequest, logRequest, rtkRequestView } from '@/features/rtk/requests'
 import { buildResponseLetter } from '@/features/rtk/responseLetter'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import type { RequestWorkPlan } from '@/features/rtk/workPlanTypes'
@@ -78,17 +78,22 @@ async function acknowledged(clarification?: string): Promise<string> {
 
 const QUESTION = 'Which years of dam inspection reports do you want?'
 
-const answer = (requestId: string, answeredOn: string) =>
-  recordClarificationAnswer(
+const rowOf = async (requestId: string) =>
+  (await handle.db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId)))[0]
+
+const answer = async (requestId: string, answeredOn: string, expectedRowVersion?: number) =>
+  await recordClarificationAnswer(
     handle.db,
     custodian,
-    { requestId, answer: 'Only the 2025 and 2026 reports.', answeredOn: d(answeredOn) },
+    {
+      requestId,
+      answer: 'Only the 2025 and 2026 reports.',
+      answeredOn: d(answeredOn),
+      expectedRowVersion: expectedRowVersion ?? (await rowOf(requestId))?.rowVersion ?? 0,
+    },
     signal,
     NOW,
   )
-
-const rowOf = async (requestId: string) =>
-  (await handle.db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId)))[0]
 
 async function publishContact(contact: { phone: string; email: string }): Promise<void> {
   const admin = await staffActor(handle.db, 'admin')
@@ -174,13 +179,37 @@ describe('recording the requester answer to a clarifying question', () => {
     })
   })
 
+  it('refuses an answer on a request opened in an older version', async () => {
+    const requestId = await acknowledged(QUESTION)
+    const stale = ((await rowOf(requestId))?.rowVersion ?? 0) - 1
+    expect(await answer(requestId, '2027-07-10', stale)).toEqual({
+      ok: false,
+      error: 'stale_version',
+    })
+    expect((await rowOf(requestId))?.clarificationAnswer).toBeNull()
+  })
+
+  it.each(['closed', 'withdrawn'] as const)('refuses an answer on a %s request', async (to) => {
+    const requestId = await acknowledged(QUESTION)
+    const closed = await closeRequest(
+      handle.db,
+      custodian,
+      { requestId, to, expectedRowVersion: (await rowOf(requestId))?.rowVersion ?? 0 },
+      signal,
+      NOW,
+    )
+    if (!closed.ok) throw new Error(closed.error)
+    expect(await answer(requestId, '2027-07-10')).toEqual({ ok: false, error: 'already_closed' })
+    expect((await rowOf(requestId))?.clarificationAnswer).toBeNull()
+  })
+
   it('refuses a staff member who cannot manage requests', async () => {
     const requestId = await acknowledged(QUESTION)
     const inspector = await staffActor(handle.db, 'inspector')
     const refused = await recordClarificationAnswer(
       handle.db,
       inspector,
-      { requestId, answer: 'Only 2026.', answeredOn: d('2027-07-10') },
+      { requestId, answer: 'Only 2026.', answeredOn: d('2027-07-10'), expectedRowVersion: 1 },
       signal,
       NOW,
     )

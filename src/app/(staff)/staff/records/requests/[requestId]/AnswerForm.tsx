@@ -20,6 +20,7 @@ export function AnswerForm({ request }: { request: RtkRequestView }) {
         className="flex flex-col gap-3"
       >
         <input type="hidden" name="requestId" value={request.id} />
+        <input type="hidden" name="expectedRowVersion" value={String(request.rowVersion)} />
         <AreaField label="What the requester answered" name="answer" maxLength={5000} required />
         <TextField label="Date of the answer" name="answeredOn" type="date" required />
       </ActionForm>
