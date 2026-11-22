@@ -3,6 +3,7 @@ import { type Fact, FactList } from '@/components/layout/PageHeader'
 import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { RTK_VIA_LABELS, responseDateOf, responseLabel } from '@/features/rtk/labels'
+import { ACKNOWLEDGED_LABEL } from '@/features/rtk/requestStatus'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { duePhrase } from '@/features/rtk/workPlan'
 import type { RequestWorkPlan } from '@/features/rtk/workPlanTypes'
@@ -22,12 +23,42 @@ function liveClock(request: RtkRequestView): SubjectDue | null {
   return request.status === 'awaiting_decision' ? request.statedDue : null
 }
 
+function given<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined
+}
+
+function acknowledgedFact(request: RtkRequestView): Fact[] {
+  if (!given(request.acknowledgedOn) || !given(request.followUpOn)) return []
+  return [{ label: ACKNOWLEDGED_LABEL, value: formatCivilDate(request.acknowledgedOn) }]
+}
+
 function responseFact(request: RtkRequestView): Fact[] {
   const label = responseLabel(request.firstResponseKind)
   if (label === null) return []
   const date = responseDateOf(request)
   const on = date === null ? '' : `, ${formatCivilDate(date)}`
-  return [{ label: 'First response', value: `${label}${on}` }]
+  return [...acknowledgedFact(request), { label: 'First response', value: `${label}${on}` }]
+}
+
+function answeredFact(request: RtkRequestView): Fact[] {
+  return given(request.clarificationAnsweredOn)
+    ? [{ label: 'Requester answered', value: formatCivilDate(request.clarificationAnsweredOn) }]
+    : []
+}
+
+function completionFacts(request: RtkRequestView): Fact[] {
+  if (request.status !== 'closed' && request.status !== 'withdrawn') return []
+  const facts: Fact[] = []
+  if (given(request.completedOn)) {
+    facts.push({
+      label: request.status === 'withdrawn' ? 'Withdrawn' : 'Closed',
+      value: formatCivilDate(request.completedOn),
+    })
+  }
+  if (request.status === 'withdrawn' && given(request.withdrawalNote)) {
+    facts.push({ label: 'How it was withdrawn', value: request.withdrawalNote })
+  }
+  return facts
 }
 
 function requestFacts(request: RtkRequestView): Fact[] {
@@ -43,9 +74,11 @@ function requestFacts(request: RtkRequestView): Fact[] {
       ? []
       : [{ label: 'Contact', value: request.requesterContact }]),
     ...responseFact(request),
+    ...answeredFact(request),
     ...(request.deniedOn === null
       ? []
       : [{ label: 'Denied', value: formatCivilDate(request.deniedOn) }]),
+    ...completionFacts(request),
   ]
 }
 
