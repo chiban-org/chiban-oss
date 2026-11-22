@@ -97,7 +97,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
             records.checklist === null ? undefined : (
               <RequiredDocuments
                 checklist={records.checklist}
-                canFile={records.canManageDocuments}
+                canFile={records.canFileItems}
                 canAccept={records.canAcceptItems}
               />
             )

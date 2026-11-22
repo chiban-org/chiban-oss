@@ -69,8 +69,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     can('application.manage'),
     mayMarkComplete(ctx.db, ctx.actor, applicationId, ctx.signal),
   ])
-  const canAssign =
-    canAssignBoards || (await mayActAsPlumbingOwnerOf(ctx.db, ctx.actor, applicationId, ctx.signal))
+  const plumbingOwner = await mayActAsPlumbingOwnerOf(ctx.db, ctx.actor, applicationId, ctx.signal)
+  const canAssign = canAssignBoards || plumbingOwner
   return {
     reviewers,
     canAssign,
@@ -84,7 +84,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     snapshots,
     appHolds,
     checklist,
-    canAcceptItems,
+    canFileItems: canManageDocuments || plumbingOwner,
+    canAcceptItems: canAcceptItems || plumbingOwner,
     canMarkComplete,
     zone: town.ok ? town.value.timeZone : FALLBACK_ZONE,
   }
