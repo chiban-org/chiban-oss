@@ -1,5 +1,5 @@
 import { boardStarter, PLANNING_BOARD_WORKFLOW } from '@packs/me/starters/boards/shared'
-import { doc, SET_YOUR_FEE } from '@packs/me/starters/permitParts'
+import { doc } from '@packs/me/starters/permitParts'
 
 export const RECEIPT_TEXT =
   '{{town.name}}\n\nDated receipt for a subdivision application\n\nTo {{party.applicant.name}}:\n\nThe {{town.name}} Planning Board has received subdivision application {{application.number}}, {{project.title}}, for parcel {{parcel.displayId}}, {{parcel.siteAddress}}.\n\nDate received: ____\n\nThis dated receipt is given under 30-A MRSA §4403(3)(A). Under 30-A MRSA §4403(3)(B), the board will notify you in writing within 30 days of receiving the application whether it is complete or what additional material is needed.'
@@ -19,6 +19,7 @@ export const SUBDIVISION_STARTER = boardStarter({
       label: 'Number of lots',
       type: 'integer',
       required: true,
+      significanceFact: true,
       validation: { min: 1 },
     },
     {
@@ -37,8 +38,9 @@ export const SUBDIVISION_STARTER = boardStarter({
   ],
   noticeLine: {
     code: 'receipt_notice',
-    label: `Receipt notice mailed to abutters (${SET_YOUR_FEE})`,
+    label: 'Receipt notice mailed to abutters',
     due: 'at_notice',
+    townSets: true,
     expr: {
       op: 'per_unit',
       source: { kind: 'count_of', what: 'abutters_on_issued_list' },

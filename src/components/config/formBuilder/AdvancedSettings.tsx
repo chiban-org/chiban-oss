@@ -51,6 +51,11 @@ export function AdvancedSettings({
               checked={field.staffOnly === true}
               onChange={(on) => onPatch({ staffOnly: on ? true : undefined })}
             />
+            <Check
+              label="Shown beside the significance question"
+              checked={field.significanceFact === true}
+              onChange={(on) => onPatch({ significanceFact: on ? true : undefined })}
+            />
           </>
         ) : null}
         <div>

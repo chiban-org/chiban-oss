@@ -44,6 +44,7 @@ export const FACT_CHOICES: readonly (readonly [string, string])[] = [
   ['classification', 'Use classification'],
   ['dwellingUnits', 'Number of dwelling units'],
   ['afterTheFact', 'Work started before the permit'],
+  ['appealedDecisionDate', 'Date of the decision being appealed'],
 ]
 
 export function hasChoices(field: FormField): boolean {

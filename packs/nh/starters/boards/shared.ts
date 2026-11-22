@@ -103,7 +103,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
   ]
   return {
     id: input.id,
-    version: 2,
+    version: 3,
     form: {
       key: `${slug}-form`,
       label: `${label} application`,

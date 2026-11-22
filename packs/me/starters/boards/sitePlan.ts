@@ -17,6 +17,7 @@ export const SITE_PLAN_STARTER = boardStarter({
       label: 'Ground area covered by buildings (square feet)',
       type: 'integer',
       required: true,
+      significanceFact: true,
       validation: { min: 0 },
     },
     {
@@ -24,6 +25,7 @@ export const SITE_PLAN_STARTER = boardStarter({
       label: 'Gross floor area (square feet)',
       type: 'integer',
       required: true,
+      significanceFact: true,
       validation: { min: 0 },
     },
     {
@@ -31,6 +33,7 @@ export const SITE_PLAN_STARTER = boardStarter({
       label: 'Area covered by buildings, parking, roads, paved and graded areas (acres)',
       type: 'decimal',
       required: false,
+      significanceFact: true,
       validation: { min: 0 },
     },
     {

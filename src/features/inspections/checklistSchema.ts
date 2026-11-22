@@ -5,6 +5,7 @@ export const ChecklistBodySchema = z.object({
   inspectionType: z.string().trim().min(1),
   label: z.string().trim().min(1),
   final: z.boolean().optional(),
+  provenance: z.string().trim().min(1).optional(),
   items: z
     .array(
       z.object({ key: z.string().min(1), label: z.string().trim().min(1), required: z.boolean() }),

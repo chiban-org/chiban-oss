@@ -33,6 +33,7 @@ const ApplicationTypeBodyShape = z.object({
   bindings: z.array(z.string().min(1)),
   workflow: z.object({
     allowsDirectIssue: z.boolean(),
+    reviewRequired: z.boolean().optional(),
     substeps: z.array(
       z.object({
         state: z.enum(CORE_STATES),

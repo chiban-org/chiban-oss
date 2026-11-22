@@ -152,7 +152,7 @@ const SITE_PLAN_RULES: PackRule[] = [
     kind: 'notice_requirement',
     key: 'town.sp.notice.hearing',
     version: 1,
-    label: 'Site plan hearing public notice',
+    label: 'Site plan hearing public notice: how it is given',
     citation: TOWN_RULE,
     channel: { townChoice: ['public_posting', 'newspaper'] },
     recipients: { public: true },

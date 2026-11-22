@@ -222,12 +222,13 @@ describe('Maine starters', () => {
     expect(fees('SC', {})).toBe(5000)
   })
 
-  it('every other fee line is zero and labelled for the town to set', () => {
+  it('every other fee line is zero and marked for the town to set', () => {
     for (const s of ME_STARTERS.filter(
       (x) => !['SSW', 'IP', 'SC'].includes(x.applicationType.prefix),
     )) {
       for (const line of s.feeSchedule.lines) {
-        expect(line.label, `${s.id} ${line.code}`).toContain('Set your fee')
+        expect(line.townSets, `${s.id} ${line.code}`).toBe(true)
+        expect(line.label, `${s.id} ${line.code}`).not.toContain('Set your fee')
         expect(JSON.stringify(line.expr), `${s.id} ${line.code}`).not.toMatch(
           /"(cents|centsPerUnit)":[1-9]/,
         )

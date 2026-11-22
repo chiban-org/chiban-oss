@@ -46,6 +46,7 @@ const FACT_WORDS: Record<NonNullable<FormField['fact']>, string> = {
   classification: 'Supplies the use classification that deadlines and certificates rely on.',
   dwellingUnits: 'Supplies the number of dwelling units that fees and deadlines rely on.',
   afterTheFact: 'Records whether work started before the permit.',
+  appealedDecisionDate: 'Supplies the date of the decision being appealed.',
 }
 
 function multiplierRefs(expr: FeeExpr): string[] {

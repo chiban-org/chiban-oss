@@ -1,4 +1,4 @@
-import { bindingsOf, IS_OWNER, SET_YOUR_FEE, setYourFeeLine } from '@packs/me/starters/permitParts'
+import { bindingsOf, IS_OWNER, setYourFeeLine } from '@packs/me/starters/permitParts'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
@@ -93,8 +93,9 @@ export const BOARD_OF_APPEALS_WORKFLOW: ApplicationTypeBody['workflow'] = {
 
 export const ABUTTER_NOTICE_LINE: FeeScheduleBody['lines'][number] = {
   code: 'notice_mail',
-  label: `Mailed notice to abutters (${SET_YOUR_FEE})`,
+  label: 'Mailed notice to abutters',
   due: 'at_notice',
+  townSets: true,
   expr: {
     op: 'per_unit',
     source: { kind: 'count_of', what: 'abutters_on_issued_list' },
@@ -136,7 +137,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
   const templates = [...boardTemplates(slug, label), ...(input.extraTemplates ?? [])]
   return {
     id: input.id,
-    version: 1,
+    version: 2,
     form: {
       key: `${slug}-form`,
       label: `${label} application`,
