@@ -1,10 +1,9 @@
 import type { DbOrTx } from '@/db/client'
-import { plumbingInspectorOwns } from '@/features/authz/classificationScope'
 import { isBuildingPermit } from '@/features/packs/roles'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { loadPermitData, mergeContextOf, type PermitData } from '@/features/permits/permitData'
+import { plumbingSignerOverride } from '@/features/permits/plumbingSigner'
 import { townTemplate } from '@/features/templates/findTemplate'
-import { signerRoleOverride } from '@/features/templates/kinds/defaultSigner'
 import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { err, ok, type Result } from '@/types/result'
 
@@ -26,16 +25,14 @@ export async function permitDocumentInput(
   data: PermitData,
   signal: AbortSignal,
 ): Promise<DocumentInput> {
-  const signerRole = signerRoleOverride('permit', {
-    plumbingOwned: plumbingInspectorOwns(data.application.typeBody.classification),
-  })
+  const frame = await documentFrame(db, {}, signal)
   return {
     title: data.application.typeBody.label,
     subtitle:
       data.correctionMark === null
         ? data.application.number
         : `${data.application.number} (${data.correctionMark})`,
-    frame: await documentFrame(db, {}, signal),
+    frame,
     context: {
       values: {
         ...mergeContextOf(data),
@@ -44,7 +41,7 @@ export async function permitDocumentInput(
         'fees.status': data.feeStatus,
       },
       conditions: data.conditions,
-      ...(signerRole === undefined ? {} : { signerRole }),
+      ...plumbingSignerOverride('permit', data.application.typeBody.classification, frame),
     },
   }
 }

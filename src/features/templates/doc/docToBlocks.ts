@@ -11,13 +11,18 @@ import { isMergeField } from '@/features/templates/mergeFields'
 import { type MergeContext, mergeValue } from '@/features/templates/renderTemplate'
 import { type SignerRole, SignerRoleSchema } from '@/features/town/profileSchema'
 
+export interface SignerOverride {
+  from: SignerRole
+  to: SignerRole
+}
+
 export interface DocRenderContext {
   values: MergeContext
   sections?: ReadonlyMap<string, PdfBlock[]>
   locked?: ReadonlyMap<string, string>
   conditions?: readonly string[]
   people?: ReadonlyMap<SignerRole, SignaturePerson>
-  signerRole?: SignerRole
+  signerOverride?: SignerOverride
 }
 
 const DATA_NODES: ReadonlySet<string> = new Set(['conditionsList', 'lockedBlock', 'recordSection'])
@@ -102,7 +107,7 @@ function lockedBlocks(node: DocNode, ctx: DocRenderContext): PdfBlock[] {
 function signatureBlocks(node: DocNode, ctx: DocRenderContext): PdfBlock[] {
   const parsed = SignerRoleSchema.safeParse(node.attrs?.role)
   if (!parsed.success) return []
-  const role = ctx.signerRole ?? parsed.data
+  const role = ctx.signerOverride?.from === parsed.data ? ctx.signerOverride.to : parsed.data
   const person = ctx.people?.get(role)
   return [
     {

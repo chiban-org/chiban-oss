@@ -17,6 +17,7 @@ import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { DecisionOutcome } from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { loadPermitData, mergeContextOf, NOT_APPLICABLE } from '@/features/permits/permitData'
+import { plumbingSignerOverride } from '@/features/permits/plumbingSigner'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townTemplate } from '@/features/templates/findTemplate'
 import { documentKind } from '@/features/templates/kinds/documentKinds'
@@ -81,14 +82,20 @@ export async function recordStaffDecisionTx(
     data.application.pins.templates,
     signal,
   )
+  const frame = await documentFrame(tx, {}, signal)
   const pdf = await renderDocumentOrDefault('permit_decision_letter', template, {
     title: STAFF_DECISION_LETTER_TITLE,
     subtitle: data.application.number,
-    frame: await documentFrame(tx, {}, signal),
+    frame,
     context: {
       values,
       conditions: data.conditions,
       locked: new Map([['decision.appealRights', appealRights]]),
+      ...plumbingSignerOverride(
+        'permit_decision_letter',
+        data.application.typeBody.classification,
+        frame,
+      ),
     },
   })
   const stored = await storeGeneratedBytes(tx, store, pdf, 'application/pdf', signal)
