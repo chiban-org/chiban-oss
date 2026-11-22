@@ -7,6 +7,7 @@ import { acceptWithoutDocument } from '@/features/applications/documentItems'
 import type { Actor } from '@/features/auth/actor'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { recordInspectionResult } from '@/features/inspections/recordResult'
+import { transitionApplication } from '@/features/applications/transition'
 import { issueApplication } from '@/features/issuance/issueApplication'
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -146,6 +147,47 @@ describe('the start of work and final inspections', () => {
       expect(await clockStatus(applicationId, clock)).toBe('met')
       expect(await stateOf(applicationId)).toBe('issued')
       await handle.db.transaction((tx) => expireLapsedPermits(tx, AFTER_LAPSE, signal))
+      expect(await stateOf(applicationId)).toBe('issued')
+      await recordPassed(applicationId, by, 'final')
+      expect(await stateOf(applicationId)).toBe('closed')
+    })
+  }
+})
+
+describe('closing a permit by hand before its final inspection', () => {
+  for (const { prefix, plumbing } of LAPSING.filter((l) => ['SLZ', 'SC'].includes(l.prefix))) {
+    it(`a ${prefix} permit is refused with no final inspection, and closes once one has passed`, async () => {
+      const applicationId = await issuedPermit(prefix, plumbing)
+      const by = plumbing ? plumber : inspector
+      const close = async () => {
+        const [row] = await handle.db
+          .select()
+          .from(applications)
+          .where(eq(applications.id, applicationId))
+        return await handle.db.transaction((tx) =>
+          transitionApplication(
+            tx,
+            by,
+            {
+              applicationId,
+              to: 'closed',
+              expectedRowVersion: row?.rowVersion ?? 0,
+            },
+            signal,
+            NOW,
+          ),
+        )
+      }
+      const refused = await close()
+      expect(refused.ok).toBe(false)
+      const results =
+        !refused.ok && typeof refused.error === 'object' && 'gateBlocked' in refused.error
+          ? refused.error.gateBlocked
+          : []
+      expect(results.find((g) => g.key === 'closure.requirement_met')?.outcome).toEqual({
+        status: 'blocked',
+        reason: 'No final inspection has passed.',
+      })
       expect(await stateOf(applicationId)).toBe('issued')
       await recordPassed(applicationId, by, 'final')
       expect(await stateOf(applicationId)).toBe('closed')
