@@ -23,9 +23,12 @@ function single(value: string | string[] | undefined, shape: RegExp): string | n
 }
 
 function NextSteps({ due }: { due: string | null }) {
-  if (due === null) return <p className="max-w-[65ch]">{receiptNextWithoutDate()}</p>
-  const { promise, next } = receiptPromise(formatCivilDate(due))
-  if (acknowledgementEnabled()) return <p className="max-w-[65ch]">{`${promise} ${next}`}</p>
+  const acknowledgement = acknowledgementEnabled()
+  if (due === null) {
+    return <p className="max-w-[65ch]">{receiptNextWithoutDate(acknowledgement)}</p>
+  }
+  const { promise, next } = receiptPromise(formatCivilDate(due), acknowledgement)
+  if (acknowledgement) return <p className="max-w-[65ch]">{`${promise} ${next}`}</p>
   return (
     <>
       <p className="max-w-[65ch]">{promise}</p>

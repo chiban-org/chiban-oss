@@ -11,12 +11,13 @@ describe('moved inspection wording', () => {
     expect(WORDING_KEY_INFO.inspection_rescheduled.fields).toEqual(
       expect.arrayContaining(['inspection.previousDate', 'inspection.previousTime']),
     )
-    expect(defaultWordingFor({ recordsRequest: 'records request' }).inspection_rescheduled).toEqual(
-      {
-        subject: 'Inspection moved: {{application.number}}, {{inspection.type}}',
-        body: 'The {{inspection.type}} inspection for {{application.number}} has moved from {{inspection.previousDate}} at {{inspection.previousTime}} to {{inspection.date}} at {{inspection.time}}.',
-      },
-    )
+    expect(
+      defaultWordingFor({ recordsRequest: 'records request', recordsAcknowledgement: false })
+        .inspection_rescheduled,
+    ).toEqual({
+      subject: 'Inspection moved: {{application.number}}, {{inspection.type}}',
+      body: 'The {{inspection.type}} inspection for {{application.number}} has moved from {{inspection.previousDate}} at {{inspection.previousTime}} to {{inspection.date}} at {{inspection.time}}.',
+    })
   })
 
   it('renders the earlier and new times in words', () => {

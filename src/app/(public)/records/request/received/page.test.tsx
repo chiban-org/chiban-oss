@@ -74,9 +74,11 @@ describe('RequestReceivedPage', () => {
     expect(screen.queryByText(/^It /)).toBeNull()
   })
 
-  it('under an acknowledging pack the receipt email makes the same promise', () => {
-    setActivePackForTest(ACKNOWLEDGING_PACK)
-    const body = defaultWordingFor({ recordsRequest: 'records request' }).rtk_request_received.body
+  it('with acknowledgement the receipt email makes the same promise', () => {
+    const body = defaultWordingFor({
+      recordsRequest: 'records request',
+      recordsAcknowledgement: true,
+    }).rtk_request_received.body
     expect(body).toContain(
       'The town will acknowledge your request by {{request.due}}. It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.',
     )

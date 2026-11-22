@@ -47,7 +47,8 @@ function hintFor(info: WordingKeyInfo | undefined): string {
 export function NotificationWordingEditor({ body, onChange, errors, townName }: Props) {
   const [selected, setSelected] = useState<WordingKey>('application_submitted')
   const area = useRef<HTMLTextAreaElement>(null)
-  const { vocabulary } = usePackText()
+  const { vocabulary: packWords, recordsAcknowledgement } = usePackText()
+  const vocabulary = { ...packWords, recordsAcknowledgement }
   const wording = currentWording(body, selected, vocabulary)
   const info = KEY_INFO.get(selected)
   const changed = isChanged(body, selected)

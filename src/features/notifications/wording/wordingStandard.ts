@@ -1,5 +1,5 @@
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
-import { acknowledgementEnabled, type Vocabulary } from '@/features/packs/vocabulary'
+import type { Vocabulary } from '@/features/packs/vocabulary'
 
 export interface Wording {
   subject: string
@@ -15,8 +15,13 @@ const ACKNOWLEDGEMENT_NEXT =
 const ANSWER_NEXT =
   'will make the records available, deny the request in writing, or tell you in writing when it will answer.'
 
-export function receiptPromise(due: string): { promise: string; next: string } {
-  return acknowledgementEnabled()
+export type StandardWords = Pick<Vocabulary, 'recordsRequest'> & { recordsAcknowledgement: boolean }
+
+export function receiptPromise(
+  due: string,
+  acknowledgement: boolean,
+): { promise: string; next: string } {
+  return acknowledgement
     ? {
         promise: `The town will acknowledge your request by ${due}.`,
         next: `It ${ACKNOWLEDGEMENT_NEXT}`,
@@ -24,12 +29,12 @@ export function receiptPromise(due: string): { promise: string; next: string } {
     : { promise: `The town will answer by ${due}.`, next: `It ${ANSWER_NEXT}` }
 }
 
-export function receiptNextWithoutDate(): string {
-  return `The town ${acknowledgementEnabled() ? ACKNOWLEDGEMENT_NEXT : ANSWER_NEXT}`
+export function receiptNextWithoutDate(acknowledgement: boolean): string {
+  return `The town ${acknowledgement ? ACKNOWLEDGEMENT_NEXT : ANSWER_NEXT}`
 }
 
-function receiptPromiseText(due: string): string {
-  const { promise, next } = receiptPromise(due)
+function receiptPromiseText(due: string, acknowledgement: boolean): string {
+  const { promise, next } = receiptPromise(due, acknowledgement)
   return `${promise} ${next}`
 }
 
@@ -37,9 +42,7 @@ function released(request: string): string {
   return `The town released records for your ${request} ${REQUEST} on {{records.releasedOn}}.`
 }
 
-export function defaultWordingFor(
-  words: Pick<Vocabulary, 'recordsRequest'>,
-): Record<WordingKey, Wording> {
+export function defaultWordingFor(words: StandardWords): Record<WordingKey, Wording> {
   const request = words.recordsRequest
   return {
     application_submitted: {
@@ -150,7 +153,7 @@ export function defaultWordingFor(
       subject: `${request} ${REQUEST} received`,
       body: [
         `The town received your ${request} on {{request.receivedOn}}. Its number is ${REQUEST}.`,
-        receiptPromiseText('{{request.due}}'),
+        receiptPromiseText('{{request.due}}', words.recordsAcknowledgement),
         'Keep the request number if you need to ask about it.',
       ].join('\n\n'),
     },

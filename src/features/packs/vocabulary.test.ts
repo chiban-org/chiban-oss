@@ -69,9 +69,9 @@ describe('vocabulary under a fictional pack', () => {
     const words = withPackForTest(XX_PACK, () => packVocabulary())
     expect(exactDetail('request', words)).toBe('Open Records request')
     expect(mergeFieldLabel('signer.zba_chair.name', words)).toBe('Vellmora zba body chair name')
-    expect(defaultWordingFor(words).rtk_letter_sent.subject).toBe(
-      'Letter about Open Records request {{request.number}}',
-    )
+    expect(
+      defaultWordingFor({ ...words, recordsAcknowledgement: false }).rtk_letter_sent.subject,
+    ).toBe('Letter about Open Records request {{request.number}}')
     expect(mergeFieldLabel('signer.zba_chair.name', packVocabulary())).toBe(
       'Zoning Board of Adjustment chair name',
     )
