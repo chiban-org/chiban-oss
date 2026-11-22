@@ -1,6 +1,10 @@
+import { ME_PACK } from '@packs/me'
+import { BUILDING_STARTER } from '@packs/me/starters/building'
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadApplicationContext } from '@/features/applications/context'
+import { adoptStarter } from '@/features/config/adoptStarter'
 import { evaluateGates } from '@/features/gates/evaluateGates'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { assignReviewer } from '@/features/reviews/assignments'
 import { makeApplication, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -10,6 +14,7 @@ const signal = new AbortController().signal
 let handle: TestDb
 
 afterEach(async () => {
+  setActivePackForTest(null)
   await handle.drop()
 })
 
@@ -60,5 +65,22 @@ describe('review required flag', () => {
       effective: 'blocked',
       outcome: { status: 'blocked', reason: 'No reviewer is assigned.' },
     })
+  })
+
+  it('a real Maine building permit starter can be decided with nobody assigned', async () => {
+    handle = await makeTestDb()
+    const world = await setupPermitWorld(handle.db)
+    setActivePackForTest(ME_PACK)
+    expect(BUILDING_STARTER.applicationType.workflow.reviewRequired).toBe(false)
+    const adopted = await adoptStarter(handle.db, world.admin, BUILDING_STARTER.id, signal)
+    expect(adopted.ok ? 'ok' : adopted.error).toBe('ok')
+    const app = await makeApplication(
+      handle.db,
+      world,
+      { state: 'under_review' },
+      undefined,
+      BUILDING_STARTER.applicationType.key,
+    )
+    expect((await reviewsGate(app.applicationId))?.effective).toBe('pass')
   })
 })
