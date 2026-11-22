@@ -43,8 +43,18 @@ export function SendCureNoticeForm({ detail, variant }: { detail: CaseDetail; va
     <ActionForm action={sendCureNoticeAction} submitLabel="Record cure notice" variant={variant}>
       <Hidden name="caseId" value={detail.staff.row.id} />
       <FindingChoices legend="Findings the notice names" choices={choices} />
-      <TextField label="Owner name" name="ownerName" required />
-      <TextField label="Owner mailing address" name="ownerAddress" required />
+      <TextField
+        label="Owner name"
+        name="ownerName"
+        defaultValue={detail.parcelOwner?.name ?? ''}
+        required
+      />
+      <TextField
+        label="Owner mailing address"
+        name="ownerAddress"
+        defaultValue={detail.parcelOwner?.mailingAddress ?? ''}
+        required
+      />
       <TextField label="Occupant name, if one applies" name="occupantName" />
       <TextField label="Occupant mailing address" name="occupantAddress" />
       <DateField label="Date mailed" name="sentOn" today={detail.today} />
