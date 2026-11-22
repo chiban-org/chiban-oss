@@ -32,7 +32,7 @@ Chiban leaves out a whole paragraph when none of the fields in it has a value, s
 
 A few messages will not save without certain fields:
 
-- **Records request received** must include the request number and the date the town will answer by. The receipt is the requester's written record of both. In a town whose state has the town acknowledge a request first, the standard wording says "The town will acknowledge your request by" the date, and that the town may ask you to clarify which records you want and will tell you in writing when it expects to respond. Elsewhere it says "The town will answer by" the date. The same sentences are on the page the requester sees after sending the request.
+- **Records request received** must include the request number and the date the town will answer by. The receipt is the requester's written record of both. In a town whose state has the town acknowledge a request first, the standard wording says "The town will acknowledge your request by" the date, and that the town may ask you to clarify which records you want and will tell you in writing when it expects to respond. Elsewhere it says "The town will answer by" the date. The page the requester sees after sending the request uses the same sentences.
 - **Records ready by link**, **Board packet ready by link** and **Claim a project** must include the number of days the link works, so the reader knows when it stops working.
 
 ## Links
