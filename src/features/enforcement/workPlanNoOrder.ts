@@ -69,9 +69,19 @@ export function noOrderCounselStep(input: CasePlanInput): Step {
   return town('counsel.referred', 'Refer the case to town counsel', null)
 }
 
+function latestCorrectBy(input: CasePlanInput): CivilDate | null {
+  const dates = input.notices
+    .map((n) => n.correctBy ?? null)
+    .filter((d): d is string => d !== null) as CivilDate[]
+  return dates.reduce<CivilDate | null>(
+    (latest, d) => (latest === null || compareCivil(d, latest) > 0 ? d : latest),
+    null,
+  )
+}
+
 export function correctionWaitStep(input: CasePlanInput): Step | null {
-  const correctBy = input.notices.at(-1)?.correctBy ?? null
-  if (correctBy === null || compareCivil(correctBy as CivilDate, input.today) <= 0) return null
+  const correctBy = latestCorrectBy(input)
+  if (correctBy === null || compareCivil(correctBy, input.today) <= 0) return null
   return waiting({
     key: 'notice.correct_by',
     actor: 'respondent',
