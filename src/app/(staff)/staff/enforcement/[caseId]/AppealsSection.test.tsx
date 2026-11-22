@@ -165,15 +165,33 @@ describe('the stay controls on an appeal', () => {
 })
 
 describe('the notice of violation as an appeal target', () => {
-  it('names the date, method and provisions of the notice', () => {
+  it.each([
+    ['in_hand', 'Notice of violation handed to the recipient on July 3, 2027, Section 4.2'],
+    [
+      'first_class_mail',
+      'Notice of violation sent by first class mail on July 3, 2027, Section 4.2',
+    ],
+    ['certified_mail', 'Notice of violation sent by certified mail on July 3, 2027, Section 4.2'],
+    ['posting', 'Notice of violation posted on the property on July 3, 2027, Section 4.2'],
+    ['email', 'Notice of violation sent by email on July 3, 2027, Section 4.2'],
+  ])('names how a notice sent by %s went out, its date and provisions', (method, label) => {
     const withNotice = stubDetail({
       findings: [{ id: 'f1', provisionKind: 'zoning_ordinance', provisionRef: 'Section 4.2' }],
-      notices: [{ id: 'n1', findingIds: ['f1'], method: 'certified_mail', sentOn: '2027-07-03' }],
+      notices: [{ id: 'n1', findingIds: ['f1'], method, sentOn: '2027-07-03' }],
     })
     renderForm(<AppealsSection detail={withNotice} can={ALL_CAN} />)
     openSection('Record an appeal')
+    expect(screen.getByRole('option', { name: /^Notice of violation/ }).textContent).toBe(label)
+  })
+
+  it('leaves off the provisions when the notice names none', () => {
+    const bare = stubDetail({
+      notices: [{ id: 'n1', findingIds: [], method: 'email', sentOn: '2027-07-03' }],
+    })
+    renderForm(<AppealsSection detail={bare} can={ALL_CAN} />)
+    openSection('Record an appeal')
     expect(screen.getByRole('option', { name: /^Notice of violation/ }).textContent).toBe(
-      'Notice of violation sent July 3, 2027 by certified mail, Section 4.2',
+      'Notice of violation sent by email on July 3, 2027',
     )
   })
 })

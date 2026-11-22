@@ -4,7 +4,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import {
   APPEAL_OUTCOME_LABELS,
   APPEAL_TARGET_LABELS,
-  NOTICE_METHOD_LABELS,
+  type NOTICE_METHOD_LABELS,
   PERIL_LABELS,
 } from '@/features/enforcement/labels'
 import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/restraintWords'
@@ -24,12 +24,19 @@ import { Hidden, Section } from './Section'
 const OUTCOMES = Object.entries(APPEAL_OUTCOME_LABELS) as [string, string][]
 const PERILS = Object.entries(PERIL_LABELS) as [string, string][]
 
+const NOTICE_TARGET_PHRASES: Record<keyof typeof NOTICE_METHOD_LABELS, string> = {
+  in_hand: 'handed to the recipient',
+  first_class_mail: 'sent by first class mail',
+  certified_mail: 'sent by certified mail',
+  posting: 'posted on the property',
+  email: 'sent by email',
+}
+
 function noticeTargetLabel(notice: CaseDetail['notices'][number], detail: CaseDetail): string {
   const refs = notice.findingIds
     .map((id) => detail.findings.find((f) => f.id === id)?.provisionRef)
     .filter((ref) => ref !== undefined)
-  const method = NOTICE_METHOD_LABELS[notice.method].toLowerCase()
-  const sent = `Notice of violation sent ${formatCivilDate(notice.sentOn)} by ${method}`
+  const sent = `Notice of violation ${NOTICE_TARGET_PHRASES[notice.method]} on ${formatCivilDate(notice.sentOn)}`
   return refs.length === 0 ? sent : `${sent}, ${refs.join(', ')}`
 }
 
