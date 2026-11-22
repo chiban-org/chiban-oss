@@ -108,9 +108,11 @@ export function ChecklistAdapter({ body, onChange, issues }: EditorProps) {
 }
 
 export function PaymentAdapter({ body, onChange, issues }: EditorProps) {
+  const { townName } = useEditorContext()
   return (
     <PaymentSettingsEditor
       body={body as PaymentSettingsBody}
+      townName={townName ?? ''}
       onChange={onChange}
       errors={errorsOf(issues)}
     />
