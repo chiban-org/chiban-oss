@@ -224,7 +224,9 @@ export async function revokeApproval(
     if (input.reason.trim().length < MIN_REASON) return err('reason_required')
     const supersededOnly = approval.revokedAt !== null && approval.revokeReason === 'superseded'
     if (approval.revokedAt !== null && !supersededOnly) return err('already_revoked')
-    if (await releasedOffline(tx, approval.versionId)) return err('released_offline')
+    if (approval.purpose === 'rtk_release' && (await releasedOffline(tx, approval.versionId))) {
+      return err('released_offline')
+    }
     const now = new Date()
     const revoked = await revokeActive(
       tx,

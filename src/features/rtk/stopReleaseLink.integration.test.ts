@@ -186,3 +186,62 @@ describe('revoking an approval whose copy was already released', () => {
     expect(await revokedAt(copy.approvalId)).not.toBeNull()
   })
 })
+
+describe('revoking a public approval of a version a requester got on paper', () => {
+  it('is not refused by the offline release', async () => {
+    const doc = await uploadRedactionFixture(
+      handle.db,
+      store,
+      custodian,
+      'letter.pdf',
+      undefined,
+      false,
+    )
+    const forRequest = await approveRendition(
+      handle.db,
+      custodian,
+      {
+        versionId: doc.versionId,
+        purpose: 'rtk_release',
+        rtkRequestId: requestId,
+        reviewStatement: STATEMENT,
+      },
+      signal,
+      store,
+    )
+    if (!forRequest.ok) throw new Error(forRequest.error)
+    const made = await createRelease(
+      handle.db,
+      store,
+      mail,
+      custodian,
+      {
+        requestId,
+        releasedOn: '2027-07-09',
+        method: 'paper',
+        items: [{ documentId: doc.documentId, approvalId: forRequest.value.approvalId }],
+      },
+      signal,
+      NOW,
+    )
+    if (!made.ok) throw new Error(JSON.stringify(made.error))
+    const forPublic = await approveRendition(
+      handle.db,
+      custodian,
+      { versionId: doc.versionId, purpose: 'public', reviewStatement: STATEMENT },
+      signal,
+      store,
+    )
+    if (!forPublic.ok) throw new Error(forPublic.error)
+    expect(
+      await revokeApproval(
+        handle.db,
+        custodian,
+        { approvalId: forPublic.value.approvalId, reason: REASON },
+        signal,
+        store,
+      ),
+    ).toEqual({ ok: true, value: undefined })
+    expect(await revokedAt(forPublic.value.approvalId)).not.toBeNull()
+  })
+})
