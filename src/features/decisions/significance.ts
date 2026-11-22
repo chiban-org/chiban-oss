@@ -51,7 +51,8 @@ export function significanceQuestion(
   const { significantDecisionQuestion, significantDecisionHelp } = activePack().labels
   if (!significanceApplies(classification) || significantDecisionQuestion === null) return null
   const question = { question: significantDecisionQuestion, help: significantDecisionHelp }
-  return answers === undefined ? question : { ...question, facts: significanceFacts(answers) }
+  const facts = answers === undefined ? [] : significanceFacts(answers)
+  return facts.length === 0 ? question : { ...question, facts }
 }
 
 export async function loadSignificanceQuestion(
