@@ -68,10 +68,15 @@ describe('records requests in the portal', () => {
     const filed = await logged('207-555-0110', 'Minutes of the March meeting')
     await handle.db
       .update(rtkRequests)
-      .set({ createdBy: resident.userId })
+      .set({ createdBy: resident.userId, receivedVia: 'portal' })
       .where(eq(rtkRequests.id, filed.requestId))
     const rows = await loadPortalRecordsRequests(handle.db, resident, signal)
     expect(rows.map((r) => r.number)).toEqual([filed.number])
+  })
+
+  it('never lists a request a staff member logged for someone else', async () => {
+    await logged('juniper.oake@example.test', 'Culvert plans for 9 Alder Pond Road')
+    expect(await loadPortalRecordsRequests(handle.db, custodian, signal)).toEqual([])
   })
 
   it('gives the date a request was closed', async () => {

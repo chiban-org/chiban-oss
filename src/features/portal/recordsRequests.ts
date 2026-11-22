@@ -22,6 +22,10 @@ function awaitingResponse(row: { status: string; firstResponseKind: string | nul
   return AWAITING_STATUSES.includes(row.status) || isAcknowledgedOnly(row)
 }
 
+function filedOnlineBy(userId: string) {
+  return and(eq(rtkRequests.createdBy, userId), eq(rtkRequests.receivedVia, 'portal'))
+}
+
 async function accountEmail(db: DbOrTx, userId: string): Promise<string | null> {
   const [row] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId))
   return row?.email.toLowerCase() ?? null
@@ -67,10 +71,12 @@ export async function loadPortalRecordsRequests(
   const candidates = await db
     .select()
     .from(rtkRequests)
-    .where(or(eq(rtkRequests.createdBy, user.userId), contactHas))
+    .where(or(filedOnlineBy(user.userId), contactHas))
     .orderBy(desc(rtkRequests.receivedOn), desc(rtkRequests.number))
   const mine = candidates.filter(
-    (r) => r.createdBy === user.userId || requesterEmailOf(r.requesterContact) === email,
+    (r) =>
+      (r.createdBy === user.userId && r.receivedVia === 'portal') ||
+      requesterEmailOf(r.requesterContact) === email,
   )
   const ended = await endedDates(
     db,
