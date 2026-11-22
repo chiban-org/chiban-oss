@@ -58,6 +58,15 @@ describe('Maine board starters', () => {
     }
   })
 
+  it('no hearing notice tells the reader why they received it', () => {
+    for (const s of BOARD) {
+      const slug = s.form.key.replace('-form', '')
+      expect(body(s, `${slug}-hearing-notice`), s.id).not.toContain(
+        'You are receiving this notice as',
+      )
+    }
+  })
+
   it('every board form asks for the applicant name', () => {
     for (const s of BOARD) {
       expect(
