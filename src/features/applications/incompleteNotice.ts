@@ -14,6 +14,7 @@ import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack } from '@/features/packs/loadPack'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
+import { plumbingSignerOverride } from '@/features/permits/plumbingSigner'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townTemplate } from '@/features/templates/findTemplate'
 import { renderDocumentOrDefault } from '@/features/templates/templateBlocks'
@@ -59,10 +60,12 @@ async function renderNotice(
 ): Promise<Uint8Array> {
   const data = await loadPermitData(tx, app.id, signal)
   const template = await townTemplate(tx, 'incomplete_notice', app.pins.templates, signal)
+  const frame = await documentFrame(tx, {}, signal)
   return await renderDocumentOrDefault('incomplete_notice', template, {
     subtitle: app.number,
-    frame: await documentFrame(tx, {}, signal),
+    frame,
     context: {
+      ...plumbingSignerOverride('incomplete_notice', app.typeBody.classification, frame),
       values: {
         ...(data === null ? {} : mergeContextOf(data)),
         'application.number': app.number,

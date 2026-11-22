@@ -17,6 +17,7 @@ const PLUMBING_SIGNED: ReadonlySet<TemplateKind> = new Set<TemplateKind>([
   'permit',
   'placard',
   'permit_decision_letter',
+  'incomplete_notice',
 ])
 
 export interface SignerScope {

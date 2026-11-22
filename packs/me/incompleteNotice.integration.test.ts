@@ -7,6 +7,7 @@ import { startClocksFor } from '@/features/clocks/startClocks'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { downloadObject } from '@/test/objectBytes'
@@ -103,5 +104,43 @@ describe('an incomplete notice on a subsurface wastewater application', () => {
 
   it('is not offered on a building permit', async () => {
     expect(await send(await submitted('BP'))).toEqual({ ok: false, error: 'not_applicable' })
+  })
+
+  it('is signed by the plumbing inspector', async () => {
+    const published = await publishTownProfileSection(
+      handle.db,
+      world.admin,
+      {
+        section: 'signers',
+        slice: {
+          signers: [
+            {
+              role: 'building_official',
+              name: 'Rowan Ashby',
+              title: 'Code Enforcement Officer',
+              signature: null,
+            },
+            {
+              role: 'plumbing_inspector',
+              name: 'Lee Piper',
+              title: 'Local Plumbing Inspector',
+              signature: null,
+            },
+          ],
+        },
+      },
+      signal,
+    )
+    if (!published.ok) throw new Error(JSON.stringify(published.error))
+    const applicationId = await submitted('SSW')
+    const sent = await send(applicationId)
+    if (!sent.ok) throw new Error(sent.error)
+    const [notice] = await handle.db
+      .select({ documentId: incompleteNotices.documentId })
+      .from(incompleteNotices)
+      .where(eq(incompleteNotices.applicationId, applicationId))
+    const text = await pdfWording(await downloadObject(handle.db, store, notice?.documentId ?? ''))
+    expect(text).toContain('Lee Piper')
+    expect(text).not.toContain('Rowan Ashby')
   })
 })
