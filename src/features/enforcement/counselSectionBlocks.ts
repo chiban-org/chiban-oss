@@ -202,10 +202,15 @@ export async function townWinOn(db: DbOrTx, caseId: string): Promise<CivilDate |
   return (rows.map((r) => r.on).sort()[0] ?? null) as CivilDate | null
 }
 
+const received = (on: string | null) => (on === null ? 'Not recorded' : formatCivilDate(on))
+
 export async function findingsBlocks(db: DbOrTx, caseId: string): Promise<PdfBlock[]> {
-  const [findings, notices] = await Promise.all([
+  const [findings, notices, cures] = await Promise.all([
     db.select().from(violationFindings).where(eq(violationFindings.caseId, caseId)),
     db.select().from(violationNotices).where(eq(violationNotices.caseId, caseId)),
+    cureRules().length === 0
+      ? []
+      : db.select().from(cureNotices).where(eq(cureNotices.caseId, caseId)),
   ])
   return [
     { kind: 'heading', text: 'Findings' },
@@ -221,10 +226,13 @@ export async function findingsBlocks(db: DbOrTx, caseId: string): Promise<PdfBlo
     {
       kind: 'table',
       columns: ['Notice sent', 'Received'],
-      rows: notices.map((n) => [
-        formatCivilDate(n.sentOn),
-        n.receivedOn === null ? 'Not recorded' : formatCivilDate(n.receivedOn),
-      ]),
+      rows: [
+        ...notices.map((n) => [formatCivilDate(n.sentOn), received(n.receivedOn)]),
+        ...cures.map((c) => [
+          `Cure notice to ${c.recipientRole} ${c.recipientName}, ${formatCivilDate(c.sentOn)}`,
+          received(c.returnReceiptOn),
+        ]),
+      ],
     },
   ]
 }

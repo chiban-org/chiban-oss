@@ -70,7 +70,7 @@ test.describe('opening a case', () => {
       await dialog.getByRole('button', { name: 'Open case' }).click()
       await expectRefusedBeside(
         dialog.getByLabel('Where is the property?'),
-        'Enter where the property is.',
+        'Enter where the property is, or pick a parcel.',
       )
       await expect(page).toHaveURL(/\/staff\/enforcement$/)
     })

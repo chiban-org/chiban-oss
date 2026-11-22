@@ -157,3 +157,19 @@ describe('the penalty exposure', () => {
     ).toBeTruthy()
   })
 })
+
+describe('a judgment seen by staff who cannot record fines', () => {
+  const sentence =
+    'A judgment for the town is recorded. Finance or an administrator records the fine here.'
+
+  it('says who records the fine', () => {
+    renderForm(<MoneySection detail={detail} can={{ ...ALL_CAN, fine: false }} />)
+    expect(screen.getByText(sentence)).toBeTruthy()
+    expect(screen.queryByText('Record a court-imposed fine')).toBeNull()
+  })
+
+  it('stays quiet for staff who can record the fine', () => {
+    renderForm(<MoneySection detail={detail} can={ALL_CAN} />)
+    expect(screen.queryByText(sentence)).toBeNull()
+  })
+})

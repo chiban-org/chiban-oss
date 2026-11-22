@@ -5,13 +5,14 @@ import { TextField } from '@/components/staff/fields'
 import { openCaseAction, staffComplaintAction } from './actions'
 
 const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address matches exactly.'
+const LOCATION_HINT = "Leave blank to use the parcel's site address."
 
 export function NewCaseForms() {
   return (
     <>
       <FormDialog label="Open a case" title="Open a case">
         <ActionForm action={openCaseAction} submitLabel="Open case">
-          <TextField label="Where is the property?" name="locationText" required />
+          <TextField label="Where is the property?" name="locationText" hint={LOCATION_HINT} />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
         </ActionForm>
       </FormDialog>
@@ -22,7 +23,7 @@ export function NewCaseForms() {
         variant="default"
       >
         <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
-          <TextField label="Where is the property?" name="locationText" required />
+          <TextField label="Where is the property?" name="locationText" hint={LOCATION_HINT} />
           <TextField label="What was reported?" name="description" required />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
           <TextField label="Complainant name" name="name" autoComplete="off" />

@@ -112,8 +112,8 @@ test.describe
       db,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const findings = await formFor(page, FINDINGS, SEND, 'Send notice of violation')
-      await findings.getByRole('button', { name: 'Send notice of violation' }).click()
+      const findings = await formFor(page, FINDINGS, SEND, 'Record notice of violation')
+      await findings.getByRole('button', { name: 'Record notice of violation' }).click()
       const group = findings.getByRole('group', { name: 'Findings to include' })
       await expect(group.getByText('Choose at least one finding.')).toHaveCount(1)
       await expect(
@@ -126,10 +126,10 @@ test.describe
 
     test('sends a notice for one finding, stores the PDF and lists it', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const form = await formFor(page, FINDINGS, SEND, 'Send notice of violation')
+      const form = await formFor(page, FINDINGS, SEND, 'Record notice of violation')
       await form.getByRole('checkbox', { name: /Section 4\.2 side setback/ }).check()
       await form.getByLabel('How it was sent').selectOption({ label: 'Certified mail' })
-      await form.getByRole('button', { name: 'Send notice of violation' }).click()
+      await form.getByRole('button', { name: 'Record notice of violation' }).click()
       await expectConfirmation(page, 'Notice of violation recorded.')
       const findings = region(page, FINDINGS)
       await expect(

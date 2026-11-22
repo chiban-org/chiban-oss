@@ -15,8 +15,10 @@ import {
   violationNotices,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { resolveCodeEdition } from '@/features/building/codeEdition'
 import { loadPanelDocuments, type PanelDocument } from '@/features/documents/panelData'
 import { getCase, type StaffCaseView } from '@/features/enforcement/access'
+import { buildingCodeEnforced } from '@/features/enforcement/buildingCodeCutoff'
 import {
   casePenaltyExposure,
   casePenaltyOf,
@@ -31,6 +33,7 @@ import type { PenaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import type { SuggestionsByKind } from '@/features/enforcement/sections/suggestions'
 import { type StayState, stayBanner, stayFor } from '@/features/enforcement/stay'
+import { loadPack } from '@/features/packs/loadPack'
 import type { CureNoticeRule } from '@/features/packs/schema'
 import type { CasePayments } from '@/features/payments/casePayments'
 import type { CivilDate } from '@/types/civilDate'
@@ -57,13 +60,15 @@ export interface ParcelOwner {
   mailingAddress: string | null
 }
 
+type Finding = typeof violationFindings.$inferSelect & { editionInForce?: string | null }
+
 export interface CaseDetail {
   staff: StaffCaseView
   parcelOwner: ParcelOwner | null
   today: CivilDate
   stay: StayState
   banner: string | null
-  findings: (typeof violationFindings.$inferSelect)[]
+  findings: Finding[]
   notices: (typeof violationNotices.$inferSelect)[]
   cure: CureDetail
   orders: OrderDetail[]
@@ -90,6 +95,21 @@ async function parcelOwnerOf(db: DbOrTx, parcelId: string | null): Promise<Parce
     .from(parcels)
     .where(eq(parcels.id, parcelId))
   return row ?? null
+}
+
+async function withEditions(
+  db: DbOrTx,
+  findings: (typeof violationFindings.$inferSelect)[],
+  signal: AbortSignal,
+): Promise<Finding[]> {
+  if (!findings.some((f) => f.provisionKind === 'building_code')) return findings
+  if (!(await buildingCodeEnforced(db, signal))) return findings
+  const table = loadPack().codeEditions
+  return findings.map((f) => {
+    if (f.provisionKind !== 'building_code') return f
+    const resolved = resolveCodeEdition(table, f.inspectionDate as CivilDate)
+    return { ...f, editionInForce: resolved.ok ? resolved.value.label : null }
+  })
 }
 
 async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, string>> {
@@ -216,7 +236,7 @@ export async function loadCaseDetail(
         null) as CivilDate | null,
       certified as CivilDate | null,
     ),
-    findings,
+    findings: await withEditions(db, findings, signal),
     notices,
     cure: {
       choices: cureRules().map((r) => ({ key: r.key, label: r.label })),

@@ -69,6 +69,19 @@ describe('entering a complaint', () => {
   })
 })
 
+describe('the location field', () => {
+  it.each([
+    ['Open a case', 'Open case'],
+    ['Enter a complaint', 'Record complaint'],
+  ])('is optional in %s and says the parcel fills it', (dialog) => {
+    renderForm(<NewCaseForms />)
+    fireEvent.click(screen.getByRole('button', { name: dialog }))
+    const location = screen.getByLabelText('Where is the property?')
+    expect(location).toHaveProperty('required', false)
+    expect(screen.getByText("Leave blank to use the parcel's site address.")).toBeTruthy()
+  })
+})
+
 describe('the complaint dialog', () => {
   it('asks for the complainant name, phone and email', () => {
     renderForm(<NewCaseForms />)

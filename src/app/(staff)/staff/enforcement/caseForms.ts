@@ -5,6 +5,8 @@ import { optionalEmail } from '@/features/input/optionalEmail'
 import {
   choice,
   civilDate,
+  endNotBefore,
+  optionalCivilDate,
   optionalText,
   recordId,
   requiredText,
@@ -20,7 +22,7 @@ export const rowVersion = () =>
   wholeNumber('the version of this record', { min: 1, max: MAX_ROW_VERSION })
 
 export const OPEN_CASE_FORM = z.object({
-  locationText: requiredText('where the property is', { max: 300 }),
+  locationText: optionalText('where the property is', { max: 300 }),
   parcelRef: optionalText(PARCEL, { max: 200 }),
 })
 
@@ -30,7 +32,7 @@ export const SET_CASE_PARCEL_FORM = z.object({
 })
 
 export const STAFF_COMPLAINT_FORM = z.object({
-  locationText: requiredText('where the property is', { max: 300 }),
+  locationText: optionalText('where the property is', { max: 300 }),
   description: requiredText('what was reported', { max: MAX_COMPLAINT_CHARS }),
   parcelRef: optionalText(PARCEL, { max: 200 }),
   name: optionalText('the complainant name', { max: 200 }),
@@ -61,13 +63,20 @@ export const recordFindingForm = (today: CivilDate) =>
     inspectionDate: civilDate('the inspection date', { latest: today }),
   })
 
+const CORRECT_BY_BEFORE_SENT = 'The correct by date is before the date sent.'
+
 export const sendNoticeForm = (today: CivilDate) =>
-  z.object({
-    caseId: recordId('a case'),
-    findingIds: recordIdList('Choose at least one finding.'),
-    sentOn: civilDate('the date sent', { latest: today }),
-    method: choice('how it was sent', NOTICE_METHODS),
-  })
+  z
+    .object({
+      caseId: recordId('a case'),
+      findingIds: recordIdList('Choose at least one finding.'),
+      sentOn: civilDate('the date sent', { latest: today }),
+      method: choice('how it was sent', NOTICE_METHODS),
+      recipientName: optionalText('the recipient name', { max: 200 }),
+      recipientAddress: optionalText('the recipient mailing address', { max: 500 }),
+      correctBy: optionalCivilDate('the correct by date'),
+    })
+    .superRefine(endNotBefore('sentOn', 'correctBy', CORRECT_BY_BEFORE_SENT))
 
 export const recordReceiptForm = (today: CivilDate) =>
   z.object({
