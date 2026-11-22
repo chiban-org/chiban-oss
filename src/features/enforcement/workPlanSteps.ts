@@ -11,6 +11,7 @@ import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  courtWithoutOrder,
   draftIsStale,
   draftOrderOf,
   filingLead,
@@ -80,7 +81,7 @@ function cureRouting(): string | null {
 
 function violationStep(input: CasePlanInput): Step {
   const standing = findingStanding(input)
-  if (standing === 'corrected') return resolveStep()
+  if (standing === 'corrected') return resolveStep(input)
   if (standing === 'withdrawn') return noViolationStep()
   const cure = cureStep(input)
   const lapsedDraft =
@@ -162,7 +163,7 @@ function answerStep(input: CasePlanInput, order: CasePlanOrder): Step {
 function counselStep(input: CasePlanInput): Step {
   const counsel = counselState(input)
   if (counsel === 'won') return judgmentStep(input)
-  if (counsel === 'ended') return resolveStep()
+  if (counsel === 'ended') return resolveStep(input)
   if (counsel === 'open') {
     const task = 'Take the answered order to court'
     return waiting({ key: 'court.answered', actor: 'counsel', ask: task, task })
@@ -224,7 +225,8 @@ function afterOrderStep(input: CasePlanInput): Step {
   const draft = draftOrderOf(input)
   if (draft !== null && input.staff.row.status === 'order_issued') return draftStep(input, draft)
   const live = liveOrder(input)
-  return live === null ? resolveStep() : orderStep(input, live)
+  if (live !== null) return orderStep(input, live)
+  return courtWithoutOrder(input) ? noOrderCounselStep(input) : resolveStep(input)
 }
 
 export function stayStepTask(): string {

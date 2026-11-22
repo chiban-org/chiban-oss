@@ -27,13 +27,21 @@ export function waiting(w: Waiting): Step {
   return { ...w, actorName: null, note: w.note ?? null, action: null }
 }
 
-export function resolveStep(): Step {
+export function resolveStep(input: Pick<CasePlanInput, 'cure'>): Step {
+  if (input.cure?.holdPlaced === true) {
+    return town(
+      'hold.release',
+      'Release the hold',
+      null,
+      'Release it under Development hold before resolving the case.',
+    )
+  }
   return town('move:resolved', 'Resolve the case', { kind: 'move', to: 'resolved' })
 }
 
 export function judgmentStep(input: CasePlanInput): Step {
   const owed = input.fines.find((f) => f.dueCents > 0)
-  if (owed === undefined) return resolveStep()
+  if (owed === undefined) return resolveStep(input)
   return town('fines.paid', `Collect the ${formatCents(owed.dueCents)} fine balance`, {
     kind: 'record_fine_payment',
     fineId: owed.row.id,
@@ -43,7 +51,7 @@ export function judgmentStep(input: CasePlanInput): Step {
 export function noOrderCounselStep(input: CasePlanInput): Step {
   const counsel = counselState(input)
   if (counsel === 'won') return judgmentStep(input)
-  if (counsel === 'ended') return resolveStep()
+  if (counsel === 'ended') return resolveStep(input)
   if (counsel === 'open') {
     return waiting({
       key: 'counsel.referred',

@@ -13,6 +13,7 @@ import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
 import type { CeaseAndDesistRule, RecipientRole } from '@/features/packs/schema'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
+import { orderAvailableForFindings } from './orderAvailability'
 import type { CaseActionKind } from './workPlanTypes'
 
 type OrderRow = typeof enforcementOrders.$inferSelect
@@ -67,6 +68,14 @@ export function liveOrders(input: CasePlanInput): CasePlanOrder[] {
 export function liveOrder(input: CasePlanInput): CasePlanOrder | null {
   const live = liveOrders(input)
   return live.find((o) => stepOf(o, 'judgment') === null) ?? live[0] ?? null
+}
+
+export function courtWithoutOrder(input: CasePlanInput): boolean {
+  return (
+    input.staff.row.status === 'in_court' &&
+    liveOrder(input) === null &&
+    !orderAvailableForFindings(input.findings)
+  )
 }
 
 const COUNSEL_DECIDED: readonly string[] = [

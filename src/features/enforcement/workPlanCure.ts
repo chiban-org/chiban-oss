@@ -2,15 +2,17 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil, daysBetween } from '@/types/civilDate'
 import { cureStanding, uncoveredOpenFindings } from './cureStanding'
 import { orderAvailableForFindings } from './orderAvailability'
-import { type CasePlanInput, draftOrderOf } from './workPlanInput'
-import type { Step } from './workPlanNoOrder'
+import { type CasePlanInput, courtWithoutOrder, draftOrderOf } from './workPlanInput'
+import { noOrderCounselStep, type Step } from './workPlanNoOrder'
 import type { CaseAction, CaseDue } from './workPlanTypes'
+
+function remedyStatus(input: CasePlanInput): boolean {
+  return input.staff.row.status === 'violation_found' || courtWithoutOrder(input)
+}
 
 export function remedyActions(input: CasePlanInput): CaseAction[] {
   const cure = input.cure
-  if (cure?.rule == null || input.staff.row.status !== 'violation_found' || input.stay.stayed) {
-    return []
-  }
+  if (cure?.rule == null || !remedyStatus(input) || input.stay.stayed) return []
   if (!cureStanding(input.findings, cure.notices, input.today).lapsedUncorrected) return []
   return [
     ...(cure.rule.remedies.developmentHold && cure.holdPlaced !== true
@@ -63,6 +65,14 @@ export function cureStep(input: CasePlanInput): Step | null {
     }
   }
   const standing = cureStanding(input.findings, cure.notices, input.today)
+  const remedies = remedyActions(input)
+  if (
+    standing.lapsedUncorrected &&
+    remedies.length === 0 &&
+    !orderAvailableForFindings(input.findings)
+  ) {
+    return noOrderCounselStep(input)
+  }
   if (standing.lapsedUncorrected) {
     const task = 'Take a remedy for the uncorrected violation'
     return {
@@ -72,7 +82,7 @@ export function cureStep(input: CasePlanInput): Step | null {
       actor: 'town',
       actorName: null,
       note: 'The cure period ran and a noticed violation is still open.',
-      action: remedyActions(input)[0] ?? null,
+      action: remedies[0] ?? null,
     }
   }
   return {

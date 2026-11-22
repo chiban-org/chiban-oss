@@ -10,6 +10,7 @@ import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  courtWithoutOrder,
   filingLead,
   gateBlocks,
   liveOrder,
@@ -175,6 +176,7 @@ function counselGroup(input: CasePlanInput): CaseRequirementGroup {
 }
 
 function courtGroups(input: CasePlanInput): CaseRequirementGroup[] {
+  if (courtWithoutOrder(input)) return [counselGroup(input)]
   const order = liveOrder(input)
   if (order === null) return []
   if (stepOf(order, 'motion_to_enforce') !== null) return [resolveGroup(input, order)]
