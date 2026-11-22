@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { documentVersions, files } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { approveRendition } from '@/features/renditions/approvals'
@@ -8,6 +10,7 @@ import { buildResponseLetter } from '@/features/rtk/responseLetter'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
@@ -33,23 +36,40 @@ afterEach(async () => {
   await handle.drop()
 })
 
+async function storedPdf(documentId: string): Promise<Uint8Array> {
+  const [version] = await handle.db
+    .select()
+    .from(documentVersions)
+    .where(eq(documentVersions.documentId, documentId))
+  const [file] = await handle.db
+    .select()
+    .from(files)
+    .where(eq(files.sha256, version?.fileSha256 ?? ''))
+  const stream = await store.getStream(file?.storageKey ?? '', signal)
+  if (!stream.ok) throw new Error('bytes')
+  return new Uint8Array(await new Response(stream.value).arrayBuffer())
+}
+
+async function loggedFor(requesterName: string | undefined): Promise<string> {
+  const logged = await logRequest(
+    handle.db,
+    custodian,
+    {
+      receivedOn: d('2027-07-02'),
+      receivedVia: 'email',
+      ...(requesterName === undefined ? {} : { requesterName }),
+      description: 'The Birch Lane owner letters',
+    },
+    signal,
+    NOW,
+  )
+  if (!logged.ok) throw new Error(logged.error)
+  return logged.value.requestId
+}
+
 describe('right-to-know response letter wording', () => {
   it('time statement with a cost estimate, a release and a withholding', async () => {
-    const logged = await logRequest(
-      handle.db,
-      custodian,
-      {
-        receivedOn: d('2027-07-02'),
-        receivedVia: 'email',
-        requesterName: 'Jordan Reyes',
-        requesterContact: 'jordan@example.test',
-        description: 'The Birch Lane owner letters',
-      },
-      signal,
-      NOW,
-    )
-    if (!logged.ok) throw new Error(logged.error)
-    const requestId = logged.value.requestId
+    const requestId = await loggedFor('Jordan Reyes')
     const response = await recordFirstResponse(
       handle.db,
       store,
@@ -128,13 +148,23 @@ describe('right-to-know response letter wording', () => {
       NOW,
     )
     if (!released.ok) throw new Error(released.error)
-    const letter = await buildResponseLetter(handle.db, requestId, signal)
-    expect(await pdfWording(letter)).toMatchInlineSnapshot(`
+    const letter = await storedPdf(released.value.letterDocumentId)
+    const wording = await pdfWording(letter)
+    expect(wording).toContain('The town is releasing the records listed below.')
+    expect(wording).toContain('On July 9, 2027 the town said it needed until July 30, 2027.')
+    expect(wording).not.toContain('The town needs more time to respond to your request.')
+    expect(wording).toMatchInlineSnapshot(`
       "Town of Alder Pond
 
       Response to your Right-to-Know request
 
       RK-2027-0001
+
+      Date
+      July 14, 2027
+
+      To
+      Jordan Reyes
 
       Request number
       RK-2027-0001
@@ -145,28 +175,9 @@ describe('right-to-know response letter wording', () => {
       Your request
       The Birch Lane owner letters
 
-      The town needs more time to respond to your request.
+      The town is releasing the records listed below.
 
-      Time the town needs
-
-      Statement made
-      July 9, 2027
-
-      Response by
-      July 30, 2027
-
-      Reason
-      The records are in off-site storage and must be retrieved and reviewed.
-
-      Estimated charge
-      Amount
-
-      Copies, 120 pages
-      $12.00
-      Staff time, 2 hours
-      $50.00
-      Total
-      $62.00
+      On July 9, 2027 the town said it needed until July 30, 2027.
 
       Records released
 
@@ -205,9 +216,46 @@ describe('right-to-know response letter wording', () => {
       number that invades the owner
       privacy.
 
+      Town clerk signature
+
       Page 1 of 1
 
       "
     `)
+  })
+
+  it('the default letter is dated, addressed and signed by the town clerk', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const published = await publishTownProfileSection(
+      handle.db,
+      admin,
+      {
+        section: 'signers',
+        slice: {
+          signers: [
+            { role: 'town_clerk', name: 'Morgan Vale', title: 'Town Clerk', signature: null },
+          ],
+        },
+      },
+      signal,
+    )
+    if (!published.ok) throw new Error(JSON.stringify(published.error))
+    const requestId = await loggedFor('Jordan Reyes')
+    const wording = await pdfWording(
+      await buildResponseLetter(handle.db, requestId, signal, { now: NOW }),
+    )
+    expect(wording).toContain('Date\nJuly 14, 2027')
+    expect(wording).toContain('To\nJordan Reyes')
+    expect(wording).toContain('Morgan Vale\nTown Clerk')
+    expect(wording.indexOf('July 14, 2027')).toBeLessThan(wording.indexOf('Request number'))
+  })
+
+  it('a letter to a requester with no name on file is addressed to the requester', async () => {
+    const requestId = await loggedFor(undefined)
+    const wording = await pdfWording(
+      await buildResponseLetter(handle.db, requestId, signal, { now: NOW }),
+    )
+    expect(wording).toContain('To\nThe requester')
+    expect(wording).toContain('Town clerk signature')
   })
 })

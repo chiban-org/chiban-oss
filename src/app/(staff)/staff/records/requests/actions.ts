@@ -1,6 +1,7 @@
 'use server'
 
 import { getMailTransport } from '@/features/mail/transport'
+import { recordClarificationAnswer } from '@/features/rtk/clarification'
 import { denyRequest } from '@/features/rtk/denial'
 import type { ReleaseDelivery } from '@/features/rtk/releaseDelivery'
 import { type ReissueError, reissueReleaseLink } from '@/features/rtk/releaseReissue'
@@ -15,6 +16,7 @@ import { runStaffFormToday } from '@/server/formInputToday'
 import { recordsOutcome } from '@/server/recordsAction'
 import { sendLetterOutcome } from './letterSent'
 import {
+  clarificationAnswerForm,
   closeRequestForm,
   denyRequestForm,
   firstResponseForm,
@@ -25,24 +27,22 @@ import {
 } from './requestForms'
 
 export async function logRequestAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, logRequestForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await logRequest(
-        db,
-        actor,
-        {
-          receivedOn: input.receivedOn,
-          receivedVia: input.receivedVia,
-          description: input.description,
-          ...(input.requesterName === null ? {} : { requesterName: input.requesterName }),
-          ...(input.requesterContact === null ? {} : { requesterContact: input.requesterContact }),
-        },
-        signal,
-      ),
-      'Request logged.',
-      { future_date: 'receivedOn' },
-    ),
-  )
+  return await runStaffFormToday(formData, logRequestForm, async ({ db, actor, signal }, input) => {
+    const logged = await logRequest(
+      db,
+      actor,
+      {
+        receivedOn: input.receivedOn,
+        receivedVia: input.receivedVia,
+        description: input.description,
+        ...(input.requesterName === null ? {} : { requesterName: input.requesterName }),
+        ...(input.requesterContact === null ? {} : { requesterContact: input.requesterContact }),
+      },
+      signal,
+    )
+    const message = logged.ok ? `Request ${logged.value.number} logged.` : ''
+    return recordsOutcome(logged, message, { future_date: 'receivedOn' })
+  })
 }
 
 export async function firstResponseAction(formData: FormData): Promise<ActionResult> {
@@ -206,10 +206,33 @@ export async function closeRequestAction(formData: FormData): Promise<ActionResu
       await closeRequest(
         db,
         actor,
-        { requestId: input.requestId, to: input.to, expectedRowVersion: input.expectedRowVersion },
+        {
+          requestId: input.requestId,
+          to: input.to,
+          expectedRowVersion: input.expectedRowVersion,
+          ...(input.withdrawalNote === null ? {} : { withdrawalNote: input.withdrawalNote }),
+        },
         signal,
       ),
       'Request updated.',
     ),
+  )
+}
+
+export async function clarificationAnswerAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffFormToday(
+    formData,
+    clarificationAnswerForm,
+    async ({ db, actor, signal }, input) =>
+      recordsOutcome(
+        await recordClarificationAnswer(
+          db,
+          actor,
+          { requestId: input.requestId, answer: input.answer, answeredOn: input.answeredOn },
+          signal,
+        ),
+        'Answer recorded.',
+        { before_acknowledgement: 'answeredOn', future_date: 'answeredOn' },
+      ),
   )
 }

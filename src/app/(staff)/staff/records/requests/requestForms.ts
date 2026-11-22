@@ -173,4 +173,12 @@ export const closeRequestForm = z.object({
   requestId: requestIdField(),
   to: choice('how to close it', ['closed', 'withdrawn'] as const),
   expectedRowVersion: wholeNumber('the version of the request', { min: 1, max: MAX_ROW_VERSION }),
+  withdrawalNote: optionalText('how the requester withdrew', { max: 1000 }),
 })
+
+export const clarificationAnswerForm = (today: CivilDate) =>
+  z.object({
+    requestId: requestIdField(),
+    answer: requiredText('the requester answer', { max: 5000 }),
+    answeredOn: civilDate('the date of the answer', { latest: today }),
+  })

@@ -3,6 +3,7 @@ import type { RtkLetterOutcome } from '@/db/schema'
 import { costTotal, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
+import { AnswerForm } from './AnswerForm'
 
 function timelinessText(request: RtkRequestView): string | null {
   const t = request.timeliness
@@ -24,6 +25,10 @@ function acknowledgementLines(request: RtkRequestView): string[] {
   if (request.clarificationQuestion !== null) {
     lines.push(`Question for the requester: ${request.clarificationQuestion}`)
   }
+  const answeredOn = request.clarificationAnsweredOn
+  if (typeof request.clarificationAnswer === 'string' && typeof answeredOn === 'string') {
+    lines.push(`Requester answered, ${formatCivilDate(answeredOn)}: ${request.clarificationAnswer}`)
+  }
   return lines
 }
 
@@ -44,6 +49,7 @@ export function ResponseSection({ request }: { request: RtkRequestView }) {
       {acknowledgementLines(request).map((line) => (
         <p key={line}>{line}</p>
       ))}
+      <AnswerForm request={request} />
       {request.firstResponseKind === 'acknowledged' ? null : <p>{recordedLine(request)}</p>}
       {late === null ? null : <p>{late}</p>}
       {request.timeStatements.map((s) => (

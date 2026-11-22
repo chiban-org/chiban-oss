@@ -193,11 +193,12 @@ export async function recordFirstResponse(
         .where(eq(rtkRequests.id, request.id))
       const letterDocumentId = await fileRequestLetter(
         tx,
-        { store, actor, signal },
+        { store, actor, signal, now },
         {
           requestId: request.id,
           title: `Response to request ${request.number}`,
           filename: `${request.number}-response.pdf`,
+          occasion: 'response',
         },
       )
       await writeAudit(

@@ -29,20 +29,23 @@ function railData(patch: Partial<RtkRequestView>): RailData {
   return { request, plan, today: '2026-11-20' as CivilDate, canManage: false }
 }
 
-function firstResponseIn(region: HTMLElement): string {
-  const term = within(region).getByText('First response')
+function factIn(region: HTMLElement, label: string): string {
+  const term = within(region).getByText(label)
   return term.nextElementSibling?.textContent ?? ''
 }
 
-function shownResponses(patch: Partial<RtkRequestView>): string[] {
+function shownFact(patch: Partial<RtkRequestView>, label: string): string[] {
   const data = railData(patch)
   render(<RequestRail data={data} />)
-  const rail = firstResponseIn(screen.getByRole('region', { name: 'Key facts' }))
+  const rail = factIn(screen.getByRole('region', { name: 'Key facts' }), label)
   cleanup()
   render(<RequestStrip data={data} />)
-  const strip = firstResponseIn(screen.getByRole('region', { name: 'Status' }))
+  const strip = factIn(screen.getByRole('region', { name: 'Status' }), label)
+  cleanup()
   return [rail, strip]
 }
+
+const shownResponses = (patch: Partial<RtkRequestView>) => shownFact(patch, 'First response')
 
 describe('the first response fact on the rail and the compact strip', () => {
   it('pairs the response with its own date when nothing was acknowledged', () => {
@@ -52,13 +55,13 @@ describe('the first response fact on the rail and the compact strip', () => {
     ])
   })
 
-  it('dates a response after an acknowledgement from the follow-up', () => {
-    expect(
-      shownResponses({
-        acknowledgedOn: '2026-11-05' as CivilDate,
-        followUpOn: '2026-11-12' as CivilDate,
-      }),
-    ).toEqual([
+  it('shows the acknowledgement and the later response as two facts', () => {
+    const patch = {
+      acknowledgedOn: '2026-11-05' as CivilDate,
+      followUpOn: '2026-11-12' as CivilDate,
+    }
+    expect(shownFact(patch, 'Acknowledged')).toEqual(['November 5, 2026', 'November 5, 2026'])
+    expect(shownFact(patch, 'Response')).toEqual([
       'Records made available, November 12, 2026',
       'Records made available, November 12, 2026',
     ])
@@ -66,20 +69,22 @@ describe('the first response fact on the rail and the compact strip', () => {
 
   it('dates a denial after an acknowledgement from the follow-up', () => {
     expect(
-      shownResponses({
-        firstResponseKind: 'denied',
-        acknowledgedOn: '2026-11-05' as CivilDate,
-        followUpOn: '2026-11-09' as CivilDate,
-      })[0],
+      shownFact(
+        {
+          firstResponseKind: 'denied',
+          acknowledgedOn: '2026-11-05' as CivilDate,
+          followUpOn: '2026-11-09' as CivilDate,
+        },
+        'Response',
+      )[0],
     ).toBe('Denied, with the exemption cited, November 9, 2026')
   })
 
-  it('shows the acknowledgement date while no follow-up is recorded', () => {
-    expect(
-      shownResponses({
-        firstResponseKind: 'acknowledged',
-        acknowledgedOn: '2026-11-05' as CivilDate,
-      }),
-    ).toEqual(['Receipt acknowledged, November 5, 2026', 'Receipt acknowledged, November 5, 2026'])
+  it('shows only the acknowledgement while no follow-up is recorded', () => {
+    const patch = { firstResponseKind: 'acknowledged', acknowledgedOn: '2026-11-05' as CivilDate }
+    expect(shownFact(patch, 'Acknowledged')).toEqual(['November 5, 2026', 'November 5, 2026'])
+    render(<RequestRail data={railData(patch)} />)
+    expect(screen.queryByText('Response')).toBeNull()
+    expect(screen.queryByText('First response')).toBeNull()
   })
 })

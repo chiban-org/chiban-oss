@@ -1,5 +1,5 @@
 import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
-import { doc, fields, heading, para, section } from '@/features/templates/doc/build'
+import { doc, fields, heading, para, section, signature } from '@/features/templates/doc/build'
 import type { DocumentKindDef } from '@/features/templates/kinds/kindTypes'
 
 export function rtkResponseWords(words: Pick<Vocabulary, 'recordsLaw' | 'recordsRequest'>): {
@@ -41,6 +41,10 @@ export const RTK_RESPONSE_KIND: DocumentKindDef = {
   locked: [],
   defaultDoc: doc(
     fields([
+      ['Date', 'rtk.letterDate'],
+      ['To', 'rtk.requesterName'],
+    ]),
+    fields([
       ['Request number', 'rtk.number'],
       ['Received', 'rtk.receivedOn'],
       ['Your request', 'rtk.description'],
@@ -51,6 +55,7 @@ export const RTK_RESPONSE_KIND: DocumentKindDef = {
     section('rtk.released'),
     heading('Records withheld or redacted'),
     section('rtk.withheld'),
+    signature('town_clerk'),
   ),
 }
 

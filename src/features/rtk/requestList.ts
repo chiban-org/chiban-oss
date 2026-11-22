@@ -5,13 +5,16 @@ import type { Actor } from '@/features/auth/actor'
 import { anyOf, countFacets, facet, whereAll } from '@/features/dataTable/facets'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
+import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { DUE_WEEK_DAYS } from '@/features/queue/queueFilterSql'
 import { DUE_FILTERS, type DueFilter } from '@/features/queue/queueParams'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 import {
+  ACKNOWLEDGED_FILTER,
   REQUEST_SORT,
   type RequestListFilters,
   type RequestSortKey,
+  type RequestStatusFilter,
 } from '@/features/rtk/requestListParams'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate } from '@/types/civilDate'
@@ -74,10 +77,27 @@ function dueClause(value: DueFilter, today: CivilDate): SQL {
   }
 }
 
+const ACKNOWLEDGED_ONLY = sql`${rtkRequests.firstResponseKind} = 'acknowledged'`
+
+function statusClause(value: RequestStatusFilter): SQL {
+  if (value === ACKNOWLEDGED_FILTER) {
+    return sql`(${rtkRequests.status} = 'responded' and ${ACKNOWLEDGED_ONLY})`
+  }
+  if (value === 'responded') {
+    return sql`(${rtkRequests.status} = 'responded' and ${rtkRequests.firstResponseKind} is distinct from 'acknowledged')`
+  }
+  return sql`${rtkRequests.status} = ${value}`
+}
+
+export function requestStatusFilters(): RequestStatusFilter[] {
+  return acknowledgementEnabled()
+    ? ['open', ACKNOWLEDGED_FILTER, ...RTK_STATUSES.filter((s) => s !== 'open')]
+    : [...RTK_STATUSES]
+}
+
 function groupClauses(filters: RequestListFilters, today: CivilDate) {
-  const statuses = filters.statuses ?? []
   return new Map<ListGroup, SQL | undefined>([
-    ['statuses', statuses.length === 0 ? undefined : sql`${rtkRequests.status} in ${statuses}`],
+    ['statuses', anyOf((filters.statuses ?? []).map(statusClause))],
     ['due', anyOf((filters.due ?? []).map((value) => dueClause(value, today)))],
   ])
 }
@@ -150,7 +170,7 @@ export async function rtkRequestFacets(
     scope: rtkRequestVisibleTo(actor),
     others: (group: ListGroup) => listWhere(actor, input.filters, today, group),
     facets: [
-      facet('statuses', RTK_STATUSES, (status) => sql`${rtkRequests.status} = ${status}`),
+      facet('statuses', requestStatusFilters(), statusClause),
       facet('due', DUE_FILTERS, (value) => dueClause(value, today)),
     ],
   })

@@ -1,5 +1,5 @@
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
-import type { Vocabulary } from '@/features/packs/vocabulary'
+import { acknowledgementEnabled, type Vocabulary } from '@/features/packs/vocabulary'
 
 export interface Wording {
   subject: string
@@ -10,6 +10,22 @@ const NUMBER = '{{application.number}}'
 const INSPECTION_LABEL = '{{inspection.type}}'
 const DETAILS = 'Open the application for the details.'
 const REQUEST = '{{request.number}}'
+const ACKNOWLEDGEMENT_NEXT =
+  'It may ask you to clarify which records you want, and will tell you in writing when it expects to respond.'
+const ANSWER_NEXT =
+  'It will make the records available, deny the request in writing, or tell you in writing when it will answer.'
+
+export function receiptPromise(due: string): { promise: string; next: string } {
+  return acknowledgementEnabled()
+    ? { promise: `The town will acknowledge your request by ${due}.`, next: ACKNOWLEDGEMENT_NEXT }
+    : { promise: `The town will answer by ${due}.`, next: ANSWER_NEXT }
+}
+
+function receiptPromiseText(due: string): string {
+  const { promise, next } = receiptPromise(due)
+  return `${promise} ${next}`
+}
+
 function released(request: string): string {
   return `The town released records for your ${request} ${REQUEST} on {{records.releasedOn}}.`
 }
@@ -127,7 +143,7 @@ export function defaultWordingFor(
       subject: `${request} ${REQUEST} received`,
       body: [
         `The town received your ${request} on {{request.receivedOn}}. Its number is ${REQUEST}.`,
-        'The town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
+        receiptPromiseText('{{request.due}}'),
         'Keep the request number if you need to ask about it.',
       ].join('\n\n'),
     },

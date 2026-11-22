@@ -76,7 +76,10 @@ describeActionCases(h, 'logRequestAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db, written }) => {
-    expect(result).toEqual({ ok: true, message: 'Request logged.' })
+    expect(result).toEqual({
+      ok: true,
+      message: expect.stringMatching(/^Request RK-\d{4}-\d{4} logged\.$/),
+    })
     expect(written).toEqual(['application_number_counters', 'audit_log', 'rtk_requests'])
     const rows = await db.select().from(rtkRequests)
     expect(rows.at(-1)).toMatchObject({
