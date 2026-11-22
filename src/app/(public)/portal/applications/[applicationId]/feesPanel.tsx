@@ -17,7 +17,9 @@ function NoFeesYet({ view }: { view: PortalApplicationView }) {
       <p>{`No fees are due yet. From the answers saved so far, the estimated fee is ${amount}, due ${due}. Save the draft to update it.`}</p>
     )
   }
-  return <p>{`No fees are due yet. The estimated fee is ${amount}, due ${due}.`}</p>
+  return (
+    <p>{`No fees are due yet. The town sets the fee when it reviews the application. From your answers the estimate is ${amount}, due ${due}.`}</p>
+  )
 }
 
 function PayLine({ view, officeName }: { view: PortalApplicationView; officeName: string }) {

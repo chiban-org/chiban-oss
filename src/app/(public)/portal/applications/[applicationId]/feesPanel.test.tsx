@@ -54,6 +54,24 @@ describe('FeesPanel', () => {
     ).toBeTruthy()
   })
 
+  it('tells a submitted application the town sets the fee when it reviews it', () => {
+    render(
+      <FeesPanel
+        view={viewOf({
+          state: 'under_review',
+          feeEstimate: { totalCents: 35000, due: 'at_approval' },
+        })}
+        officeName="Fernhollow Permit Office"
+      />,
+    )
+    expect(
+      screen.getByText(
+        'No fees are due yet. The town sets the fee when it reviews the application. From your answers the estimate is $350.00, due when the town approves the application.',
+      ),
+    ).toBeTruthy()
+    expect(screen.queryByText(/Save the draft/)).toBeNull()
+  })
+
   it('says where to pay when the town takes no card payments online', () => {
     render(
       <FeesPanel
