@@ -135,7 +135,7 @@ describe('releases panel', () => {
     const approvals = within(screen.getByRole('list', { name: 'Approved for this request' }))
     expect(approvals.getByText('Released in release 1')).toBeTruthy()
     expect(approvals.getByText('Waiting')).toBeTruthy()
-    expect(approvals.getAllByText('Revoke approval', { selector: 'summary' })).toHaveLength(2)
+    expect(approvals.getAllByText('Revoke approval', { selector: 'summary' })).toHaveLength(1)
   })
 })
 
