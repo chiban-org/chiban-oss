@@ -2,8 +2,10 @@ import type { Db, DbOrTx } from '@/db/client'
 import { transactionResult } from '@/db/transactionResult'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
+import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { attachDocument } from '@/features/documents/attach'
+import { LETTER_PRINTED_ACTION } from '@/features/documents/evidence'
 import type { DocKind } from '@/features/documents/types'
 import { mayUploadTo } from '@/features/documents/uploadAccess'
 import { storeGeneratedBytes } from '@/features/files/ingest'
@@ -105,6 +107,17 @@ export async function printLetter(
         },
         audiences: ['project_parties'],
         isPublic: false,
+      },
+      signal,
+    )
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: LETTER_PRINTED_ACTION,
+        entityType: 'document',
+        entityId: attached.documentId,
+        after: { applicationId: input.applicationId, templateKey: template.key },
       },
       signal,
     )
