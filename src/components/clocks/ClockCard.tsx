@@ -13,24 +13,19 @@ const WHOSE: Record<ClockExplanation['whose'], string> = {
   third_party: 'Third party',
 }
 
+const SUPERSEDED_LABELS: Readonly<Record<string, string>> = {
+  cancelled_by_event: 'Replaced by a later step',
+  decided_without_hearing: 'Ended when the board decided',
+  meeting_calendar_changed: 'Replaced when the meeting changed',
+  acceptance_meeting_changed: 'Replaced when the acceptance meeting changed',
+  regional_impact_determined: 'Replaced by the regional impact determination',
+  later_certified_notice: 'Replaced by a later notice',
+}
+
 function supersededLabel(reason: string | null): string {
-  if (reason?.startsWith('rule_change:') === true) return 'Superseded by a rule change'
-  switch (reason) {
-    case 'cancelled_by_event':
-      return 'Replaced by a later step'
-    case 'decided_without_hearing':
-      return 'Ended when the board decided'
-    case 'meeting_calendar_changed':
-      return 'Replaced when the meeting changed'
-    case 'acceptance_meeting_changed':
-      return 'Replaced when the acceptance meeting changed'
-    case 'regional_impact_determined':
-      return 'Replaced by the regional impact determination'
-    case 'later_certified_notice':
-      return 'Replaced by a later notice'
-    default:
-      return 'Replaced'
-  }
+  if (reason === null) return 'Replaced'
+  if (reason.startsWith('rule_change:')) return 'Superseded by a rule change'
+  return SUPERSEDED_LABELS[reason] ?? 'Replaced'
 }
 
 function plural(n: number): string {
