@@ -12,7 +12,7 @@ import { classifiedRecords } from '@/features/records/worklistSql'
 import { getTownSettings } from '@/features/town/settings'
 import type { CivilDate } from '@/types/civilDate'
 
-export const WORKLIST_STATES = ['eligible', 'awaiting_event', 'on_hold'] as const
+export const WORKLIST_STATES = ['eligible', 'scheduled', 'awaiting_event', 'on_hold'] as const
 export type WorklistState = (typeof WORKLIST_STATES)[number]
 
 export type WorklistSortKey = 'record' | 'kind' | 'series' | 'eligible'
