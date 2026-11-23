@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { projectParties, users } from '@/db/schema'
+import { applications, decisionDeliveries, projectParties, users } from '@/db/schema'
 import { PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
+import { planDeliveries } from '@/features/decisions/delivery'
 import { loadDeliveryGroups } from '@/features/decisions/deliveryView'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { boardLabel } from '@/features/packs/vocabulary'
@@ -134,6 +135,26 @@ describe('the names on planned decision deliveries', () => {
     )
     expect(applicant?.recipientName).not.toBe(PLACEHOLDER_PARTY_NAME)
     expect(applicant?.recipientName).toBe(await applicantDisplayName())
+  })
+
+  it('names the applicant from the form ahead of the account display name', async () => {
+    const made = await decideUnderXx(handle.db, world)
+    const [app] = await handle.db
+      .select({ values: applications.values })
+      .from(applications)
+      .where(eq(applications.id, made.applicationId))
+    await handle.db
+      .update(applications)
+      .set({ values: { ...(app?.values as object), applicant_name: 'Wren Halloway' } })
+      .where(eq(applications.id, made.applicationId))
+    await handle.db
+      .delete(decisionDeliveries)
+      .where(eq(decisionDeliveries.decisionId, made.decisionId))
+    await handle.db.transaction((tx) => planDeliveries(tx, { decisionId: made.decisionId }, signal))
+    const applicant = (await deliveriesOf(handle.db, made.applicationId)).find(
+      (r) => r.recipientRole === 'applicant',
+    )
+    expect(applicant?.recipientName).toBe('Wren Halloway')
   })
 
   it('capitalises the governing body as a recipient name', async () => {

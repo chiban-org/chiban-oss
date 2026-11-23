@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { env } from '@/config/env'
 import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
+import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import { hasCapability } from '@/features/authz/capabilities'
 import { mayUseCounter } from '@/features/counter/counterAccess'
 import {
@@ -56,12 +57,15 @@ async function documentsBody(ctx: StaffContext, view: CounterIntakeView): Promis
   const record = { kind: 'application' as const, id: view.applicationId }
   const can = (capability: Parameters<typeof hasCapability>[2]) =>
     hasCapability(ctx.db, ctx.actor.userId, capability, ctx.signal)
-  const [docs, checklist, canFile, canAccept] = await Promise.all([
+  const [docs, checklist, managesDocuments, managesApplication, plumbingOwner] = await Promise.all([
     listDocuments(ctx.db, ctx.actor, { record, limit: DOCUMENT_LIMIT }, ctx.signal),
     loadDocumentChecklist(ctx.db, ctx.actor, view.applicationId, ctx.signal),
     can('document.manage'),
     can('application.manage'),
+    mayActAsPlumbingOwnerOf(ctx.db, ctx.actor, view.applicationId, ctx.signal),
   ])
+  const canFile = managesDocuments || plumbingOwner
+  const canAccept = managesApplication || plumbingOwner
   return (
     <DocumentsStep
       applicationId={view.applicationId}

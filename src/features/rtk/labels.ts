@@ -5,7 +5,7 @@ import type { CivilDate } from '@/types/civilDate'
 export const RTK_STATUS_LABELS: Record<RtkStatus, string> = {
   open: 'Open',
   responded: 'Responded',
-  awaiting_decision: 'Waiting for the date the town stated',
+  awaiting_decision: "Waiting for the town's estimated date",
   closed: 'Closed',
   withdrawn: 'Withdrawn by the requester',
 }

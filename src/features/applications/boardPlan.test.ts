@@ -121,7 +121,7 @@ describe('a board meeting set after the deadline it must meet', () => {
     expect(plan.now).toMatchObject({ key: 'board.vote', warnings: [] })
   })
 
-  it('names the hearing meeting on a zoning board application', () => {
+  it('asks a zoning board application to schedule its hearing in one step', () => {
     const zba = { ...PLANNING, boardKind: 'zba' as const }
     const hearing = {
       ...COMPLETENESS,
@@ -133,7 +133,10 @@ describe('a board meeting set after the deadline it must meet', () => {
       zba,
       extras(['set_board_meeting']),
     )
-    expect(plan.now?.task).toBe('Move the hearing meeting')
+    expect(plan.now).toMatchObject({
+      task: 'Schedule the hearing',
+      action: { kind: 'set_board_meeting' },
+    })
   })
 })
 
@@ -158,7 +161,7 @@ describe('the hearing step while a requirement before it is unmet', () => {
     expect(plan.now).toMatchObject({ key: 'abutters.list_issued', task: 'Issue the abutter list' })
     const rows = plan.groups.flatMap((g) => g.rows)
     expect(rows.find((r) => r.key === 'abutters.list_issued')?.done).toBe(false)
-    expect(rows.find((r) => r.key === 'board.vote')?.action).toBeNull()
+    expect(rows.find((r) => r.key === 'board.vote')).toBeUndefined()
   })
 
   it('puts opening the draft list in the card when the viewer may manage abutter lists', () => {
@@ -175,11 +178,12 @@ describe('the hearing step while a requirement before it is unmet', () => {
     expect(plan.now?.action).toBeNull()
   })
 
-  it('keeps the meeting row to a check, leaving the date to the board panel', () => {
-    const plan = planWork(blocked, past, extras([]))
-    expect(plan.groups[0]?.rows.find((r) => r.key === 'board.meeting')).toMatchObject({
-      done: true,
-      detail: '',
-    })
+  it('lists the hearing row after the requirement it waits on', () => {
+    const plan = planWork(blocked, past, extras(['set_board_meeting']))
+    expect(plan.now?.key).toBe('abutters.list_issued')
+    expect(plan.groups[0]?.rows.map((r) => [r.key, r.done])).toEqual([
+      ['abutters.list_issued', false],
+      ['board.meeting', false],
+    ])
   })
 })

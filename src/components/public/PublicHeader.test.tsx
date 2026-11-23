@@ -62,6 +62,7 @@ describe('PublicHeader', () => {
       'Parcels',
       'Meetings',
       'Report a problem',
+      'Right-to-Know request',
       'Apply for a permit',
     ])
     expect(

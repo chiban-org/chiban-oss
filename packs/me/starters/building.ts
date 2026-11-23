@@ -127,5 +127,5 @@ export const BUILDING_STARTER = permitStarter({
   ],
   closesOn: 'certificate_of_occupancy',
   permitDetails:
-    'Project {{project.title}}. Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}. Building code: {{codeEdition.label}}.',
+    'Work: {{application.description}}. Issued {{application.issuedOn}}, work to begin by {{application.expiresOn}}. Building code: {{codeEdition.label}}.',
 })

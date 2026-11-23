@@ -43,7 +43,8 @@ const EXISTING_OVERRIDES = {
   ],
 } as const
 
-const NEW_KEYS = WORDING_KEYS.slice(15)
+const APPLICATION_MESSAGES = 16
+const NEW_KEYS = WORDING_KEYS.slice(APPLICATION_MESSAGES)
 
 describe('saved overrides for the original messages', () => {
   it('still parse against the per-message field lists', () => {
@@ -56,7 +57,7 @@ describe('saved overrides for the original messages', () => {
   })
 
   it('keeps application fields on every original message', () => {
-    for (const key of WORDING_KEYS.slice(0, 15)) {
+    for (const key of WORDING_KEYS.slice(0, APPLICATION_MESSAGES)) {
       expect(allowedFields(key).has('application.number'), key).toBe(true)
       expect(allowedFields(key).has('applicant.name'), key).toBe(true)
       expect(allowedFields(key).has('link'), key).toBe(true)

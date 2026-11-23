@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { saveProcessorAccount } from '@/features/payments/processorAccounts'
+import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { setupPayments } from '@/test/paymentFixtures'
@@ -54,6 +55,13 @@ describe('card payments page', () => {
     expect(text).toContain('Version history')
     expect(text).not.toContain('Publish payment settings')
     expect(html).not.toContain('href="/staff/settings/payment_settings"')
+  })
+
+  it('names the town in the checks payable example', async () => {
+    const town = await getTownSettings(handle.db, new AbortController().signal)
+    if (!town.ok) throw new Error('no town settings')
+    const html = renderToStaticMarkup(await CardPaymentsPage())
+    expect(html).toContain(`for example ${town.value.name}.`)
   })
 
   it('shows the webhook address of the active account with a sentence on where it goes', async () => {

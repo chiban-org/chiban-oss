@@ -68,7 +68,7 @@ const EMPTY_COPY: Partial<Record<ConfigKind, { title: string; description: strin
   town_rule_setting: {
     title: 'No town rules are set',
     description:
-      "Until the town sets one, Chiban uses the value state law gives for each rule. Set a rule to record the town's own value and who adopted it.",
+      'Until the town sets a value, Chiban uses the starting value shown for each rule on the State law page. Check them against what the town has adopted.',
   },
   local_code_amendment: {
     title: 'No local amendments are on file',

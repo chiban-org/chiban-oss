@@ -3,6 +3,8 @@ import { allowedFields } from '@/features/templates/kinds/documentKinds'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
 import { mergeFieldLabelFor } from '@/features/templates/mergeFieldWords'
 import type { TemplateKind } from '@/features/templates/templateSchema'
+import { SIGNER_ROLES } from '@/features/town/profileSchema'
+import { signerFieldOffered } from '@/features/town/signerRoleChoices'
 
 export interface FieldGroup {
   title: string
@@ -17,6 +19,7 @@ const GROUP_OF_PREFIX: ReadonlyMap<string, string> = new Map([
   ['fees', 'Application'],
   ['conditions', 'Application'],
   ['codeEdition', 'Application'],
+  ['incomplete', 'Application'],
   ['permit', 'Application'],
   ['certificate', 'Certificate'],
   ['board', 'Meeting and notice'],
@@ -40,11 +43,12 @@ function groupOf(name: string): string {
 export function fieldGroups(
   kind: TemplateKind,
   words: Pick<Vocabulary, 'boardLabel'>,
+  signerRoles: readonly string[] = SIGNER_ROLES,
 ): FieldGroup[] {
   const allowed = allowedFields(kind)
   const groups = new Map<string, FieldGroup>()
   for (const name of MERGE_FIELDS) {
-    if (!allowed.has(name)) continue
+    if (!allowed.has(name) || !signerFieldOffered(name, signerRoles)) continue
     const title = groupOf(name)
     const group = groups.get(title) ?? { title, fields: [] }
     group.fields.push({ name, label: mergeFieldLabelFor(name, words) })

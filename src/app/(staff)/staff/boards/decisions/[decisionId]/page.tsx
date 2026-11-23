@@ -16,6 +16,7 @@ import { AppealsSection } from './AppealsSection'
 import { DecisionRail } from './DecisionRail'
 import { DeliverySection } from './DeliverySection'
 import { FilingSection } from './FilingSection'
+import { FinalApprovalSection } from './FinalApprovalSection'
 import { RecordingSection } from './RecordingSection'
 import { TransmittalSection } from './TransmittalSection'
 
@@ -44,6 +45,8 @@ function DecisionSection({ view }: { view: DecisionView }) {
               ),
           },
           { label: 'Reasons for disapproval', value: view.reasons },
+          { label: 'Significant land use decision', value: view.significantText },
+          { label: 'Last municipal approval', value: view.lastApprovalText },
         ]}
       />
     </section>
@@ -83,6 +86,12 @@ export default async function DecisionPage({
     {
       empty: !view.documentsGenerated,
       node: <NoticeOfDecisionSection key="notice" view={view} />,
+    },
+    {
+      empty: false,
+      node: view.offerLastApprovalLater ? (
+        <FinalApprovalSection key="last-approval" view={view} today={today} />
+      ) : null,
     },
     { empty: false, node: <FilingSection key="filing" view={view} today={today} /> },
     {

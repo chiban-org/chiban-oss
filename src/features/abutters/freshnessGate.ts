@@ -68,8 +68,8 @@ registerGate({
   kind: 'statutory',
   appliesTo: ['under_review'],
   boundBy: null,
+  relevantTo: (app) => needsAbutters(app.typeBody.classification),
   evaluate: async (tx, app, _today, signal) => {
-    if (!needsAbutters(app.typeBody.classification)) return { status: 'pass' }
     const list = await currentIssuedList(tx, app.id, signal)
     return list === null
       ? { status: 'blocked', reason: 'No issued abutter list.' }

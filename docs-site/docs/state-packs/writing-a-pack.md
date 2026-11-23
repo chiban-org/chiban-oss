@@ -75,7 +75,7 @@ Parts marked No are not checked by the manifest schema. They have their own test
 ```
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.9.0',
+  version: '0.10.0',
   rules: [...],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,
@@ -141,7 +141,7 @@ A town setting and the clock that reads it work as a pair. `town.bp.validity` is
 
 ## Legal features a pack can switch on
 
-Contract 0.8.0 added features that New Hampshire does not use. A pack for another state turns each one on by writing the rule, field or role described here. The New Hampshire pack leaves them all off, so its behaviour is unchanged, and the Maine pack uses most of them. The examples use the fictional state of Vellmora. The features contract 0.9.0 added follow under [Features added in contract 0.9.0](#features-added-in-contract-090).
+Contract 0.8.0 added features that New Hampshire does not use. A pack for another state turns each one on by writing the rule, field or role described here. The New Hampshire pack leaves them all off, so its behaviour is unchanged, and the Maine pack uses most of them. The examples use the fictional state of Vellmora. The features contract 0.9.0 added follow under [Features added in contract 0.9.0](#features-added-in-contract-090), and those of contract 0.10.0 under [Features added in contract 0.10.0](#features-added-in-contract-0100).
 
 ### Silence and recording consequences on a clock
 
@@ -383,6 +383,42 @@ The certification request and the completeness vote, two board steps New Hampshi
 
 The license trades include `manufacturedHousing`, which Maine's license types use for manufactured housing installers and mechanics.
 
+## Features added in contract 0.10.0
+
+Contract 0.10.0 adds the fields below. New Hampshire keeps its behaviour, except where a field carries New Hampshire's existing text, and the Maine pack sets each field to its own words. The examples use the fictional state of Vellmora.
+
+### Administrative officials
+
+`labels.administrativeOfficials` lists the titles of the town officials whose decisions can be appealed to the board that hears administrative appeals, with at least one title. The appeal wording names them: "Decisions by the permit warden or another town official that can be appealed" for Vellmora's `['permit warden']`. With two or more titles the list reads "the permit warden, land keeper or another town official". New Hampshire's list is `['building inspector', 'zoning administrator']`, the titles its wording already used, and Maine's is `['code enforcement officer']`.
+
+### Records request number prefix
+
+`labels.recordsRequestPrefix` is the prefix of a records request number, two to four capital letters. Vellmora's is `'VR'`. New Hampshire's is `'RK'` and Maine's is `'FOAA'`.
+
+### Time statement date label
+
+`labels.timeStatementDateLabel` is the label for the date in a records request time statement, the date by which the town expects to answer. Vellmora's is `'Answer expected by'`. New Hampshire's is `'Response by'`, and Maine's is `'Estimated response date (a good faith, nonbinding estimate)'`.
+
+### Portal common jobs and the building office
+
+`StatePack.portal` shapes the portal page where an applicant picks what to apply for. `commonJobs` lists the jobs shown first, each with a `key`, the prefix of the application type it opens, a `title` and a `description`. Vellmora lists one, `{ key: 'BP', title: 'Build something', description: 'A new Vellmora building.' }`. `officeClassifications` lists the classification keys grouped under the "Building office" heading, such as `['xx.building_permit', 'xx.trade_permit']`. Every key should be one of the pack's classifications, and every job's key should be the prefix of one of the pack's starters. New Hampshire's jobs are the six the portal already showed, and its office classifications are its building and trade permits. Maine lists building, demolition, plumbing, septic, shoreland and sign jobs, and its eight staff permit classifications.
+
+### Application types that need no review
+
+An application type's `workflow.reviewRequired` may be `false`, for a permit the official decides without assigning a review first. When it is left out the review step is required, as before. Every Maine staff permit starter sets it to `false`. No New Hampshire starter sets it.
+
+### Fee lines the town sets
+
+A fee line may carry `townSets: true`, which marks a line whose amount Chiban does not know and the town enters. Such a line charges nothing until the town sets an amount, and its label no longer needs a note saying so. A Vellmora line would read `{ code: 'application', label: 'Application fee', due: 'at_intake', expr: { op: 'flat', cents: 0 }, townSets: true }`. Maine's blank fee lines use it. New Hampshire's lines carry real amounts and do not.
+
+### Checklist provenance
+
+An inspection checklist may carry `provenance`, a short sentence saying where the checklist came from, shown with it so the town knows to review it. A Vellmora checklist might say `'Written by Chiban as a start. The town can change it.'`. Maine's starting checklists say "Chiban starting checklist. The town can edit it." and their labels are plain, such as "Start of work" and "Final inspection".
+
+### Appealed decision date and significance facts on a form
+
+A form question's `fact` may be `'appealedDecisionDate'`, which marks the answer as the date of the decision being appealed. Both packs tag the decision date question on their administrative appeal form with it, and a Vellmora appeal form would tag its own. A question may also set `significanceFact: true`, which shows its answer beside the significance question when staff record the decision. Maine sets it on the site plan questions about building footprint, floor area and disturbed acres, and on the subdivision lot count. In the form builder these read "Date of the decision being appealed" and "Shown beside the significance question".
+
 ## Building codes and the town building program
 
 `StatePack.buildingCodes` lists the codes a town in the state may enforce.
@@ -456,9 +492,9 @@ New Hampshire's `parcelIdFormats.ts` lists two formats, `cama15`, the 15-digit C
 
 ## Versioning
 
-Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.9.0.
+Versions exist at four levels. Adding fields to the manifest or the `StatePack` object raises the contract version, which each pack's manifest carries as its `version`. The contract is at 0.10.0.
 
-- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.9.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
+- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.10.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
 - A rule: when a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
 - A transition: to act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
 - Starters, record series and abutter parameters: each carries its own integer `version`.

@@ -73,14 +73,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
     {
       key: 'hearings',
       empty: hearingsEmpty(hearings),
-      node: (
-        <HearingsPanel
-          key="hearings"
-          data={hearings}
-          meetingOnBoard={board?.boardKind === 'zba' && board.acceptanceMeetingId !== null}
-          deadline={deadline}
-        />
-      ),
+      node: <HearingsPanel key="hearings" data={hearings} deadline={deadline} />,
     },
     {
       key: 'completeness',
@@ -90,6 +83,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           key="completeness"
           view={view}
           formElsewhere={hosted.has('mark_complete')}
+          canMarkComplete={records.canMarkComplete}
         />
       ) : null,
     },
@@ -99,7 +93,11 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
       empty: false,
       node:
         view.decisionNotice == null ? null : (
-          <DecisionNoticePanel key="decisionNotice" view={view} documents={records.documents} />
+          <DecisionNoticePanel
+            key="decisionNotice"
+            view={view}
+            documents={records.noticeDocuments}
+          />
         ),
     },
     {

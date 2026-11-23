@@ -3,10 +3,12 @@ import type { Db } from '@/db/client'
 import {
   documents,
   documentVersions,
+  redactionJobs,
   renditionApprovals,
   rtkReleaseItems,
   rtkReleaseLinks,
   rtkReleases,
+  rtkRequests,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
@@ -24,12 +26,32 @@ const RECORD_KIND_LABELS: Record<string, string> = {
   meeting: 'Board meeting',
 }
 
+export interface MadeFor {
+  requestId: string
+  number: string
+}
+
+function madeForOf(row: {
+  madeForId: string | null
+  madeForNumber: string | null
+}): MadeFor | null {
+  return row.madeForId === null || row.madeForNumber === null
+    ? null
+    : { requestId: row.madeForId, number: row.madeForNumber }
+}
+
 export interface ReleaseCandidate {
   documentId: string
   title: string
   context: string
   originalVersionId: string | null
-  versions: { id: string; role: string; filename: string; createdAt: string }[]
+  versions: {
+    id: string
+    role: string
+    filename: string
+    createdAt: string
+    madeFor?: MadeFor | null
+  }[]
 }
 
 export interface RequestApproval {
@@ -43,6 +65,7 @@ export interface RequestApproval {
   versionCreatedAt: Date
   releasedIn: number | null
   cited: boolean
+  madeFor?: MadeFor | null
 }
 
 export interface ReleaseSummary {
@@ -103,8 +126,12 @@ export async function loadReleaseCandidates(
       role: documentVersions.role,
       filename: documentVersions.filename,
       createdAt: documentVersions.createdAt,
+      madeForId: rtkRequests.id,
+      madeForNumber: rtkRequests.number,
     })
     .from(documentVersions)
+    .leftJoin(redactionJobs, eq(redactionJobs.resultVersionId, documentVersions.id))
+    .leftJoin(rtkRequests, eq(rtkRequests.id, redactionJobs.rtkRequestId))
     .where(
       and(
         inArray(
@@ -128,13 +155,17 @@ export async function loadReleaseCandidates(
         .filter((x) => x !== null)
         .join(' '),
       originalVersionId: own.find((v) => v.role === 'original')?.id ?? null,
-      versions: own.map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
+      versions: own.map(({ createdAt, madeForId, madeForNumber, ...v }) => ({
+        ...v,
+        createdAt: createdAt.toISOString(),
+        madeFor: madeForOf({ madeForId, madeForNumber }),
+      })),
     }
   })
 }
 
 export async function loadRequestApprovals(db: Db, requestId: string): Promise<RequestApproval[]> {
-  return await db
+  const rows = await db
     .select({
       approvalId: renditionApprovals.id,
       documentId: renditionApprovals.documentId,
@@ -146,10 +177,14 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       versionCreatedAt: documentVersions.createdAt,
       releasedIn: RELEASED_IN,
       cited: CITED,
+      madeForId: rtkRequests.id,
+      madeForNumber: rtkRequests.number,
     })
     .from(renditionApprovals)
     .innerJoin(documents, eq(documents.id, renditionApprovals.documentId))
     .innerJoin(documentVersions, eq(documentVersions.id, renditionApprovals.versionId))
+    .leftJoin(redactionJobs, eq(redactionJobs.resultVersionId, documentVersions.id))
+    .leftJoin(rtkRequests, eq(rtkRequests.id, redactionJobs.rtkRequestId))
     .where(
       and(
         eq(renditionApprovals.purpose, 'rtk_release'),
@@ -157,6 +192,10 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       ),
     )
     .orderBy(asc(renditionApprovals.approvedAt))
+  return rows.map(({ madeForId, madeForNumber, ...row }) => ({
+    ...row,
+    madeFor: madeForOf({ madeForId, madeForNumber }),
+  }))
 }
 
 async function linkOf(

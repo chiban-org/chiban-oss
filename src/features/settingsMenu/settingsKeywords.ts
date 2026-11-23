@@ -25,7 +25,7 @@ export const SETTINGS_KEYWORDS: ReadonlyMap<string, string> = new Map([
   ['/staff/settings/town_rule_setting', 'rules policy expiration thresholds'],
   ['/staff/settings/local_code_amendment', 'local amendments building code changes'],
   ['/staff/settings/building_program', 'building permits enabled issue code residents threshold'],
-  ['/staff/settings/state-law', 'statute rsa citation rules policy'],
+  ['/staff/settings/state-law', 'statute rsa citation rules policy holiday holidays calendar'],
   ['/staff/settings/code-editions', 'ibc irc energy code edition adoption date'],
   [
     '/staff/settings/sections',

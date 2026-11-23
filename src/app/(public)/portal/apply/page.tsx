@@ -5,6 +5,7 @@ import { parcels } from '@/db/schema'
 import { activeHoldFor, HELD_PARCEL_COPY } from '@/features/enforcement/holdReads'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { officeNameOf } from '@/features/pdf/officeName'
 import { listPortalTypes, RETIRED_PARCEL_COPY } from '@/features/portal/drafts'
 import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { requirePortalContext } from '@/server/requirePortal'
@@ -49,10 +50,7 @@ async function TypeStep({ parcelId }: { parcelId: string }) {
         <>
           <p className="m-0 text-lg">{where}</p>
           <TypePicker parcelId={parcelId} grouped={groupPortalTypes(types)} />
-          <OfficeLine
-            officeName={profile?.officeName ?? 'land use office'}
-            phone={profile?.phone ?? ''}
-          />
+          <OfficeLine officeName={officeNameOf(profile)} phone={profile?.phone ?? ''} />
         </>
       )}
       <Link href="/portal/apply" className={LINK}>

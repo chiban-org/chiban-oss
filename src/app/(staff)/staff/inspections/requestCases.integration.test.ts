@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { inspections } from '@/db/schema'
+import { requestableTypes } from '@/features/inspections/eligibility'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
 import {
   checklistIdFor,
@@ -35,6 +36,7 @@ vi.mock('@/features/town/today', async (original) => ({
 }))
 
 const { requestInspectionAction } = await import('./actions')
+const { loadTakeRequest } = await import('./takeRequest')
 
 const h = actionHarness()
 let w: InspectionWorld
@@ -150,5 +152,23 @@ describe('inspection request sweep findings', () => {
     expect(await request({ channel: 'portal' })).toEqual(
       refuseField('channel', 'Choose how the request came in.'),
     )
+  })
+})
+
+describe('taking the final inspection request from the closing step', () => {
+  async function offered(final: boolean) {
+    const permit = await newIssuedPermit(h.db, w, 'EL')
+    const ctx = { db: h.db, actor: await h.actorFor('staff'), signal: new AbortController().signal }
+    const data = await loadTakeRequest(ctx, permit.number, '', final)
+    const finals = await requestableTypes(h.db, permit.applicationId, ctx.signal)
+    const finalIds = new Set(finals.filter((t) => t.final).map((t) => t.checklistVersionId))
+    return data.offered.map((t) => finalIds.has(t.checklistVersionId))
+  }
+
+  it('offers the final checklist first when the link asks for the final', async () => {
+    const asked = await offered(true)
+    expect(asked[0]).toBe(true)
+    expect(asked.length).toBeGreaterThan(1)
+    expect((await offered(false))[0]).toBe(false)
   })
 })

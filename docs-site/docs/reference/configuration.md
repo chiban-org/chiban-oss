@@ -105,9 +105,9 @@ The SMTP server outgoing mail is sent through, as a URL such as `smtp://user:pas
 
 ### `MAIL_FROM`
 
-Optional. Default: `Town of Alder Pond <noreply@alderpond.example>`. Text, at least 3 characters.
+Optional. No default. Text, at least 3 characters.
 
-The sender of every email Chiban sends, including calendar invitations.
+The sender of every email Chiban sends, including calendar invitations. Leave it unset to send as the town, from `noreply@` followed by the host of `BASE_URL`. An address with no name is sent under the town name. A value that includes a display name, such as `Town of Fernhollow <permits@example.org>`, is used as written.
 
 ## Object storage
 

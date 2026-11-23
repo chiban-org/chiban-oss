@@ -75,7 +75,7 @@ function Group({
 }
 
 export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
-  const { vocabulary } = usePackText()
+  const { vocabulary, signerRoles } = usePackText()
   const insert = (content: JSONContent) => editor.chain().focus().insertContent(content).run()
   const def = documentKind(kind)
   const blocks: [string, LucideIcon, JSONContent][] = [
@@ -124,7 +124,7 @@ export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
           ))}
         </Group>
       )}
-      {fieldGroups(kind, vocabulary).map((group) => (
+      {fieldGroups(kind, vocabulary, signerRoles).map((group) => (
         <Group key={group.title} title={`Merge fields: ${group.title}`}>
           {group.fields.map((field) => (
             <InsertButton

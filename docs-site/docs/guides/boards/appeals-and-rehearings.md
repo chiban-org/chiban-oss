@@ -54,12 +54,16 @@ A granted rehearing is held like any other hearing. Open the application, go to 
 
 A decision by the building inspector, zoning administrator or another town official is not a board vote, so it has no decision page. It can still be appealed to the Zoning Board, and the appeal has its own time limit. Open **Boards**, then **Appeals**. The page lists every administrative decision recorded, with the application, its type, the date decided, and where the appeal stands: "Not appealed. The appeal window ends" followed by a date, the same with "ended" once it has passed, or "Appealed to the Zoning Board on" a date. The length of the window and how Chiban counts it are in [New Hampshire deadlines and holidays](../../state-packs/new-hampshire/deadlines.mdx), under appeals.
 
+Most entries here are made for you. When staff approve or deny an application, or a permit is issued straight from submitted, Chiban adds the decision to this list with the date. Record one by hand only for a decision that was not made in Chiban.
+
 ### Record the decision
 
 1. Select **Record an administrative decision**.
 2. Enter the **Application or permit number**, as it appears on the application, for example BP-2027-0001. If no application has that number, Chiban says "No application or permit has that number."
 3. Enter the **Date of the decision**. It cannot be in the future.
 4. Select **Record the decision**.
+
+Chiban refuses a date before the application was received ("The date cannot be before the application was received."). It also refuses an application a board decides ("That application is decided by a board, so its decision is recorded from the board's vote."), since that decision is recorded from the hearing.
 
 Chiban opens that application's appeals page. Record a decision when someone may appeal it, since recording it starts the appeal window.
 
@@ -74,6 +78,8 @@ Select the application number on the list, or use the page Chiban opened, and op
 - **Result, for a Zoning Board or rehearing decision.** Choose **Appeal granted**, **Denied** or **Rehearing granted**, or leave it as **Not applicable**.
 
 Select **Record the step**. An appeal filed after the window ended is still recorded, and is marked **Filed late**.
+
+When an application for an appeal to the Zoning Board comes in after the window has closed, the application shows the warning "Filed after the appeal window closed on" followed by the date. The warning does not stop the application. It works from the date of the decision being appealed, which the applicant gives on the form.
 
 ### An appealed permit is suspended
 

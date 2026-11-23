@@ -15,7 +15,7 @@ generated_from:
 
 - **Type:** Building permit. No board hears it. Numbers start with BP.
 - **Fees:**
-  - Building permit fee (Set your fee): no charge.
+  - Building permit fee: no charge.
 - **Documents the applicant provides:**
   - Plot plan (to file)
   - Construction drawings to scale (to file)
@@ -84,8 +84,8 @@ generated_from:
 - **Documents the applicant provides:**
   - Information on the existing wastewater disposal system (to file, when it applies)
 - **Inspections:**
-  - Start of work (Chiban starting checklist, the town can edit it)
-  - Final inspection (Chiban starting checklist, the town can edit it)
+  - Start of work
+  - Final inspection
 - **Deadlines Chiban tracks:**
   - Work must begin within 24 months
 
@@ -95,8 +95,8 @@ generated_from:
 
 - **Type:** Subdivision. The Planning Board decides it. Numbers start with SUB.
 - **Fees:**
-  - Application fee (Set your fee): no charge.
-  - Receipt notice mailed to abutters (Set your fee): $0 per abutter on the notice list. Due with notice.
+  - Application fee: no charge.
+  - Receipt notice mailed to abutters: $0 per abutter on the notice list. Due with notice.
 - **Documents the applicant provides:**
   - Subdivision plan (to file)
   - Copy of the deed (to file)
@@ -119,8 +119,8 @@ generated_from:
 
 - **Type:** Site plan review. The Planning Board decides it. Numbers start with SPR.
 - **Fees:**
-  - Application fee (Set your fee): no charge.
-  - Mailed notice to abutters (Set your fee): $0 per abutter on the notice list. Due with notice.
+  - Application fee: no charge.
+  - Mailed notice to abutters: $0 per abutter on the notice list. Due with notice.
 - **Documents the applicant provides:**
   - Site plan (to file)
   - Project narrative (to file)
@@ -139,8 +139,8 @@ generated_from:
 
 - **Type:** Variance. The Board of Appeals decides it. Numbers start with VAR.
 - **Fees:**
-  - Application fee (Set your fee): no charge.
-  - Mailed notice to abutters (Set your fee): $0 per abutter on the notice list. Due with notice.
+  - Application fee: no charge.
+  - Mailed notice to abutters: $0 per abutter on the notice list. Due with notice.
 - **Documents the applicant provides:**
   - Site sketch with lot lines, buildings and setbacks (to file)
   - Copy of the last recorded deed (to file)
@@ -157,8 +157,8 @@ generated_from:
 
 - **Type:** Administrative appeal. The Board of Appeals decides it. Numbers start with AA.
 - **Fees:**
-  - Application fee (Set your fee): no charge.
-  - Mailed notice to abutters (Set your fee): $0 per abutter on the notice list. Due with notice.
+  - Application fee: no charge.
+  - Mailed notice to abutters: $0 per abutter on the notice list. Due with notice.
 - **Documents the applicant provides:**
   - Copy of the decision appealed (to file)
 - **Deadlines Chiban tracks:**
@@ -175,13 +175,13 @@ generated_from:
 
 - **Type:** Shoreland permit. No board hears it. Numbers start with SLZ.
 - **Fees:**
-  - Shoreland permit fee (Set your fee): no charge.
+  - Shoreland permit fee: no charge.
 - **Documents the applicant provides:**
   - Site plan (to file)
   - Owner authorization (to file, when it applies)
 - **Inspections:**
-  - Start of work (Chiban starting checklist, the town can edit it)
-  - Final inspection (Chiban starting checklist, the town can edit it)
+  - Start of work
+  - Final inspection
 - **Deadlines Chiban tracks:**
   - Shoreland permit decision date
   - Shoreland permit expires without a substantial start
@@ -190,7 +190,7 @@ generated_from:
 
 - **Type:** Land use permit. No board hears it. Numbers start with LU.
 - **Fees:**
-  - Land use permit fee (Set your fee): no charge.
+  - Land use permit fee: no charge.
 - **Documents the applicant provides:**
   - Plot plan (to file)
   - Owner authorization (to file, when it applies)
@@ -201,7 +201,7 @@ generated_from:
 
 - **Type:** Demolition permit. No board hears it. Numbers start with DEM.
 - **Fees:**
-  - Demolition permit fee (Set your fee): no charge.
+  - Demolition permit fee: no charge.
 - **Documents the applicant provides:**
   - Site sketch showing the structure to be removed (to file)
   - Owner authorization (to file, when it applies)
@@ -214,7 +214,7 @@ generated_from:
 
 - **Type:** Sign permit. No board hears it. Numbers start with SG.
 - **Fees:**
-  - Sign permit fee (Set your fee): no charge.
+  - Sign permit fee: no charge.
 - **Documents the applicant provides:**
   - Scaled drawing of the sign (to file)
   - Site sketch with setbacks (to file)

@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications, inspections, projectParties } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { itemTarget } from '@/features/applications/documentItemAccess'
+import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { DocKind, RecordRef } from '@/features/documents/types'
@@ -89,6 +90,18 @@ async function mayUploadToCase(db: DbOrTx, actor: Actor, signal: AbortSignal): P
   )
 }
 
+async function staffMayUpload(
+  db: DbOrTx,
+  actor: Actor,
+  target: RecordRef,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (await hasCapability(db, actor.userId, 'document.manage', signal)) return true
+  return (
+    target.kind === 'application' && (await mayActAsPlumbingOwnerOf(db, actor, target.id, signal))
+  )
+}
+
 export async function mayUploadTo(
   db: DbOrTx,
   actor: Actor,
@@ -112,7 +125,7 @@ export async function mayUploadTo(
     return await hasCapability(db, actor.userId, 'rtk.manage', signal)
   if (target.kind === 'meeting')
     return await hasCapability(db, actor.userId, 'board.record', signal)
-  if (await hasCapability(db, actor.userId, 'document.manage', signal)) return true
+  if (await staffMayUpload(db, actor, target, signal)) return true
   if (target.kind === 'parcel' || hasFullRecordAccess(actor)) return false
   if (target.kind === 'project') {
     return (

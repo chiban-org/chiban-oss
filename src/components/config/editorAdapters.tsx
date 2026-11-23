@@ -108,9 +108,11 @@ export function ChecklistAdapter({ body, onChange, issues }: EditorProps) {
 }
 
 export function PaymentAdapter({ body, onChange, issues }: EditorProps) {
+  const { townName } = useEditorContext()
   return (
     <PaymentSettingsEditor
       body={body as PaymentSettingsBody}
+      townName={townName ?? ''}
       onChange={onChange}
       errors={errorsOf(issues)}
     />
@@ -171,12 +173,14 @@ export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) 
 }
 
 export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
-  const { boards, townBuffer } = useEditorContext()
+  const { boards, townBuffer, filingLeadPackDays, projectionSupported } = useEditorContext()
   return (
     <BoardSettingsEditor
       body={body as BoardSettingsBody}
       boards={boards}
       townBuffer={townBuffer}
+      filingLeadPackDays={filingLeadPackDays}
+      projectionSupported={projectionSupported}
       onChange={onChange}
       errors={errorsOf(issues)}
     />

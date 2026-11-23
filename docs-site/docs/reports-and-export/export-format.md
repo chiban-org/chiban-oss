@@ -417,6 +417,7 @@ File: `data/applications.ndjson`. Ordered by id.
 - `decided_on`: date, nullable
 - `issued_on`: date, nullable
 - `closure_reason`: text, nullable
+- `decision_reason`: text, nullable
 - `permit_revision`: integer
 - `permit_corrected_on`: date, nullable
 - `applicability`: jsonb, nullable
@@ -1523,6 +1524,22 @@ File: `data/import_runs.ndjson`. Ordered by id.
 - `report`: jsonb, nullable
 - `error`: text, nullable
 
+### incomplete_notices
+
+File: `data/incomplete_notices.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `sent_on`: date
+- `reason`: text
+- `document_id`: uuid, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `document_id` refers to `documents`
+
 ### inspection_item_results
 
 File: `data/inspection_item_results.ndjson`. Ordered by inspection_id, item_key.
@@ -2587,8 +2604,11 @@ File: `data/rtk_requests.ndjson`. Ordered by id.
 - `first_response_url`: text, nullable
 - `acknowledged_on`: date, nullable
 - `clarification_question`: text, nullable
+- `clarification_answer`: text, nullable
+- `clarification_answered_on`: date, nullable
 - `follow_up_on`: date, nullable
 - `denied_on`: date, nullable
+- `withdrawal_note`: text, nullable
 - `created_by`: uuid, nullable
 - `created_at`: timestamp with time zone
 - `row_version`: integer
@@ -2765,6 +2785,9 @@ File: `data/violation_notices.ndjson`. Ordered by id.
 - `received_on`: date, nullable
 - `receipt_basis`: text, nullable
 - `document_id`: uuid, nullable
+- `recipient_name`: text, nullable
+- `recipient_address`: text, nullable
+- `correct_by`: date, nullable
 
 References:
 - `case_id` refers to `enforcement_cases`

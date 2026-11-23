@@ -1,5 +1,6 @@
 import type { PackText } from '@/features/packs/packText'
 import type { BoardKind } from '@/features/packs/schema/boards'
+import { SIGNER_ROLES } from '@/features/town/profileSchema'
 
 const BOARD_WORDS: Readonly<Record<BoardKind, string>> = {
   planning_board: 'Planning Board',
@@ -15,9 +16,12 @@ const BOARD_WORDS: Readonly<Record<BoardKind, string>> = {
 
 export const NEUTRAL_PACK_TEXT: PackText = {
   signerRoleLabels: {},
+  signerRoles: SIGNER_ROLES,
   lockedTexts: {},
   environmentalAgency: 'State environmental agency',
   receiptNotices: false,
+  significanceQuestion: false,
+  recordsAcknowledgement: false,
   vocabulary: {
     recordsLaw: 'Public Records',
     recordsRequest: 'Public Records request',

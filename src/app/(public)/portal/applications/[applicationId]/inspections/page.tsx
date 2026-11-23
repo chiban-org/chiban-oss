@@ -13,6 +13,7 @@ import {
 } from '@/features/inspections/portalInspections'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { contactDefaults } from '@/features/portal/contactDefaults'
 import { portalInspectionLabel } from '@/features/portal/inspectionLabel'
 import { formatWeekdayMonthDay } from '@/lib/formatDate'
@@ -79,7 +80,15 @@ function HistoryItem(props: {
   )
 }
 
-function Notices({ view, offered }: { view: PortalInspectionsView; offered: boolean }) {
+function Notices({
+  view,
+  offered,
+  officeName,
+}: {
+  view: PortalInspectionsView
+  offered: boolean
+  officeName: string
+}) {
   if (view.paused) {
     return (
       <p role="status" className="rounded-md border border-hairline px-3 py-2">
@@ -89,7 +98,7 @@ function Notices({ view, offered }: { view: PortalInspectionsView; offered: bool
   }
   if (!view.requestsEnabled) {
     return (
-      <p role="status">{`Online requests are turned off. Call the land use office: ${view.phoneHoursText}.`}</p>
+      <p role="status">{`Online requests are turned off. Call the ${officeName}: ${view.phoneHoursText}.`}</p>
     )
   }
   if (view.canRequest && !offered) {
@@ -120,6 +129,7 @@ export default async function PortalInspectionsPage({
     ? await findReinspectionTarget(ctx.db, ctx.actor, applicationId, reinspect, ctx.signal)
     : null
   const offered = reinspection !== null || view.types.length > 0
+  const officeName = await loadOfficeName(ctx.db, ctx.signal)
   return (
     <main className="flex flex-col gap-6">
       <PageHeader
@@ -130,7 +140,7 @@ export default async function PortalInspectionsPage({
         }
         title={`Inspections for ${view.number}`}
       />
-      <Notices view={view} offered={offered} />
+      <Notices view={view} offered={offered} officeName={officeName} />
       <section aria-label="Your inspections">
         <h2>Your inspections</h2>
         {view.history.length === 0 ? <p>No inspections have been requested.</p> : null}

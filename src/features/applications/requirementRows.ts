@@ -110,6 +110,15 @@ export interface ClosureFacts {
   stage: ClosureStage
   reinspectId: string | null
   dueFinal: boolean
+  finalLabel?: string | null
+}
+
+const NAMES_THE_FINAL = /\bfinal\b/i
+
+function bookingTask(finalLabel: string | null | undefined): string {
+  return finalLabel == null || NAMES_THE_FINAL.test(finalLabel)
+    ? 'Book the final inspection'
+    : `Book the inspection: ${finalLabel}`
 }
 
 export interface RowFacts {
@@ -141,7 +150,7 @@ function closingCopy(copy: GateCopy, closure: ClosureFacts): GateCopy {
     case 'none':
       return {
         ...copy,
-        task: 'Book the final inspection',
+        task: bookingTask(closure.finalLabel),
         actor: 'town',
         action: 'take_inspection_request',
       }

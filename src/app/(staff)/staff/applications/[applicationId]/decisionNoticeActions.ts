@@ -16,6 +16,8 @@ const DECISION_NOTICE_FORM = z.object({
 const REFUSALS: Readonly<Record<string, string>> = {
   already_recorded: 'A written decision notice is already recorded for this application.',
   document_not_found: 'Choose a document filed on this application.',
+  not_a_decision_document:
+    'Choose the decision letter or a decision document filed by town staff. The application snapshot, the permit, and documents the applicant or the public sent in cannot be the written decision.',
   not_found: 'This application is no longer on the list. Reload the page.',
   no_decision: 'Record the decision before its written notice.',
 }

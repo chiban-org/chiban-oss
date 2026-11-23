@@ -1,8 +1,10 @@
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications, projects, relianceLinks } from '@/db/schema'
+import { loadApplicationContext } from '@/features/applications/context'
+import { classificationOfApplication } from '@/features/decisions/hearingOptional'
 import { varianceValidity } from '@/features/decisions/recording'
-import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import { recordingIsRequired, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import { packRoles } from '@/features/packs/roles'
 import { latestDecisions } from '@/features/parcels/boardOutcomes'
 import { APPROVING_OUTCOMES } from '@/features/parcels/openGroups'
@@ -19,6 +21,8 @@ export async function loadRelianceView(
   signal: AbortSignal,
 ): Promise<RelianceView | null> {
   if (packRoles().gates.varianceRecorded === null) return null
+  const app = await loadApplicationContext(db, applicationId, signal)
+  if (app === null || recordingIsRequired(classificationOfApplication(app))) return null
   const links = await db
     .select({ id: applications.id, number: applications.number })
     .from(relianceLinks)

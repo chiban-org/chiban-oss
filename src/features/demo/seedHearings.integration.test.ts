@@ -160,7 +160,14 @@ describe('hearing demo data', () => {
     const page = await listMeetingTable(
       handle.db,
       await actorFor(handle.db, 'staff', signal),
-      { ...readMeetingListView({}, boardIds), boardIds, today: '2026-11-01', limit: 50, offset: 0 },
+      {
+        ...readMeetingListView({}, boardIds),
+        boardIds,
+        today: '2026-11-01',
+        nowMinute: 0,
+        limit: 50,
+        offset: 0,
+      },
       signal,
     )
     const nov12 = page?.rows.find((r) => r.meetingDate === '2026-11-12')

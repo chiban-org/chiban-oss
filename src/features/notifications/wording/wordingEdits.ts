@@ -9,7 +9,11 @@ import type {
   NotificationWordingBody,
   WordingOverrides,
 } from '@/features/notifications/wording/wordingSchema'
-import { packVocabulary } from '@/features/packs/vocabulary'
+import { acknowledgementEnabled, packVocabulary } from '@/features/packs/vocabulary'
+
+function packWords() {
+  return { ...packVocabulary(), recordsAcknowledgement: acknowledgementEnabled() }
+}
 
 export {
   insertField,
@@ -18,11 +22,11 @@ export {
 } from '@/features/notifications/wording/wordingChanges'
 
 export function wordingFor(key: WordingKey, overrides: WordingOverrides | undefined): Wording {
-  return wordingForIn(key, overrides, packVocabulary())
+  return wordingForIn(key, overrides, packWords())
 }
 
 export function currentWording(body: NotificationWordingBody, key: WordingKey): Wording {
-  return currentWordingIn(body, key, packVocabulary())
+  return currentWordingIn(body, key, packWords())
 }
 
 export function withWording(
@@ -30,5 +34,5 @@ export function withWording(
   key: WordingKey,
   change: Partial<Wording>,
 ): NotificationWordingBody {
-  return withWordingIn(body, key, change, packVocabulary())
+  return withWordingIn(body, key, change, packWords())
 }

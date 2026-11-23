@@ -5,16 +5,19 @@ import { z } from 'zod'
 import { users } from '@/db/schema'
 import { recordId } from '@/features/input/schemas'
 import { startOnlinePayment } from '@/features/payments/startPayment'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { parseForm } from '@/server/formInput'
 import { withPortalActor } from '@/server/portalAction'
 
 export type PaymentResponse = { ok: true; redirectUrl: string } | { ok: false; error: string }
 
-const PAY_COPY = {
-  not_found: 'You cannot pay for this application.',
-  nothing_due: 'Nothing is due right now.',
-  not_configured: 'Online payment is not set up yet. Ask the land use office.',
-} as const
+function payCopy(officeName: string) {
+  return {
+    not_found: 'You cannot pay for this application.',
+    nothing_due: 'Nothing is due right now.',
+    not_configured: `Online payment is not set up yet. Ask the ${officeName}.`,
+  } as const
+}
 
 const PayForm = z.object({ applicationId: recordId('an application') })
 
@@ -41,7 +44,8 @@ export async function startPaymentAction(formData: FormData): Promise<PaymentRes
         signal,
       )
       if (started.ok) return { ok: true, redirectUrl: started.value.redirectUrl }
-      const known = typeof started.error === 'string' ? PAY_COPY[started.error] : undefined
+      const office = await loadOfficeName(db, signal)
+      const known = typeof started.error === 'string' ? payCopy(office)[started.error] : undefined
       return { ok: false, error: known ?? 'The payment service had a problem. Try again later.' }
     },
   )

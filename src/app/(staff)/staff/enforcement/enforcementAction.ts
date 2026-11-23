@@ -32,6 +32,11 @@ const COPY: Record<string, string> = {
   deadline_before_issue: 'The corrective action deadline is before the issue date.',
   notice_required:
     'Send the notice of violation first. An order can be issued only after the notice of violation is sent.',
+  counsel_notice_required:
+    'Send a notice of violation or a cure notice before referring the case to counsel.',
+  hold_active: 'Release the enforcement hold before resolving or closing the case.',
+  case_closed: 'This case is closed, so this can no longer be changed.',
+  stay_not_applicable: 'An appeal does not stop enforcement here, so there is nothing to record.',
   stayed:
     'Enforcement is stayed by an appeal. Notes, photos, service, and answers can still be recorded.',
   order_not_active:

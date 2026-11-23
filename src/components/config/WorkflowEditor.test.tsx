@@ -38,6 +38,14 @@ function hiddenBody(): { workflow: ApplicationTypeBody['workflow'] } {
 }
 
 describe('WorkflowEditor', () => {
+  it('shows the reviewer sign-off box checked when the field is absent and writes false when cleared', () => {
+    renderEditor(boardTypeBody('nh.zba_variance', 'VAR', 'VAR'), PERMIT)
+    const box = screen.getByLabelText('A reviewer must sign off before the decision')
+    expect(box.getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(box)
+    expect(hiddenBody().workflow.reviewRequired).toBe(false)
+  })
+
   it('lists the steps under each state', () => {
     renderEditor(variance())
     expect(

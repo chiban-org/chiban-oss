@@ -108,9 +108,17 @@ export function ReceiptForm({
   )
 }
 
+const RECORD_NOTICE_NOTE = 'Chiban makes the notice PDF. Send it yourself, then record how it went.'
+
 export function SendNoticeForm({ detail, variant }: { detail: CaseDetail; variant: Variant }) {
+  const owner = detail.parcelOwner ?? null
   return (
-    <ActionForm action={sendNoticeAction} submitLabel="Send notice of violation" variant={variant}>
+    <ActionForm
+      action={sendNoticeAction}
+      submitLabel="Record notice of violation"
+      submitNote={RECORD_NOTICE_NOTE}
+      variant={variant}
+    >
       <Hidden name="caseId" value={detail.staff.row.id} />
       <FindingChoices
         legend="Findings to include"
@@ -118,6 +126,13 @@ export function SendNoticeForm({ detail, variant }: { detail: CaseDetail; varian
       />
       <TextField label="Date sent" name="sentOn" type="date" defaultValue={detail.today} required />
       <SelectField label="How it was sent" name="method" options={METHODS} />
+      <TextField label="Recipient name" name="recipientName" defaultValue={owner?.name ?? ''} />
+      <TextField
+        label="Recipient mailing address"
+        name="recipientAddress"
+        defaultValue={owner?.mailingAddress ?? ''}
+      />
+      <TextField label="Correct the violation by" name="correctBy" type="date" />
     </ActionForm>
   )
 }

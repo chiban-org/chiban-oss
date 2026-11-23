@@ -16,11 +16,13 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { recordSystemEvent } from '@/features/records/recordEvents'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 import { rtkDueContext } from '@/features/rtk/dueContext'
+import { requestCompletedOn } from '@/features/rtk/requestCompletion'
 import { firstResponseTimeliness, type RtkTimeliness } from '@/features/rtk/timeliness'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, civilYear, daysBetween } from '@/types/civilDate'
@@ -91,7 +93,11 @@ export async function insertRequest(
   signal: AbortSignal,
 ): Promise<{ requestId: string; number: string; due: CivilDate }> {
   const due = computeSubjectDue(responseRule(), value.receivedOn, rtkDueContext())
-  const number = await nextNumber(tx, 'RK', civilYear(value.receivedOn))
+  const number = await nextNumber(
+    tx,
+    activePack().labels.recordsRequestPrefix,
+    civilYear(value.receivedOn),
+  )
   const [row] = await tx
     .insert(rtkRequests)
     .values({
@@ -137,6 +143,10 @@ export interface RtkRequestView {
   firstResponseUrl: string | null
   acknowledgedOn: CivilDate | null
   clarificationQuestion: string | null
+  clarificationAnswer: string | null
+  clarificationAnsweredOn: CivilDate | null
+  withdrawalNote: string | null
+  completedOn: CivilDate | null
   followUpOn: CivilDate | null
   deniedOn: CivilDate | null
   rowVersion: number
@@ -192,6 +202,10 @@ export async function rtkRequestView(
     firstResponseUrl: row.firstResponseUrl,
     acknowledgedOn: row.acknowledgedOn as CivilDate | null,
     clarificationQuestion: row.clarificationQuestion,
+    clarificationAnswer: row.clarificationAnswer,
+    clarificationAnsweredOn: row.clarificationAnsweredOn as CivilDate | null,
+    withdrawalNote: row.withdrawalNote,
+    completedOn: await requestCompletedOn(db, row, signal),
     followUpOn: row.followUpOn as CivilDate | null,
     deniedOn: row.deniedOn as CivilDate | null,
     rowVersion: row.rowVersion,
@@ -202,10 +216,20 @@ export async function rtkRequestView(
   })
 }
 
+function noteOf(note: string | undefined): string | null {
+  const trimmed = note?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
 export async function closeRequest(
   db: Db,
   actor: Actor,
-  input: { requestId: string; to: 'closed' | 'withdrawn'; expectedRowVersion: number },
+  input: {
+    requestId: string
+    to: 'closed' | 'withdrawn'
+    expectedRowVersion: number
+    withdrawalNote?: string
+  },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<Result<void, 'forbidden' | 'not_found' | 'stale_version' | 'already_closed'>> {
@@ -221,11 +245,17 @@ export async function closeRequest(
     if (row === undefined) return err('not_found')
     if (row.rowVersion !== input.expectedRowVersion) return err('stale_version')
     if (row.status === 'closed' || row.status === 'withdrawn') return err('already_closed')
+    const note = input.to === 'withdrawn' ? noteOf(input.withdrawalNote) : null
+    const today = await townToday(tx, now, signal)
     await tx
       .update(rtkRequests)
-      .set({ status: input.to, openDueOn: null, rowVersion: row.rowVersion + 1 })
+      .set({
+        status: input.to,
+        openDueOn: null,
+        withdrawalNote: note,
+        rowVersion: row.rowVersion + 1,
+      })
       .where(eq(rtkRequests.id, row.id))
-    const today = await townToday(tx, now, signal)
     await recordSystemEvent(tx, { kind: 'request_completed', rtkRequestId: row.id }, today)
     await writeAudit(
       tx,
@@ -235,7 +265,7 @@ export async function closeRequest(
         entityType: 'rtk_request',
         entityId: row.id,
         before: { status: row.status },
-        after: { status: input.to },
+        after: { status: input.to, on: today, ...(note === null ? {} : { withdrawalNote: note }) },
       },
       signal,
     )

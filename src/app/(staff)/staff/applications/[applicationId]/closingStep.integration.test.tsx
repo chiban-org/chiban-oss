@@ -100,7 +100,7 @@ describe('an issued permit that closes on a certificate with no inspections', ()
     const card = sectionOf(html, 'Do this now') ?? ''
     expect(card).toContain('Book the final inspection')
     expect(card).toContain('Take the final inspection request')
-    expect(card).toContain(`href="/staff/inspections?number=${number}"`)
+    expect(card).toContain(`href="/staff/inspections?number=${number}&amp;final=1"`)
     expect(card).not.toContain('Issue the certificate of occupancy')
     expect(card).not.toContain('Issue date')
   })

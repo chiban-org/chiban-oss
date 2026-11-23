@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { applications, boardDecisions } from '@/db/schema'
+import { applications, boardDecisions, hearings, noticeSets } from '@/db/schema'
 import { type RecordDecisionInput, recordDecision } from '@/features/decisions/recordDecision'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { setActivePackForTest } from '@/features/packs/registry'
@@ -8,6 +8,7 @@ import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
   boardIdSql,
+  PB_MEETINGS,
   setupBoardWorld,
   submitBoardApplication,
 } from '@/test/boardFixtures'
@@ -21,6 +22,9 @@ const signal = new AbortController().signal
 const d = (s: string) => s as CivilDate
 const PB_MEETING_DATE = '2027-04-14'
 const ZBA_MEETING_DATE = '2027-04-15'
+const BEFORE_RECEIPT_MEETING = '2027-02-24'
+const PAST_MEETING_BEFORE_RECEIPT = '2026-02-18'
+const PAST_MEETING_AFTER_RECEIPT = '2026-03-18'
 let handle: TestDb
 let world: BoardWorld
 
@@ -59,6 +63,45 @@ function noHearingInput(
   }
 }
 
+async function decisionRows(applicationId: string) {
+  return await handle.db
+    .select()
+    .from(boardDecisions)
+    .where(eq(boardDecisions.applicationId, applicationId))
+}
+
+async function hearingStatus(hearingId: string): Promise<string | undefined> {
+  const [row] = await handle.db
+    .select({ status: hearings.status })
+    .from(hearings)
+    .where(eq(hearings.id, hearingId))
+  return row?.status
+}
+
+async function scheduledHearingFor(applicationId: string, meetingId: string): Promise<string> {
+  const [set] = await handle.db
+    .insert(noticeSets)
+    .values({
+      subjectKind: 'hearing',
+      subjectId: applicationId,
+      applicationId,
+      anchorDate: PB_MEETING_DATE,
+    })
+    .returning({ id: noticeSets.id })
+  const [row] = await handle.db
+    .insert(hearings)
+    .values({
+      applicationId,
+      meetingId,
+      kind: 'public_hearing',
+      status: 'scheduled',
+      noticeSetId: set?.id ?? '',
+      createdBy: world.staff.userId,
+    })
+    .returning({ id: hearings.id })
+  return row?.id ?? ''
+}
+
 async function record(input: RecordDecisionInput) {
   return await recordDecision(handle.db, world.staff, input, signal, BOARD_FIXTURE_NOW)
 }
@@ -77,6 +120,12 @@ describe('a classification whose hearing is optional', () => {
   beforeEach(async () => {
     handle = await makeTestDb()
     world = await setupBoardWorld(handle.db, {
+      pbMeetings: [
+        ...PB_MEETINGS,
+        BEFORE_RECEIPT_MEETING,
+        PAST_MEETING_BEFORE_RECEIPT,
+        PAST_MEETING_AFTER_RECEIPT,
+      ],
       zbaMeetings: [ZBA_MEETING_DATE],
       pack: XX_OPTIONAL_HEARING,
       classificationKey: XX_PB_SUBDIVISION_KEY,
@@ -122,6 +171,86 @@ describe('a classification whose hearing is optional', () => {
     ).toEqual(err('before_meeting'))
   })
 
+  it('refuses a vote dated before the application was received', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    const meetingId = await meetingOn(BEFORE_RECEIPT_MEETING, 'planning_board')
+    expect(
+      await record(
+        noHearingInput(applicationId, meetingId, { votedOn: d(BEFORE_RECEIPT_MEETING) }),
+      ),
+    ).toEqual(err('before_receipt'))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('refuses a vote dated before the board accepted the application', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    await handle.db
+      .update(applications)
+      .set({ completedDate: '2027-04-20' })
+      .where(eq(applications.id, applicationId))
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('before_acceptance'))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('refuses a meeting held before receipt even when the vote is dated later', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    const meetingId = await meetingOn(BEFORE_RECEIPT_MEETING, 'planning_board')
+    expect(
+      await record(noHearingInput(applicationId, meetingId, { votedOn: d('2027-03-05') })),
+    ).toEqual(err({ meetingBefore: 'before_receipt' }))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('refuses a meeting held before acceptance even when the vote is dated later', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    await handle.db
+      .update(applications)
+      .set({ completedDate: '2027-04-20' })
+      .where(eq(applications.id, applicationId))
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    expect(
+      await record(noHearingInput(applicationId, meetingId, { votedOn: d('2027-04-28') })),
+    ).toEqual(err({ meetingBefore: 'before_acceptance' }))
+    expect(await decisionRows(applicationId)).toEqual([])
+  })
+
+  it('records a decision while a hearing is scheduled and cancels that hearing', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    const hearingId = await scheduledHearingFor(
+      applicationId,
+      await meetingOn('2027-05-12', 'planning_board'),
+    )
+    expect((await record(noHearingInput(applicationId, meetingId))).ok).toBe(true)
+    expect(await decisionRows(applicationId)).toHaveLength(1)
+    expect(await hearingStatus(hearingId)).toBe('cancelled')
+  })
+
+  it('offers no meeting dated before the application was received', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    await handle.db
+      .update(applications)
+      .set({ receivedDate: '2026-03-01' })
+      .where(eq(applications.id, applicationId))
+    const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
+    const offered = panel?.noHearing?.meetings.map((m) => m.id) ?? []
+    expect(offered).toContain(await meetingOn(PAST_MEETING_AFTER_RECEIPT, 'planning_board'))
+    expect(offered).not.toContain(await meetingOn(PAST_MEETING_BEFORE_RECEIPT, 'planning_board'))
+  })
+
+  it('offers no meeting dated before the board accepted the application', async () => {
+    const applicationId = await applicationUnderReview(world.zbaTypeKey)
+    await handle.db
+      .update(applications)
+      .set({ receivedDate: '2026-01-05', completedDate: '2026-03-01' })
+      .where(eq(applications.id, applicationId))
+    const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
+    const offered = panel?.noHearing?.meetings.map((m) => m.id) ?? []
+    expect(offered).toContain(await meetingOn(PAST_MEETING_AFTER_RECEIPT, 'planning_board'))
+    expect(offered).not.toContain(await meetingOn(PAST_MEETING_BEFORE_RECEIPT, 'planning_board'))
+  })
+
   it('offers the form on the application panel until a decision is recorded', async () => {
     const applicationId = await applicationUnderReview(world.zbaTypeKey)
     const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
@@ -152,5 +281,16 @@ describe('a classification whose hearing is required', () => {
     expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('hearing_required'))
     const panel = await loadApplicationHearingsPanel(handle.db, world.staff, applicationId, signal)
     expect(panel?.noHearing).toBeNull()
+  })
+
+  it('leaves a scheduled NH hearing in place when a decision without a hearing is refused', async () => {
+    const applicationId = await applicationUnderReview(world.pbTypeKey)
+    const meetingId = await meetingOn(PB_MEETING_DATE, 'planning_board')
+    const hearingId = await scheduledHearingFor(
+      applicationId,
+      await meetingOn('2027-05-12', 'planning_board'),
+    )
+    expect(await record(noHearingInput(applicationId, meetingId))).toEqual(err('hearing_required'))
+    expect(await hearingStatus(hearingId)).toBe('scheduled')
   })
 })

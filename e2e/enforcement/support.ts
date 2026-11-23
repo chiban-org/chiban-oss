@@ -127,7 +127,7 @@ export async function caseWithOpenFinding(page: Page, location: string): Promise
 
 export async function sendNoticeOnPage(page: Page): Promise<void> {
   const panel = 'Findings and notices of violation'
-  const send = 'Send notice of violation'
+  const send = 'Record notice of violation'
   const form = await formFor(page, panel, 'Send a notice of violation', send)
   await form.getByRole('checkbox', { name: `Zoning ordinance: ${ZONING_REF}` }).check()
   await form.getByLabel('How it was sent').selectOption({ label: 'Certified mail' })

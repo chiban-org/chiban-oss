@@ -12,8 +12,13 @@ import { documentFrame } from '@/features/pdf/documentFrame'
 import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
 import { townTemplate } from '@/features/templates/findTemplate'
 import { type DocumentInput, renderDocument } from '@/features/templates/templateBlocks'
+import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
+
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1)
+}
 
 const MAIL_CHANNELS = new Set(['verified_mail', 'certified_mail', 'first_class_mail'])
 
@@ -51,6 +56,8 @@ export async function hearingNoticeInput(
     'meeting.location': hearing.meeting.location,
     'meeting.time': formatMinuteOfDay(hearing.meeting.startsAtMinute),
     'hearing.kind': HEARING_KIND_LABELS[hearing.hearing.kind],
+    'hearing.kindPhrase': lowerFirst(HEARING_KIND_LABELS[hearing.hearing.kind]),
+    'notice.issuedOn': formatCivilDate(await townToday(db, new Date(), signal)),
   }
   return {
     input: {

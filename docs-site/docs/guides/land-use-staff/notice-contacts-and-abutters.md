@@ -36,7 +36,7 @@ An abutter list belongs to a board application. You draw it from the application
 2. Choose **Draw a new list**. Chiban reads the parcel, road and water layers, picks out the parcels that touch the lot or sit across a street or stream, and adds the people who must receive notice. It starts at **Version 1** as a draft.
 3. Open the version to review it.
 
-If the application involves more than one lot, use **Add a parcel to this application** first. If a surveyor, engineer, architect or soil scientist's seal is on the plat, use **Add a professional whose seal is on the plat**, because that person receives notice too.
+If the application involves more than one lot, use **Add a parcel to this application** first. If a surveyor, engineer, architect or soil scientist's seal is on the plat, use **Add a professional whose seal is on the plat**, because that person receives notice too. That form appears only on the kinds of application where state law sends notice to a sealed professional. A Planning Board application has it. A Zoning Board application does not.
 
 ### Reading a list
 

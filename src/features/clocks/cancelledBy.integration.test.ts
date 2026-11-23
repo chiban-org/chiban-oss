@@ -87,7 +87,22 @@ async function holdHearing(
     now,
   )
   await markProperlyNoticed(handle.db, world.staff, hearingId, signal, now)
-  if (decideFirst) expect((await decide(applicationId, null)).ok).toBe(true)
+  if (decideFirst) {
+    expect((await decide(applicationId, null)).ok).toBe(true)
+    const [cancelled] = await handle.db.query.hearings.findMany({
+      where: (h, { eq: same }) => same(h.id, hearingId),
+    })
+    expect(cancelled?.status).toBe('cancelled')
+    const refused = await markHearingHeld(
+      handle.db,
+      world.staff,
+      { hearingId, heldOn: d(heldOn) },
+      signal,
+      now,
+    )
+    expect(refused.ok).toBe(false)
+    return hearingId
+  }
   const held = await markHearingHeld(
     handle.db,
     world.staff,
@@ -185,7 +200,7 @@ describe('a clock cancelled by the hearing held event', () => {
     ).toEqual([])
   })
 
-  it('holding a still scheduled hearing after a decision without one starts no clock', async () => {
+  it('a hearing cancelled by a decision without one cannot be held and starts no clock', async () => {
     const applicationId = await acceptedApplication()
     await holdHearing(applicationId, MEETING_DATE, true)
     const rows = await clockRows(applicationId)

@@ -2,18 +2,15 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NewItemDialog } from '@/components/settings/NewItemDialog'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { isSettableTownRule } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_NEW_LABELS } from '@/features/config/kindLabels'
 import type { ConfigKind } from '@/features/config/kinds'
 import { loadPack } from '@/features/packs/loadPack'
 import { startDraftAction } from '../actions'
 
-const SETTABLE = new Set(['minimum', 'maximum', 'delegated_choice'])
-
 function NameFields({ kind }: { kind: ConfigKind }) {
   if (kind === 'town_rule_setting') {
-    const townRules = loadPack().rules.filter(
-      (r) => r.kind === 'town_setting' && SETTABLE.has(r.overridePolicy.policy),
-    )
+    const townRules = loadPack().rules.filter(isSettableTownRule)
     return (
       <SelectField
         label="Rule"

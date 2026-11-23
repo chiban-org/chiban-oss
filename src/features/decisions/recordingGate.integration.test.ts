@@ -188,7 +188,7 @@ describe('the dependent permit gate', () => {
       value: undefined,
     })
     expect(await handle.db.select().from(relianceLinks)).toEqual([])
-    expect((await gateResult(permit.applicationId, 'issued'))?.outcome).toEqual({ status: 'pass' })
+    expect(await gateResult(permit.applicationId, 'issued')).toBeUndefined()
     const [audit] = await handle.db
       .select()
       .from(auditLog)
@@ -200,10 +200,10 @@ describe('the dependent permit gate', () => {
     })
   })
 
-  it('passes a permit with no link', async () => {
+  it('leaves the gate off a permit with no link', async () => {
     await approved()
     const permit = await makeApplication(handle.db, world, { state: 'decided' })
-    expect((await gateResult(permit.applicationId, 'issued'))?.outcome).toEqual({ status: 'pass' })
+    expect(await gateResult(permit.applicationId, 'issued')).toBeUndefined()
   })
 })
 

@@ -10,12 +10,33 @@ const ESTIMATE_DUE = {
 
 function NoFeesYet({ view }: { view: PortalApplicationView }) {
   if (view.feeEstimate === null) return <p>No fees have been set for this application yet.</p>
+  const amount = formatCents(view.feeEstimate.totalCents)
+  const due = ESTIMATE_DUE[view.feeEstimate.due]
+  if (view.state === 'draft') {
+    return (
+      <p>{`No fees are due yet. From the answers saved so far, the estimated fee is ${amount}, due ${due}. Save the draft to update it.`}</p>
+    )
+  }
   return (
-    <p>{`No fees are due yet. The estimated fee is ${formatCents(view.feeEstimate.totalCents)}, due ${ESTIMATE_DUE[view.feeEstimate.due]}.`}</p>
+    <p>{`No fees are due yet. The town sets the fee when it reviews the application. From your answers the estimate is ${amount}, due ${due}.`}</p>
   )
 }
 
-function Fees({ view }: { view: PortalApplicationView }) {
+function PayLine({ view, officeName }: { view: PortalApplicationView; officeName: string }) {
+  if (view.payAtOffice) {
+    return <p className="m-0">{`Pay ${formatCents(view.fees.dueCents)} at the ${officeName}.`}</p>
+  }
+  if (!view.canPay) return null
+  return (
+    <p className="m-0">
+      <a href="#do-this-now" className="tap-target inline-flex items-center">
+        Pay online from the top of this page
+      </a>
+    </p>
+  )
+}
+
+function Fees({ view, officeName }: { view: PortalApplicationView; officeName: string }) {
   const { fees } = view
   if (fees.lines.length === 0) return <NoFeesYet view={view} />
   return (
@@ -33,13 +54,7 @@ function Fees({ view }: { view: PortalApplicationView }) {
       {fees.pendingAttempts + fees.unknownAttempts > 0 ? (
         <p role="status">A card payment is waiting for the payment service to confirm.</p>
       ) : null}
-      {view.canPay ? (
-        <p className="m-0">
-          <a href="#do-this-now" className="tap-target inline-flex items-center">
-            Pay online from the top of this page
-          </a>
-        </p>
-      ) : null}
+      <PayLine view={view} officeName={officeName} />
     </>
   )
 }
@@ -70,11 +85,17 @@ function MoneyHistory({ view }: { view: PortalApplicationView }) {
   )
 }
 
-export function FeesPanel({ view }: { view: PortalApplicationView }) {
+export function FeesPanel({
+  view,
+  officeName,
+}: {
+  view: PortalApplicationView
+  officeName: string
+}) {
   return (
     <section aria-labelledby="fees-heading">
       <h2 id="fees-heading">Fees and payment</h2>
-      <Fees view={view} />
+      <Fees view={view} officeName={officeName} />
       <MoneyHistory view={view} />
     </section>
   )

@@ -4,20 +4,15 @@ import { ActionForm } from '@/components/ActionForm'
 import { FormDialog, RowEditDialog } from '@/components/FormDialog'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { TownSectionKind } from '@/db/schema/townSections'
+import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
 import { addSectionAction, editSectionAction, retireSectionAction } from './actions'
-
-const SECTION_KIND_LABELS: Record<TownSectionKind, string> = {
-  zoning_ordinance: 'Zoning ordinance',
-  building_code: 'Building code',
-  other_local_ordinance: 'Other local ordinance',
-}
 
 function kindOptions(
   kinds: readonly TownSectionKind[],
   current?: TownSectionKind,
 ): readonly (readonly [TownSectionKind, string])[] {
   const offered = current === undefined || kinds.includes(current) ? kinds : [...kinds, current]
-  return offered.map((k) => [k, SECTION_KIND_LABELS[k]] as const)
+  return offered.map((k) => [k, PROVISION_KIND_LABELS[k]] as const)
 }
 
 interface SectionValues {

@@ -17,6 +17,7 @@ export interface WorkField {
   type: string
   required: boolean
   options?: { value: string; label: string }[]
+  fact?: string
 }
 
 const RESULTS = [

@@ -18,4 +18,8 @@ describe('skeletonBody', () => {
   it('starts a town rule at the default state law gives it', () => {
     expect(skeletonBody('town_rule_setting', 'town.bp.validity')).toMatchObject({ value: 12 })
   })
+
+  it('starts a bounded clock at the clock own length', () => {
+    expect(skeletonBody('town_rule_setting', 'nh.pb.notice.mail')).toMatchObject({ value: 10 })
+  })
 })

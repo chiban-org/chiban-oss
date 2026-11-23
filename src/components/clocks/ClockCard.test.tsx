@@ -48,6 +48,7 @@ const BASE: ClockExplanation & { clockId: string } = {
   extensionPolicy: 'RSA 155-A:4 IX provides no extension.',
   allowedAdjustments: ['statutory_exception'],
   status: 'running',
+  supersededReason: null,
   metOn: null,
   daysRemaining: 10,
 }
@@ -108,7 +109,7 @@ describe('ClockCard', () => {
 
   it('says who acts and whether the clock can be extended', () => {
     render(<ClockCard clock={BASE} />)
-    expect(screen.getByText(/Municipal official/)).toBeTruthy()
+    expect(screen.getByText(/Town staff/)).toBeTruthy()
     expect(screen.getByText(/provides no extension/)).toBeTruthy()
   })
 
@@ -138,13 +139,35 @@ describe('ClockCard', () => {
       ['running', '10 days remaining', 'neutral'],
       ['met', 'Met', 'passed'],
       ['lapsed', 'Lapsed', 'failed'],
-      ['superseded', 'Superseded by a rule change', 'neutral'],
       ['stopped', 'Stopped', 'neutral'],
     ] as const) {
       const { unmount } = render(<ClockCard clock={{ ...BASE, status }} />)
       expect(screen.getByText(label).closest('[data-status]')?.getAttribute('data-status')).toBe(
         chip,
       )
+      unmount()
+    }
+  })
+
+  it('a superseded clock says why in words', () => {
+    for (const [reason, label] of [
+      ['rule_change:x', 'Superseded by a rule change'],
+      ['cancelled_by_event', 'Replaced by a later step'],
+      ['decided_without_hearing', 'Ended when the board decided'],
+      ['meeting_calendar_changed', 'Replaced when the meeting changed'],
+      ['acceptance_meeting_changed', 'Replaced when the acceptance meeting changed'],
+      ['regional_impact_determined', 'Replaced by the regional impact determination'],
+      ['later_certified_notice', 'Replaced by a later notice'],
+      ['something_new', 'Replaced'],
+      [null, 'Replaced'],
+    ] as const) {
+      const { unmount } = render(
+        <ClockCard clock={{ ...BASE, status: 'superseded', supersededReason: reason }} />,
+      )
+      expect(
+        screen.getByText(label).closest('[data-status]')?.getAttribute('data-status'),
+        String(reason),
+      ).toBe('neutral')
       unmount()
     }
   })

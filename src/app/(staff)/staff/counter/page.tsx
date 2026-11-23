@@ -102,7 +102,7 @@ export default async function CounterPage({ searchParams }: Props) {
   if (!(await mayUseCounter(ctx.db, ctx.actor, ctx.signal))) {
     return <NoPermission title="Counter" action="issue permits at the counter" />
   }
-  const types = await listCounterTypes(ctx.db, ctx.signal)
+  const types = await listCounterTypes(ctx.db, ctx.signal, ctx.actor)
   const chosen = await chosenStep(ctx, types, params)
   if (chosen === null) return await startStep(ctx, types, params)
   return (

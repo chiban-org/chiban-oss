@@ -13,13 +13,15 @@ function optionText(c: AttachableComplaint): string {
 export function AttachComplaint({
   caseId,
   attachable,
+  hasComplaint,
 }: {
   caseId: string
   attachable: readonly AttachableComplaint[]
+  hasComplaint: boolean
 }) {
   return (
     <details>
-      <summary>Attach another complaint</summary>
+      <summary>{hasComplaint ? 'Attach another complaint' : 'Attach a complaint'}</summary>
       {attachable.length === 0 ? (
         <p>
           No other complaint can be attached right now. Only a complaint whose own case has no work

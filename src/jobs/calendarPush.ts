@@ -1,7 +1,7 @@
 import { env } from '@/config/env'
 import { ErrorIds, isAppError } from '@/constants/errorIds'
 import { JOB_NAMES } from '@/constants/jobNames'
-import { deliverPush } from '@/features/calendar/deliverPush'
+import { configuredSender, deliverPush } from '@/features/calendar/deliverPush'
 import { createIcsEmailPublisher } from '@/features/calendar/icsEmailPublisher'
 import { createPublisherFactory } from '@/features/calendar/publisherFactory'
 import { getMailTransport, type MailTransport } from '@/features/mail/transport'
@@ -20,7 +20,10 @@ export function makeCalendarPushJob(deps: { mail: MailTransport; now?: () => Dat
     handler: async (payload, ctx) => {
       const now = deps.now?.() ?? new Date()
       const publisherFor = createPublisherFactory(ctx.db, {
-        ics: createIcsEmailPublisher({ mail: deps.mail, organizerEmail: env.MAIL_FROM }),
+        ics: createIcsEmailPublisher({
+          mail: deps.mail,
+          organizerEmail: await configuredSender(ctx.db, ctx.signal),
+        }),
         now: () => now,
       })
       const result = await deliverPush(ctx.db, { publisherFor, now }, payload.pushId, ctx.signal)

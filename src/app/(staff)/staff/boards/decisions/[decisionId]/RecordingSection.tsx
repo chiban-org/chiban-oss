@@ -5,6 +5,13 @@ import type { DecisionView } from '@/features/decisions/decisionView'
 import { recordFinalApprovalAction, recordRegistryAction } from '../../hearings/decisionActions'
 import { UPLOAD_ACTIONS } from './uploads'
 
+const APPROVAL_DATE_HINT = 'The date the board signed or issued its written decision.'
+
+function approvalDateHint(period: string | null): string {
+  if (period === null) return APPROVAL_DATE_HINT
+  return `${APPROVAL_DATE_HINT} The certificate must be recorded within ${period} of this date or the variance is void.`
+}
+
 function ApprovalForm({ view, today }: { view: DecisionView; today: string }) {
   return (
     <ActionForm
@@ -18,6 +25,7 @@ function ApprovalForm({ view, today }: { view: DecisionView; today: string }) {
         label="Date of the final written approval"
         name="approvedOn"
         type="date"
+        hint={approvalDateHint(view.recordingPeriod)}
         defaultValue={today}
         min={view.votedOn}
         max={today}

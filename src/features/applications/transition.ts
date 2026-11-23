@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { applications } from '@/db/schema'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
+import { mayManageApplication } from '@/features/applications/plumbingOwner'
 import {
   type CoreState,
   isTransitionAllowed,
@@ -17,12 +18,11 @@ import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
 import { mayActOnClassification } from '@/features/authz/classificationScope'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { CLOSURE_GATE_KEY } from '@/features/gates/coreGates'
 import { DOCUMENT_GATE_KEYS } from '@/features/gates/documentGates'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { queueForParties } from '@/features/notifications/queue'
-import { loadPack } from '@/features/packs/loadPack'
-import type { BoardKind } from '@/features/packs/schema'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { applyOutcomeSeries } from '@/features/records/assignments'
 import { townToday } from '@/features/town/today'
@@ -71,12 +71,6 @@ const NO_FLAGS = { cutover: false, deemedRefusal: false, underHold: false }
 const NEEDS_ISSUE_CAPABILITY: readonly CoreState[] = ['issued', 'decided', 'denied']
 const BOARD_RECORD_STATES: readonly CoreState[] = ['under_review', 'decided', 'denied']
 
-function boardOf(app: ApplicationContext): BoardKind | null {
-  return (
-    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.boardKind ?? null
-  )
-}
-
 async function isAllowedActor(
   tx: DbOrTx,
   actor: AnyActor,
@@ -92,7 +86,7 @@ async function isAllowedActor(
   }
   if (to === 'expired' || to === 'suspended') return false
   if (app.state === 'suspended' && to === 'issued') return false
-  if (boardOf(app) !== null && BOARD_RECORD_STATES.includes(to)) {
+  if (boardOfApplication(app) !== null && BOARD_RECORD_STATES.includes(to)) {
     return await hasCapability(tx, actor.userId, 'board.record', signal)
   }
   const classification = app.typeBody.classification
@@ -111,7 +105,7 @@ async function isAllowedActor(
       (await isActiveParty(tx, actor.userId, app.projectId))
     )
   }
-  return await hasCapability(tx, actor.userId, 'application.manage', signal)
+  return await mayManageApplication(tx, actor, classification, signal)
 }
 
 export async function actorMayMove(
@@ -125,7 +119,7 @@ export async function actorMayMove(
 }
 
 export function needsBoardVote(app: ApplicationContext, to: CoreState): boolean {
-  return boardOf(app) !== null && app.state === 'submitted' && to === 'under_review'
+  return boardOfApplication(app) !== null && app.state === 'submitted' && to === 'under_review'
 }
 
 async function gateResultsFor(

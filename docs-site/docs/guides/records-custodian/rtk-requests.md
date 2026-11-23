@@ -19,7 +19,7 @@ Residents can send a request themselves from [Ask for town records](../../reside
 5. Put the request in the requester's words under **What was asked for**.
 6. Choose **Log request**.
 
-Chiban gives the request a number such as RK-2026-0001 and starts the first-response clock.
+Chiban gives the request a number such as RK-2026-0001 and starts the first-response clock. The confirmation names the number, for example "Request RK-2026-0001 logged."
 
 ![The Right-to-Know requests list showing four requests, one past due](/img/shots/records-custodian/rtk-log.png)
 
@@ -31,11 +31,11 @@ The list puts the soonest date first, and requests with no date running come las
 
 Open a request and the sentence under its title says what is waiting and when it is due, for example "Waiting on: Town. Send the first response. First response due November 17, 2026, 6 days left." Under **Due next**, **How it is counted** shows the start date and the counting method.
 
-You can still record a late response. The request then shows "Answered late" with the due date and the answer date.
+You can still record a late response. The request then shows "Sent late" with the due date and the date the response was sent.
 
 ## Send the first response
 
-Open the request. Under **Do this now**, **Send the first response**, choose one of four responses.
+Open the request. Under **Do this now**, **Send the first response**, choose one of four responses, or five where the state lets the town acknowledge a request first.
 
 **Release the records now.** Use this when the records are ready. You find each record, approve the version to release and release it, all from this card. The first release records the response and files its letter. The steps are on [the next page](./rtk-release.md).
 
@@ -46,9 +46,13 @@ Open the request. Under **Do this now**, **Send the first response**, choose one
 - **Why more time is needed**.
 - **Charge, if any (what it is for)** and **Charge in dollars**. Fill in both or neither.
 
-The request moves to **Waiting for the date the town stated**, and the deadline becomes the date you gave. From there you either release the records or deny the request. A request takes only one written time statement, and the response choices disappear once it is recorded, so give a date you can keep.
+The request moves to **Waiting for the town's estimated date**, and the deadline becomes the date you gave. In a town whose state treats the date as an estimate, the letter labels it as a good faith, nonbinding estimate. From there you either release the records or deny the request. A request takes only one written time statement, and the response choices disappear once it is recorded, so give a date you can keep.
 
 **Records are posted on the town website.** Enter the **Web address where the records are posted** and the date. The request becomes **Responded**, ready to close.
+
+**Acknowledge receipt of the request.** Where the state lets the town acknowledge a request before it answers, this choice appears as well. You can add a **Question for the requester, if the request needs clarifying**. The request then shows as **Acknowledged** in the stages above it, and the **Status** filter has an **Acknowledged** choice after **Open**. **Responded** leaves out requests that have only been acknowledged.
+
+If you asked a question, the requester's reply is recorded on the request. Open **Record the requester answer**, enter **What the requester answered** and the **Date of the answer**, and choose **Record the answer**. The form is offered only while a question is unanswered and the request is open. The reply then shows under the response as "Requester answered", with its date. The letter that carries the question says how to answer the town, by the email address or phone number in the town's profile.
 
 **Denied.** This choice stays greyed out until you have recorded a withheld record with its exemption and explanation. See the next section.
 
@@ -77,4 +81,4 @@ What happens next depends on the requester's contact details:
 - **No email address, or more than one.** Chiban does not guess. The note by the button says "There is no email address on this request, so print the letter from Letters and send it." Afterward **Letters** shows "No email address. Print this letter and send it."
 - **An email that fails.** The response is still recorded and the letter filed. The message says the email could not be sent, and **Letters** shows "The email to" the address "could not be sent. Print this letter and send it."
 
-This covers the first response, a time statement, a posted-online response and a denial. Letters for releases are covered on [the next page](./rtk-release.md).
+Every response letter opens with the date and a **To** line naming the requester, or "The requester" when no name is on file, and ends with the town clerk's signature line, or the clerk's name and title once the town has set a signer. This covers the first response, a time statement, a posted-online response and a denial. A letter for a release leads with "The town is releasing the records listed below." and shows an earlier time statement as history. Letters for releases are covered on [the next page](./rtk-release.md).

@@ -2,7 +2,7 @@ import type { DbOrTx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
 import { keepStaffOnlyValues } from '@/features/applications/submitApplication'
 import { getVersion } from '@/features/config/store'
-import type { FormBody } from '@/features/forms/formSchema'
+import type { FormBody, FormField } from '@/features/forms/formSchema'
 import {
   type FieldError,
   type FieldValue,
@@ -24,13 +24,19 @@ function same(a: FieldValue | undefined, b: FieldValue | undefined): boolean {
   )
 }
 
+const FACTS_THAT_CHANGE_REVIEW: ReadonlySet<FormField['fact']> = new Set([
+  'classification',
+  'dwellingUnits',
+  'afterTheFact',
+])
+
 export function reviewChanges(
   form: FormBody,
   before: Record<string, FieldValue>,
   after: Record<string, FieldValue>,
 ): string[] {
   return form.fields
-    .filter((f) => f.fact !== undefined && !same(before[f.key], after[f.key]))
+    .filter((f) => FACTS_THAT_CHANGE_REVIEW.has(f.fact) && !same(before[f.key], after[f.key]))
     .map((f) => f.label)
 }
 

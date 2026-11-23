@@ -10,13 +10,39 @@ const NUMBER = '{{application.number}}'
 const INSPECTION_LABEL = '{{inspection.type}}'
 const DETAILS = 'Open the application for the details.'
 const REQUEST = '{{request.number}}'
+const ACKNOWLEDGEMENT_NEXT =
+  'may ask you to clarify which records you want, and will tell you in writing when it expects to respond.'
+const ANSWER_NEXT =
+  'will make the records available, deny the request in writing, or tell you in writing when it will answer.'
+
+export type StandardWords = Pick<Vocabulary, 'recordsRequest'> & { recordsAcknowledgement: boolean }
+
+export function receiptPromise(
+  due: string,
+  acknowledgement: boolean,
+): { promise: string; next: string } {
+  return acknowledgement
+    ? {
+        promise: `The town will acknowledge your request by ${due}.`,
+        next: `It ${ACKNOWLEDGEMENT_NEXT}`,
+      }
+    : { promise: `The town will answer by ${due}.`, next: `It ${ANSWER_NEXT}` }
+}
+
+export function receiptNextWithoutDate(acknowledgement: boolean): string {
+  return `The town ${acknowledgement ? ACKNOWLEDGEMENT_NEXT : ANSWER_NEXT}`
+}
+
+function receiptPromiseText(due: string, acknowledgement: boolean): string {
+  const { promise, next } = receiptPromise(due, acknowledgement)
+  return `${promise} ${next}`
+}
+
 function released(request: string): string {
   return `The town released records for your ${request} ${REQUEST} on {{records.releasedOn}}.`
 }
 
-export function defaultWordingFor(
-  words: Pick<Vocabulary, 'recordsRequest'>,
-): Record<WordingKey, Wording> {
+export function defaultWordingFor(words: StandardWords): Record<WordingKey, Wording> {
   const request = words.recordsRequest
   return {
     application_submitted: {
@@ -42,6 +68,10 @@ export function defaultWordingFor(
     inspection_scheduled: {
       subject: `Inspection scheduled: ${NUMBER}, ${INSPECTION_LABEL} on {{inspection.date}} at {{inspection.time}}`,
       body: `An inspection for ${NUMBER} is scheduled for {{inspection.date}} at {{inspection.time}}. Someone should be at the site.`,
+    },
+    inspection_rescheduled: {
+      subject: `Inspection moved: ${NUMBER}, ${INSPECTION_LABEL}`,
+      body: `The ${INSPECTION_LABEL} inspection for ${NUMBER} has moved from {{inspection.previousDate}} at {{inspection.previousTime}} to {{inspection.date}} at {{inspection.time}}.`,
     },
     inspection_cancelled: {
       subject: `Inspection cancelled: ${NUMBER}, ${INSPECTION_LABEL}`,
@@ -123,7 +153,7 @@ export function defaultWordingFor(
       subject: `${request} ${REQUEST} received`,
       body: [
         `The town received your ${request} on {{request.receivedOn}}. Its number is ${REQUEST}.`,
-        'The town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
+        receiptPromiseText('{{request.due}}', words.recordsAcknowledgement),
         'Keep the request number if you need to ask about it.',
       ].join('\n\n'),
     },

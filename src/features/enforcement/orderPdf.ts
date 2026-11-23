@@ -118,17 +118,44 @@ export interface NoticePdfInput {
   locationText: string
   findings: Finding[]
   sentOn: string
+  recipientName: string | null
+  recipientAddress: string | null
+  correctBy: string | null
+  authority: string | null
+  appealRights: string
+}
+
+function recipientBlocks(input: NoticePdfInput): PdfBlock[] {
+  const parts = [input.recipientName, input.recipientAddress].filter((p) => p !== null)
+  return parts.length === 0
+    ? []
+    : [{ kind: 'fields', rows: [{ label: 'To', value: parts.join(', ') }] }]
+}
+
+function correctByBlocks(correctBy: string | null): PdfBlock[] {
+  return correctBy === null
+    ? []
+    : [paragraph(`Correct the violation by ${formatCivilDate(correctBy)}.`)]
+}
+
+function appealBlocks(appealRights: string): PdfBlock[] {
+  return appealRights === ''
+    ? []
+    : [{ kind: 'heading', text: 'How to appeal' }, paragraph(appealRights)]
 }
 
 export async function renderNoticePdf(input: NoticePdfInput): Promise<Uint8Array> {
+  const { authority } = input
   const blocks: PdfBlock[] = [
     { kind: 'paragraph', text: activePack().orderTexts.noticeOfViolationIntro },
+    ...recipientBlocks(input),
     {
       kind: 'fields',
       rows: [
         { label: 'Case', value: input.caseNumber },
         { label: 'Property', value: input.locationText },
         { label: 'Sent', value: formatCivilDate(input.sentOn) },
+        ...(authority === null ? [] : [{ label: 'Authority', value: authority }]),
       ],
     },
     { kind: 'heading', text: 'Provisions' },
@@ -140,7 +167,9 @@ export async function renderNoticePdf(input: NoticePdfInput): Promise<Uint8Array
         text: `${f.facts} (inspected ${formatCivilDate(f.inspectionDate)})`,
       }),
     ),
+    ...correctByBlocks(input.correctBy),
     { kind: 'paragraph', text: activePack().orderTexts.noticeOfViolationRequest },
+    ...appealBlocks(input.appealRights),
   ]
   return await renderPdf({
     title: 'Notice of violation',

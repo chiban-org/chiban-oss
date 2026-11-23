@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applications, clocks, documents } from '@/db/schema'
 import { recordDecisionNotice, refuseBySilence } from '@/features/applications/deemedRefusal'
+import { STAFF_DECISION_LETTER_TITLE } from '@/features/applications/staffDecision'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -100,14 +101,17 @@ async function page(): Promise<string> {
   )
 }
 
-async function addDocument(title: string): Promise<string> {
+async function addDocument(
+  title: string,
+  docKind: (typeof documents.$inferInsert)['docKind'] = 'attachment',
+): Promise<string> {
   const [doc] = await handle.db
     .insert(documents)
     .values({
       recordKind: 'application',
       recordId: applicationId,
       title,
-      docKind: 'attachment',
+      docKind,
       createdByKind: 'system',
     })
     .returning({ id: documents.id })
@@ -139,6 +143,17 @@ describe('the written decision notice section', () => {
     expect(section).toContain('name="mailedOn"')
     expect(section).toContain('type="date"')
     expect(section).toContain('Record the written decision notice')
+  })
+
+  it('lists the generated decision letter first and preselects it', async () => {
+    await addDocument('Notice of decision letter')
+    const letterId = await addDocument(STAFF_DECISION_LETTER_TITLE)
+    await decide()
+    const section = sectionOf(await page(), LABEL) ?? ''
+    const letterAt = section.indexOf(STAFF_DECISION_LETTER_TITLE)
+    expect(letterAt).toBeGreaterThan(-1)
+    expect(letterAt).toBeLessThan(section.indexOf('Notice of decision letter'))
+    expect(section).toContain(`value="${letterId}" selected=""`)
   })
 
   it('shows the mailed date once the notice is recorded and drops the form', async () => {

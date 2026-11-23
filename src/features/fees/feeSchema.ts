@@ -80,6 +80,7 @@ export const FeeScheduleBodySchema = z
           label: z.string().trim().min(1),
           expr: FeeExprSchema,
           due: z.enum(FEE_STAGES),
+          townSets: z.literal(true).optional(),
         }),
       )
       .min(1),

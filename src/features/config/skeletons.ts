@@ -14,6 +14,7 @@ import { slugKey } from '@/features/forms/fieldKeys'
 import { EMPTY_NOTIFICATION_WORDING } from '@/features/notifications/wording/wordingSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
+import type { PackRule } from '@/features/packs/schema'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
@@ -26,6 +27,11 @@ export async function skeletonBodyFor(
 ): Promise<unknown> {
   if (kind === 'board_settings') return boardSettingsDefault(await activeBoards(db))
   return skeletonBody(kind, key, label)
+}
+
+function townRuleStartValue(rule: PackRule | null): number {
+  if (rule?.kind === 'clock' && 'value' in rule.length) return rule.length.value
+  return settingDefault(rule)
 }
 
 function inspectionTypeFor(label: string): string {
@@ -67,7 +73,7 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
     case 'town_rule_setting':
       return {
         ruleKey: key,
-        value: settingDefault(loadPack().rules.find((r) => r.key === key) ?? null),
+        value: townRuleStartValue(loadPack().rules.find((r) => r.key === key) ?? null),
       }
     case 'local_code_amendment':
       return {

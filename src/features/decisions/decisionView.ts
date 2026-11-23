@@ -18,7 +18,11 @@ import {
 } from '@/features/appeals/appealWords'
 import { type GraphNodeRow, loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
 import { nodeWindow } from '@/features/appeals/nodeWindow'
-import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
+import {
+  applicationProjectFinality,
+  isApprovingOutcome,
+  packWaitsForFinalApproval,
+} from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -30,6 +34,7 @@ import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidenc
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
+import { loadPack } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
 import { boardShort } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -78,6 +83,10 @@ export interface DecisionView {
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
   offerFinalApproval: boolean
+  recordingPeriod: string | null
+  significantText: string | null
+  lastApprovalText: string | null
+  offerLastApprovalLater: boolean
 }
 
 export interface FilingDue {
@@ -146,6 +155,23 @@ export async function checklistFor(
   }))
 }
 
+const PERIOD_UNITS = {
+  days: ['day', 'days'],
+  months: ['month', 'months'],
+  business_days: ['business day', 'business days'],
+} as const
+
+function recordingPeriod(): string | null {
+  for (const rule of loadPack().rules) {
+    if (rule.kind !== 'clock' || rule.consequence.kind !== 'void_unless_recorded') continue
+    const length = rule.length
+    if (!('value' in length)) return null
+    const [one, many] = PERIOD_UNITS[length.unit]
+    return `${length.value} ${length.value === 1 ? one : many}`
+  }
+  return null
+}
+
 function blankToNull(value: string | null): string | null {
   const trimmed = value?.trim() ?? ''
   return trimmed === '' ? null : trimmed
@@ -185,6 +211,8 @@ export async function loadDecisionView(
       and(eq(noticeSets.subjectKind, TRANSMITTAL_SUBJECT), eq(noticeSets.subjectId, decisionId)),
     )
   const graph = await toGraphNodes(db, nodes, signal)
+  const waits = packWaitsForFinalApproval()
+  const finality = waits ? await applicationProjectFinality(db, app.id, signal) : null
   const transmittalItems =
     transmittal === undefined ? null : await checklistFor(db, transmittal.id, signal)
   return {
@@ -221,7 +249,15 @@ export async function loadDecisionView(
             })),
           },
     graph,
-    offerFinalApproval: packWaitsForFinalApproval(),
+    offerFinalApproval: waits,
+    recordingPeriod: recordingPeriod(),
+    significantText: decision.significant === null ? null : decision.significant ? 'Yes' : 'No',
+    lastApprovalText: waits
+      ? finality === null
+        ? 'Not yet'
+        : formatCivilDate(finality.finalOn)
+      : null,
+    offerLastApprovalLater: waits && finality === null && isApprovingOutcome(decision.outcome),
     nodeChoices: nodes.map((n, i) => ({
       id: n.id,
       label: `${graph[i]?.kindLabel ?? ''}, ${graph[i]?.dateText ?? ''}`,

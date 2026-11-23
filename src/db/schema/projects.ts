@@ -73,6 +73,7 @@ export const applications = pgTable(
     decidedOn: date('decided_on', { mode: 'string' }),
     issuedOn: date('issued_on', { mode: 'string' }),
     closureReason: text('closure_reason'),
+    decisionReason: text('decision_reason'),
     permitRevision: integer('permit_revision').notNull().default(0),
     permitCorrectedOn: date('permit_corrected_on', { mode: 'string' }),
     applicability: jsonb('applicability'),

@@ -1,8 +1,21 @@
 import { ActionForm } from '@/components/ActionForm'
-import { SelectField } from '@/components/staff/fields'
+import { SelectField, TextField } from '@/components/staff/fields'
 import { isRequestOpen } from '@/features/rtk/requestStatus'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { closeRequestAction } from '../actions'
+
+const WITHDRAWAL_NOTE_LABEL = 'How did the requester withdraw?'
+
+function WithdrawalNote({ hint }: { hint?: string }) {
+  return (
+    <TextField
+      label={WITHDRAWAL_NOTE_LABEL}
+      name="withdrawalNote"
+      maxLength={1000}
+      {...(hint === undefined ? {} : { hint })}
+    />
+  )
+}
 
 function Hidden({ request }: { request: RtkRequestView }) {
   return (
@@ -35,6 +48,7 @@ export function CloseStepForm({ request }: { request: RtkRequestView }) {
           ['withdrawn', 'Withdrawn by the requester'],
         ]}
       />
+      <WithdrawalNote hint="Optional. Kept only when the request is withdrawn." />
     </ActionForm>
   )
 }
@@ -74,6 +88,7 @@ export function RequestMoreActions({ request }: { request: RtkRequestView }) {
         >
           <Hidden request={request} />
           <input type="hidden" name="to" value="withdrawn" />
+          <WithdrawalNote hint="Optional, for example by phone or in an email." />
         </ActionForm>
       </div>
     </details>

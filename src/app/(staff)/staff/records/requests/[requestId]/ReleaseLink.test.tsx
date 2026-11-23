@@ -29,6 +29,7 @@ function show(release: ReleaseSummary, canManage = true) {
   render(
     <CsrfProvider token="t1">
       <ReleaseSection
+        requestId="r1"
         releases={[release]}
         approvals={[]}
         canManage={canManage}

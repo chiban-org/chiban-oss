@@ -1,5 +1,5 @@
 import { packHasPlumbingScope } from '@/features/authz/classificationScope'
-import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { appealsMemberLocal, DEMO_DOMAIN } from '@/features/demo/domain'
 import { boardShort, recordsRequest } from '@/features/packs/vocabulary'
 
 export interface DemoPersona {
@@ -68,7 +68,7 @@ function basePersonas(): DemoPersona[] {
       home: '/board',
     },
     {
-      email: demo('zba.member'),
+      email: demo(appealsMemberLocal()),
       role: `${boardShort('zba')} member`,
       summary: `Reads the packet for the appeals and variances before the ${boardShort('zba')}.`,
       kind: 'public',

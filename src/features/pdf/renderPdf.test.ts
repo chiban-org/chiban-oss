@@ -1,3 +1,4 @@
+import * as mupdf from 'mupdf'
 import { PDFDocument } from 'pdf-lib'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { buildFrame, type DocumentFrame, plainFrame } from '@/features/pdf/frame'
@@ -50,6 +51,29 @@ describe('renderPdf', () => {
     expect(text).toContain('EL-2027-0001')
     expect(text).toContain('Pat Contractor')
     expect(text).toContain('Page 1 of 1')
+  })
+
+  it('wraps a long field label inside its column so it does not print over the value', async () => {
+    const label = `Description of ${'every item that the application covers, '.repeat(5)}`
+    const bytes = await renderPdf({
+      ...SHORT,
+      blocks: [{ kind: 'fields', rows: [{ label, value: 'Value on the right' }] }],
+    })
+    const page = JSON.parse(
+      mupdf.Document.openDocument(bytes, 'application/pdf')
+        .loadPage(0)
+        .toStructuredText('preserve-whitespace')
+        .asJSON(),
+    ) as { blocks: { lines: { bbox: { x: number; w: number }; text: string }[] }[] }
+    const lines = page.blocks.flatMap((b) => b.lines)
+    const valueLine = lines.find((l) => l.text === 'Value on the right')
+    const labelLines = lines.filter((l) => label.includes(l.text.trim()) && l.text.trim() !== '')
+    expect(valueLine).toBeDefined()
+    expect(labelLines.length).toBeGreaterThan(1)
+    for (const line of labelLines) {
+      expect(line.bbox.x + line.bbox.w, line.text).toBeLessThanOrEqual(valueLine?.bbox.x ?? 0)
+    }
+    expect(labelLines.map((l) => l.text.trim()).join(' ')).toContain('every item')
   })
 
   it('requires a frame on every spec', async () => {

@@ -54,6 +54,7 @@ export interface BoardPanelData {
   meetings: ({ id: string; date: string; text: string } & MeetingEligibility)[]
   today: string
   regional: {
+    applies: boolean
     text: string | null
     summary: string
     options: { key: string; name: string }[]
@@ -76,6 +77,7 @@ export interface BoardPanelData {
   }[]
   notice: NoticeCostSummary
   professionals: { id: string; text: string }[]
+  professionalsApply: boolean
   parcels: string[]
   certification: { offered: boolean; history: string[] }
   exerciseText: string | null
@@ -221,6 +223,7 @@ export async function loadBoardPanel(
     })),
     today,
     regional: {
+      applies: rules.regionalImpactDetermination !== null,
       text: determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
       summary: regionalSummary(
         determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
@@ -252,6 +255,7 @@ export async function loadBoardPanel(
       id: p.id,
       text: `${p.name}, ${PROFESSION_TEXT[p.profession]}${p.sealOnPlat ? ', seal on the plat' : ''}`,
     })),
+    professionalsApply: classification?.abutters?.roles.includes('sealed_professional') === true,
     parcels: parcelIds.map((id) => labels.get(id) ?? 'Parcel'),
     certification: {
       offered: panelClocks.decisionOpen,

@@ -3,6 +3,8 @@ import type { DbOrTx } from '@/db/client'
 import { auditLog, users } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { activityPhrase } from '@/features/applications/activityPhrase'
+import { loadApplicationContext } from '@/features/applications/context'
+import { hasBoardClassification } from '@/features/applications/workPlan'
 import type { Actor } from '@/features/auth/actor'
 
 export const ACTIVITY_LIMIT = 10
@@ -42,10 +44,12 @@ export async function recentApplicationActivity(
     .where(and(eq(auditLog.entityType, 'application'), eq(auditLog.entityId, applicationId)))
     .orderBy(desc(auditLog.at), desc(auditLog.id))
     .limit(ACTIVITY_LIMIT)
+  const app = await loadApplicationContext(db, applicationId, signal)
+  const board = app === null || hasBoardClassification(app.typeBody.classification)
   return rows.map((r) => ({
     id: r.id,
     at: r.at,
     who: whoDid(r),
-    what: activityPhrase(r.action, r.after),
+    what: activityPhrase(r.action, r.after, board),
   }))
 }

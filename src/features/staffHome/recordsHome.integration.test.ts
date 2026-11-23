@@ -32,6 +32,7 @@ beforeAll(async () => {
   await log('2027-06-20')
   await log('2027-07-01')
   await log('2027-07-12')
+  await log('2027-07-13')
 })
 afterAll(async () => {
   await handle.drop()

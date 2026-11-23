@@ -14,6 +14,7 @@ export function ledgerEntryVisibleTo(actor: Actor | null): SQL {
   if (seesWholeLedger(actor)) return sql`true`
   return sql`(
     ${ledgerEntries.payerUserId} = ${actor.userId}
+    or ${ledgerEntries.actorUserId} = ${actor.userId}
     or exists (
       select 1
       from ledger_allocations la
@@ -32,6 +33,7 @@ export function ledgerEntryVisibleForApplication(actor: Actor | null, applicatio
   if (seesWholeLedger(actor)) return sql`true`
   return sql`(
     ${ledgerEntries.payerUserId} = ${actor.userId}
+    or ${ledgerEntries.actorUserId} = ${actor.userId}
     or exists (
       select 1
       from applications app

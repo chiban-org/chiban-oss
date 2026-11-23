@@ -2,12 +2,16 @@
 
 import { ReferenceList } from '@/components/config/formBuilder/ReferenceList'
 import { Check, Input, Pick } from '@/components/config/primitives'
+import { usePackText } from '@/components/PackTextProvider'
 import type { FieldReference } from '@/features/forms/formReferences'
 import type { FormField } from '@/features/forms/formSchema'
 import { FACT_CHOICES } from '@/features/forms/questionTypes'
 
 const FROZEN_HINT = 'A version that was put into use uses this key, so it stays fixed.'
 const FREE_HINT = 'Made from the question text. Answers are stored under it.'
+const FACT_HINT = 'Copies the answer into the project facts that rules read.'
+const APPEALED_DATE_HINT =
+  'The late appeal warning reads this answer as the date of the decision being appealed. It is not copied into the project facts.'
 
 export function AdvancedSettings({
   field,
@@ -23,6 +27,7 @@ export function AdvancedSettings({
   onPatch: (patch: Partial<FormField>) => void
 }) {
   const isQuestion = field.type !== 'section'
+  const { significanceQuestion } = usePackText()
   return (
     <details className="rounded-md border border-hairline p-3">
       <summary className="cursor-pointer text-sm font-medium">Advanced</summary>
@@ -38,7 +43,7 @@ export function AdvancedSettings({
           <>
             <Pick
               label="Fact"
-              hint="Copies the answer into the project facts that rules read."
+              hint={field.fact === 'appealedDecisionDate' ? APPEALED_DATE_HINT : FACT_HINT}
               value={field.fact ?? ''}
               options={FACT_CHOICES}
               onChange={(e) => {
@@ -51,6 +56,13 @@ export function AdvancedSettings({
               checked={field.staffOnly === true}
               onChange={(on) => onPatch({ staffOnly: on ? true : undefined })}
             />
+            {significanceQuestion ? (
+              <Check
+                label="Shown beside the significance question"
+                checked={field.significanceFact === true}
+                onChange={(on) => onPatch({ significanceFact: on ? true : undefined })}
+              />
+            ) : null}
           </>
         ) : null}
         <div>

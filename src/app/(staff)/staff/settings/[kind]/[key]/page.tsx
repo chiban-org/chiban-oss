@@ -13,7 +13,7 @@ import {
 } from '@/features/boards/boardSettingsSchema'
 import { activeBoards } from '@/features/boards/townBoards'
 import { discardOffer } from '@/features/config/discardOffer'
-import { type EditorContext, editorContext } from '@/features/config/editorContext'
+import { type EditorContext, editorContext, feeUsedByLabels } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
 import {
   type ConfigKind,
@@ -37,7 +37,13 @@ import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { recordStaffContext, type StaffContext } from '@/server/requireStaff'
-import { discardDraftAction, publishAction, rollbackAction, saveDraftAction } from '../../actions'
+import {
+  discardDraftAction,
+  publishAction,
+  retireTownRuleAction,
+  rollbackAction,
+  saveDraftAction,
+} from '../../actions'
 import { templatePreviewAction, templateSamplesAction } from '../../templateActions'
 
 export const metadata: Metadata = { title: 'Settings item' }
@@ -134,6 +140,7 @@ export default async function SettingsKeyPage({ params }: Props) {
     ),
     references,
     feeQuestions: kind === 'fee_schedule' ? numberQuestionsFor(referenceRows, key) : [],
+    feeUsedBy: kind === 'fee_schedule' ? feeUsedByLabels(referenceRows, key) : [],
     formFields: kind === 'application_type' ? formFieldsByKey(referenceRows) : {},
   }
   const isForm = kind === 'form'
@@ -158,6 +165,20 @@ export default async function SettingsKeyPage({ params }: Props) {
         publishAction={publishAction}
         {...discardOffer(state.versions, discardDraftAction)}
       />
+      {kind === 'town_rule_setting' && state.versions.some((v) => v.status === 'published') ? (
+        <ActionForm
+          action={retireTownRuleAction}
+          submitLabel="Use the starting value again"
+          confirm={{
+            title: 'Use the starting value again?',
+            body: "Chiban stops using the town's value for this rule and goes back to the starting value shown on the State law page.",
+            confirmLabel: 'Use the starting value again',
+          }}
+        >
+          <input type="hidden" name="kind" value={kind} />
+          <input type="hidden" name="key" value={key} />
+        </ActionForm>
+      ) : null}
       <h2 className="mt-10">Version history</h2>
       <VersionHistory
         rows={state.versions}

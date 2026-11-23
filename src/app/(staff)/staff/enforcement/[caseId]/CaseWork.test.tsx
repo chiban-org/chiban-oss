@@ -60,6 +60,7 @@ function planWith(now: Partial<NonNullable<CaseWorkPlan['now']>>): CaseWorkPlan 
     remedies: [],
     groups: [],
     moves: [],
+    heldNote: null,
     now: {
       key: 'step',
       task: 'Task',

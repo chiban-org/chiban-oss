@@ -89,11 +89,11 @@ async function expectedStates(asOf: string): Promise<Map<string, string>> {
     const found = await retentionFor(handle.db, ref, signal)
     if (found === null || found.status.state === 'permanent') continue
     const { status } = found
-    let state: string | null = null
+    let state = 'scheduled'
     if (found.holds.length > 0) state = 'on_hold'
     else if (status.state === 'not_yet_triggered') state = 'awaiting_event'
     else if (status.date <= asOf) state = 'eligible'
-    if (state !== null) expected.set(`${ref.kind}:${ref.id}`, `${state} ${JSON.stringify(status)}`)
+    expected.set(`${ref.kind}:${ref.id}`, `${state} ${JSON.stringify(status)}`)
   }
   return expected
 }

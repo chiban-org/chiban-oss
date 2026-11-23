@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { DecisionNoticeView } from '@/features/applications/decisionNoticeView'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import { documentKind } from '@/features/templates/kinds/documentKinds'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { recordDecisionNoticeAction } from './decisionNoticeActions'
@@ -9,11 +10,18 @@ import { recordDecisionNoticeAction } from './decisionNoticeActions'
 const LABEL = 'Written decision notice'
 const OWED_STATES: readonly string[] = ['decided', 'issued']
 const NOTICE_STATES: readonly string[] = ['decided', 'issued', 'denied']
+const GENERATED_LETTER = documentKind('permit_decision_letter').title
 
 export interface NoticeDocument {
   documentId: string
   title: string
   supersededBy: string | null
+}
+
+export function noticeChoices(documents: readonly NoticeDocument[]): NoticeDocument[] {
+  const live = documents.filter((d) => d.supersededBy === null)
+  const generated = live.filter((d) => d.title === GENERATED_LETTER).reverse()
+  return [...generated, ...live.filter((d) => d.title !== GENERATED_LETTER)]
 }
 
 export function noticeStatusText(
@@ -45,7 +53,8 @@ function RecordForm({
   documents: readonly NoticeDocument[]
   today: CivilDate
 }) {
-  const live = documents.filter((d) => d.supersededBy === null)
+  const live = noticeChoices(documents)
+  const preselected = live[0]?.title === GENERATED_LETTER ? live[0].documentId : ''
   if (live.length === 0) {
     return <p>File the notice among this application&apos;s documents, then record it here.</p>
   }
@@ -61,6 +70,7 @@ function RecordForm({
         label="Notice document"
         name="documentId"
         required
+        defaultValue={preselected}
         options={[
           ['', 'Choose the notice'],
           ...live.map((d): readonly [string, string] => [d.documentId, d.title]),

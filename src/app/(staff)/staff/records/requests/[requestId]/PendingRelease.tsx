@@ -29,12 +29,21 @@ function newest(versions: readonly RequestApproval[]): RequestApproval | undefin
   )
 }
 
+function labelOf(a: RequestApproval, timeZone: string, requestId: string): string {
+  return versionLabel(a.role, a.versionCreatedAt, timeZone, {
+    madeFor: a.madeFor,
+    currentRequestId: requestId,
+  })
+}
+
 function DocumentItem({
   versions,
   timeZone,
+  requestId,
 }: {
   versions: readonly RequestApproval[]
   timeZone: string
+  requestId: string
 }) {
   const [only] = versions
   if (only === undefined) return null
@@ -52,7 +61,7 @@ function DocumentItem({
             defaultChecked={a === chosen}
             className="mt-1 size-4 shrink-0 accent-action"
           />
-          <span>{versionLabel(a.role, a.versionCreatedAt, timeZone)}</span>
+          <span>{labelOf(a, timeZone, requestId)}</span>
         </label>
       ))}
     </fieldset>
@@ -81,7 +90,7 @@ export function PendingRelease({
           <li key={a.approvalId} className="record-item">
             <p className="m-0 font-medium">{a.title}</p>
             <p className="m-0 text-sm text-ink-secondary">
-              {`${versionLabel(a.role, a.versionCreatedAt, timeZone)}. Approved ${formatInstantDate(a.approvedAt, timeZone)}.`}
+              {`${labelOf(a, timeZone, requestId)}. Approved ${formatInstantDate(a.approvedAt, timeZone)}.`}
             </p>
           </li>
         ))}
@@ -99,7 +108,12 @@ export function PendingRelease({
       >
         <input type="hidden" name="requestId" value={requestId} />
         {byDocument(pending).map((versions) => (
-          <DocumentItem key={versions[0]?.documentId} versions={versions} timeZone={timeZone} />
+          <DocumentItem
+            key={versions[0]?.documentId}
+            versions={versions}
+            timeZone={timeZone}
+            requestId={requestId}
+          />
         ))}
         <TextField
           label="Date released"

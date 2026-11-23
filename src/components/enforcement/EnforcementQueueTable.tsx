@@ -5,22 +5,31 @@ import { StatusChip } from '@/components/StatusChip'
 import type { SortLink } from '@/features/dataTable/sort'
 import type { CaseSortKey } from '@/features/enforcement/caseListParams'
 import type { QueueRow } from '@/features/enforcement/caseQueue'
+import { stayRuleActive } from '@/features/enforcement/stay'
 import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate, formatCivilDateShort } from '@/lib/formatDate'
 
 const ROW_CLASS =
   'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
 
-function sortOptions(links: Record<CaseSortKey, SortLink>) {
+function sortOptions(links: Record<CaseSortKey, SortLink>, stays: boolean) {
   return [
     { label: 'Case', link: links.number },
     { label: 'Where', link: links.where },
     { label: 'Status', link: links.status },
     { label: 'Opened', link: links.opened },
     { label: 'Due', link: links.next },
-    { label: 'Appeal stay', link: links.stay },
+    ...(stays ? [{ label: 'Appeal stay', link: links.stay }] : []),
     { label: 'Assigned to', link: links.assigned },
   ]
+}
+
+function StayCell({ row }: { row: QueueRow }) {
+  return (
+    <td data-label="Appeal stay" className={`${STACKED_CELL} whitespace-nowrap`}>
+      {row.stay.stayed ? <StatusChip status="overdue" label="Stayed" /> : <span>Not stayed</span>}
+    </td>
+  )
 }
 
 function NextStepCell({ row }: { row: QueueRow }) {
@@ -55,9 +64,10 @@ export function EnforcementQueueTable({
   links: Record<CaseSortKey, SortLink>
 }) {
   if (rows.length === 0) return <p className="px-5 py-8">No cases match.</p>
+  const stays = stayRuleActive()
   return (
     <>
-      <SortBar className="mb-3 md:hidden" options={sortOptions(links)} />
+      <SortBar className="mb-3 md:hidden" options={sortOptions(links, stays)} />
       <div className="table-panel">
         <table className="w-full text-left max-md:block">
           <thead className="max-md:hidden">
@@ -68,7 +78,7 @@ export function EnforcementQueueTable({
               <SortHeader label="Opened" link={links.opened} />
               <SortHeader label="Next step" />
               <SortHeader label="Due" link={links.next} />
-              <SortHeader label="Appeal stay" link={links.stay} />
+              {stays ? <SortHeader label="Appeal stay" link={links.stay} /> : null}
               <SortHeader label="Assigned to" link={links.assigned} />
             </tr>
           </thead>
@@ -104,13 +114,7 @@ export function EnforcementQueueTable({
                 <td data-label="Due" className={STACKED_CELL}>
                   <DueCell row={row} />
                 </td>
-                <td data-label="Appeal stay" className={`${STACKED_CELL} whitespace-nowrap`}>
-                  {row.stay.stayed ? (
-                    <StatusChip status="overdue" label="Stayed" />
-                  ) : (
-                    <span>Not stayed</span>
-                  )}
-                </td>
+                {stays ? <StayCell row={row} /> : null}
                 <td data-label="Assigned to" className={STACKED_CELL}>
                   {row.assignedToName ?? <span className="text-muted-foreground">Unassigned</span>}
                 </td>

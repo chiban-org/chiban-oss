@@ -5,6 +5,7 @@ import { APPROVAL_PURPOSES } from '@/db/schema'
 import { optionalRecordId } from '@/features/input/optionalRecordId'
 import { choice, recordId, requiredText } from '@/features/input/schemas'
 import { approveRendition, revokeApproval } from '@/features/renditions/approvals'
+import { stopReleaseLink } from '@/features/rtk/stopReleaseLink'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
 import { runStaffForm } from '@/server/formInput'
@@ -41,7 +42,7 @@ export async function approveRenditionAction(formData: FormData): Promise<Action
         getObjectStore(),
       ),
       'Version approved.',
-      { wrong_role: 'versionId', not_ready: 'versionId' },
+      { wrong_role: 'versionId', not_ready: 'versionId', redaction_not_cited: 'versionId' },
     ),
   )
 }
@@ -57,6 +58,22 @@ export async function revokeApprovalAction(formData: FormData): Promise<ActionRe
         getObjectStore(),
       ),
       'Approval revoked. The version is no longer served anywhere.',
+      { reason_required: 'reason' },
+    ),
+  )
+}
+
+export async function stopReleaseLinkAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, REVOKE_FORM, async ({ db, actor, signal }, input) =>
+    recordsOutcome(
+      await stopReleaseLink(
+        db,
+        actor,
+        { approvalId: input.approvalId, reason: input.reason },
+        signal,
+        getObjectStore(),
+      ),
+      'Download link stopped. The copy can no longer be downloaded from it.',
       { reason_required: 'reason' },
     ),
   )

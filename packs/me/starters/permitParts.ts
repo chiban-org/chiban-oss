@@ -9,8 +9,6 @@ import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { StarterBundle } from '@/features/packs/schema'
 import { ATTESTATION_TEXT } from '@/features/packs/schema'
 
-export const SET_YOUR_FEE = 'Set your fee'
-
 const YES_NO = [
   { value: 'yes', label: 'Yes' },
   { value: 'no', label: 'No' },
@@ -106,9 +104,10 @@ export function setYourFeeLine(
 ): FeeScheduleBody['lines'][number] {
   return {
     code,
-    label: `${label} (${SET_YOUR_FEE})`,
+    label,
     due,
     expr: { op: 'flat', cents: 0 },
+    townSets: true,
   }
 }
 
@@ -147,13 +146,13 @@ export function permitStarter(input: PermitStarterInput): StarterBundle {
       key: `${slug}-permit`,
       label,
       kind: 'permit' as const,
-      body: `{{town.name}} ${label} {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. ${input.permitDetails} Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.`,
+      body: `{{town.name}} ${label} {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. ${input.permitDetails} Fees: {{fees.totalFormatted}}.`,
     },
     denialLetter(slug, label),
   ]
   return {
     id: input.id,
-    version: 1,
+    version: 2,
     form: {
       key: `${slug}-form`,
       label: `${label} application`,
@@ -189,6 +188,7 @@ export function permitStarter(input: PermitStarterInput): StarterBundle {
       bindings: bindingsOf(input.classification),
       workflow: {
         allowsDirectIssue: input.allowsDirectIssue,
+        reviewRequired: false,
         substeps: input.substeps ?? [],
         closesOn: input.closesOn,
       },
@@ -203,7 +203,10 @@ export interface ChecklistInput {
   label: string
   items: readonly string[]
   final: boolean
+  provenance?: string
 }
+
+const STARTING_CHECKLIST = 'Chiban starting checklist. The town can edit it.'
 
 export function checklist(input: ChecklistInput): ChecklistBody {
   const { slug, inspectionType } = input
@@ -212,6 +215,7 @@ export function checklist(input: ChecklistInput): ChecklistBody {
     inspectionType,
     label: input.label,
     final: input.final,
+    ...(input.provenance === undefined ? {} : { provenance: input.provenance }),
     items: input.items.map((item, i) => ({
       key: `${inspectionType}-${i + 1}`,
       label: item,
@@ -225,16 +229,18 @@ export function startAndFinalChecklists(slug: string): ChecklistBody[] {
     checklist({
       slug,
       inspectionType: 'start_of_work',
-      label: 'Start of work (Chiban starting checklist, the town can edit it)',
+      label: 'Start of work',
       items: ['Work authorized by the permit has begun on site'],
       final: false,
+      provenance: STARTING_CHECKLIST,
     }),
     checklist({
       slug,
       inspectionType: 'final',
-      label: 'Final inspection (Chiban starting checklist, the town can edit it)',
+      label: 'Final inspection',
       items: ['Work authorized by the permit is complete'],
       final: true,
+      provenance: STARTING_CHECKLIST,
     }),
   ]
 }

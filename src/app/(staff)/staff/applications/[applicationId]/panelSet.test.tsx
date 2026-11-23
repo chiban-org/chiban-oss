@@ -63,6 +63,7 @@ function input(o: Options = {}): RecordPanelsInput {
       snapshots: [],
       appHolds: [],
       checklist: null,
+      canFileItems: false,
       canAcceptItems: false,
     },
     payments: null,

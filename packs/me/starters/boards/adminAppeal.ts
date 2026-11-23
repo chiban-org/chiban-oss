@@ -29,6 +29,7 @@ export const ADMIN_APPEAL_STARTER = boardStarter({
       label: 'Date of the decision',
       type: 'date',
       required: true,
+      fact: 'appealedDecisionDate',
     },
     {
       key: 'grounds',

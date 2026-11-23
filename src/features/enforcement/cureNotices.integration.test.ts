@@ -1,14 +1,17 @@
+import { ME_PACK } from '@packs/me'
 import { eq } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { cureNotices, enforcementCases } from '@/db/schema'
+import { cureNotices, documents, documentVersions, enforcementCases, files } from '@/db/schema'
 import {
   applyCureProcedure,
   cureStatus,
   recordCureReturnReceipt,
   sendCureNotice,
 } from '@/features/enforcement/cureNotices'
+import { cureRules } from '@/features/enforcement/cureRules'
 import { markFindingCorrected } from '@/features/enforcement/findingChanges'
 import { setActivePackForTest } from '@/features/packs/registry'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   CURE_DUE,
   CURE_NOW,
@@ -20,7 +23,9 @@ import {
 } from '@/test/cureFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { type EnforcementWorld, setupEnforcementWorld } from '@/test/enforcementFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import { XX_CURE, XX_CURE_RULE_KEY } from '@/test/packs/xx/cure'
+import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -33,6 +38,7 @@ const OCCUPANT = CURE_OCCUPANT
 let handle: TestDb
 let world: EnforcementWorld
 let cure: CureHelpers
+let store: ObjectStore
 
 beforeAll(() => {
   setActivePackForTest(XX_CURE)
@@ -43,7 +49,8 @@ afterAll(() => {
 beforeEach(async () => {
   handle = await makeTestDb()
   world = await setupEnforcementWorld(handle.db)
-  cure = cureHelpers(handle.db, world)
+  store = (await makeTestStore()).store
+  cure = cureHelpers(handle.db, world, store)
 })
 afterEach(async () => {
   await handle.drop()
@@ -146,6 +153,7 @@ describe('sending the cure notice', () => {
     expect(await cure.send(caseId, findingIds)).toEqual({ ok: false, error: 'finding_not_open' })
     const future = await sendCureNotice(
       handle.db,
+      store,
       world.staff,
       {
         caseId,
@@ -153,7 +161,6 @@ describe('sending the cure notice', () => {
         owner: OWNER,
         occupant: 'none',
         sentOn: d('2027-03-09'),
-        documentId: null,
       },
       signal,
       NOW,
@@ -239,5 +246,55 @@ describe('cure status and the work plan', () => {
     const plan = await cure.planOn(caseId, d('2027-03-02'))
     expect(plan.now?.action).toEqual({ kind: 'send_notice' })
     expect(plan.remedies).toEqual([])
+  })
+})
+
+describe('the cure notice letter', () => {
+  beforeEach(() => {
+    setActivePackForTest(ME_PACK)
+  })
+  afterEach(() => {
+    setActivePackForTest(XX_CURE)
+  })
+
+  async function letterText(documentId: string): Promise<string> {
+    const [version] = await handle.db
+      .select()
+      .from(documentVersions)
+      .where(eq(documentVersions.documentId, documentId))
+    const [file] = await handle.db
+      .select()
+      .from(files)
+      .where(eq(files.sha256, version?.fileSha256 ?? ''))
+    const stream = await store.getStream(file?.storageKey ?? '', signal)
+    if (!stream.ok) throw new Error('bytes')
+    const text = await pdfText(new Uint8Array(await new Response(stream.value).arrayBuffer()))
+    return text.replace(/\s+/g, ' ')
+  }
+
+  it('attaches one PDF per recipient naming the recipient, the citation and the cure date', async () => {
+    const rule = cureRules()[0]
+    if (rule === undefined) throw new Error('no cure rule')
+    const { caseId, findingIds } = await cure.foundCase()
+    const applied = await applyCureProcedure(
+      handle.db,
+      world.staff,
+      { caseId, ruleKey: rule.key },
+      signal,
+    )
+    if (!applied.ok) throw new Error(applied.error)
+    const sent = await cure.send(caseId, findingIds, OCCUPANT)
+    if (!sent.ok) throw new Error(sent.error)
+    const rows = await handle.db.select().from(cureNotices).where(eq(cureNotices.caseId, caseId))
+    expect(rows.map((r) => r.recipientName).sort()).toEqual([OCCUPANT.name, OWNER.name].sort())
+    const letters = await handle.db.select().from(documents).where(eq(documents.recordId, caseId))
+    expect(letters.map((l) => l.docKind)).toEqual(['enforcement_letter', 'enforcement_letter'])
+    for (const row of rows) {
+      const text = await letterText(row.documentId ?? '')
+      expect(text).toContain(rule.label)
+      expect(text).toContain(row.recipientName)
+      expect(text).toContain(rule.citation.label)
+      expect(text).toContain('Correct the violation by March 11, 2027.')
+    }
   })
 })

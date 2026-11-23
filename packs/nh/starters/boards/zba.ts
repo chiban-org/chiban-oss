@@ -116,7 +116,13 @@ export const ADMINISTRATIVE_APPEAL_STARTER = boardStarter({
   classification: 'nh.zba_administrative_appeal',
   fields: [
     { key: 'decision_appealed', label: 'Decision appealed', type: 'text', required: true },
-    { key: 'decision_date', label: 'Date of the decision', type: 'date', required: true },
+    {
+      key: 'decision_date',
+      label: 'Date of the decision',
+      type: 'date',
+      required: true,
+      fact: 'appealedDecisionDate',
+    },
     { key: 'grounds', label: 'Grounds for the appeal', type: 'textarea', required: true },
   ],
   applicationFee: { op: 'flat', cents: 10000 },

@@ -34,7 +34,7 @@ export function abilitiesOf(input: RecordPanelsInput): Set<PlanActionKind> {
     offeredReviewers(records.reviewers, records.choices).length > 0
   const granted: [PlanActionKind, boolean][] = [
     ['assign_reviewer', assign],
-    ['mark_complete', completenessApplies(view)],
+    ['mark_complete', records.canMarkComplete && completenessApplies(view)],
     ['record_code_edition', codeEditionEditable(view)],
     ['record_regional_impact', regionalImpactEditable(view)],
     ['record_payment', mayRecordPayment(payments)],

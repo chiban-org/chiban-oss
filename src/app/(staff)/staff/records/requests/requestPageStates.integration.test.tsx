@@ -216,7 +216,7 @@ describe('the request page per state', () => {
     expect(text).toContain('Letter for release 1')
     expect(text).toContain('Released in release 2')
     expect(markup).toContain('Record and history')
-    expect(text).toContain('Revoke approval')
+    expect(text).not.toContain('Revoke approval')
     expect(text).not.toContain('More actions')
   })
 })

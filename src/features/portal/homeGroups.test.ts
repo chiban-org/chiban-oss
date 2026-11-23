@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { homeGroup, homeNextStep } from '@/features/portal/homeGroups'
 
-const base = { dueCents: 0, failedInspection: false, missingDocuments: [] as string[] }
+const base = {
+  dueCents: 0,
+  failedInspection: false,
+  missingDocuments: [] as string[],
+  board: false,
+  payAtOffice: null,
+}
 
 describe('homeGroup', () => {
   it('puts drafts, fees due and failed inspections under Needs you', () => {
@@ -39,5 +45,26 @@ describe('homeNextStep', () => {
     )
     expect(homeNextStep({ ...base, state: 'submitted' })).toBe('Waiting on the town.')
     expect(homeNextStep({ ...base, state: 'closed' })).toBe('Complete.')
+  })
+})
+
+describe('a board decision', () => {
+  it('reads as approved by the board, and an office decision keeps its own sentence', () => {
+    expect(homeNextStep({ ...base, state: 'decided', board: true })).toBe('Approved by the board.')
+    expect(homeNextStep({ ...base, state: 'decided' })).toBe(
+      'Approved. Waiting for the permit to be issued.',
+    )
+  })
+})
+
+describe('a fee with no online payment', () => {
+  it('says to pay at the town office', () => {
+    const facts = {
+      ...base,
+      state: 'decided' as const,
+      dueCents: 71000,
+      payAtOffice: 'Fernhollow Permit Office',
+    }
+    expect(homeNextStep(facts)).toBe('Pay $710.00 at the Fernhollow Permit Office.')
   })
 })

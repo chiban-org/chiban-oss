@@ -5,6 +5,7 @@ import {
   recordCureReturnReceipt,
   sendCureNotice,
 } from '@/features/enforcement/cureNotices'
+import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 import { runStaffFormToday } from '@/server/formInputToday'
@@ -34,6 +35,7 @@ export async function sendCureNoticeAction(formData: FormData): Promise<ActionRe
       return settled(
         await sendCureNotice(
           db,
+          getObjectStore(),
           actor,
           {
             caseId: input.caseId,
@@ -44,7 +46,6 @@ export async function sendCureNoticeAction(formData: FormData): Promise<ActionRe
                 ? 'none'
                 : { name: occupantName, mailingAddress: occupantAddress },
             sentOn: input.sentOn,
-            documentId: null,
           },
           signal,
         ),

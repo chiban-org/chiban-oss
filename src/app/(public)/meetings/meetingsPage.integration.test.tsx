@@ -1,14 +1,16 @@
+import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { boardDecisions, boardMeetings } from '@/db/schema'
+import { agendas, boardDecisions, boardMeetings, files } from '@/db/schema'
 import { scheduleMeeting } from '@/features/boards/meetings'
+import { attachDocument } from '@/features/documents/attach'
 import { type BoardWorld, boardIdOf, scheduleMeetings, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { visibleText } from '@/test/leaks'
 import { makeTestStore } from '@/test/objectStore'
-import { addDays, todayInTimeZone } from '@/types/civilDate'
+import { addDays, type CivilDate, todayInTimeZone } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown } => ({ db: null }))
 
@@ -97,5 +99,79 @@ describe('public meetings page', () => {
 
   it('says that documents open in a new tab', () => {
     expect(visibleText(html)).toContain('open in a new tab')
+  })
+})
+
+async function publicAgenda(meetingId: string): Promise<void> {
+  const sha256 = randomUUID().replaceAll('-', '').padEnd(64, '0')
+  await handle.db.insert(files).values({
+    sha256,
+    sizeBytes: 10,
+    contentType: 'application/pdf',
+    storageKey: `blobs/${sha256}`,
+  })
+  const attached = await handle.db.transaction((tx) =>
+    attachDocument(
+      tx,
+      world.staff,
+      {
+        target: { kind: 'meeting', id: meetingId },
+        title: 'Agenda',
+        docKind: 'board_material',
+        file: { sha256, filename: 'agenda.pdf', contentType: 'application/pdf' },
+        audiences: ['board'],
+        isPublic: true,
+      },
+      signal,
+    ),
+  )
+  await handle.db.insert(agendas).values({
+    meetingId,
+    status: 'published',
+    revision: 1,
+    publishedAt: new Date(),
+    documentId: attached.documentId,
+  })
+}
+
+function between(text: string, from: string, to: string): string {
+  return text.slice(text.indexOf(from), text.indexOf(to))
+}
+
+describe('a meeting earlier today', () => {
+  it('is listed under past meetings, not upcoming', async () => {
+    const made = await scheduleMeeting(
+      handle.db,
+      world.staff,
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: '2027-06-07' as CivilDate,
+        kind: 'regular',
+        startsAtMinute: 600,
+      },
+      signal,
+    )
+    if (!made.ok) throw new Error('meeting')
+    await publicAgenda(made.value.meetingId)
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2027-06-07T18:00:00Z'))
+    let text = ''
+    try {
+      text = visibleText(
+        renderToStaticMarkup(await MeetingsPage({ searchParams: Promise.resolve({}) })),
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(between(text, 'Past meetings and minutes', 'Decisions')).toContain('June 7, 2027')
+    expect(between(text, 'Upcoming meetings', 'Hearing notices')).not.toContain('June 7, 2027')
+  })
+})
+
+describe('no past agendas or minutes', () => {
+  it('points to the decisions for minutes filed with a decision', () => {
+    expect(visibleText(html)).toContain(
+      'No past agendas or approved meeting minutes are posted yet. Minutes filed with a decision are listed under Decisions.',
+    )
   })
 })

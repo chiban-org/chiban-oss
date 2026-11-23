@@ -77,7 +77,7 @@ function ModelFields({
       {model.multiplier === null ? null : (
         <Input
           label="Multiply the fee by"
-          hint="2 doubles the fee. The applicant says on the form whether work has started."
+          hint="A value of 2 doubles the fee. It applies when staff tick Work started before permit on the record."
           type="number"
           min={1}
           step="0.5"
@@ -126,13 +126,26 @@ function LineEditor({
       className="my-3 grid gap-3 rounded-md border border-hairline p-3"
       data-fee-line={line.code}
     >
+      {line.townSets === true ? (
+        <p className="m-0">
+          <span className="rounded-full border border-hairline px-2 py-0.5 text-xs">
+            Set your fee
+          </span>
+        </p>
+      ) : null}
       {fields ? (
         <>
           <ModelFields
             model={model}
             questions={questions}
             onChange={(m) =>
-              onChange({ code: m.code, label: m.label, due: m.due, expr: buildExpr(m) })
+              onChange({
+                ...line,
+                code: m.code,
+                label: m.label,
+                due: m.due,
+                expr: buildExpr(m),
+              })
             }
           />
           <FeeExample line={line} model={model} questions={questions} />
@@ -167,6 +180,19 @@ function LineEditor({
   )
 }
 
+function NoQuestionsNote({ usedBy }: { usedBy: readonly string[] }) {
+  const listed = new Intl.ListFormat('en', { type: 'conjunction' }).format(usedBy)
+  return (
+    <p className="m-0 text-sm text-muted-foreground">
+      {usedBy.length === 0
+        ? 'No application type uses this fee schedule yet, so there are no form questions to count. Choose this schedule on an application type to pick from its questions.'
+        : usedBy.length === 1
+          ? `The ${listed} form has no number questions to count.`
+          : `The ${listed} forms have no number questions to count.`}
+    </p>
+  )
+}
+
 export function FeeLinesEditor({
   body,
   onChange,
@@ -176,7 +202,8 @@ export function FeeLinesEditor({
   onChange: (b: FeeScheduleBody) => void
   errors: FieldErrors
 }) {
-  const questions = useEditorContext().feeQuestions ?? NO_QUESTIONS
+  const { feeQuestions, feeUsedBy } = useEditorContext()
+  const questions = feeQuestions ?? NO_QUESTIONS
   return (
     <>
       <Input
@@ -188,12 +215,7 @@ export function FeeLinesEditor({
         }
       />
       <FieldGroup name="lines" label="Fees" errors={errors}>
-        {questions.length === 0 ? (
-          <p className="m-0 text-sm text-muted-foreground">
-            No application type uses this fee schedule yet, so there are no form questions to count.
-            Choose this schedule on an application type to pick from its questions.
-          </p>
-        ) : null}
+        {questions.length === 0 ? <NoQuestionsNote usedBy={feeUsedBy ?? []} /> : null}
         {body.lines.map((line, i) => (
           <LineEditor
             key={rowKey('line', i)}

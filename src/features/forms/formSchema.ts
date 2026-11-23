@@ -36,7 +36,10 @@ export const FormFieldSchema = z.object({
     .optional(),
   showIf: ConditionSchema.optional(),
   requireIf: ConditionSchema.optional(),
-  fact: z.enum(['classification', 'dwellingUnits', 'afterTheFact']).optional(),
+  fact: z
+    .enum(['classification', 'dwellingUnits', 'afterTheFact', 'appealedDecisionDate'])
+    .optional(),
+  significanceFact: z.boolean().optional(),
   staffOnly: z.boolean().optional(),
 })
 export type FormField = z.infer<typeof FormFieldSchema>
@@ -68,6 +71,7 @@ function sectionIssue(field: FormField): string | null {
     showIf: field.showIf,
     requireIf: field.requireIf,
     fact: field.fact,
+    significanceFact: field.significanceFact,
   }
   const extra = Object.entries(extras).find(([, value]) => value !== undefined)
   return extra === undefined ? null : `a section cannot have ${extra[0]}`

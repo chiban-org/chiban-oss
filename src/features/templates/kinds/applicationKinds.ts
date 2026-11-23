@@ -8,21 +8,33 @@ import {
   section,
   signature,
 } from '@/features/templates/doc/build'
+import { type DocNode, fieldTableRows } from '@/features/templates/doc/docSchema'
 import { APPLICATION_FIELDS, type DocumentKindDef } from '@/features/templates/kinds/kindTypes'
+import type { MergeField } from '@/features/templates/mergeFields'
+
+function withOptionalRows(node: DocNode, optional: readonly MergeField[]): DocNode {
+  const rows = fieldTableRows(node).map((row) =>
+    (optional as readonly string[]).includes(row.field) ? { ...row, optional: true } : row,
+  )
+  return { ...node, attrs: { ...node.attrs, rows } }
+}
 
 const PERMIT_SUFFIX = [
-  fields([
-    ['Number', 'application.number'],
-    ['Type', 'application.typeLabel'],
-    ['Parcel', 'parcel.displayId'],
-    ['Site address', 'parcel.siteAddress'],
-    ['Owner', 'parcel.ownerName'],
-    ['Contractor', 'permit.contractorWithLicense'],
-    ['Issued', 'application.issuedOn'],
-    ['Expires', 'application.expiresOn'],
-    ['Code edition', 'codeEdition.label'],
-    ['Fees', 'fees.status'],
-  ]),
+  withOptionalRows(
+    fields([
+      ['Number', 'application.number'],
+      ['Type', 'application.typeLabel'],
+      ['Parcel', 'parcel.displayId'],
+      ['Site address', 'parcel.siteAddress'],
+      ['Owner', 'parcel.ownerName'],
+      ['Contractor', 'permit.contractorWithLicense'],
+      ['Issued', 'application.issuedOn'],
+      ['Expires', 'application.expiresOn'],
+      ['Code edition', 'codeEdition.label'],
+      ['Fees', 'fees.status'],
+    ]),
+    ['codeEdition.label'],
+  ),
   heading('Conditions'),
   conditions(),
   signature('building_official'),

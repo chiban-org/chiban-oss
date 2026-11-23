@@ -20,11 +20,12 @@ A series follows one of three rules:
 
 ## Read the Retention list
 
-Open **Retention**. The list is sorted by the earliest eligible date and has three tabs.
+Open **Retention**. The list is sorted by the earliest eligible date and has four tabs.
 
 ![The Retention page with two records eligible now and the disposition batches below](/img/shots/records-custodian/retention.png)
 
 - **Eligible now.** These can be disposed of today.
+- **Eligible later.** The retention period is running and ends on a date still ahead. **Eligible on** gives the date. When the date arrives the record moves to **Eligible now**. A record whose clock starts at an event moves here once the event is recorded, if the date it produces is still ahead.
 - **Waiting for an event.** The clock has not started. Where Chiban records the event itself, such as a registration expiring or an application being withdrawn or denied, the row says so. Otherwise the row has **Record event**.
 - **On legal hold.** Held records are listed here and cannot be disposed of until the hold is released. See [Legal holds](./legal-holds.md).
 

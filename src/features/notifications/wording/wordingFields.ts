@@ -8,6 +8,8 @@ export const WORDING_FIELDS = [
   'inspection.type',
   'inspection.date',
   'inspection.time',
+  'inspection.previousDate',
+  'inspection.previousTime',
   'inspection.result',
   'permit.revision',
   'account.from',
@@ -50,6 +52,8 @@ export const FIELD_LABELS: Record<WordingField, string> = {
   'inspection.type': 'Inspection type',
   'inspection.date': 'Inspection date',
   'inspection.time': 'Inspection time',
+  'inspection.previousDate': 'Earlier inspection date',
+  'inspection.previousTime': 'Earlier inspection time',
   'inspection.result': 'Inspection result',
   'permit.revision': 'Revision number',
   'account.from': 'Where to download it, such as "from your account"',
@@ -76,6 +80,12 @@ export const FIELD_LABELS: Record<WordingField, string> = {
   'request.due': 'Date the town will answer by',
   'records.releasedOn': 'Date the records were released',
   'records.linkNote': 'Why a link was sent, filled in by Chiban',
+}
+
+export function wordingFieldLabels(recordsAcknowledgement: boolean): Record<WordingField, string> {
+  return recordsAcknowledgement
+    ? { ...FIELD_LABELS, 'request.due': 'Date the town will acknowledge the request by' }
+    : FIELD_LABELS
 }
 
 export type WordingValues = Partial<Record<WordingField, string>>

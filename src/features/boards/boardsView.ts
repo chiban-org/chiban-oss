@@ -1,9 +1,10 @@
-import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   acceptanceSchedules,
   applications,
   boardMeetings,
+  hearings,
   projects,
   reviewAssignments,
 } from '@/db/schema'
@@ -72,6 +73,34 @@ export interface BoardsView {
 
 const OPEN_STATES: CoreState[] = ['submitted', 'under_review', 'decided']
 
+async function hearingMeetingDate(
+  db: Db,
+  applicationId: string,
+  status: 'scheduled' | 'held',
+): Promise<string | null> {
+  const [row] = await db
+    .select({ date: boardMeetings.meetingDate })
+    .from(hearings)
+    .innerJoin(boardMeetings, eq(boardMeetings.id, hearings.meetingId))
+    .where(and(eq(hearings.applicationId, applicationId), eq(hearings.status, status)))
+    .orderBy(desc(boardMeetings.meetingDate))
+    .limit(1)
+  return row?.date ?? null
+}
+
+async function meetingDateOf(db: Db, applicationId: string): Promise<string | null> {
+  const scheduled = await hearingMeetingDate(db, applicationId, 'scheduled')
+  if (scheduled !== null) return scheduled
+  const held = await hearingMeetingDate(db, applicationId, 'held')
+  if (held !== null) return held
+  const [schedule] = await db
+    .select({ date: boardMeetings.meetingDate })
+    .from(acceptanceSchedules)
+    .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
+    .where(eq(acceptanceSchedules.applicationId, applicationId))
+  return schedule?.date ?? null
+}
+
 async function applicationLines(
   db: Db,
   boardKind: BoardKind,
@@ -99,18 +128,14 @@ async function applicationLines(
   for (const { row, clockDue, clockRuleKey, noticeDue } of rows) {
     const app = await loadApplicationContext(db, row.id, signal)
     if (app === null || boardOfApplication(app) !== boardKind) continue
-    const [schedule] = await db
-      .select({ date: boardMeetings.meetingDate })
-      .from(acceptanceSchedules)
-      .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
-      .where(eq(acceptanceSchedules.applicationId, row.id))
+    const meetingOn = await meetingDateOf(db, row.id)
     const deadline = headlineDeadline(clockDue, clockRuleKey, noticeDue)
     const deadlineOverdue = deadline !== null && deadline.on < today
     lines.push({
       typeKey: row.applicationTypeKey,
       state: app.state,
       filedOn: row.receivedDate,
-      meetingOn: schedule?.date ?? null,
+      meetingOn,
       deadlineOn: deadline?.on ?? null,
       deadlineOverdue,
       id: row.id,
@@ -118,7 +143,7 @@ async function applicationLines(
       typeLabel: app.typeBody.label,
       stateText: stateLabel(app.state),
       filedText: row.receivedDate === null ? 'Not yet filed' : formatCivilDate(row.receivedDate),
-      meetingText: schedule === undefined ? null : formatCivilDate(schedule.date),
+      meetingText: meetingOn === null ? null : formatCivilDate(meetingOn),
       deadlineText:
         deadline === null
           ? null

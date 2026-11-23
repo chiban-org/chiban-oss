@@ -8,6 +8,7 @@ import {
 } from '@/features/inspections/portalRequestForm'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { cancelInspection } from '@/features/inspections/schedule'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { enqueueCalendarPushes } from '@/jobs/calendarPush'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { parseForm } from '@/server/formInput'
@@ -21,7 +22,8 @@ export async function portalRequestInspectionAction(formData: FormData): Promise
     if (!parsed.ok) return parsed.error
     const made = await requestInspection(db, actor, portalRequestInput(parsed.value), signal)
     if (!made.ok) return fail(inspectionErrorCopy(made.error))
-    return { ok: true, message: 'Request sent. The land use office will schedule it.' }
+    const office = await loadOfficeName(db, signal)
+    return { ok: true, message: `Request sent. The ${office} will schedule it.` }
   })
 }
 

@@ -19,7 +19,7 @@ Add a question with one of the buttons under **Add a question**: **Short answer*
 - **Required**, and for numbers a **Smallest allowed** and **Largest allowed**.
 - **Show only when**: show this question only when an earlier answer is, is not, or is any of the values you choose.
 - **Required only when**: the same kind of rule for a question that is required in some cases.
-- **Advanced**: the question's short key, a **Staff only** box, and a **Used by** list showing what relies on the question, such as a fee schedule, a required document or another question's rules. It warns that changing the key stops them from finding the answer.
+- **Advanced**: the question's short key, a **Fact** setting that copies the answer into the project facts the town's rules read, a **Staff only** box, and a **Used by** list showing what relies on the question, such as a fee schedule, a required document or another question's rules. It warns that changing the key stops them from finding the answer. On the appeal form's decision date question, **Fact** is set to the appealed decision date. The hint there says the late appeal warning reads the answer as the date of the decision being appealed, and that it is not copied into the project facts. **Used by** lists it as the late appeal warning.
 - **Move up**, **Move down** and **Remove question**.
 
 Choose **Preview as applicant** above the questions to see the form as the applicant will.
@@ -39,7 +39,7 @@ For each fee you set:
 - **How it is worked out**: a set amount, an amount for each unit of an answer, or rates that change in bands.
 - For an amount per unit, **Count** which answers, such as finished area or estimated cost of work, with a **Rate for each**. You can count the abutters on the notice list or the dwelling units too.
 - **Charge at least a minimum amount**, with a **Minimum**.
-- **Charge more when work started before the permit was issued**, with a number to multiply the fee by. A 2 doubles it. The applicant says on the form whether work has started.
+- **Charge more when work started before the permit was issued**, with a number to multiply the fee by. A 2 doubles it. It applies when staff tick **Work started before permit** on the record.
 
 The **Worked example** under each fee shows what it comes to. Change the sample answers beside it and the total changes, so you can try a small job and a large one. **Add a fee** adds a line and **Remove this fee** takes one off. The schedule is tied to an application type under [application types and workflow](./application-types-and-workflow.md).
 

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { TextField } from '@/components/staff/fields'
+import { DateField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import type { CaseRemedies } from '@/features/enforcement/caseRemedies'
 import { cureStanding } from '@/features/enforcement/cureStanding'
@@ -18,10 +18,6 @@ import { Hidden } from './Section'
 
 type Variant = 'default' | 'outline'
 type Hold = CaseRemedies['holds'][number]
-
-function DateField({ label, name, today }: { label: string; name: string; today: string }) {
-  return <TextField label={label} name={name} type="date" defaultValue={today} required />
-}
 
 export function PlaceHoldForm({ detail, variant }: { detail: CaseDetail; variant: Variant }) {
   return (

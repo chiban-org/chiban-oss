@@ -3,7 +3,7 @@ import type { EnforcementStatus } from '@/db/schema'
 export const CASE_TRANSITIONS: Record<EnforcementStatus, readonly EnforcementStatus[]> = {
   intake: ['investigating'],
   investigating: ['violation_found', 'no_violation'],
-  violation_found: ['order_issued', 'resolved', 'no_violation'],
+  violation_found: ['order_issued', 'in_court', 'resolved', 'no_violation'],
   no_violation: ['closed'],
   order_issued: ['in_court', 'resolved'],
   in_court: ['resolved'],

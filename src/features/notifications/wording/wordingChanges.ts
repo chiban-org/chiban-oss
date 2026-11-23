@@ -3,10 +3,13 @@ import type {
   NotificationWordingBody,
   WordingOverrides,
 } from '@/features/notifications/wording/wordingSchema'
-import { defaultWordingFor, type Wording } from '@/features/notifications/wording/wordingStandard'
-import type { Vocabulary } from '@/features/packs/vocabulary'
+import {
+  defaultWordingFor,
+  type StandardWords,
+  type Wording,
+} from '@/features/notifications/wording/wordingStandard'
 
-export type WordingWords = Pick<Vocabulary, 'recordsRequest'>
+export type WordingWords = StandardWords
 
 function overrideOf(overrides: WordingOverrides, key: WordingKey): Wording | undefined {
   return new Map(Object.entries(overrides)).get(key)

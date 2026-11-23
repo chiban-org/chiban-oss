@@ -2,14 +2,14 @@ import { NEW_TAB } from '@/components/newTab'
 import type { RtkLetterOutcome } from '@/db/schema'
 import { costTotal, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
+import { firstResponseDetail } from '@/features/rtk/workPlanRequirements'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
+import { AnswerForm } from './AnswerForm'
+
+const RESPONDED: readonly string[] = ['responded_on_time', 'responded_late']
 
 function timelinessText(request: RtkRequestView): string | null {
-  const t = request.timeliness
-  if (t.kind === 'responded_late') {
-    return `Answered late: due ${formatCivilDate(t.dueOn)}, answered ${formatCivilDate(t.respondedOn)}.`
-  }
-  return t.kind === 'responded_on_time' ? 'Answered on time.' : null
+  return RESPONDED.includes(request.timeliness.kind) ? firstResponseDetail(request) : null
 }
 
 function recordedLine(request: RtkRequestView): string {
@@ -23,6 +23,10 @@ function acknowledgementLines(request: RtkRequestView): string[] {
   const lines = [`Receipt acknowledged, ${formatCivilDate(request.acknowledgedOn)}.`]
   if (request.clarificationQuestion !== null) {
     lines.push(`Question for the requester: ${request.clarificationQuestion}`)
+  }
+  const answeredOn = request.clarificationAnsweredOn
+  if (typeof request.clarificationAnswer === 'string' && typeof answeredOn === 'string') {
+    lines.push(`Requester answered, ${formatCivilDate(answeredOn)}: ${request.clarificationAnswer}`)
   }
   return lines
 }
@@ -44,6 +48,7 @@ export function ResponseSection({ request }: { request: RtkRequestView }) {
       {acknowledgementLines(request).map((line) => (
         <p key={line}>{line}</p>
       ))}
+      <AnswerForm request={request} />
       {request.firstResponseKind === 'acknowledged' ? null : <p>{recordedLine(request)}</p>}
       {late === null ? null : <p>{late}</p>}
       {request.timeStatements.map((s) => (

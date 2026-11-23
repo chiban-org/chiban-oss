@@ -1,11 +1,10 @@
 import { expect, fillDate, test } from '../fixtures/test'
-import { editorStatus, expectGroupRefused, publishWithConfirm, versionsOf } from './support'
+import { editorStatus, publishWithConfirm, versionsOf } from './support'
 
 test.use({ role: 'admin' })
 
 const KIND = 'town_rule_setting'
 const KEY = 'town.bp.validity'
-const BOUNDS = 'Enter a whole number of months from 1 to 120.'
 
 test.describe('town rule setting for the building permit validity period', () => {
   test('refuses -3 and 0 beside the value and publishes 12 with its adoption record', async ({
@@ -20,10 +19,15 @@ test.describe('town rule setting for the building permit validity period', () =>
     await expect(page).toHaveURL(`/staff/settings/${KIND}/${KEY}`)
 
     const value = page.getByLabel('Value, in months')
-    for (const bad of ['-3', '0']) {
+    await expect(page.getByText('A whole number from 1 to 120 months.')).toBeVisible()
+    for (const bad of ['-3', '0', '121']) {
       await value.fill(bad)
-      await publishWithConfirm(page)
-      await expectGroupRefused(page, 'value', BOUNDS)
+      expect(
+        await value.evaluate(
+          (el: HTMLInputElement) => el.validity.rangeUnderflow || el.validity.rangeOverflow,
+        ),
+      ).toBe(true)
+      expect(await value.evaluate((el: HTMLInputElement) => el.validationMessage)).not.toBe('')
     }
     expect((await versionsOf(db, KIND, KEY)).map((v) => v.status)).toEqual(['draft'])
 

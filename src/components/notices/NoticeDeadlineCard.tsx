@@ -8,6 +8,7 @@ function days(n: number): string {
 }
 
 function chip(deadline: NoticeDeadline) {
+  if (deadline.met) return <StatusChip status="passed" label="Met" />
   return isNoticeLate(deadline) ? (
     <StatusChip status="overdue" label={`Overdue by ${days(-deadline.daysRemaining)}`} />
   ) : (
@@ -28,6 +29,9 @@ export function NoticeDeadlineCard({
 }) {
   const items =
     deadline.missing === 1 ? '1 notice item has' : `${deadline.missing} notice items have`
+  const status = deadline.met
+    ? `Due ${formatCivilDate(deadline.dueOn)}. Every notice item has proof recorded. `
+    : `Due ${formatCivilDate(deadline.dueOn)}. ${items} no proof recorded. `
   return (
     <div className="record-item" role="group" aria-label={noticeHeading(deadline)}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -35,7 +39,7 @@ export function NoticeDeadlineCard({
         {chip(deadline)}
       </div>
       <p className="m-0 mt-1 text-sm">
-        {`Due ${formatCivilDate(deadline.dueOn)}. ${items} no proof recorded. `}
+        {status}
         {canOpenHearing ? (
           <Link href={`/staff/boards/hearings/${deadline.hearingId}`}>Open the hearing</Link>
         ) : null}

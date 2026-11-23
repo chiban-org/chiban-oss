@@ -8,6 +8,7 @@ import {
   penaltyRangeLines,
 } from '@/features/enforcement/penaltyExposure'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
+import { dayCount } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { fineAction, finePaymentAction } from '../moneyActions'
@@ -25,10 +26,13 @@ const ACCRUAL_NOT_STARTED =
   'Accrual has not started: no written notice has been received and no conviction has been recorded.'
 
 function accrualDays(fromDate: string, days: number): string {
-  return `Accrual began ${formatCivilDate(fromDate)}. ${days} ${days === 1 ? 'day' : 'days'}`
+  return `Accrual began ${formatCivilDate(fromDate)}. ${dayCount(days)}`
 }
 
 const NO_ACCRUAL_START = 'No accrual start is recorded for this penalty.'
+
+const FINE_RECORDED_BY_OTHERS =
+  'A judgment for the town is recorded. Finance or an administrator records the fine here.'
 
 function accrualSentence(exposure: PenaltyExposure): string {
   if (exposure.fromDate !== null) return `${accrualDays(exposure.fromDate, exposure.days)}.`
@@ -165,6 +169,7 @@ export function MoneySection({
       {detail.exposure === null ? null : (
         <PenaltyExposureNote exposure={detail.exposure} hasFines={detail.fines.length > 0} />
       )}
+      {!can.fine && bases.length > 0 ? <p className="m-0">{FINE_RECORDED_BY_OTHERS}</p> : null}
       {can.fine && bases.length > 0 && !detail.stay.stayed ? (
         <details>
           <summary className="cursor-pointer font-medium">Record a court-imposed fine</summary>

@@ -4,9 +4,11 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import {
   APPEAL_OUTCOME_LABELS,
   APPEAL_TARGET_LABELS,
+  type NOTICE_METHOD_LABELS,
   PERIL_LABELS,
 } from '@/features/enforcement/labels'
 import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/restraintWords'
+import { stayRuleActive } from '@/features/enforcement/stay'
 import { boardLabel } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import {
@@ -22,6 +24,22 @@ import { Hidden, Section } from './Section'
 const OUTCOMES = Object.entries(APPEAL_OUTCOME_LABELS) as [string, string][]
 const PERILS = Object.entries(PERIL_LABELS) as [string, string][]
 
+const NOTICE_TARGET_PHRASES: Record<keyof typeof NOTICE_METHOD_LABELS, string> = {
+  in_hand: 'handed to the recipient',
+  first_class_mail: 'sent by first class mail',
+  certified_mail: 'sent by certified mail',
+  posting: 'posted on the property',
+  email: 'sent by email',
+}
+
+function noticeTargetLabel(notice: CaseDetail['notices'][number], detail: CaseDetail): string {
+  const refs = notice.findingIds
+    .map((id) => detail.findings.find((f) => f.id === id)?.provisionRef)
+    .filter((ref) => ref !== undefined)
+  const sent = `Notice of violation ${NOTICE_TARGET_PHRASES[notice.method]} on ${formatCivilDate(notice.sentOn)}`
+  return refs.length === 0 ? sent : `${sent}, ${refs.join(', ')}`
+}
+
 export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }) {
   const caseId = detail.staff.row.id
   const targets: [string, string][] = [
@@ -29,13 +47,10 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
       .filter((o) => o.row.status !== 'draft')
       .map((o) => [`order:${o.row.id}`, `Order ${o.row.number}`] as [string, string]),
     ...detail.notices.map(
-      (n) =>
-        [`notice:${n.id}`, `Notice of violation sent ${formatCivilDate(n.sentOn)}`] as [
-          string,
-          string,
-        ],
+      (n) => [`notice:${n.id}`, noticeTargetLabel(n, detail)] as [string, string],
     ),
   ]
+  const stayControls = stayRuleActive()
   const courtDocs: [string, string][] = detail.documents
     .filter((d) => d.docKind === 'court_document')
     .map((d) => [d.documentId, d.title])
@@ -91,7 +106,7 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
                   required
                 />
               </ActionForm>
-              {a.certification === null && can.issue ? (
+              {stayControls && a.certification === null && can.issue ? (
                 <details>
                   <summary className="cursor-pointer font-medium">Certify imminent peril</summary>
                   <ActionForm action={certifyPerilAction} submitLabel="Certify">
@@ -108,25 +123,32 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
                   </ActionForm>
                 </details>
               ) : null}
-              <details>
-                <summary className="cursor-pointer font-medium">Record a restraining order</summary>
-                <ActionForm action={restrainingOrderAction} submitLabel="Record restraining order">
-                  <Hidden name="appealId" value={a.row.id} />
-                  <SelectField
-                    label="Issued by"
-                    name="issuedBy"
-                    options={restraintIssuerOptions()}
-                  />
-                  <TextField
-                    label="Date issued"
-                    name="issuedOn"
-                    type="date"
-                    defaultValue={detail.today}
-                    required
-                  />
-                  <SelectField label="Court document" name="documentId" options={courtDocs} />
-                </ActionForm>
-              </details>
+              {stayControls ? (
+                <details>
+                  <summary className="cursor-pointer font-medium">
+                    Record a restraining order
+                  </summary>
+                  <ActionForm
+                    action={restrainingOrderAction}
+                    submitLabel="Record restraining order"
+                  >
+                    <Hidden name="appealId" value={a.row.id} />
+                    <SelectField
+                      label="Issued by"
+                      name="issuedBy"
+                      options={restraintIssuerOptions()}
+                    />
+                    <TextField
+                      label="Date issued"
+                      name="issuedOn"
+                      type="date"
+                      defaultValue={detail.today}
+                      required
+                    />
+                    <SelectField label="Court document" name="documentId" options={courtDocs} />
+                  </ActionForm>
+                </details>
+              ) : null}
             </div>
           ) : null}
         </article>

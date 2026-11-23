@@ -1,6 +1,7 @@
 'use server'
 
 import { addAppealNode } from '@/features/appeals/graph'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
 import { recordDecisionDelivery } from '@/features/decisions/delivery'
 import { fileDecision } from '@/features/decisions/fileDecision'
@@ -9,7 +10,7 @@ import { recordDecisionRecording, recordFinalWrittenApproval } from '@/features/
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
-import { runStaffForm } from '@/server/formInput'
+import { refuseField, runStaffForm } from '@/server/formInput'
 import { errorOrField } from '../formFields'
 import {
   ADD_APPEAL_NODE_FORM,
@@ -56,9 +57,14 @@ export async function recordDecisionWithoutHearingAction(
         { ...rest, hearingId: null, reasonsForDisapproval: reasons ?? '' },
         signal,
       )
+      if (!recorded.ok && typeof recorded.error === 'object' && 'meetingBefore' in recorded.error) {
+        return refuseField('meetingId', boardErrorCopy(recorded.error.meetingBefore))
+      }
       return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
         future_date: 'votedOn',
         before_meeting: 'votedOn',
+        before_receipt: 'votedOn',
+        before_acceptance: 'votedOn',
         not_found: 'meetingId',
         already_final: 'finalMunicipalApproval',
       })
