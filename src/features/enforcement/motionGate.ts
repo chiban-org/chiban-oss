@@ -1,7 +1,7 @@
-import type { CeaseAndDesistRule } from '@packs/nh/schema'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
+import type { CeaseAndDesistRule } from '@/features/packs/schema'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 export type MotionBlock =

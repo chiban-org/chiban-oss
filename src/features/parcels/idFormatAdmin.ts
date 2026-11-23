@@ -51,7 +51,7 @@ function cleaned(input: IdFormatInput) {
   return { label: input.label.trim(), kind: input.kind, width: digits ? input.width : null }
 }
 
-async function usage(tx: Db | Tx, key: string): Promise<{ aliases: number; other: number }> {
+export async function usage(tx: Db | Tx, key: string): Promise<{ aliases: number; other: number }> {
   const result = await tx.execute<{ aliases: number; other: number }>(sql`
     select
       (select count(*) from ${parcelAliases} where ${parcelAliases.format} = ${key})::int as aliases,

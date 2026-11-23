@@ -1,6 +1,6 @@
-import { BOARD_KINDS } from '@packs/nh/boardKinds'
 import { z } from 'zod'
 import { choice, recordId, requiredText } from '@/features/input/schemas'
+import { BOARD_KINDS } from '@/features/packs/schema'
 
 const NAME_MAX = 120
 

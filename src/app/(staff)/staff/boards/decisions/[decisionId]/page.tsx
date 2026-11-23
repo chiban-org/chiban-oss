@@ -8,12 +8,16 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { DescriptionList } from '@/components/ui/description-list'
 import { hasCapability } from '@/features/authz/capabilities'
 import { type DecisionView, loadDecisionView } from '@/features/decisions/decisionView'
+import { loadDeliveryGroups } from '@/features/decisions/deliveryView'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AppealsSection } from './AppealsSection'
 import { DecisionRail } from './DecisionRail'
+import { DeliverySection } from './DeliverySection'
 import { FilingSection } from './FilingSection'
+import { FinalApprovalSection } from './FinalApprovalSection'
+import { RecordingSection } from './RecordingSection'
 import { TransmittalSection } from './TransmittalSection'
 
 export const metadata: Metadata = { title: 'Board decision' }
@@ -41,6 +45,8 @@ function DecisionSection({ view }: { view: DecisionView }) {
               ),
           },
           { label: 'Reasons for disapproval', value: view.reasons },
+          { label: 'Significant land use decision', value: view.significantText },
+          { label: 'Last municipal approval', value: view.lastApprovalText },
         ]}
       />
     </section>
@@ -74,13 +80,34 @@ export default async function DecisionPage({
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const view = await loadDecisionView(ctx.db, ctx.actor, decisionId, ctx.signal, today)
   if (view === null) notFound()
+  const deliveries = await loadDeliveryGroups(ctx.db, view.applicationId, ctx.signal)
   const sections = splitPanels([
     { empty: false, node: <DecisionSection key="decision" view={view} /> },
     {
       empty: !view.documentsGenerated,
       node: <NoticeOfDecisionSection key="notice" view={view} />,
     },
+    {
+      empty: false,
+      node: view.offerLastApprovalLater ? (
+        <FinalApprovalSection key="last-approval" view={view} today={today} />
+      ) : null,
+    },
     { empty: false, node: <FilingSection key="filing" view={view} today={today} /> },
+    {
+      empty: false,
+      node:
+        deliveries.length === 0 ? null : (
+          <DeliverySection key="delivery" groups={deliveries} today={today} />
+        ),
+    },
+    {
+      empty: false,
+      node:
+        view.recording === null ? null : (
+          <RecordingSection key="recording" view={view} today={today} />
+        ),
+    },
     {
       empty: false,
       node: view.regional ? (

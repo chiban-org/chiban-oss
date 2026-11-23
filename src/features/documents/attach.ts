@@ -18,6 +18,7 @@ import {
   isUserActor,
   type RecordRef,
 } from '@/features/documents/types'
+import { packRoles } from '@/features/packs/roles'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { createPreservationRecord } from '@/features/preservation/preserve'
 import { assignSeries } from '@/features/records/assignments'
@@ -171,11 +172,11 @@ export async function defaultSeriesForApplication(
   return defaultSeriesKey(classification, app.typeBody.key)
 }
 
-const ENFORCEMENT_SERIES: Partial<Record<DocKind, string>> = {
-  enforcement_photo: 'nh.rs.complaint_log',
-  enforcement_letter: 'nh.rs.code_enforcement_specifications',
-  service_proof: 'nh.rs.code_enforcement_specifications',
-  court_document: 'nh.rs.code_enforcement_specifications',
+function enforcementSeries(kind: DocKind): string | null {
+  const { recordSeries } = packRoles()
+  if (kind === 'enforcement_photo') return recordSeries.complaintLog
+  const filed: readonly DocKind[] = ['enforcement_letter', 'service_proof', 'court_document']
+  return filed.includes(kind) ? recordSeries.codeEnforcementFiles : null
 }
 
 async function assignInitialSeries(
@@ -191,7 +192,7 @@ async function assignInitialSeries(
     return input.seriesKey
   }
   if (input.target.kind === 'enforcement_case') {
-    const key = ENFORCEMENT_SERIES[input.docKind] ?? null
+    const key = enforcementSeries(input.docKind)
     if (key !== null) await assignSeries(tx, ref, key, 'default', actor, signal)
     return key
   }

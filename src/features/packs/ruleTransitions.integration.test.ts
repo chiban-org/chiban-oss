@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
@@ -15,6 +14,7 @@ import {
   previewRuleTransition,
   type RuleTransition,
 } from '@/features/packs/ruleTransitions'
+import type { ClockRule } from '@/features/packs/schema'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'

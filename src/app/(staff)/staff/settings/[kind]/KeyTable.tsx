@@ -56,7 +56,7 @@ export function KeyTable({
                   <td>
                     {row.publishedVersion === null
                       ? 'Not in use yet'
-                      : `Version ${row.publishedVersion} in use`}
+                      : `Version ${row.publishedVersion} in use${row.inUseValue === undefined ? '' : `: ${row.inUseValue}`}`}
                   </td>
                   <td>{row.hasDraft ? 'Has a draft not in use yet' : ''}</td>
                 </tr>

@@ -31,6 +31,8 @@ const NEW_CODES = [
   'already_published',
   'wrong_document',
   'before_vote',
+  'already_recorded',
+  'method_not_allowed',
 ]
 
 describe('boardErrorCopy for hearings, decisions, and notices', () => {
@@ -75,5 +77,16 @@ describe('boardErrorCopy for hearings, decisions, and notices', () => {
     expect(boardErrorCopy({ departmentWithoutReviewer: ['Fire', 'Police'] })).toBe(
       'These departments have no active reviewer: Fire, Police. Add one in the Technical Review Committee settings.',
     )
+  })
+
+  it.each([
+    ['before_receipt', 'The date cannot be before the application was received.'],
+    ['before_acceptance', 'The date cannot be before the board accepted the application.'],
+    [
+      'board_application',
+      "That application is decided by a board, so its decision is recorded from the board's vote.",
+    ],
+  ])('words the date and hearing refusal %s', (code, copy) => {
+    expect(boardErrorCopy(code)).toBe(copy)
   })
 })

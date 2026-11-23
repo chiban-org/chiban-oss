@@ -85,7 +85,11 @@ export function ComplaintsSection({
         ),
       )}
       {can.manage && !readOnly && !ENDED_CASE_STATUSES.includes(detail.staff.row.status) ? (
-        <AttachComplaint caseId={detail.staff.row.id} attachable={detail.attachable ?? []} />
+        <AttachComplaint
+          caseId={detail.staff.row.id}
+          attachable={detail.attachable ?? []}
+          hasComplaint={complaints.length > 0}
+        />
       ) : null}
     </Section>
   )

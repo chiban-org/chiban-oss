@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -11,14 +10,13 @@ import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { canonicalJson } from '@/features/export/canonical'
 import { assessFees } from '@/features/fees/assess'
 import { loadPack } from '@/features/packs/loadPack'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
 import { applicantParcelIds } from './applicantParcels'
 import { finalRecipients, openIncomplete, refreshRecipients } from './draft'
-import { getList, type ListSnapshot } from './queries'
+import { getList, type ListSnapshot, snapshotHash } from './queries'
 import { closeRegeneration } from './staleList'
 import type { Candidate, IncompleteReason } from './types'
 
@@ -84,8 +82,11 @@ export async function issueList(
         reasons: c.reasons as Candidate['reasons'],
       })),
       recipients: finalRecipients(rows),
+      ...(list.selectionSettings === null
+        ? {}
+        : { settings: list.selectionSettings as NonNullable<ListSnapshot['settings']> }),
     }
-    const sha256 = createHash('sha256').update(canonicalJson(snapshot)).digest('hex')
+    const sha256 = snapshotHash(snapshot)
     await tx
       .update(abutterLists)
       .set({ status: 'superseded', supersededBy: list.id })

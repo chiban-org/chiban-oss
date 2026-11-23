@@ -19,6 +19,21 @@ export async function pinnedTemplate(
   return null
 }
 
+export async function pinnedTemplatesOfKind(
+  db: DbOrTx,
+  versionIds: readonly string[],
+  kind: TemplateKind,
+  signal: AbortSignal,
+): Promise<TemplateBody[]> {
+  const found: TemplateBody[] = []
+  for (const id of versionIds) {
+    const version = await getVersion(db, id, signal)
+    const body = version?.body as TemplateBody | undefined
+    if (body?.kind === kind) found.push(body)
+  }
+  return found
+}
+
 export async function publishedTemplate(
   db: DbOrTx,
   kind: TemplateKind,

@@ -1,8 +1,8 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { computeDue } from '@/features/clocks/computeDue'
 import { type CountingCitations, describeCounting } from '@/features/clocks/describeCounting'
 import type { HolidayCalendar } from '@/features/clocks/holidayCalendar'
+import type { ClockRule } from '@/features/packs/schema'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 export interface SubjectDue {

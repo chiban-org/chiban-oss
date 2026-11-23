@@ -30,11 +30,7 @@ function Deadlines({ rows }: { rows: WorkQueueRow[] }) {
                 {row.number}
               </Link>
               <span className="text-sm text-muted-foreground">{row.typeLabel}</span>
-              <ApplicationStatusChip
-                state={row.state}
-                substep={row.substep}
-                substepLabel={row.substepLabel}
-              />
+              <ApplicationStatusChip state={row.state} label={row.statusText} />
             </span>
             <span
               className={

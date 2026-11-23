@@ -3,18 +3,21 @@ import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { Db } from '@/db/client'
 import { appealNodes, applications } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
+import { loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { hasWindowLength, resolvedLength } from '@/features/clocks/resolvedLength'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import { boardShort } from '@/features/packs/vocabulary'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
-
-const ADMIN_TO_ZBA_RULE = 'nh.appeal.admin_to_zba'
 
 type NodeRow = typeof appealNodes.$inferSelect
 
@@ -32,23 +35,29 @@ export interface ApplicationAppeals {
   typeLabel: string
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
+  offerFinalApproval: boolean
 }
 
-function appealWindowEnds(decidedOn: CivilDate): CivilDate {
-  const rule = ruleByKey(loadPack(), ADMIN_TO_ZBA_RULE)
-  if (rule.kind !== 'clock' || !('value' in rule.length)) return decidedOn
-  return computeRuleDue(
-    rule,
-    { unit: rule.length.unit, value: rule.length.value },
-    decidedOn,
-    packHolidayCalendar(),
-  ).due
+type WindowEnds = (decidedOn: CivilDate) => CivilDate | null
+
+async function appealWindowEnds(db: Db, signal: AbortSignal): Promise<WindowEnds> {
+  const key = packRoles().rules.adminAppealToZba
+  if (key === null) return () => null
+  const rule = ruleByKey(loadPack(), key)
+  if (rule.kind !== 'clock' || !hasWindowLength(rule)) return (decidedOn) => decidedOn
+  const length = await resolvedLength(db, rule, signal)
+  return (decidedOn) => computeRuleDue(rule, length, decidedOn, packHolidayCalendar()).due
 }
 
-function statusOf(decision: NodeRow, appeal: NodeRow | undefined, today: CivilDate): string {
+export function appealStatusText(
+  decision: NodeRow,
+  appeal: NodeRow | undefined,
+  today: CivilDate,
+  ends: CivilDate | null = null,
+): string {
   if (appeal !== undefined)
-    return `Appealed to the Zoning Board on ${formatCivilDate(appeal.occurredOn)}`
-  const ends = appealWindowEnds(decision.occurredOn as CivilDate)
+    return `Appealed to the ${boardShort('zba')} on ${formatCivilDate(appeal.occurredOn)}`
+  if (ends === null) return 'Not appealed.'
   return ends < today
     ? `Not appealed. The appeal window ended ${formatCivilDate(ends)}.`
     : `Not appealed. The appeal window ends ${formatCivilDate(ends)}.`
@@ -78,17 +87,20 @@ export async function loadAdministrativeAppeals(
           .where(and(inArray(appealNodes.parentId, ids), eq(appealNodes.kind, 'zba_appeal')))
   const today = await townToday(db, now, signal)
   const lines: AdministrativeAppealLine[] = []
+  const endsFor = await appealWindowEnds(db, signal)
   for (const { node, number } of decisions) {
     const app = await loadApplicationContext(db, node.applicationId ?? '', signal)
+    const appeal = appeals.find((a) => a.parentId === node.id)
     lines.push({
       applicationId: node.applicationId ?? '',
       applicationNumber: number,
       typeLabel: app?.typeBody.label ?? '',
       decidedOnText: formatCivilDate(node.occurredOn),
-      statusText: statusOf(
+      statusText: appealStatusText(
         node,
-        appeals.find((a) => a.parentId === node.id),
+        appeal,
         today,
+        appeal === undefined ? endsFor(node.occurredOn as CivilDate) : null,
       ),
     })
   }
@@ -110,17 +122,14 @@ export async function loadApplicationAppeals(
   if (visible === undefined) return null
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return null
-  const nodes = await db
-    .select()
-    .from(appealNodes)
-    .where(eq(appealNodes.applicationId, applicationId))
-    .orderBy(asc(appealNodes.occurredOn), asc(appealNodes.createdAt))
-  const graph = toGraphNodes(nodes)
+  const nodes = await loadGraphNodeRows(db, applicationId)
+  const graph = await toGraphNodes(db, nodes, signal)
   return {
     applicationId,
     applicationNumber: app.number,
     typeLabel: app.typeBody.label,
     graph,
     nodeChoices: graph.map((n) => ({ id: n.nodeId, label: `${n.kindLabel}, ${n.dateText}` })),
+    offerFinalApproval: packWaitsForFinalApproval(),
   }
 }

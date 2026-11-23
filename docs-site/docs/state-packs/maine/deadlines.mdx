@@ -1,0 +1,67 @@
+---
+title: Maine deadlines and holidays
+sidebar_label: Deadlines and holidays
+description: Every deadline the Maine pack tracks, how Chiban counts the days, which lengths your town sets, and the legal holidays it skips.
+---
+
+import Clocks from './_generated/clocks.md'
+import Holidays from './_generated/holidays.md'
+import OtherRules from './_generated/other-rules.md'
+
+# Maine deadlines and holidays
+
+Maine law gives the town, its boards and the public set amounts of time to act. The town has 30 days to give a building permit applicant a written decision and 5 working days to acknowledge a FOAA request, and the Board of Appeals has 7 days to send notice of its decision. Chiban calls each of these a clock. This page shows how long each clock runs, what starts it, how the days are counted and what happens when it runs out.
+
+## How a clock works
+
+A clock starts when staff record the event that starts it, such as receiving the application or the board's vote. The clock then shows on the application with its due date and the days left, and it shows as overdue once that date passes. When the step it is waiting for is done, the clock is met and stops.
+
+Some clocks can be moved. Under **Adjust this clock** on the application, staff who are allowed to extend or waive clocks can record an **Extension** or a **Waiver**, with a reason, where the rule allows one. Each clock below says whether it can be extended. A **Statutory exception** covers a case the law itself excuses, and the legal authority has to be written down with it. Administrators record those.
+
+Some clocks only apply in certain cases. The subdivision hearing clock, for example, starts only when the Planning Board schedules a hearing, and the court appeal clocks depend on how the board decided. Each of these says when it applies.
+
+## Lengths your town sets
+
+Maine law leaves many periods to the town, such as how many days before a Board of Appeals hearing the notice goes out, or how long someone has to appeal a staff decision to the Board of Appeals. Others, such as how long a local permit stays valid, are the town's own rules. For each of these, Chiban starts with a number so the clock can run at all. These numbers are labeled **(Chiban starting value)**. Chiban chose them, and state law does not set them. The shoreland permit decision period and the shoreland permit validity follow the DEP Chapter 1000 guideline ordinance.
+
+Before you rely on these clocks, check each starting value against your ordinances and change it to match. You will find them under **Settings**, **Town rule settings**. A clock below whose length reads "unless the town changes it" uses one of these settings.
+
+## Answers Chiban asks for on a decision
+
+On a Planning Board decision, Chiban asks for two answers that decide which court appeal clock runs.
+
+- **Significant land use decision.** When the board decides a subdivision or site plan, the decision form asks "Is this a significant land use decision (large buildings, more than 3 acres, or 10 or more lots)?" Help text under the question explains what counts, following 30-A MRSA §4481(1). The answer chooses between the ordinary appeal clocks and the significant ones. Above the question, **From the application:** lists what the applicant answered about building area, floor area, acreage or number of lots on the form, so you can check them against the thresholds. You still choose the answer yourself.
+- **Last municipal approval.** On the approving decision that completes the town's review of a project, tick "This is the last municipal approval the project needs". The court appeal clocks for approvals start on that day, and they do not start until someone ticks it. If the decision turns out to be the last approval only afterward, open the decision and use **Mark this the last municipal approval** under **Last municipal approval**. Enter the date of that approval. It cannot be before the vote or in the future, and it can be marked only once. The court appeal clocks then start on that date. Until it is marked, the decision page shows **Last municipal approval** as "Not yet". A denial does not wait for it. An ordinary denial's appeal clock starts at the board's vote, and a significant denial's starts when the written decision is filed.
+
+When the board decides a variance, the decision page asks for the **Date of the final written approval**, with the hint that the certificate must be recorded within the period the rule sets, 90 days at present, of that date or the variance is void.
+
+## How the days are counted
+
+Chiban counts days under M.R. Civ. P. 6(a), which 1 MRSA §71(12) points to.
+
+- The day the clock starts is not counted. The last day is.
+- A deadline in business days, such as the FOAA acknowledgement, skips Saturdays, Sundays and legal holidays.
+- A filing window that runs forward from an event, such as the time to appeal to court, ends on the next business day if its last day is a Saturday, Sunday or legal holiday.
+- A notice date that counts back from a hearing, such as the last day to publish a hearing notice, does not move for weekends or holidays.
+- A deadline for the town or a board to act does not move for weekends or holidays.
+- A deadline in months ends on the same date that many months later, or on the last day of a shorter month.
+
+Each clock on an application also shows a **Counting** line.
+
+<Clocks />
+
+## Legal holidays
+
+Chiban treats the legal holidays in 4 MRSA §1051 as days the office is closed. When one of them falls on a Sunday, the Monday after it is observed (4 MRSA §1051). When one falls on a Saturday, it is not moved.
+
+The statute names Thanksgiving as "any day designated for the annual Thanksgiving" and gives no date. Chiban uses the fourth Thursday of November, and the holiday list marks it as a Chiban assumption.
+
+Any other day counts as open. A day the town office closes for some other reason, such as a storm, still counts toward every deadline.
+
+<Holidays />
+
+## Other rules the pack applies
+
+Not every rule is a clock. These rules check that something was recorded, hold back a step until it is done, or hold a value the town chooses.
+
+<OtherRules />

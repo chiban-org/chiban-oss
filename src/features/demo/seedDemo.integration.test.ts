@@ -37,7 +37,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { listClockAdjustments } from '@/features/clocks/clockOverrides'
 import { listContractorProjects } from '@/features/contractors/dashboard'
 import type { ReconciliationReport } from '@/features/cutover/reconcile'
-import { DEMO_USERS, type SeedDemoDeps, seedDemo } from '@/features/demo/seedDemo'
+import { demoUsers, type SeedDemoDeps, seedDemo } from '@/features/demo/seedDemo'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { getDayList } from '@/features/inspections/dayList'
@@ -144,7 +144,7 @@ async function counts(): Promise<Record<string, number>> {
 describe('seedDemo', () => {
   it('creates Alder Pond, default grants, and one user per role', async () => {
     const report = await seedDemo(handle.db, signal, SEED_DEPS)
-    expect(report.usersCreated).toBe(DEMO_USERS.length)
+    expect(report.usersCreated).toBe(demoUsers().length)
     const town = await getTownSettings(handle.db, signal)
     expect(town).toEqual({
       ok: true,
@@ -161,13 +161,17 @@ describe('seedDemo', () => {
       .select({ email: users.email })
       .from(boardMemberships)
       .innerJoin(users, eq(users.id, boardMemberships.userId))
-    const expected = new Set([...DEMO_USERS.map((u) => u.email), ...seated.map((u) => u.email)])
+    const expected = new Set([...demoUsers().map((u) => u.email), ...seated.map((u) => u.email)])
     expect(emails.sort()).toEqual([...expected].sort())
     expect(emails.every((e) => e.endsWith('@alderpond.example'))).toBe(true)
   })
 
   it('names the fifteen seeded users by short role', () => {
-    expect(DEMO_USERS.map((u) => u.email).sort()).toEqual(
+    expect(
+      demoUsers()
+        .map((u) => u.email)
+        .sort(),
+    ).toEqual(
       [
         'admin',
         'staff',

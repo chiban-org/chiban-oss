@@ -1,4 +1,3 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -10,6 +9,7 @@ import {
   recordEvents,
   retentionAssignments,
 } from '@/db/schema'
+import type { RecordSeries } from '@/features/packs/schema'
 import { applicationIdOfRecord } from '@/features/records/ancestry'
 import { computeRetention, type RetentionStatus } from '@/features/records/computeRetention'
 import { holdsCovering } from '@/features/records/holds'
@@ -52,13 +52,17 @@ async function applicationIdOf(db: DbOrTx, ref: DispositionRef): Promise<string 
   return doc === undefined ? null : await applicationIdOfRecord(db, doc)
 }
 
-async function caseIdOf(db: DbOrTx, ref: DispositionRef): Promise<string | null> {
+async function ownerIdOf(
+  db: DbOrTx,
+  ref: DispositionRef,
+  kind: 'enforcement_case' | 'rtk_request',
+): Promise<string | null> {
   if (ref.kind !== 'document') return null
   const [doc] = await db
     .select({ recordKind: documents.recordKind, recordId: documents.recordId })
     .from(documents)
     .where(eq(documents.id, ref.id))
-  return doc?.recordKind === 'enforcement_case' ? doc.recordId : null
+  return doc?.recordKind === kind ? doc.recordId : null
 }
 
 async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]> {
@@ -119,7 +123,8 @@ export async function retentionFor(
   const town = await getTownSettings(db, signal)
   const zone = town.ok ? town.value.timeZone : FALLBACK_ZONE
   const projectIds = await projectIdsFor(db, ref)
-  const caseId = await caseIdOf(db, ref)
+  const caseId = await ownerIdOf(db, ref, 'enforcement_case')
+  const requestId = await ownerIdOf(db, ref, 'rtk_request')
   const applicationId = await applicationIdOf(db, ref)
   const projectEvents =
     projectIds.length === 0
@@ -142,7 +147,11 @@ export async function retentionFor(
     caseId === null
       ? []
       : await db.select().from(recordEvents).where(eq(recordEvents.caseId, caseId))
-  const events = [...projectEvents, ...caseEvents]
+  const requestEvents =
+    requestId === null
+      ? []
+      : await db.select().from(recordEvents).where(eq(recordEvents.rtkRequestId, requestId))
+  const events = [...projectEvents, ...caseEvents, ...requestEvents]
   const status = computeRetention(series, {
     recordDate: todayInTimeZone(zone, createdAt),
     events: events.map((e) => ({ kind: e.kind, occurredOn: e.occurredOn as CivilDate })),

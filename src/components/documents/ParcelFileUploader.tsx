@@ -12,14 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  defaultParcelFileVisibility,
-  type ParcelFileVisibility,
-} from '@/features/documents/parcelVisibility'
+import type { ParcelFileVisibility } from '@/features/documents/parcelFileVisibility'
 
 interface Props {
   parcelId: string
-  series: { key: string; label: string; citation: string }[]
+  series: { key: string; label: string; citation: string; visibility: ParcelFileVisibility }[]
   actions: UploaderActions
 }
 
@@ -35,7 +32,7 @@ export function ParcelFileUploader({ parcelId, series, actions }: Props) {
   const [visibility, setVisibility] = useState<ParcelFileVisibility>('private')
   const chooseSeries = (key: string) => {
     setSeriesKey(key)
-    setVisibility(defaultParcelFileVisibility(key))
+    setVisibility(series.find((s) => s.key === key)?.visibility ?? 'private')
   }
   return (
     <div className="space-y-3">

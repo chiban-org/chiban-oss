@@ -7,7 +7,7 @@ import type { TableParams } from '@/features/dataTable/params'
 import { NOTICE_CONTACTS_PATH } from '@/features/rosters/links'
 import type { RostersView } from '@/features/rosters/rosterView'
 import { AddAssociation } from './AssociationForms'
-import { SECTION_LINES } from './ContactSections'
+import { regionalSectionLine, SECTION_LINES } from './ContactSections'
 import { ContactToolbar } from './ContactToolbar'
 import { ParcelLink } from './RowParts'
 
@@ -54,7 +54,7 @@ export function RegionalSection({ view }: { view: RostersView }) {
       <SectionHeader
         id="regional"
         title="Regional and state contacts"
-        lead={SECTION_LINES.regional}
+        lead={regionalSectionLine()}
       />
       <DescriptionList
         labelWidth="wide"

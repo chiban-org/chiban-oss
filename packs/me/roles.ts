@@ -1,0 +1,57 @@
+import type { PackRoles } from '@/features/packs/schema'
+
+export const ME_ROLES: PackRoles = {
+  classifications: {
+    buildingPermit: 'me.building_permit',
+    tradePermit: null,
+    enforcement: ['me.enforcement_land_use', 'me.enforcement_shoreland', 'me.enforcement_plumbing'],
+    plumbingInspectorOwns: [
+      'me.internal_plumbing',
+      'me.subsurface_wastewater',
+      'me.seasonal_conversion',
+    ],
+  },
+  rules: {
+    buildingPermitDecision: 'me.bp.decision',
+    zoningOrder: null,
+    buildingCodeOrder: null,
+    enforcementPenalty: 'me.enf.penalty',
+    rtkResponse: 'me.foaa.acknowledge',
+    rtkStatedTime: 'me.foaa.estimate',
+    planningBoardDecision: 'me.pb.decision_no_hearing',
+    zbaDecision: null,
+    planningBoardCompleteness: 'me.pb.completeness',
+    zbaHearing: null,
+    writtenDecision: null,
+    decisionFiling: null,
+    appealSuspension: null,
+    adminAppealToZba: 'me.appeal.admin_to_boa',
+    codeEditionRecord: 'me.bp.code_edition',
+    codeEditionGate: 'me.bp.code_edition_recorded',
+    regionalImpactGate: null,
+    regionalImpactComment: null,
+    regionalImpactDetermination: null,
+    regionalImpactTransmittal: null,
+    abutterListAge: null,
+    filingLead: null,
+    desProximity: null,
+    zbaExercise: null,
+  },
+  recordSeries: {
+    rtkCorrespondence: 'me.rs.foaa_requests',
+    complaintLog: 'me.rs.citizen_complaints',
+    codeEnforcementFiles: 'me.rs.enforcement_files',
+    publicParcelFiles: [
+      'me.rs.building_permits',
+      'me.rs.building_plans',
+      'me.rs.plumbing_external',
+      'me.rs.zoning_permits',
+    ],
+  },
+  ruleGroups: {
+    building: ['me.bp.'],
+    board: ['me.pb.', 'me.boa.'],
+    portalBoardDeadlines: ['me.appeal.'],
+  },
+  gates: { abutterListFresh: null, varianceRecorded: 'me.boa.variance_recorded' },
+}

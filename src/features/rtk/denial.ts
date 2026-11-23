@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
@@ -7,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { civilDateSchema } from '@/features/packs/schema'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
@@ -56,7 +56,9 @@ export async function denyRequest(
     if (request.status !== 'awaiting_decision') return err('not_awaiting_decision')
     const today = await townToday(tx, now, signal)
     if (daysBetween(today, value.deniedOn) > 0) return err('future_date')
-    const statedOn = (request.firstResponseOn ?? request.receivedOn) as CivilDate
+    const statedOn = (request.followUpOn ??
+      request.firstResponseOn ??
+      request.receivedOn) as CivilDate
     if (daysBetween(statedOn, value.deniedOn) < 0) return err('before_statement')
     const [withheld] = await tx
       .select({ n: count() })
@@ -74,11 +76,12 @@ export async function denyRequest(
       .where(eq(rtkRequests.id, request.id))
     const letterDocumentId = await fileRequestLetter(
       tx,
-      { store, actor, signal },
+      { store, actor, signal, now },
       {
         requestId: request.id,
         title: `Denial of request ${request.number}`,
         filename: `${request.number}-denial.pdf`,
+        occasion: 'denial',
       },
     )
     await writeAudit(

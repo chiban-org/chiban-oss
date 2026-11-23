@@ -1,16 +1,23 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { SelectField, TextField } from '@/components/staff/fields'
+import {
+  appealStepOptions,
+  appealStepResultLabel,
+  linkedPlanningDecisionLabel,
+  rehearingGrantedLabel,
+} from '@/features/appeals/appealWords'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
-const APPEAL_STEPS: [string, string][] = [
-  ['rehearing_motion', 'Motion for rehearing'],
-  ['rehearing_outcome', 'Rehearing decision'],
-  ['court_petition', 'Court petition'],
-  ['zba_appeal', 'Appeal to the Zoning Board'],
-  ['zba_decision', 'Zoning Board decision'],
-]
+const STEP_ORDER = [
+  'rehearing_motion',
+  'rehearing_outcome',
+  'court_petition',
+  'zba_appeal',
+  'zba_decision',
+] as const
 
 export function AppealsSection({ view, today }: { view: DecisionView; today: string }) {
   return (
@@ -25,7 +32,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             name="parentId"
             options={view.nodeChoices.map((n): [string, string] => [n.id, n.label])}
           />
-          <SelectField label="Step" name="kind" options={APPEAL_STEPS} />
+          <SelectField label="Step" name="kind" options={appealStepOptions(STEP_ORDER)} />
           <TextField
             label="Date"
             name="occurredOn"
@@ -35,23 +42,24 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             required
           />
           <SelectField
-            label="Result, for a rehearing decision or a decision after appeal"
+            label={appealStepResultLabel()}
             name="outcome"
             options={[
               ['', 'Not applicable'],
-              ['granted', 'Rehearing granted'],
+              ['granted', rehearingGrantedLabel()],
               ['denied', 'Denied'],
               ['approved', 'Approved'],
             ]}
           />
           <SelectField
-            label="Is this the Zoning Board part of a Planning Board decision?"
+            label={linkedPlanningDecisionLabel()}
             name="linked"
             options={[
               ['no', 'No'],
               ['yes', 'Yes'],
             ]}
           />
+          <LastApprovalCheck offered={view.offerFinalApproval} />
         </ActionForm>
       </details>
     </section>

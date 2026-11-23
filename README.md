@@ -68,7 +68,7 @@ The rest of the [documentation](https://docs.chiban.us) is written for the peopl
 
 ### State support
 
-Chiban ships one state pack, **New Hampshire** (`packs/nh`). It holds the state's deadlines and holidays, notice and decision wording, appeal routes, building code editions, license types, parcel ID formats, Right-to-Know exemptions and records retention series. Adding a second state takes real work today. The [state pack guide](https://docs.chiban.us/state-packs/writing-a-pack/) explains how the New Hampshire pack is built and what another state would need.
+Chiban ships one state pack, **New Hampshire** (`packs/nh`). It holds the state's deadlines and holidays, notice and decision wording, appeal routes, building code editions, license types, parcel ID formats, Right-to-Know exemptions and records retention series. The engine loads the pack named by the `CHIBAN_PACK` setting when it runs, and reads it through one contract, so a second state is a second pack folder plus an entry in the pack registry. A state whose law needs a rule kind or behaviour the engine does not have still needs engine work. The [state pack guide](https://docs.chiban.us/state-packs/writing-a-pack/) explains how the New Hampshire pack is built, how roles tie its keys to engine features, and what another state needs.
 
 ## Built with
 

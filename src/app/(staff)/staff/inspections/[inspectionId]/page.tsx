@@ -15,7 +15,13 @@ import {
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { InspectionRail, InspectionStrip, OwedLine } from './InspectionRail'
-import { ChecklistPreview, InspectionDoThisNow, PhotosPanel, ResultPanel } from './InspectionWork'
+import {
+  ChecklistPreview,
+  ConditionsPanel,
+  InspectionDoThisNow,
+  PhotosPanel,
+  ResultPanel,
+} from './InspectionWork'
 
 export const metadata: Metadata = { title: 'Inspection' }
 
@@ -78,6 +84,7 @@ export default async function InspectionPage({
       >
         <InspectionDoThisNow record={record} />
         <ChecklistPreview record={record} />
+        <ConditionsPanel record={record} />
         <ResultPanel record={record} />
         <PhotosPanel record={record} />
       </RecordLayout>

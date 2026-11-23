@@ -11,6 +11,7 @@ export type MergeContext = Partial<Record<MergeField, string | null>>
 export const NOT_RECORDED = 'Not recorded'
 
 const OMITTED_WHEN_EMPTY: ReadonlySet<string> = new Set([
+  'decision.appealRights',
   'decision.conditionsSection',
   'decision.reasonsSection',
   'receipt.footer',

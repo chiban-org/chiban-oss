@@ -80,4 +80,76 @@ describe('request stage strip', () => {
       'Withdrawn:current',
     ])
   })
+
+  it('a request with only an acknowledgement is at Acknowledged until a substantive response', () => {
+    expect(
+      summary({ status: 'responded', firstResponseOn: ON, firstResponseKind: 'acknowledged' }),
+    ).toEqual(['Received:done', 'Acknowledged:current', 'Responded:upcoming', 'Closed:upcoming'])
+    expect(
+      summary({ status: 'responded', firstResponseOn: ON, firstResponseKind: 'made_available' }),
+    ).toEqual(['Received:done', 'Responded:current', 'Closed:upcoming'])
+  })
+
+  describe('after an acknowledgement', () => {
+    const ACK = { acknowledgedOn: ON, firstResponseOn: ON }
+    const LATER = '2026-11-10' as CivilDate
+
+    it('a request acknowledged and then withdrawn ends at Acknowledged and Withdrawn', () => {
+      expect(summary({ ...ACK, status: 'withdrawn', firstResponseKind: 'acknowledged' })).toEqual([
+        'Received:done',
+        'Acknowledged:done',
+        'Withdrawn:current',
+      ])
+    })
+
+    it('a request acknowledged and then closed ends at Acknowledged and Closed', () => {
+      expect(summary({ ...ACK, status: 'closed', firstResponseKind: 'acknowledged' })).toEqual([
+        'Received:done',
+        'Acknowledged:done',
+        'Closed:done',
+      ])
+    })
+
+    it('a time statement after the acknowledgement comes after Acknowledged', () => {
+      expect(
+        summary({
+          ...ACK,
+          status: 'awaiting_decision',
+          statedDue: STATED,
+          followUpOn: LATER,
+          firstResponseKind: 'time_statement',
+        }),
+      ).toEqual([
+        'Received:done',
+        'Acknowledged:done',
+        'Time stated:current',
+        'Responded:upcoming',
+        'Closed:upcoming',
+      ])
+    })
+
+    it('a later response keeps Acknowledged and Time stated before Responded', () => {
+      expect(
+        summary({
+          ...ACK,
+          status: 'responded',
+          statedDue: STATED,
+          followUpOn: LATER,
+          firstResponseKind: 'made_available',
+        }),
+      ).toEqual([
+        'Received:done',
+        'Acknowledged:done',
+        'Time stated:done',
+        'Responded:current',
+        'Closed:upcoming',
+      ])
+    })
+
+    it('a request answered after the acknowledgement and withdrawn shows every step', () => {
+      expect(
+        summary({ ...ACK, status: 'withdrawn', followUpOn: LATER, firstResponseKind: 'denied' }),
+      ).toEqual(['Received:done', 'Acknowledged:done', 'Responded:done', 'Withdrawn:current'])
+    })
+  })
 })

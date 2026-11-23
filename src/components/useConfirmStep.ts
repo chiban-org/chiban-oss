@@ -3,8 +3,10 @@
 import { type FormEvent, useRef, useState } from 'react'
 import type { ConfirmCopy } from '@/components/ConfirmDialog'
 
+export type ConfirmWhen = { name: string; oneOf: string[] } | { name: string; before: string }
+
 export interface ConfirmStep extends ConfirmCopy {
-  when?: { name: string; oneOf: string[] }
+  when?: ConfirmWhen
 }
 
 interface Held {
@@ -14,10 +16,13 @@ interface Held {
 
 function applies(step: ConfirmStep, form: HTMLFormElement): boolean {
   if (step.when === undefined) return true
-  const { name, oneOf } = step.when
-  const values = new FormData(form).getAll(name)
+  const when = step.when
+  const values = new FormData(form).getAll(when.name)
+  if ('before' in when) {
+    return values.some((value) => typeof value === 'string' && value !== '' && value < when.before)
+  }
   const chosen = values.length === 0 ? [''] : values
-  return chosen.some((value) => typeof value === 'string' && oneOf.includes(value))
+  return chosen.some((value) => typeof value === 'string' && when.oneOf.includes(value))
 }
 
 export type ConfirmCheck = (

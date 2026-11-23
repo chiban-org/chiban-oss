@@ -36,7 +36,7 @@ export async function checkCorrection(
   signal: AbortSignal,
 ): Promise<Result<CorrectionCheck, CheckError>> {
   signal.throwIfAborted()
-  if (!(await mayCorrectPermits(db, actor, signal))) return err('forbidden')
+  if (!(await mayCorrectPermits(db, actor, draft.applicationId, signal))) return err('forbidden')
   const app = await loadApplicationContext(db, draft.applicationId, signal)
   if (app === null) return err('not_found')
   if (!isCorrectablePermit(app)) return err('not_correctable')

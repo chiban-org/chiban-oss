@@ -1,4 +1,3 @@
-import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -8,6 +7,7 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { type ListView, loadListView } from '@/features/abutters/listView'
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { recordExists } from '@/features/access/recordExists'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -72,6 +72,8 @@ export default async function AbutterListPage({ params }: { params: Promise<{ li
     notFound()
   }
   const town = await getTownSettings(ctx.db, ctx.signal)
+  const mapTitle =
+    primaryAbutterParams().captureRadiusFt === null ? 'Town buffer' : 'Across the street or stream'
   return (
     <main>
       <PageHeader
@@ -84,14 +86,14 @@ export default async function AbutterListPage({ params }: { params: Promise<{ li
       <RecordLayout rail={<ListRail view={view} />}>
         <Incomplete view={view} />
         {view.overlay === null ? null : (
-          <section aria-label="Across the street or stream">
-            <h2>Across the street or stream</h2>
+          <section aria-label={mapTitle}>
+            <h2>{mapTitle}</h2>
             <ProjectionMap
               overlay={view.overlay}
               bbox={view.bbox}
               basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
               basemapAttribution={town.ok ? town.value.basemapAttribution : null}
-              captureRadiusFt={NH_ABUTTER_PARAMS.captureRadiusFt}
+              captureRadiusFt={primaryAbutterParams().captureRadiusFt}
             />
           </section>
         )}

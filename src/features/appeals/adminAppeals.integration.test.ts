@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { appealNodes, appeals, auditLog } from '@/db/schema'
+import { appealNodes, appeals, auditLog, clocks } from '@/db/schema'
 import {
   loadAdministrativeAppeals,
   loadApplicationAppeals,
@@ -120,6 +120,29 @@ describe('the administrative appeals views', () => {
     ])
     expect(view?.nodeChoices).toEqual([
       { id: nodeId, label: 'Administrative decision, March 1, 2027' },
+    ])
+  })
+
+  it('shows the window clock due date once the clock was adjusted', async () => {
+    const permit = await makeApplication(handle.db, world, { state: 'issued' })
+    await decided(permit.number)
+    await handle.db.insert(clocks).values({
+      applicationId: permit.applicationId,
+      ruleKey: 'nh.appeal.admin_to_zba',
+      ruleVersion: 1,
+      packVersion: '0.8.0',
+      startEvent: 'administrative_decision',
+      startDate: '2027-03-01',
+      lengthValue: 30,
+      lengthUnit: 'days',
+      countingMethod: 'Thirty days after the decision.',
+      computedDue: '2027-03-31',
+      currentDue: '2027-04-14',
+      source: 'pack_rule',
+    })
+    const view = await loadApplicationAppeals(handle.db, world.staff, permit.applicationId, signal)
+    expect(view?.graph.map((n) => [n.kindLabel, n.window?.dueText])).toEqual([
+      ['Administrative decision', 'April 14, 2027'],
     ])
   })
 

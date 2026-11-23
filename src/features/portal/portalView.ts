@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import {
   applicationConditions,
   clocks,
+  deemedRefusals,
   ledgerAllocations,
   ledgerEntries,
   parcels,
@@ -11,12 +12,14 @@ import {
 } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
+import { completenessStepFor } from '@/features/applications/completenessStep'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
+import { decisionDeadlineKeys } from '@/features/decisions/decisionClocks'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
 import { previewFees } from '@/features/fees/preview'
@@ -29,6 +32,7 @@ import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
+import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import { ENDING_ROLES } from '@/features/portal/endApplication'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
@@ -36,7 +40,6 @@ import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
 const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']
@@ -63,6 +66,7 @@ export interface PortalApplicationView {
   onlineTotalCents: number
   convenienceCents: number
   canPay: boolean
+  payAtOffice: boolean
   history: PortalMoneyEntry[]
   canEdit: boolean
   canUpload: boolean
@@ -90,7 +94,7 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
     substep: app.substep,
     board: boardKindOf(app.typeBody.classification) !== null,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
-    completeness: app.typeBody.classification === 'nh.building_permit',
+    completeness: completenessStepFor(app.typeBody.classification) !== null,
     receivedDate: app.receivedDate,
     completedDate: app.completedDate,
     issuedOn: app.issuedOn,
@@ -99,14 +103,28 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
   }
 }
 
-async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
+const REFUSED_BY_LAW_LABEL = 'Refused by operation of law'
+
+async function portalStateLabel(db: Db, applicationId: string, state: CoreState): Promise<string> {
+  if (state !== 'denied') return stateLabel(state)
+  const [refusal] = await db
+    .select({ id: deemedRefusals.applicationId })
+    .from(deemedRefusals)
+    .where(eq(deemedRefusals.applicationId, applicationId))
+  return refusal === undefined ? stateLabel(state) : REFUSED_BY_LAW_LABEL
+}
+
+const DECISION_PENDING_STATES = ['submitted', 'under_review']
+
+async function decisionDue(db: Db, applicationId: string, state: string, signal: AbortSignal) {
+  if (!DECISION_PENDING_STATES.includes(state)) return null
   const [clock] = await db
     .select()
     .from(clocks)
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        inArray(clocks.ruleKey, DECISION_CLOCK_KEYS),
+        inArray(clocks.ruleKey, decisionDeadlineKeys()),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )
@@ -216,6 +234,8 @@ export async function getPortalApplicationView(
     signal,
   )
   const settings = await getPaymentSettings(db, signal)
+  const online = (await getActiveProcessor(db, signal)).state === 'known'
+  const payable = fees.dueCents > 0 && payer
   const convenienceCents = computeConvenienceFee(
     fees.dueCents,
     settings.convenienceFee,
@@ -233,7 +253,7 @@ export async function getPortalApplicationView(
     number: app.number,
     typeLabel: app.typeBody.label,
     state: app.state,
-    stateLabel: stateLabel(app.state),
+    stateLabel: await portalStateLabel(db, applicationId, app.state),
     parcel: {
       id: project?.parcelId ?? '',
       displayId: project === undefined ? null : (display.get(project.parcelId) ?? null),
@@ -243,7 +263,7 @@ export async function getPortalApplicationView(
     values: Object.fromEntries(Object.entries(app.values).filter(([k]) => !staffKeys.has(k))),
     attestationText: app.typeBody.attestationText,
     attestationSha256: attestationHash(app.typeBody.attestationText),
-    decisionDue: await decisionDue(db, applicationId, signal),
+    decisionDue: await decisionDue(db, applicationId, app.state, signal),
     record: recordFacts(app, project?.title ?? app.number, mayEnd),
     conditions: conditions.map((c) => ({ text: c.textSnapshot, status: c.status })),
     documents: (
@@ -258,7 +278,8 @@ export async function getPortalApplicationView(
     feeEstimate: await feeEstimate(db, app, signal),
     onlineTotalCents: fees.dueCents + convenienceCents,
     convenienceCents,
-    canPay: fees.dueCents > 0 && payer,
+    canPay: payable && online,
+    payAtOffice: payable && !online,
     history: await historyFor(db, actor, applicationId),
     canEdit: app.state === 'draft' && isParty,
     canUpload: writable && isParty,

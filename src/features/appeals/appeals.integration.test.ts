@@ -113,6 +113,15 @@ describe('recordAppeal', () => {
     expect(history.own[0]?.status.label).toBe('Suspended by appeal (RSA 676:6)')
   })
 
+  it('records an appeal dated before an earlier appeal was resolved', async () => {
+    const app = await issued()
+    expect((await appeal(app.applicationId)).ok).toBe(true)
+    expect((await resolve(app.applicationId, 'permit_upheld')).ok).toBe(true)
+    expect((await appRow(app.applicationId))?.state).toBe('issued')
+    expect(await appeal(app.applicationId, '2027-05-15')).toEqual({ ok: true, value: undefined })
+    expect((await appRow(app.applicationId))?.state).toBe('suspended')
+  })
+
   it('daily job never expires a suspended permit', async () => {
     const app = await issued()
     await appeal(app.applicationId)

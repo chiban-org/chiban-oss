@@ -12,6 +12,8 @@ export function sampleValues(townName: string): WordingValues {
     'inspection.type': 'Framing',
     'inspection.date': 'November 20, 2026',
     'inspection.time': '9:00 AM',
+    'inspection.previousDate': 'November 18, 2026',
+    'inspection.previousTime': '1:30 PM',
     'inspection.result': 'passed',
     'permit.revision': '2',
     'account.from': 'from your account',

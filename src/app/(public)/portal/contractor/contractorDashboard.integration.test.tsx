@@ -113,7 +113,9 @@ describe('contractor dashboard page', () => {
     state.actor = stranger
     const html = await render()
     expect(html).toContain('nobody@builder.example')
-    expect(html).toContain('Give the town the email this account uses')
+    expect(html).toContain(
+      'Give the town the email this account uses, and the project shows here once the town records it. An application you start yourself is listed under Your applications.',
+    )
     expect(html).toContain('href="/portal/apply"')
     expect(html).not.toContain('Needs you')
   })

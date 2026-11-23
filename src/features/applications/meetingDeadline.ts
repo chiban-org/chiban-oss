@@ -1,15 +1,17 @@
-import type { BoardKind } from '@packs/nh/schema'
 import { dueNext } from '@/features/clocks/clockSummary'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import { packRoles } from '@/features/packs/roles'
+import type { BoardKind } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { meetingIsAhead } from './boardRequirements'
 import type { PlanBoard } from './workPlanTypes'
 
-const VOTE_CLOCK: ReadonlyMap<BoardKind, string> = new Map([
-  ['planning_board', 'nh.pb.completeness'],
-  ['zba', 'nh.zba.hearing'],
-])
+function voteClock(boardKind: BoardKind): string | null {
+  const { rules } = packRoles()
+  if (boardKind === 'planning_board') return rules.planningBoardCompleteness
+  return boardKind === 'zba' ? rules.zbaHearing : null
+}
 
 type Clock = Pick<
   ClockExplanation,
@@ -38,7 +40,7 @@ export function meetingDeadline(
   clocks: readonly Clock[],
   boardKind: BoardKind,
 ): MeetingDeadline | null {
-  const clock = dueNext(clocks.filter((c) => c.ruleKey === VOTE_CLOCK.get(boardKind)))
+  const clock = dueNext(clocks.filter((c) => c.ruleKey === voteClock(boardKind)))
   return clock === null ? null : { label: clock.ruleLabel, due: clock.currentDue.value }
 }
 

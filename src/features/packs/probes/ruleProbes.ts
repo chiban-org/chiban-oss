@@ -1,8 +1,8 @@
-import type { OverridePolicy, PackRule } from '@packs/nh/schema'
 import { settingDefault } from '@/features/clocks/ruleEngine'
 import { ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { ruleSummary } from '@/features/packs/ruleSummary'
+import type { OverridePolicy, PackRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { attempt, type FieldProbe, packRule, packWith, probe } from './probe'
 
@@ -57,11 +57,12 @@ export function ruleProbes(
   kind: string,
   baseKey: string,
   policyFields: string[],
+  baseOf: () => PackRule = () => packRule(baseKey),
 ): Record<string, FieldProbe> {
   const out: Record<string, FieldProbe> = {}
   const generic = (field: string, mutate: (r: PackRule) => PackRule) => {
     out[`${kind}.${field}`] = probe<PackRule>({
-      base: () => packRule(baseKey),
+      base: baseOf,
       mutate,
       observe: observeRule,
     })
@@ -78,7 +79,7 @@ export function ruleProbes(
     const spec = POLICIES[field]
     if (spec === undefined) continue
     out[`${kind}.overridePolicy.${field}`] = probe<PackRule>({
-      base: () => packRule(baseKey),
+      base: baseOf,
       prepare: (r) => ({ ...r, overridePolicy: spec.prepare }) as PackRule,
       mutate: (r) => ({ ...r, overridePolicy: spec.mutate(r.overridePolicy) }) as PackRule,
       observe: observeRule,

@@ -11,6 +11,7 @@ import {
   Rows3,
   TableProperties,
 } from 'lucide-react'
+import { usePackText } from '@/components/PackTextProvider'
 import { Button } from '@/components/ui/button'
 import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { defaultSignerRole } from '@/features/templates/kinds/defaultSigner'
@@ -74,6 +75,7 @@ function Group({
 }
 
 export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
+  const { vocabulary, signerRoles } = usePackText()
   const insert = (content: JSONContent) => editor.chain().focus().insertContent(content).run()
   const def = documentKind(kind)
   const blocks: [string, LucideIcon, JSONContent][] = [
@@ -122,7 +124,7 @@ export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
           ))}
         </Group>
       )}
-      {fieldGroups(kind).map((group) => (
+      {fieldGroups(kind, vocabulary, signerRoles).map((group) => (
         <Group key={group.title} title={`Merge fields: ${group.title}`}>
           {group.fields.map((field) => (
             <InsertButton

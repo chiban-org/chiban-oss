@@ -1,6 +1,6 @@
-import type { CeaseAndDesistRule, CivilPenaltyRule, ClockRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { CeaseAndDesistRule, CivilPenaltyRule, ClockRule } from '@/features/packs/schema'
 
 export interface LinkedEnforcementRules {
   answer: ClockRule

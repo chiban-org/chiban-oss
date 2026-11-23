@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { parcels } from '@/db/schema'
+import { activeHoldFor, HELD_PARCEL_COPY } from '@/features/enforcement/holdReads'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { loadTownProfile } from '@/features/pdf/documentFrame'
+import { officeNameOf } from '@/features/pdf/officeName'
 import { listPortalTypes, RETIRED_PARCEL_COPY } from '@/features/portal/drafts'
 import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { requirePortalContext } from '@/server/requirePortal'
@@ -25,7 +27,7 @@ function OfficeLine({ officeName, phone }: { officeName: string; phone: string }
 
 async function TypeStep({ parcelId }: { parcelId: string }) {
   const ctx = await requirePortalContext(`/portal/apply?parcel=${parcelId}`)
-  const [types, display, [chosen], profile] = await Promise.all([
+  const [types, display, [chosen], profile, hold] = await Promise.all([
     listPortalTypes(ctx.db, ctx.signal),
     displayIdsFor(ctx.db, [parcelId]),
     ctx.db
@@ -33,6 +35,7 @@ async function TypeStep({ parcelId }: { parcelId: string }) {
       .from(parcels)
       .where(eq(parcels.id, parcelId)),
     loadTownProfile(ctx.db, ctx.signal),
+    activeHoldFor(ctx.db, parcelId, ctx.signal),
   ])
   const where = `${chosen?.siteAddress ?? 'Address not on file'}, parcel ${display.get(parcelId) ?? ''}`
   return (
@@ -41,14 +44,13 @@ async function TypeStep({ parcelId }: { parcelId: string }) {
       <h1>Choose the kind of application</h1>
       {chosen?.status === 'retired' ? (
         <p role="alert">{RETIRED_PARCEL_COPY}</p>
+      ) : hold !== null ? (
+        <p role="alert">{HELD_PARCEL_COPY}</p>
       ) : (
         <>
           <p className="m-0 text-lg">{where}</p>
           <TypePicker parcelId={parcelId} grouped={groupPortalTypes(types)} />
-          <OfficeLine
-            officeName={profile?.officeName ?? 'land use office'}
-            phone={profile?.phone ?? ''}
-          />
+          <OfficeLine officeName={officeNameOf(profile)} phone={profile?.phone ?? ''} />
         </>
       )}
       <Link href="/portal/apply" className={LINK}>

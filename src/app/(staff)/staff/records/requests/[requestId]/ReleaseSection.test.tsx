@@ -121,6 +121,7 @@ describe('releases panel', () => {
     render(
       <CsrfProvider token="t1">
         <ReleaseSection
+          requestId="r1"
           releases={[release]}
           approvals={[approval({ releasedIn: 1 }), approval({ approvalId: 'a2', title: 'Deed' })]}
           canManage
@@ -135,7 +136,39 @@ describe('releases panel', () => {
     const approvals = within(screen.getByRole('list', { name: 'Approved for this request' }))
     expect(approvals.getByText('Released in release 1')).toBeTruthy()
     expect(approvals.getByText('Waiting')).toBeTruthy()
-    expect(approvals.getAllByText('Revoke approval', { selector: 'summary' })).toHaveLength(2)
+    expect(approvals.getAllByText('Revoke approval', { selector: 'summary' })).toHaveLength(1)
+  })
+})
+
+describe('the approval label of a redacted copy', () => {
+  function labels(madeFor: RequestApproval['madeFor']): string[] {
+    render(
+      <CsrfProvider token="t1">
+        <ReleaseSection
+          requestId="r1"
+          releases={[]}
+          approvals={[approval({ role: 'release_redacted', madeFor })]}
+          canManage
+          findTool={null}
+          timeZone="America/New_York"
+          requesterEmail={null}
+        />
+      </CsrfProvider>,
+    )
+    const list = within(screen.getByRole('list', { name: 'Approved for this request' }))
+    return list.getAllByText(/^Site plan: /).map((p) => p.textContent)
+  }
+
+  it('names the request another request made the copy for', () => {
+    expect(labels({ requestId: 'r2', number: 'RK-2027-0002' })).toEqual([
+      'Site plan: Redacted copy made for RK-2027-0002',
+    ])
+  })
+
+  it('reads for this request when this request made it', () => {
+    expect(labels({ requestId: 'r1', number: 'RK-2027-0001' })).toEqual([
+      'Site plan: Redacted copy for this request',
+    ])
   })
 })
 

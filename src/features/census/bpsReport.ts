@@ -4,7 +4,7 @@ import { applications, censusClassifications, parcels, projects } from '@/db/sch
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { CENSUS_CLASSIFICATION } from '@/features/census/classify'
+import { censusClassification } from '@/features/census/classify'
 import { type SheetCell, sheetCsv } from '@/features/reports/sheet'
 import { getTownSettings } from '@/features/town/settings'
 import { err, ok, type Result } from '@/types/result'
@@ -102,9 +102,10 @@ export async function censusBpsReport(
   const largePermits: CensusLargePermit[] = []
   const needsClassification: CensusReport['needsClassification'] = []
   let building = 0
+  const censusKey = censusClassification()
   for (const row of issued) {
     const context = await loadApplicationContext(db, row.id, signal)
-    if (context?.typeBody.classification !== CENSUS_CLASSIFICATION) continue
+    if (censusKey === null || context?.typeBody.classification !== censusKey) continue
     building += 1
     const c = row.classification
     if (c === null) {

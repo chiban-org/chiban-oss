@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, lt } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Tx } from '@/db/client'
 import { applications, clocks, relianceLinks } from '@/db/schema'
+import { refuseBySilence } from '@/features/applications/deemedRefusal'
 import { transitionApplication } from '@/features/applications/transition'
 import {
   isActionDue,
@@ -9,6 +10,8 @@ import {
   warnClocksDueSoon,
 } from '@/features/notifications/clockNotices'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 import { ok } from '@/types/result'
@@ -29,7 +32,10 @@ async function markOverdue(tx: Tx, today: CivilDate): Promise<string[]> {
     .where(and(eq(clocks.status, 'running'), lt(clocks.currentDue, today)))
   const flipped = past.filter(isActionDue).map((clock) => clock.id)
   if (flipped.length > 0) {
-    await tx.update(clocks).set({ status: 'overdue' }).where(inArray(clocks.id, flipped))
+    await tx
+      .update(clocks)
+      .set({ status: 'overdue' })
+      .where(and(inArray(clocks.id, flipped), eq(clocks.status, 'running')))
   }
   return flipped
 }
@@ -53,6 +59,10 @@ async function stillLapsed(
     app !== undefined &&
     EXPIRABLE.includes(app.state)
   )
+}
+
+function expiresPermit(rule: ClockRule): boolean {
+  return rule.consequence.kind === 'lapse' && rule.startEvent === 'permit_issued'
 }
 
 async function hasUnresolvedReliance(tx: Tx, applicationId: string): Promise<boolean> {
@@ -100,9 +110,44 @@ export async function expireLapsedPermits(
     if (!moved.ok) {
       await tx.update(clocks).set({ status: 'running' }).where(eq(clocks.id, clock.id))
       failures.push(`${clock.applicationId}: ${JSON.stringify(moved.error)}`)
+    } else if (expiresPermit(rule)) {
+      await recordSystemEvent(
+        tx,
+        { kind: 'permit_expired', applicationId: clock.applicationId },
+        today,
+      )
     }
   }
   return failures
+}
+
+export async function markUnrecordedVoid(
+  tx: Tx,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<{ voided: string[] }> {
+  signal.throwIfAborted()
+  const pack = loadPack()
+  const voids = pack.rules.some(
+    (r) => r.kind === 'clock' && r.consequence.kind === 'void_unless_recorded',
+  )
+  if (!voids) return { voided: [] }
+  const past = await tx
+    .select()
+    .from(clocks)
+    .where(and(inArray(clocks.status, ['running', 'overdue']), lt(clocks.currentDue, today)))
+  const voided: string[] = []
+  for (const clock of past) {
+    const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
+    if (rule.kind !== 'clock' || rule.consequence.kind !== 'void_unless_recorded') continue
+    const lapsed = await tx
+      .update(clocks)
+      .set({ status: 'lapsed' })
+      .where(and(eq(clocks.id, clock.id), inArray(clocks.status, ['running', 'overdue'])))
+      .returning({ id: clocks.id })
+    if (lapsed.length > 0 && !voided.includes(clock.applicationId)) voided.push(clock.applicationId)
+  }
+  return { voided }
 }
 
 export const clocksDailyJob = defineJob<DailyPayload>({
@@ -114,9 +159,15 @@ export const clocksDailyJob = defineJob<DailyPayload>({
       : `clocks.daily:${p.today}`,
   handler: async (payload, ctx) => {
     const today = payload.today ?? (await townToday(ctx.db, new Date(), ctx.signal))
-    await noticeOverdueClocks(ctx.db, await markOverdue(ctx.db, today), ctx.signal)
+    const overdue = await markOverdue(ctx.db, today)
+    const refusal = await refuseBySilence(ctx.db, today, ctx.signal)
+    await markUnrecordedVoid(ctx.db, today, ctx.signal)
+    await noticeOverdueClocks(ctx.db, overdue, ctx.signal)
     await warnClocksDueSoon(ctx.db, today, ctx.signal)
     const failures = await expireLapsedPermits(ctx.db, today, ctx.signal)
+    if (refusal.failures.length > 0) {
+      return failKeepingWrites(`refusal failed: ${refusal.failures.join('; ')}`)
+    }
     if (failures.length > 0) return failKeepingWrites(`expiry failed: ${failures.join('; ')}`)
     return ok(undefined)
   },

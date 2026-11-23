@@ -46,7 +46,7 @@ Open each adopted permit's form, fee schedule and letters, and change what does 
 
 ## 8. Check the town rules
 
-Chiban starts from the values state law gives. Look at **State law** to see which values the town is allowed to change, and set the town's own only where it has adopted something different. See [state law, town rules and local code](./town-rules-and-state-law.md).
+Each rule on **State law** shows the starting value Chiban uses. Check them against what the town has adopted, and set the town's own only where it differs. **State law** also shows which values the town is allowed to change. See [state law, town rules and local code](./town-rules-and-state-law.md).
 
 ## 9. Bring in the parcels and owners
 

@@ -56,13 +56,19 @@ function drawFields(ctx: BlockContext, rows: { label: string; value: string }[])
   const valueWidth = CONTENT_WIDTH - labelWidth
   for (const row of rows) {
     const valueLines = wrapLines(row.value, layout.fonts.body, sizes.value, valueWidth)
-    layout.ensure(valueLines.length * sizes.value * LEADING)
-    drawText(layout.page, row.label, {
-      x: MARGIN,
-      y: layout.y - sizes.label * LEADING + 2,
-      font: layout.fonts.bold,
-      size: sizes.label,
-      color: MUTED,
+    const labelLines = wrapLines(row.label, layout.fonts.bold, sizes.label, labelWidth - 8)
+    const labelHeight = labelLines.length * sizes.label * LEADING
+    layout.ensure(Math.max(labelHeight, sizes.value * LEADING))
+    const page = layout.page
+    const top = layout.y
+    labelLines.forEach((line, index) => {
+      drawText(page, line, {
+        x: MARGIN,
+        y: top - sizes.label * LEADING * (index + 1) + 2,
+        font: layout.fonts.bold,
+        size: sizes.label,
+        color: MUTED,
+      })
     })
     for (const line of valueLines) {
       layout.ensure(sizes.value * LEADING)
@@ -74,6 +80,7 @@ function drawFields(ctx: BlockContext, rows: { label: string; value: string }[])
         size: sizes.value,
       })
     }
+    if (layout.page === page) layout.y = Math.min(layout.y, top - labelHeight)
     layout.y -= 4
   }
   layout.y -= BLOCK_GAP / 2

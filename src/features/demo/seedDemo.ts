@@ -1,11 +1,8 @@
 import path from 'node:path'
-import { sql } from 'drizzle-orm'
-import type { Role } from '@/constants/roles'
 import type { Db } from '@/db/client'
-import { townSettings, userRoles, users } from '@/db/schema'
-import { seedDefaultGrants } from '@/features/authz/defaultGrants'
-
+import { type DemoUser, demoUsers, seedTownAndUsers } from '@/features/demo/demoUsers'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedMaineDemo } from '@/features/demo/me/seedMaineDemo'
 import {
   applyOverlayAfterStory,
   applyOverlayBeforeStory,
@@ -40,90 +37,11 @@ import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport } from '@/features/mail/transport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
+import { activePack } from '@/features/packs/registry'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 
-export { DEMO_DOMAIN }
-
-export interface DemoUser {
-  email: string
-  displayName: string
-  roles: readonly Role[]
-  kind: 'staff' | 'public'
-}
-
-export const DEMO_USERS: readonly DemoUser[] = [
-  { email: `admin@${DEMO_DOMAIN}`, displayName: 'Avery Admin', roles: ['admin'], kind: 'staff' },
-  { email: `staff@${DEMO_DOMAIN}`, displayName: 'Sam Clerk', roles: ['staff'], kind: 'staff' },
-  {
-    email: `official@${DEMO_DOMAIN}`,
-    displayName: 'Dana Booth',
-    roles: ['staff', 'inspector'],
-    kind: 'staff',
-  },
-  {
-    email: `inspector@${DEMO_DOMAIN}`,
-    displayName: 'Ira Inspector',
-    roles: ['inspector'],
-    kind: 'staff',
-  },
-  {
-    email: `finance@${DEMO_DOMAIN}`,
-    displayName: 'Fern Finance',
-    roles: ['finance'],
-    kind: 'staff',
-  },
-  {
-    email: `records@${DEMO_DOMAIN}`,
-    displayName: 'Rae Records',
-    roles: ['records_custodian'],
-    kind: 'staff',
-  },
-  {
-    email: `reviewer@${DEMO_DOMAIN}`,
-    displayName: 'Remy Reviewer',
-    roles: ['reviewer'],
-    kind: 'staff',
-  },
-  {
-    email: `board@${DEMO_DOMAIN}`,
-    displayName: 'Bea Board',
-    roles: ['board_member'],
-    kind: 'staff',
-  },
-  { email: `fire@${DEMO_DOMAIN}`, displayName: 'Faye Fire', roles: ['reviewer'], kind: 'staff' },
-  { email: `works@${DEMO_DOMAIN}`, displayName: 'Wes Works', roles: ['reviewer'], kind: 'staff' },
-  {
-    email: `pb.member@${DEMO_DOMAIN}`,
-    displayName: 'Robin Vale',
-    roles: ['board_member'],
-    kind: 'public',
-  },
-  {
-    email: `zba.member@${DEMO_DOMAIN}`,
-    displayName: 'Drew Hale',
-    roles: ['board_member'],
-    kind: 'public',
-  },
-  {
-    email: `concom.member@${DEMO_DOMAIN}`,
-    displayName: 'Cleo Marsh',
-    roles: ['board_member'],
-    kind: 'public',
-  },
-  {
-    email: `applicant@${DEMO_DOMAIN}`,
-    displayName: 'Alex Applicant',
-    roles: ['applicant'],
-    kind: 'public',
-  },
-  {
-    email: `contractor@${DEMO_DOMAIN}`,
-    displayName: 'Cory Contractor',
-    roles: ['contractor'],
-    kind: 'public',
-  },
-]
+export { DEMO_DOMAIN, type DemoUser, demoUsers }
 
 export interface SeedOperationsDeps {
   store?: ObjectStore
@@ -170,46 +88,9 @@ export async function seedDemo(
   deps: SeedDemoDeps = {},
 ): Promise<SeedReport> {
   signal.throwIfAborted()
+  if (activePack().manifest.id === 'me') return await seedMaineDemo(db, signal, deps)
   const name = overlayTownName(deps.overlay)
-  const base = await db.transaction(async (tx) => {
-    const town = await tx
-      .insert(townSettings)
-      .values({ id: 1, name, stateCode: 'NH', timeZone: 'America/New_York' })
-      .onConflictDoUpdate({
-        target: townSettings.id,
-        set: {
-          name,
-          stateCode: 'NH',
-          timeZone: 'America/New_York',
-          updatedAt: sql`now()`,
-        },
-      })
-      .returning({ id: townSettings.id })
-
-    await seedDefaultGrants(tx, signal)
-
-    const created = await tx
-      .insert(users)
-      .values(DEMO_USERS.map((u) => ({ email: u.email, displayName: u.displayName, kind: u.kind })))
-      .onConflictDoNothing()
-      .returning({ id: users.id, email: users.email })
-
-    const idByEmail = new Map(created.map((u) => [u.email, u.id]))
-    const roleRows = DEMO_USERS.flatMap((u) => {
-      const userId = idByEmail.get(u.email)
-      return userId === undefined ? [] : u.roles.map((role) => ({ userId, role }))
-    })
-    const assigned =
-      roleRows.length === 0
-        ? []
-        : await tx.insert(userRoles).values(roleRows).onConflictDoNothing().returning()
-
-    return {
-      townConfigured: town.length === 1,
-      usersCreated: created.length,
-      rolesAssigned: assigned.length,
-    }
-  })
+  const base = await seedTownAndUsers(db, { name, stateCode: 'NH', users: demoUsers() }, signal)
   const overlay =
     deps.overlay === undefined ? null : await applyOverlayBeforeStory(db, deps.overlay, signal)
   const now = deps.now ?? new Date()

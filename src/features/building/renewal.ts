@@ -4,7 +4,7 @@ import { applications, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
+import { mayActOnApplication } from '@/features/authz/classificationScope'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { resolveClockLength } from '@/features/clocks/startClocks'
 import { assessFees } from '@/features/fees/assess'
@@ -28,7 +28,9 @@ export async function renewPermit(
   >
 > {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (!(await mayActOnApplication(db, actor, 'permit.issue', input.applicationId, signal))) {
+    return err('forbidden')
+  }
   return await transactionResult(db, async (tx) => {
     await tx
       .select({ id: applications.id })

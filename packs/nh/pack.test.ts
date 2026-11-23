@@ -1,14 +1,19 @@
+import { CLASSIFICATION_KEYS } from '@packs/nh/boardSchema'
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
-import { PackManifestSchema, PackRuleSchema } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { resolveCodeEdition } from '@/features/building/codeEdition'
 import { loadPack } from '@/features/packs/loadPack'
+import { PackManifestSchema, PackRuleSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { todayInTimeZone } from '@/types/civilDate'
 
 describe('nh pack', () => {
+  it('classification keys match the declared key list', () => {
+    expect(new Set(NH_CLASSIFICATIONS.map((c) => c.key))).toEqual(new Set(CLASSIFICATION_KEYS))
+  })
+
   it('nh pack validates', () => {
     expect(PackManifestSchema.safeParse(NH_PACK_MANIFEST).success).toBe(true)
     expect(loadPack().id).toBe('nh')

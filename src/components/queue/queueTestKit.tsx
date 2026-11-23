@@ -1,13 +1,14 @@
 import { render } from '@testing-library/react'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { QueueTable } from '@/components/queue/QueueTable'
+import { applicationStatusText } from '@/features/applications/statusText'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
 import type { CivilDate } from '@/types/civilDate'
 
 export const d = (value: string) => value as CivilDate
 
 export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
-  return {
+  const base: Omit<WorkQueueRow, 'statusText'> = {
     applicationId: crypto.randomUUID(),
     number: 'BP-2027-0001',
     projectTitle: 'Garage addition',
@@ -33,6 +34,15 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     reviewers: [],
     responsible: null,
     preservationIncomplete: false,
+    ...overrides,
+  }
+  const declared =
+    base.substep === null || base.substepLabel === null
+      ? []
+      : [{ key: base.substep, label: base.substepLabel }]
+  return {
+    ...base,
+    statusText: applicationStatusText(base.state, base.substep, declared),
     ...overrides,
   }
 }

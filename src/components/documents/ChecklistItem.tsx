@@ -37,12 +37,19 @@ const STATUS_WORDS: ReadonlyMap<ItemStatus, string> = new Map([
 
 const DONE: ReadonlySet<ItemStatus> = new Set(['provided', 'accepted', 'waiver_requested'])
 
-function StatusMark({ status }: { status: ItemStatus }) {
-  if (DONE.has(status))
+const OVERRIDDEN = 'Gone ahead without the document'
+const TOWN_ACCEPTED = 'Accepted by the town'
+
+function StatusMark({ status, overridden }: { status: ItemStatus; overridden: boolean }) {
+  if (overridden || DONE.has(status))
     return <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-status-passed-fg" aria-hidden />
   if (status === 'not_needed')
     return <Minus className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
   return <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+}
+
+function overrideWords(actor: ItemProps['actor']): string {
+  return actor === 'staff' ? OVERRIDDEN : TOWN_ACCEPTED
 }
 
 function NoteLine({ prefix, note }: { prefix: string; note: ChecklistNote }) {
@@ -79,15 +86,21 @@ function FileLinks({ props }: { props: ItemProps }) {
 
 export function ChecklistItem(props: ItemProps) {
   const { row, actor } = props
-  const later = actor === 'applicant' && row.stage !== 'to_file' && row.status === 'missing'
+  const overridden = row.override !== null
+  const later =
+    actor === 'applicant' &&
+    row.open &&
+    !overridden &&
+    row.stage !== 'to_file' &&
+    row.status === 'missing'
   return (
     <li className="grid gap-2 border-b border-hairline py-3 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div className="flex items-start gap-2">
-        <StatusMark status={row.status} />
+        <StatusMark status={row.status} overridden={overridden} />
         <div className="min-w-0">
           <p className="m-0 font-medium">{row.label}</p>
           <p className="m-0 text-sm text-muted-foreground">
-            {STATUS_WORDS.get(row.status)}
+            {overridden ? overrideWords(actor) : STATUS_WORDS.get(row.status)}
             {later ? '. Can come later' : ''}
           </p>
           {row.help === null ? null : <p className="m-0 text-sm">{row.help}</p>}
@@ -99,6 +112,9 @@ export function ChecklistItem(props: ItemProps) {
         )}
         {row.waiver === null ? null : <NoteLine prefix="Waiver requested" note={row.waiver} />}
         {row.accepted === null ? null : <NoteLine prefix="Accepted" note={row.accepted} />}
+        {row.override === null || actor !== 'staff' ? null : (
+          <NoteLine prefix="Overridden" note={row.override} />
+        )}
         <FileLinks props={props} />
         {actor === 'staff' ? <StaffControls props={props} /> : <ApplicantControls props={props} />}
       </div>

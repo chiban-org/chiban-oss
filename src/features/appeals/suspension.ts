@@ -1,10 +1,10 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { appeals } from '@/db/schema'
-import { registerGate } from '@/features/gates/registry'
+import { holdSuspends } from '@/features/enforcement/holdReads'
+import { type GateDefinition, registerGate } from '@/features/gates/registry'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
-
-export const APPEAL_SUSPENSION_GATE_KEY = 'nh.appeal.suspension'
+import { packRoles } from '@/features/packs/roles'
 
 const SUSPENDING_EFFECT: string = 'suspend_on_appeal_of_issuance'
 
@@ -14,7 +14,7 @@ export function appealSuspends(pack: Pack, bindings: ReadonlySet<string>): boole
   )
 }
 
-export async function isSuspended(
+export async function appealOpen(
   db: DbOrTx,
   applicationId: string,
   signal: AbortSignal,
@@ -28,17 +28,34 @@ export async function isSuspended(
   return open.length > 0
 }
 
-const effect = ruleByKey(loadPack(), APPEAL_SUSPENSION_GATE_KEY)
+export async function isSuspended(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  return (
+    (await appealOpen(db, applicationId, signal)) || (await holdSuspends(db, applicationId, signal))
+  )
+}
 
-registerGate({
-  key: effect.key,
-  label: effect.label,
-  citation: effect.citation,
-  kind: 'statutory',
-  appliesTo: ['closed'],
-  boundBy: effect.key,
-  evaluate: async (tx, app, _today, signal) =>
-    (await isSuspended(tx, app.id, signal))
-      ? { status: 'blocked', reason: 'Suspended by appeal (RSA 676:6). Resolve the appeal first.' }
-      : { status: 'pass' },
-})
+export function suspensionGateDefinitions(): GateDefinition[] {
+  const key = packRoles().rules.appealSuspension
+  if (key === null) return []
+  const effect = ruleByKey(loadPack(), key)
+  return [
+    {
+      key: effect.key,
+      label: effect.label,
+      citation: effect.citation,
+      kind: 'statutory',
+      appliesTo: ['closed'],
+      boundBy: effect.key,
+      evaluate: async (tx, app, _today, signal) =>
+        (await appealOpen(tx, app.id, signal))
+          ? { status: 'blocked', reason: `${effect.label}. Resolve the appeal first.` }
+          : { status: 'pass' },
+    },
+  ]
+}
+
+for (const gate of suspensionGateDefinitions()) registerGate(gate)

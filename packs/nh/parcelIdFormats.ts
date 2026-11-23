@@ -1,11 +1,4 @@
-export interface PackParcelIdFormat {
-  key: string
-  label: string
-  kind: 'digits'
-  width: number
-  isDisplay: boolean
-  example: string
-}
+import type { PackParcelIdFormat } from '@/features/packs/schema'
 
 export const NH_PARCEL_ID_FORMATS: readonly PackParcelIdFormat[] = [
   {

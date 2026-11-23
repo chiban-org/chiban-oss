@@ -13,6 +13,7 @@ import {
   type ApplicantAccount,
   findApplicantAccount,
 } from '@/features/counter/intake/applicantAccount'
+import { activeHoldFor } from '@/features/enforcement/holdReads'
 import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
 import { err, ok, type Result } from '@/types/result'
@@ -29,6 +30,7 @@ export type StartIntakeError =
   | 'name_required'
   | 'unknown_parcel'
   | 'retired_parcel'
+  | 'parcel_held'
   | 'not_published'
   | 'config_inconsistent'
 
@@ -59,13 +61,15 @@ function applicantParty(
 async function parcelProblem(
   tx: Tx,
   parcelId: string,
-): Promise<'unknown_parcel' | 'retired_parcel' | null> {
+  signal: AbortSignal,
+): Promise<'unknown_parcel' | 'retired_parcel' | 'parcel_held' | null> {
   const [parcel] = await tx
     .select({ status: parcels.status })
     .from(parcels)
     .where(eq(parcels.id, parcelId))
   if (parcel === undefined) return 'unknown_parcel'
-  return parcel.status === 'retired' ? 'retired_parcel' : null
+  if (parcel.status === 'retired') return 'retired_parcel'
+  return (await activeHoldFor(tx, parcelId, signal)) === null ? null : 'parcel_held'
 }
 
 async function createIntake(
@@ -75,7 +79,7 @@ async function createIntake(
   signal: AbortSignal,
 ): Promise<Result<StartedIntake, StartIntakeError>> {
   const { input, label, party, now } = context
-  const problem = await parcelProblem(tx, input.parcelId)
+  const problem = await parcelProblem(tx, input.parcelId, signal)
   if (problem !== null) return err(problem)
   const title = await counterTitle(tx, label, input.parcelId)
   const project = await createProject(tx, actor, { parcelId: input.parcelId, title }, signal)

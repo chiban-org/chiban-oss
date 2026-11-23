@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ParcelSearch } from '@/components/public/ParcelSearch'
+import { boardShort, recordsRequest } from '@/features/packs/vocabulary'
 import type { SearchExample } from '@/features/parcels/searchExample'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
@@ -19,11 +20,19 @@ function Task({ href, title, children }: { href: string; title: string; children
   )
 }
 
-function AccountTask({ audience }: { audience: HomeAudience }) {
+function AccountTask({
+  audience,
+  onlinePayment,
+}: {
+  audience: HomeAudience
+  onlinePayment: boolean
+}) {
   if (audience === 'resident') {
     return (
       <Task href="/portal" title="Your applications">
-        Check where each application stands, pay fees, and request inspections.
+        {onlinePayment
+          ? 'Check where each application stands, pay fees, and request inspections.'
+          : 'Check where each application stands and request inspections.'}
       </Task>
     )
   }
@@ -46,6 +55,15 @@ interface HomeContentProps {
   townName: string
   example: SearchExample | null
   boardMember?: boolean
+  onlinePayment?: boolean
+}
+
+export function meetingsTaskText(): string {
+  return `Upcoming ${boardShort('planning_board')} and ${boardShort('zba')} meetings, their agendas, minutes, and decisions.`
+}
+
+export function recordsTaskText(): string {
+  return `Make a ${recordsRequest()} for public records the town keeps.`
 }
 
 export function HomeContent({
@@ -53,6 +71,7 @@ export function HomeContent({
   townName,
   example,
   boardMember = false,
+  onlinePayment = true,
 }: HomeContentProps) {
   return (
     <main className="mx-auto max-w-3xl">
@@ -73,18 +92,20 @@ export function HomeContent({
           </Task>
         ) : null}
         <Task href="/portal/apply" title="Apply for a permit">
-          Start a building, trade, or land use application online and pay its fees.
+          {onlinePayment
+            ? 'Start a building, trade, or land use application online and pay its fees.'
+            : 'Start a building, trade, or land use application online.'}
         </Task>
         <Task href="/meetings" title="Meetings">
-          Upcoming Planning Board and Zoning Board meetings, their agendas, minutes, and decisions.
+          {meetingsTaskText()}
         </Task>
         <Task href="/complaints/new" title="Report a problem">
           Tell the town about building or land use work that may not follow the rules.
         </Task>
         <Task href="/records/request" title="Ask for town records">
-          Make a Right-to-Know request for public records the town keeps.
+          {recordsTaskText()}
         </Task>
-        <AccountTask audience={audience} />
+        <AccountTask audience={audience} onlinePayment={onlinePayment} />
       </ul>
     </main>
   )

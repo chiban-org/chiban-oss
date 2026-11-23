@@ -2,6 +2,8 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { RawSearchParams } from '@/features/dataTable/params'
 import { loadPanelDocuments } from '@/features/documents/panelData'
+import { defaultParcelFileVisibility } from '@/features/documents/parcelVisibility'
+import { parcelHoldNotice } from '@/features/enforcement/holdReads'
 import { configuredOverlayLayers } from '@/features/gis/extent'
 import { recordsInspection } from '@/features/inspections/visibility'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
@@ -60,7 +62,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : FALLBACK_ZONE
   const today = todayInTimeZone(timeZone, new Date())
-  const [can, conditions, next, nearby, recipients, contacts, documents, notices, overlays] =
+  const [can, conditions, next, nearby, recipients, contacts, documents, notices, overlays, hold] =
     await Promise.all([
       capabilitiesOf(ctx),
       loadLotConditions(ctx.db, parcelId, ctx.signal),
@@ -75,6 +77,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
       loadPanelDocuments(ctx.db, ctx.actor, { kind: 'parcel', id: parcelId }, ctx.signal),
       returnedCheckNoticesForParcel(ctx.db, ctx.actor, parcelId, ctx.signal),
       configuredOverlayLayers(ctx.db, ctx.signal),
+      parcelHoldNotice(ctx.db, parcelId, ctx.signal),
     ])
   return {
     parcelId,
@@ -98,6 +101,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
     contacts,
     documents,
     notices,
+    hold,
     map: {
       overlays,
       basemapRasterUrl: town.ok ? town.value.basemapRasterUrl : null,
@@ -107,6 +111,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
       key: s.key,
       label: s.label,
       citation: s.citation.label,
+      visibility: defaultParcelFileVisibility(s.key),
     })),
   }
 }

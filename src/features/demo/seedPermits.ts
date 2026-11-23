@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { like } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { projects } from '@/db/schema'
@@ -23,6 +22,7 @@ import {
   TRADE_VALUES,
 } from '@/features/demo/seedPermitSupport'
 import { createFeeOverride } from '@/features/fees/feeOverrides'
+import { activePack } from '@/features/packs/registry'
 
 export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean> {
   signal.throwIfAborted()
@@ -37,7 +37,7 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
     staff: await actorFor(db, 'staff', signal),
     applicant: await actorFor(db, 'applicant', signal),
   }
-  for (const starter of NH_STARTERS) {
+  for (const starter of activePack().starters) {
     const adopted = await adoptStarter(db, cast.admin, starter.id, signal)
     if (!adopted.ok && adopted.error !== 'already_adopted') must(adopted, `adopt ${starter.id}`)
   }

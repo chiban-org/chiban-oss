@@ -56,6 +56,7 @@ timed as (
     (select min(e.occurred_on) from record_events e
       where e.kind = any(sr.events) and (
         (l.doc_kind = 'enforcement_case' and e.case_id = l.doc_record)
+        or (l.doc_kind = 'rtk_request' and e.rtk_request_id = l.doc_record)
         or ((e.project_id = l.project_id
             or (l.doc_kind = 'parcel'
               and e.project_id in (select p.id from projects p where p.parcel_id = l.doc_record)))
@@ -87,6 +88,7 @@ classified as (
       when d.holds > 0 then 'on_hold'
       when d.eligible_on is null then 'awaiting_event'
       when d.eligible_on <= ${asOf}::date then 'eligible'
+      when d.eligible_on > ${asOf}::date then 'scheduled'
     end as state,
     case when d.kind = 'application_snapshot'
       then 'Application ' || d.app_number || ', snapshot ' || d.snap_seq

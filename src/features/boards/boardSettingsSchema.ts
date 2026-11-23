@@ -1,6 +1,6 @@
-import type { BoardKind } from '@packs/nh/schema'
-import { civilDateSchema } from '@packs/nh/schema'
 import { z } from 'zod'
+import type { BoardKind } from '@/features/packs/schema'
+import { civilDateSchema } from '@/features/packs/schema'
 
 const AdoptionSchema = z.object({
   adoptingAuthority: z.string(),
@@ -31,6 +31,7 @@ export const BoardSettingsBodySchema = z.object({
     layersConfirmedOn: civilDateSchema.nullable(),
     assumedRightOfWayFt: z.number().positive(),
     recheckContactsDays: z.number().int().min(1).max(3650).optional(),
+    bufferFt: z.number().positive().nullable().optional(),
   }),
 })
 export type BoardSettingsBody = z.infer<typeof BoardSettingsBodySchema>

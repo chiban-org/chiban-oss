@@ -1,4 +1,3 @@
-import type { LicenseTrade } from '@packs/nh/licenseTypes'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { accountProfiles, contractorProfiles, userRoles, users } from '@/db/schema'
@@ -6,6 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { linkAccountParties, lockContractorEmail } from '@/features/contractors/accountLink'
+import type { LicenseTrade } from '@/features/packs/schema/licenses'
 import { err, ok, type Result } from '@/types/result'
 
 export interface PersonDetails {

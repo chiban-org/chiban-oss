@@ -1,8 +1,8 @@
-import { nhDefaultLicenseType } from '@packs/nh/licenseTypes'
 import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { contractorProfiles, users } from '@/db/schema'
 import { tradeForLicenseType, tradeLabel } from '@/features/contractors/trades'
+import { defaultLicenseType } from '@/features/licenseChecks/packLicenses'
 
 export interface ContractorAccountSummary {
   companyName: string
@@ -29,7 +29,7 @@ export async function findContractorAccount(
     .innerJoin(contractorProfiles, eq(contractorProfiles.userId, users.id))
     .where(and(eq(users.email, email), eq(users.kind, 'public'), eq(users.isActive, true)))
   if (row === undefined) return null
-  const trade = tradeForLicenseType(nhDefaultLicenseType(input.applicationTypeKey))
+  const trade = tradeForLicenseType(defaultLicenseType(input.applicationTypeKey))
   return {
     companyName: row.companyName,
     contactName: row.contactName,

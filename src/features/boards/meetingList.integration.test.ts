@@ -30,7 +30,7 @@ describe('the meeting table', () => {
     const page = await listMeetingTable(
       handle.db,
       world.staff,
-      { ...view, boardIds, today: '2027-01-04', limit: 50, offset: 0 },
+      { ...view, boardIds, today: '2027-01-04', nowMinute: 0, limit: 50, offset: 0 },
       signal,
     )
     const row = page?.rows.find((r) => r.id === made.meetingId)
@@ -50,6 +50,7 @@ describe('the meeting table', () => {
         boardIds,
         sort,
         today: '2027-01-04',
+        nowMinute: 0,
         limit: 50,
         offset: 0,
       },
@@ -86,9 +87,56 @@ describe('the meeting table', () => {
     )
     expect(archived.ok).toBe(true)
     const names = async (when: 'upcoming' | 'past') =>
-      (await meetingFilterBoards(handle.db, when, '2027-02-01')).map((b) => b.name)
+      (await meetingFilterBoards(handle.db, when, '2027-02-01', 0)).map((b) => b.name)
     expect(await names('past')).toContain('Old Commission')
     expect(await names('upcoming')).not.toContain('Old Commission')
     expect(await names('upcoming')).toContain('Alder Pond Planning Board')
+  })
+})
+
+describe('a meeting that started earlier today', () => {
+  it('is counted and listed under Past, not Upcoming', async () => {
+    const { scheduleMeeting } = await import('@/features/boards/meetings')
+    const board = (await activeBoards(handle.db))[0]
+    if (board === undefined) throw new Error('no board')
+    const made = await scheduleMeeting(
+      handle.db,
+      world.staff,
+      {
+        boardId: board.id,
+        meetingDate: '2027-03-09' as CivilDate,
+        kind: 'special',
+        startsAtMinute: 540,
+      },
+      signal,
+    )
+    if (!made.ok) throw new Error('schedule failed')
+    const boardIds = (await activeBoards(handle.db)).map((b) => b.id)
+    const tab = async (when: 'upcoming' | 'past', nowMinute: number) => {
+      const page = await listMeetingTable(
+        handle.db,
+        world.staff,
+        {
+          ...readMeetingListView({ when }, boardIds),
+          boardIds,
+          today: '2027-03-09',
+          nowMinute,
+          limit: 50,
+          offset: 0,
+        },
+        signal,
+      )
+      return {
+        ids: (page?.rows ?? []).map((r) => r.id),
+        counts: Object.fromEntries(page?.counts ?? []),
+      }
+    }
+    const evening = 18 * 60
+    const upcoming = await tab('upcoming', evening)
+    const past = await tab('past', evening)
+    expect(upcoming.ids).not.toContain(made.value.meetingId)
+    expect(past.ids).toContain(made.value.meetingId)
+    expect(upcoming.counts).toEqual({ upcoming: upcoming.ids.length, past: past.ids.length })
+    expect((await tab('upcoming', 8 * 60)).ids).toContain(made.value.meetingId)
   })
 })

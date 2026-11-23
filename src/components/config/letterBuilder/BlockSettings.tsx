@@ -4,6 +4,7 @@ import { NodeSelection } from '@tiptap/pm/state'
 import { type Editor, useEditorState } from '@tiptap/react'
 import { FieldTableSettings } from '@/components/config/letterBuilder/FieldTableSettings'
 import { Pick, RowButton } from '@/components/config/primitives'
+import { usePackText, useSignerRoleLabel } from '@/components/PackTextProvider'
 import {
   type DocNode,
   type FieldTableRow,
@@ -12,8 +13,9 @@ import {
 import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { documentKind } from '@/features/templates/kinds/documentKinds'
 import { fieldGroups } from '@/features/templates/kinds/fieldGroups'
+import { mergeFieldLabelFor } from '@/features/templates/mergeFieldWords'
 import type { TemplateKind } from '@/features/templates/templateSchema'
-import { SIGNER_ROLE_LABELS, SIGNER_ROLES } from '@/features/town/profileSchema'
+import { signerRoleChoices } from '@/features/town/signerRoleChoices'
 
 interface Selected {
   type: string
@@ -27,43 +29,50 @@ function selectedNode(editor: Editor): Selected | null {
   return { type: selection.node.type.name, attrs: { ...selection.node.attrs }, pos: selection.from }
 }
 
-const ROLE_OPTIONS = SIGNER_ROLES.map((role): [string, string] => [role, SIGNER_ROLE_LABELS[role]])
-
 function Hint({ children }: { children: string }) {
   return <p className="m-0 text-sm text-muted-foreground">{children}</p>
 }
 
 export function BlockSettings({ editor, kind }: { editor: Editor; kind: TemplateKind }) {
   const selected = useEditorState({ editor, selector: ({ editor: e }) => selectedNode(e) })
+  const roleLabel = useSignerRoleLabel()
+  const { vocabulary, signerRoles } = usePackText()
   if (selected === null) {
     return <Hint>Select a merge field or a block in the letter to change it.</Hint>
   }
   const setAttrs = (attrs: Record<string, unknown>) =>
     editor.chain().setNodeSelection(selected.pos).updateAttributes(selected.type, attrs).run()
   const remove = () => editor.chain().setNodeSelection(selected.pos).deleteSelection().run()
-  const fieldOptions = fieldGroups(kind).flatMap((g) =>
+  const fieldOptions = fieldGroups(kind, vocabulary, signerRoles).flatMap((g) =>
     g.fields.map((f): [string, string] => [f.name, `${g.title}: ${f.label}`]),
   )
   switch (selected.type) {
-    case 'mergeField':
+    case 'mergeField': {
+      const name = String(selected.attrs.name)
+      const options = fieldOptions.some(([value]) => value === name)
+        ? fieldOptions
+        : [[name, mergeFieldLabelFor(name, vocabulary)] as [string, string], ...fieldOptions]
       return (
         <div className="grid gap-3">
           <Pick
             label="Merge field"
-            value={String(selected.attrs.name)}
-            options={fieldOptions}
+            value={name}
+            options={options}
             onChange={(e) => setAttrs({ name: e.target.value })}
           />
           <RowButton onClick={remove}>Remove merge field</RowButton>
         </div>
       )
+    }
     case 'signature':
       return (
         <div className="grid gap-3">
           <Pick
             label="Who signs"
             value={String(selected.attrs.role)}
-            options={ROLE_OPTIONS}
+            options={signerRoleChoices(signerRoles, String(selected.attrs.role)).map(
+              (role): [string, string] => [role, roleLabel(role)],
+            )}
             onChange={(e) => setAttrs({ role: e.target.value })}
           />
           <Hint>The name, title and signature image come from the Signers settings.</Hint>

@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications, projects, reviewAssignments, users } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
-import { substepLabel } from '@/features/applications/statusText'
+import { applicationStatusText, substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
@@ -27,7 +27,7 @@ import {
 import {
   EARLIEST_DUE,
   FEES_DUE,
-  FILING_DUE,
+  filingDueSql,
   NEXT_DUE,
   NEXT_DUE_RULE_KEY,
   NOTICE_DUE,
@@ -38,6 +38,11 @@ import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
 export const WARNING_DAYS = 5
+
+const DESCRIPTION_SQL = sql<string>`coalesce(
+  nullif(trim(${applications.values}->>'description'), ''),
+  nullif(trim(${applications.values}->>'project_description'), ''),
+  '')`
 
 export interface WorkQueueFilters {
   states?: CoreState[]
@@ -55,11 +60,13 @@ export interface WorkQueueRow {
   applicationId: string
   number: string
   projectTitle: string
+  description?: string
   receivedDate: CivilDate | null
   typeLabel: string
   state: CoreState
   substep: string | null
   substepLabel: string | null
+  statusText: string
   parcelId: string
   parcelDisplayId: string | null
   nextDue: CivilDate | null
@@ -187,6 +194,7 @@ export async function listWorkQueue(
       id: applications.id,
       number: applications.number,
       projectTitle: projects.title,
+      description: DESCRIPTION_SQL,
       receivedDate: applications.receivedDate,
       state: applications.state,
       substep: applications.substep,
@@ -195,7 +203,7 @@ export async function listWorkQueue(
       nextDue: NEXT_DUE,
       nextDueRuleKey: NEXT_DUE_RULE_KEY,
       noticeDue: NOTICE_DUE,
-      filingDue: FILING_DUE,
+      filingDue: filingDueSql(),
       feesDue: FEES_DUE,
       unknownPayment: UNKNOWN_PAYMENT,
       preservationIncomplete: preservationIncompleteFor(actor),
@@ -230,11 +238,13 @@ export async function listWorkQueue(
         applicationId: r.id,
         number: r.number,
         projectTitle: r.projectTitle,
+        description: r.description,
         receivedDate: r.receivedDate as CivilDate | null,
         typeLabel: type?.label ?? '',
         state: r.state as CoreState,
         substep: r.substep,
         substepLabel: r.substep === null ? null : substepLabel(r.substep, type?.substeps ?? []),
+        statusText: applicationStatusText(r.state as CoreState, r.substep, type?.substeps ?? []),
         parcelId: r.parcelId,
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,

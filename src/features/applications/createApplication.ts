@@ -5,9 +5,12 @@ import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { intakeOpen } from '@/features/buildingProgram/intake'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { pinCurrent } from '@/features/config/bindings'
 import { checkApplicationType } from '@/features/config/publishChecks'
 import { getVersion } from '@/features/config/store'
+import { activeHoldFor } from '@/features/enforcement/holdReads'
 import { loadPack } from '@/features/packs/loadPack'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
@@ -38,13 +41,13 @@ function isBoardType(typeBody: ApplicationTypeBody): boolean {
 export async function createApplication(
   db: DbOrTx,
   actor: Actor,
-  input: { projectId: string; applicationTypeKey: string },
+  input: { projectId: string; applicationTypeKey: string; bypassHold?: true },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
   Result<
     { applicationId: string; number: string },
-    'forbidden' | 'not_published' | 'config_inconsistent'
+    'forbidden' | 'not_published' | 'config_inconsistent' | 'parcel_held'
   >
 > {
   signal.throwIfAborted()
@@ -57,12 +60,18 @@ export async function createApplication(
   return await transactionResult(db, async (tx) => {
     const [project] = await tx.select().from(projects).where(eq(projects.id, input.projectId))
     if (project === undefined) return err('forbidden')
+    if (input.bypassHold !== true && (await activeHoldFor(tx, project.parcelId, signal)) !== null) {
+      return err('parcel_held')
+    }
     const pins = await pinCurrent(tx, input.applicationTypeKey, signal)
     if (!pins.ok) return err('not_published')
     const typeVersion = await getVersion(tx, pins.value.applicationType, signal)
     const typeBody = typeVersion?.body as ApplicationTypeBody
     if ((await checkApplicationType(tx, typeBody, signal)) !== null)
       return err('config_inconsistent')
+    if (!intakeOpen(typeBody.classification, await getBuildingProgram(tx, signal))) {
+      return err('not_published')
+    }
     const prefix = typeBody.prefix
     const number = await nextNumber(tx, prefix, year)
     const [created] = await tx

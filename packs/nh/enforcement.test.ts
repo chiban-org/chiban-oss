@@ -54,8 +54,10 @@ describe('nh enforcement rules', () => {
 
   it('penalty rules carry 27500 and 55000 cents per day', () => {
     for (const key of ['nh.enf.penalty_zoning', 'nh.enf.penalty_building']) {
-      expect(penalty(key).firstOffenseCentsPerDay).toBe(27500)
-      expect(penalty(key).subsequentCentsPerDay).toBe(55000)
+      expect(penalty(key)).toMatchObject({
+        firstOffenseCentsPerDay: 27500,
+        subsequentCentsPerDay: 55000,
+      })
     }
     expect(penalty('nh.enf.penalty_building').citation.label).toContain('155-A:8-a')
   })

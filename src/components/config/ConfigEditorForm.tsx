@@ -9,7 +9,7 @@ import { FieldError, type FieldErrors } from '@/components/config/primitives'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { EditorContext } from '@/features/config/editorContext'
-import { type ConfigKind, isPinnedKind } from '@/features/config/kinds'
+import { type ConfigKind, isPinnedKind } from '@/features/config/kindNames'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface Props {

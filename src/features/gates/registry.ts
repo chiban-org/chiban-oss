@@ -1,11 +1,11 @@
-import type { GateRule } from '@packs/nh/schema'
 import type { Tx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
+import type { GateRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export type GateOutcome =
-  | { status: 'pass' }
+  | { status: 'pass'; notApplicable?: true }
   | { status: 'blocked'; reason: string }
   | { status: 'unknown'; reason: string }
 
@@ -51,8 +51,4 @@ export function registeredGates(): GateDefinition[] {
 
 export function gateByKey(key: string): GateDefinition | undefined {
   return registry.get(key)
-}
-
-export function registerPackGate(rule: GateRule, evaluate: GateEvaluator): void {
-  registerGate(buildGateDefinition(rule, evaluate))
 }

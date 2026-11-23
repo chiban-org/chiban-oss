@@ -59,10 +59,13 @@ const attachable = [
   },
 ]
 
+const withComplaint = (overrides: Record<string, unknown>) =>
+  stubDetail({ staff: { ...stubDetail().staff, complaints: [complaint] }, ...overrides })
+
 describe('attaching another complaint', () => {
   it('lists the complaints that can be attached and sends the chosen one', async () => {
     vi.mocked(attachComplaintAction).mockResolvedValue({ ok: true, message: 'Attached.' })
-    const detail = stubDetail({ attachable })
+    const detail = withComplaint({ attachable })
     renderForm(<ComplaintsSection detail={detail} can={ALL_CAN} />)
     openSection('Attach another complaint')
     const select = screen.getByLabelText(/^Complaint to attach/)
@@ -77,23 +80,31 @@ describe('attaching another complaint', () => {
   })
 
   it('says so when no complaint can be attached', () => {
-    renderForm(<ComplaintsSection detail={stubDetail({ attachable: [] })} can={ALL_CAN} />)
+    renderForm(<ComplaintsSection detail={withComplaint({ attachable: [] })} can={ALL_CAN} />)
     openSection('Attach another complaint')
     expect(screen.getByText(/No other complaint can be attached right now/)).toBeTruthy()
   })
 
   it('is not offered on a read-only view', () => {
-    renderForm(<ComplaintsSection detail={stubDetail({ attachable })} can={ALL_CAN} readOnly />)
+    renderForm(<ComplaintsSection detail={withComplaint({ attachable })} can={ALL_CAN} readOnly />)
     expect(screen.queryByText('Attach another complaint')).toBeNull()
   })
 
   it('is not offered once the case has ended', () => {
-    const base = stubDetail({ attachable })
+    const base = withComplaint({ attachable })
     const detail = {
       ...base,
       staff: { ...base.staff, row: { ...base.staff.row, status: 'closed' } },
     }
     renderForm(<ComplaintsSection detail={detail as typeof base} can={ALL_CAN} />)
+    expect(screen.queryByText('Attach another complaint')).toBeNull()
+  })
+})
+
+describe('attaching a complaint to a case with none', () => {
+  it('offers to attach a complaint, not another one', () => {
+    renderForm(<ComplaintsSection detail={stubDetail({ attachable })} can={ALL_CAN} />)
+    expect(screen.getByText('Attach a complaint', { selector: 'summary' })).toBeTruthy()
     expect(screen.queryByText('Attach another complaint')).toBeNull()
   })
 })

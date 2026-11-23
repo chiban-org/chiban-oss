@@ -1,5 +1,3 @@
-import { NH_LICENSE_TYPES } from '@packs/nh/licenseTypes'
-import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { ActionForm } from '@/components/ActionForm'
 import { LicenseTypeField } from '@/components/counter/LicenseTypeField'
 import { NEW_TAB } from '@/components/newTab'
@@ -10,12 +8,8 @@ import type {
   LicenseCheckPanelData,
 } from '@/features/licenseChecks/licenseCheckPanel'
 import { LICENSE_RESULT_LABELS } from '@/features/licenseChecks/licenseRules'
+import { licenseGroups, licenseLookup } from '@/features/licenseChecks/packLicenses'
 import { recordLicenseCheckAction } from './licenseActions'
-
-const LICENSE_GROUPS = NH_LICENSE_TYPES.map((group) => ({
-  label: group.label,
-  licenses: group.licenses,
-}))
 
 const RESULT_OPTIONS: readonly (readonly [string, string])[] = [
   ['', 'Choose a result'],
@@ -23,9 +17,11 @@ const RESULT_OPTIONS: readonly (readonly [string, string])[] = [
 ]
 
 function LookupLink() {
+  const lookup = licenseLookup()
+  if (lookup === null) return null
   return (
-    <a href={NH_LICENSE_LOOKUP.url} {...NEW_TAB} className="self-start">
-      {`Open the ${NH_LICENSE_LOOKUP.label}`}
+    <a href={lookup.url} {...NEW_TAB} className="self-start">
+      {`Open the ${lookup.label}`}
     </a>
   )
 }
@@ -54,7 +50,7 @@ export function LicenseCheckForm({
         readOnly={data.enteredNumber !== null}
         required
       />
-      <LicenseTypeField groups={LICENSE_GROUPS} defaultValue={data.defaultType} />
+      <LicenseTypeField groups={licenseGroups()} defaultValue={data.defaultType} />
       <SelectField
         label="Result of the state lookup"
         name="result"

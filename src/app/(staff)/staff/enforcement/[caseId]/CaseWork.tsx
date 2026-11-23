@@ -1,20 +1,10 @@
 import { StageStrip } from '@/components/layout/StageStrip'
 import { DoThisNowCard, RequirementItem, RequirementsPanel } from '@/components/layout/WorkPlan'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
+import { caseStageInput } from '@/features/enforcement/caseStageInput'
 import { caseStages } from '@/features/enforcement/stageStrip'
 import type { CaseWorkPlan } from '@/features/enforcement/workPlanTypes'
 import { CasePlanForm } from './CasePlanForm'
-
-function stageInput(detail: CaseDetail, plan: CaseWorkPlan) {
-  return {
-    status: plan.status,
-    stayed: plan.stayed,
-    violationFound: detail.findings.length > 0,
-    orderIssued: detail.orders.some((o) => o.row.issuedOn !== null),
-    inCourt: detail.orders.some((o) => o.steps.length > 0),
-    overdue: plan.due !== null && plan.due.daysLeft < 0,
-  }
-}
 
 export function CaseSummary({ detail, plan }: { detail: CaseDetail; plan: CaseWorkPlan }) {
   return (
@@ -22,7 +12,7 @@ export function CaseSummary({ detail, plan }: { detail: CaseDetail; plan: CaseWo
       <p data-slot="status-sentence" className="max-w-[75ch]">
         {plan.sentence}
       </p>
-      <StageStrip stages={caseStages(stageInput(detail, plan))} />
+      <StageStrip stages={caseStages(caseStageInput(detail, plan))} />
     </div>
   )
 }

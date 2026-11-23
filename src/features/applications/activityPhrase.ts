@@ -1,10 +1,18 @@
 import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
+import { APPROVED } from '@/features/applications/statusText'
+import {
+  type CertificationOutcome,
+  certificationActivity,
+} from '@/features/boards/certificationWords'
+import { gateByKey } from '@/features/gates/registry'
+import { activePack } from '@/features/packs/registry'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   Object.entries({
     'application.create': 'Started the application',
     'application.counter_intake': 'Taken at the counter',
+    'application.incomplete_notice': 'Sent an incomplete application notice',
     'application.paper_attestation': 'Recorded that the applicant signed the attestation on paper',
     'application.amend': 'Amended the application',
     'application.substep': 'Changed the workflow step',
@@ -19,16 +27,13 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
     'appeal.record': 'Recorded an appeal',
     'appeal.resolve': 'Resolved an appeal',
     'board.acceptance_meeting.set': 'Set the acceptance meeting',
-    'board.des_determination.record': 'Recorded the NH DES determination',
     'board.final_approval.record': 'Recorded final approval',
     'board.regional_impact.record': 'Recorded the board regional impact finding',
     'board.reliance.link': 'Linked a variance this application relies on',
+    'board.reliance.unlink': 'Removed the link to a variance this application relied on',
     'board.terminate_unpaid_notice_costs': 'Ended the application for unpaid notice costs',
     'board.completeness.accepted': 'Recorded the board accepting the application as complete',
     'board.completeness.not_accepted': 'Recorded the board finding the application incomplete',
-    'board.certification.pending': 'Recorded a request to the selectmen',
-    'board.certification.certified': 'Recorded the selectmen certifying the request',
-    'board.certification.refused': 'Recorded the selectmen refusing the request',
     'building.code_edition.record': 'Recorded the building code edition',
     'building.mark_complete': 'Marked the application complete',
     'census.classified': 'Classified the permit for the Census report',
@@ -67,6 +72,12 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   }),
 )
 
+const CERTIFICATION_ACTIONS: ReadonlyMap<string, CertificationOutcome> = new Map([
+  ['board.certification.pending', 'pending'],
+  ['board.certification.certified', 'certified'],
+  ['board.certification.refused', 'refused'],
+])
+
 const UNKNOWN_PHRASE = 'Changed the record'
 
 const STATE_PHRASES: ReadonlyMap<string, string> = new Map(Object.entries(STATE_LABELS))
@@ -77,10 +88,25 @@ function field(after: unknown, key: string): unknown {
     : undefined
 }
 
-export function activityPhrase(action: string, after: unknown): string {
+function stateWord(state: unknown, board: boolean): string | undefined {
+  if (typeof state !== 'string') return undefined
+  return !board && state === 'decided' ? APPROVED : STATE_PHRASES.get(state)
+}
+
+function overridePhrase(after: unknown): string {
+  const key = field(after, 'gateKey')
+  const reason = field(after, 'reason')
+  const label = typeof key === 'string' ? gateByKey(key)?.label : undefined
+  const named = label === undefined ? 'Overrode a gate' : `Overrode a gate: ${label}`
+  return typeof reason === 'string' && reason.trim() !== ''
+    ? `${named}. Reason: ${reason.trim()}`
+    : named
+}
+
+export function activityPhrase(action: string, after: unknown, board = true): string {
+  if (action === 'gate.override') return overridePhrase(after)
   if (action === 'application.transition') {
-    const state = field(after, 'state')
-    const label = typeof state === 'string' ? STATE_PHRASES.get(state) : undefined
+    const label = stateWord(field(after, 'state'), board)
     return label === undefined
       ? 'Moved the application to a new status'
       : `Moved the application to ${label}`
@@ -91,5 +117,10 @@ export function activityPhrase(action: string, after: unknown): string {
       ? 'Cleared who is responsible'
       : 'Changed who is responsible'
   }
+  if (action === 'board.des_determination.record') {
+    return `Recorded the ${activePack().labels.environmentalAgencyShort} determination`
+  }
+  const certification = CERTIFICATION_ACTIONS.get(action)
+  if (certification !== undefined) return certificationActivity(certification)
   return ACTIVITY_PHRASES.get(action) ?? UNKNOWN_PHRASE
 }

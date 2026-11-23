@@ -113,3 +113,26 @@ describe('missingNow', () => {
     expect(missingNow(rows, 'decided')).toEqual(['Septic approval'])
   })
 })
+
+describe('a fee paid at the town office', () => {
+  const office = { payAtOffice: 'Fernhollow Permit Office', dueCents: 4500 }
+
+  it('says where to pay and offers no online payment step', () => {
+    const status = applicantStatus(input(office))
+    expect(status.sentence).toBe(
+      'Submitted. A fee of $45.00 is due. Pay it at the Fernhollow Permit Office.',
+    )
+    expect(status.now).toBeNull()
+  })
+
+  it('names the office for an approved office permit', () => {
+    expect(applicantStatus(input({ ...office, state: 'decided' })).sentence).toBe(
+      'Approved. Pay $45.00 at the Fernhollow Permit Office to have the permit issued.',
+    )
+  })
+
+  it('still asks for missing documents', () => {
+    const status = applicantStatus(input({ ...office, missingDocuments: ['Plot plan'] }))
+    expect(status.now?.action).toBe('documents')
+  })
+})

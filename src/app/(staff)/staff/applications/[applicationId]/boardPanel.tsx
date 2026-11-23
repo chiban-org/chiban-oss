@@ -3,8 +3,9 @@ import type { MeetingDeadline } from '@/features/applications/meetingDeadline'
 import type { PlanActionKind } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { DecisionSection } from './boardDecisionSection'
-import { MeetingForm, VoteFormBody } from './boardForms'
+import { MeetingForm, ScheduleHearingForm, VoteFormBody } from './boardForms'
 import { CostSection, DeterminationSection, ListSection } from './boardPanelSections'
+import { ReceiptSection } from './receiptSection'
 
 function voteSummary(data: BoardPanelData, rejectOnly: boolean): string {
   if (rejectOnly) return 'Record that the board did not accept it'
@@ -32,7 +33,7 @@ function acceptanceSummary(data: BoardPanelData, hearings: readonly string[]): s
   const planning = data.boardKind === 'planning_board'
   if (!planning && hearings.length > 0)
     return 'The hearings are listed under Hearings and decisions.'
-  if (data.acceptanceText === null) {
+  if (data.acceptanceText === null || data.boardKind === 'zba') {
     return planning ? 'No acceptance meeting is set.' : 'No hearing is scheduled.'
   }
   return `${planning ? 'Acceptance meeting' : 'Hearing meeting'}: ${data.acceptanceText}.`
@@ -55,8 +56,10 @@ function AcceptanceSection({
   voteBlocked,
 }: { data: BoardPanelData; hearings: string[] } & Hosted & Reconciled) {
   const planning = data.boardKind === 'planning_board'
+  const oneStep = data.boardKind === 'zba'
   const open = data.canRecord && data.state === 'submitted'
-  const voteReady = data.acceptanceMeetingId !== null && !meetingIsAhead(data)
+  const voteReady = !oneStep && data.acceptanceMeetingId !== null && !meetingIsAhead(data)
+  const MeetingPick = oneStep ? ScheduleHearingForm : MeetingForm
   return (
     <section aria-label={planning ? 'Acceptance' : 'Hearing'}>
       <h3>{planning ? 'Filing and acceptance' : 'Hearing'}</h3>
@@ -67,7 +70,7 @@ function AcceptanceSection({
           : ''}
       </p>
       {open && !hosted.has('set_board_meeting') ? (
-        <MeetingForm data={data} deadline={deadline} />
+        <MeetingPick data={data} deadline={deadline} />
       ) : null}
       {open && voteReady && !hosted.has('record_board_vote') ? (
         <VoteForm data={data} rejectOnly={voteBlocked} />
@@ -100,6 +103,7 @@ export function BoardPanel({
       />
       <ListSection data={data} />
       <CostSection data={data} />
+      {data.receipt === null ? null : <ReceiptSection data={data.receipt} today={data.today} />}
       <DecisionSection data={data} />
     </section>
   )

@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -13,6 +12,7 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
+import { acceptsIssuanceAppeal } from '@/features/appeals/appeals'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import {
   CORE_TRANSITIONS,
@@ -21,26 +21,36 @@ import {
 } from '@/features/applications/states'
 import { actorMayMove, needsBoardVote } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
+import { codeEditionApplies } from '@/features/building/codeEditionApplies'
 import {
   type AmendmentEntry,
   amendmentEntries,
   codeEditionPanelRows,
 } from '@/features/building/editionPanelRows'
+import { applicabilityOf } from '@/features/buildingProgram/applicability'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
+import { varianceValidity } from '@/features/decisions/recording'
+import type { VarianceValidity } from '@/features/decisions/recordingRequired'
+import { loadRelianceView, type RelianceView } from '@/features/decisions/relianceView'
+import { holdBlocksApplication } from '@/features/enforcement/holdReads'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { isBuildingPermit, packRoles } from '@/features/packs/roles'
+import type { ClockRule } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
+import { type DecisionNoticeView, loadDecisionNotice } from './decisionNoticeView'
+import { type IncompleteNoticeRow, listIncompleteNotices } from './incompleteNotice'
+import { permissionsOf, type StaffViewPermissions } from './staffViewPermissions'
 import { evaluateViewGates, type GateGroups } from './viewGates'
 import { loadViewParties, type ViewParty } from './viewParties'
 
@@ -69,12 +79,15 @@ export interface StaffApplicationView {
   noticeDeadlines: NoticeDeadline[]
   nextTransitions: CoreState[]
   allowedMoves: CoreState[]
+  heldParcel?: boolean
   gates: GateGroups
   gatesAhead: GateGroups
   allowsDirectIssue: boolean
   conditions: (typeof applicationConditions.$inferSelect)[]
   conditionLibrary: { code: string; text: string; blocksIssuance: boolean }[]
   classification: string | null
+  isBuildingPermit: boolean
+  codeEditionApplies: boolean
   fees: {
     assessments: (typeof feeAssessments.$inferSelect)[]
     overrides: (typeof feeOverrides.$inferSelect)[]
@@ -92,30 +105,12 @@ export interface StaffApplicationView {
     notices: (typeof regionalImpactNotices.$inferSelect)[]
   }
   appeals: (typeof appeals.$inferSelect)[]
-  permissions: {
-    canIssue: boolean
-    canAdjustClock: boolean
-    canOverrideGate: boolean
-    canRecordStatutoryException: boolean
-    canOverrideFee: boolean
-    canDetermineRegionalImpact: boolean
-    canManageWorkflow: boolean
-    canOpenHearings: boolean
-  }
-}
-
-async function permissionsOf(db: Db, actor: Actor, signal: AbortSignal) {
-  const has = (c: Parameters<typeof hasCapability>[2]) => hasCapability(db, actor.userId, c, signal)
-  return {
-    canIssue: await has('permit.issue'),
-    canAdjustClock: await has('clock.adjust'),
-    canOverrideGate: await has('gate.override_admin'),
-    canRecordStatutoryException: await has('gate.record_statutory_exception'),
-    canOverrideFee: await has('fee.override'),
-    canDetermineRegionalImpact: await has('regional_impact.determine'),
-    canManageWorkflow: await has('application.manage'),
-    canOpenHearings: await has('board.record'),
-  }
+  acceptsAppeal: boolean
+  varianceValidity: VarianceValidity
+  reliance: RelianceView | null
+  decisionNotice: DecisionNoticeView | null
+  incompleteNotices: IncompleteNoticeRow[]
+  permissions: StaffViewPermissions
 }
 
 function offersMove(app: ApplicationContext, to: CoreState): boolean {
@@ -175,6 +170,8 @@ export async function getStaffApplicationView(
   if (project === undefined) return null
   const display = await displayIdsFor(db, [project.parcelId])
   const nextTransitions = CORE_TRANSITIONS[app.state].filter((to) => offersMove(app, to))
+  const heldParcel =
+    nextTransitions.includes('issued') && (await holdBlocksApplication(db, app.id, signal))
   const { gates, gatesAhead } = await evaluateViewGates(db, { app, nextTransitions, today }, signal)
   const assessments = await db
     .select()
@@ -195,7 +192,8 @@ export async function getStaffApplicationView(
   const pack = loadPack()
   const editionEntry =
     record === undefined ? undefined : pack.codeEditions.find((e) => e.key === record.editionKey)
-  const recordRule = pack.rules.find((r) => r.key === 'nh.bp.code_edition')
+  const roles = packRoles()
+  const recordRule = pack.rules.find((r) => r.key === roles.rules.codeEditionRecord)
   const [determination] = await db
     .select()
     .from(regionalImpactDeterminations)
@@ -223,12 +221,17 @@ export async function getStaffApplicationView(
     clocks: await clockExplanations(db, applicationId, today),
     noticeDeadlines: await loadNoticeDeadlines(db, applicationId, today, signal),
     nextTransitions,
-    allowedMoves: await movesFor(db, actor, app, nextTransitions, signal),
+    allowedMoves: (await movesFor(db, actor, app, nextTransitions, signal)).filter(
+      (to) => !heldParcel || to !== 'issued',
+    ),
+    heldParcel,
     gates,
     gatesAhead,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,
+    isBuildingPermit: isBuildingPermit(app.typeBody.classification),
+    codeEditionApplies: codeEditionApplies(app.typeBody.classification, applicabilityOf(app)),
     conditions: await db
       .select()
       .from(applicationConditions)
@@ -245,7 +248,9 @@ export async function getStaffApplicationView(
             amendments: amendmentEntries(record),
           },
     regionalImpact: {
-      applies: effectiveBindings(app.typeBody, pack).includes('nh.bp.regional_impact'),
+      applies:
+        roles.rules.regionalImpactGate !== null &&
+        effectiveBindings(app.typeBody, pack).includes(roles.rules.regionalImpactGate),
       determination: determination ?? null,
       notices: await db
         .select()
@@ -258,6 +263,11 @@ export async function getStaffApplicationView(
       .from(appeals)
       .where(eq(appeals.applicationId, applicationId))
       .orderBy(asc(appeals.filedOn)),
-    permissions: await permissionsOf(db, actor, signal),
+    acceptsAppeal: await acceptsIssuanceAppeal(db, app, signal),
+    varianceValidity: await varianceValidity(db, app.id, signal),
+    reliance: await loadRelianceView(db, app.id, project.parcelId, signal),
+    decisionNotice: await loadDecisionNotice(db, app),
+    incompleteNotices: await listIncompleteNotices(db, app.id),
+    permissions: await permissionsOf(db, actor, app.typeBody.classification, signal),
   }
 }

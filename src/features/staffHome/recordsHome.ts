@@ -1,11 +1,26 @@
 import { and, count, eq, isNull, type SQL } from 'drizzle-orm'
 import type { PgTable } from 'drizzle-orm/pg-core'
 import { dispositionBatches, exportsTable, legalHolds, preservationRecords } from '@/db/schema'
+import { recordsLaw, recordsRequest } from '@/features/packs/vocabulary'
 import { rtkRequestFacets } from '@/features/rtk/requestList'
 import type { HomeContext, HomeRow, HomeSection } from '@/features/staffHome/homeTypes'
 import { mayOpen } from '@/features/staffNav/navItems'
 
 const REQUESTS = '/staff/records/requests'
+
+export function overdueRequestsLabel(count?: number): string {
+  return count === 1
+    ? `${recordsRequest()} past its response day`
+    : `${recordsRequest()}s past their response day`
+}
+
+export function dueThisWeekLabel(count?: number): string {
+  return count === 1 ? `${recordsRequest()} due this week` : `${recordsRequest()}s due this week`
+}
+
+export function openRecordsLabel(): string {
+  return `Open ${recordsLaw()}`
+}
 
 async function countWhere(ctx: HomeContext, table: PgTable, where: SQL | undefined) {
   ctx.signal.throwIfAborted()
@@ -28,17 +43,11 @@ async function requestRows(ctx: HomeContext): Promise<HomeRow[]> {
     { filters: {}, today: ctx.today },
     ctx.signal,
   )
+  const overdue = facets.due.get('overdue') ?? 0
+  const week = facets.due.get('week') ?? 0
   return [
-    {
-      label: 'Right-to-Know requests past their response day',
-      count: facets.due.get('overdue') ?? 0,
-      href: `${REQUESTS}?due=overdue`,
-    },
-    {
-      label: 'Right-to-Know requests due this week',
-      count: facets.due.get('week') ?? 0,
-      href: `${REQUESTS}?due=week`,
-    },
+    { label: overdueRequestsLabel(overdue), count: overdue, href: `${REQUESTS}?due=overdue` },
+    { label: dueThisWeekLabel(week), count: week, href: `${REQUESTS}?due=week` },
   ]
 }
 
@@ -105,7 +114,7 @@ export async function loadRecordsSection(ctx: HomeContext): Promise<HomeSection 
     title: 'Records',
     urgency: requests[0]?.count ?? 0,
     rows: all,
-    links: mayOpen(REQUESTS, ctx.viewer) ? [{ label: 'Open Right-to-Know', href: REQUESTS }] : [],
+    links: mayOpen(REQUESTS, ctx.viewer) ? [{ label: openRecordsLabel(), href: REQUESTS }] : [],
     detail: null,
   }
 }

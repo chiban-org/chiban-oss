@@ -1,0 +1,48 @@
+import type { PackRoles } from '@/features/packs/schema'
+
+export const XX_ROLES: PackRoles = {
+  classifications: {
+    buildingPermit: 'xx.building_permit',
+    tradePermit: null,
+    enforcement: [],
+    plumbingInspectorOwns: [],
+  },
+  rules: {
+    buildingPermitDecision: 'xx.bp.decision',
+    zoningOrder: 'xx.enf.order_zoning',
+    buildingCodeOrder: 'xx.enf.order_building',
+    enforcementPenalty: null,
+    rtkResponse: 'xx.rtk.response',
+    rtkStatedTime: 'xx.rtk.stated_time',
+    planningBoardDecision: null,
+    zbaDecision: null,
+    planningBoardCompleteness: null,
+    zbaHearing: 'xx.zba.hearing',
+    writtenDecision: null,
+    decisionFiling: null,
+    appealSuspension: null,
+    adminAppealToZba: null,
+    codeEditionRecord: null,
+    codeEditionGate: null,
+    regionalImpactGate: null,
+    regionalImpactComment: null,
+    regionalImpactDetermination: null,
+    regionalImpactTransmittal: null,
+    abutterListAge: null,
+    filingLead: null,
+    desProximity: null,
+    zbaExercise: null,
+  },
+  recordSeries: {
+    rtkCorrespondence: 'xx.rs.correspondence',
+    complaintLog: 'xx.rs.correspondence',
+    codeEnforcementFiles: 'xx.rs.correspondence',
+    publicParcelFiles: ['xx.rs.permits'],
+  },
+  ruleGroups: {
+    building: ['xx.bp.'],
+    board: [],
+    portalBoardDeadlines: [],
+  },
+  gates: { abutterListFresh: null, varianceRecorded: null },
+}

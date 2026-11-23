@@ -1,7 +1,9 @@
 'use server'
 
+import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import type { Db } from '@/db/client'
+import { parcels } from '@/db/schema'
 import {
   findParcel,
   type ParcelLookupError,
@@ -11,9 +13,10 @@ import {
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { recordComplaint } from '@/features/enforcement/complaints'
 import { REPEAT_SUBMIT_WINDOW_SECONDS } from '@/features/enforcement/openCaseReuse'
+import { displayIdsFor } from '@/features/parcels/displayId'
 import type { ActionResult } from '@/server/actionRunner'
-import { runStaffForm } from '@/server/formInput'
-import { ok, type Result } from '@/types/result'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { err, ok, type Result } from '@/types/result'
 import {
   OPEN_CASE_FORM,
   SET_CASE_PARCEL_FORM,
@@ -24,15 +27,52 @@ import { settled } from './enforcementResult'
 
 const PARCEL_FIELD = { parcel_not_found: 'parcelRef', parcel_ambiguous: 'parcelRef' }
 
+const NO_LOCATION = 'Enter where the property is, or pick a parcel.'
+
+interface Place {
+  locationText: string
+  parcelId: string | undefined
+}
+
 async function parcelFor(
   db: Db,
-  input: { parcelRef: string | null; locationText: string },
+  input: { parcelRef: string | null; locationText: string | null },
   signal: AbortSignal,
 ): Promise<Result<string | undefined, ParcelLookupError>> {
   if (input.parcelRef === null) {
-    return ok(await parcelForLocation(db, input.locationText, signal))
+    return ok(await parcelForLocation(db, input.locationText ?? '', signal))
   }
   return await findParcel(db, input.parcelRef, signal)
+}
+
+async function parcelLocation(db: Db, parcelId: string | undefined): Promise<string | null> {
+  if (parcelId === undefined) return null
+  const [row] = await db
+    .select({ siteAddress: parcels.siteAddress })
+    .from(parcels)
+    .where(eq(parcels.id, parcelId))
+  const address = row?.siteAddress?.trim() ?? ''
+  if (address !== '') return address
+  return (await displayIdsFor(db, [parcelId])).get(parcelId) ?? null
+}
+
+async function placeFor(
+  db: Db,
+  input: { parcelRef: string | null; locationText: string | null },
+  signal: AbortSignal,
+): Promise<Result<Place, ParcelLookupError | 'no_location'>> {
+  if (input.locationText === null && input.parcelRef === null) return err('no_location')
+  const parcel = await parcelFor(db, input, signal)
+  if (!parcel.ok) return parcel
+  const locationText = input.locationText ?? (await parcelLocation(db, parcel.value))
+  if (locationText === null) return err('no_location')
+  return ok({ locationText, parcelId: parcel.value })
+}
+
+function placeRefusal(error: ParcelLookupError | 'no_location'): ActionResult {
+  return error === 'no_location'
+    ? refuseField('locationText', NO_LOCATION)
+    : settled(err(error), '', PARCEL_FIELD)
 }
 
 export async function openCaseAction(formData: FormData): Promise<ActionResult> {
@@ -41,15 +81,13 @@ export async function openCaseAction(formData: FormData): Promise<ActionResult> 
     formData,
     OPEN_CASE_FORM,
     async ({ db, actor, signal }, input) => {
-      const parcel = await parcelFor(db, input, signal)
-      if (!parcel.ok) return settled(parcel, '', PARCEL_FIELD)
+      const place = await placeFor(db, input, signal)
+      if (!place.ok) return placeRefusal(place.error)
+      const { locationText, parcelId } = place.value
       const opened = await openCase(
         db,
         actor,
-        {
-          locationText: input.locationText,
-          ...(parcel.value === undefined ? {} : { parcelId: parcel.value }),
-        },
+        { locationText, ...(parcelId === undefined ? {} : { parcelId }) },
         signal,
         new Date(),
         { reuseWithinSeconds: REPEAT_SUBMIT_WINDOW_SECONDS },
@@ -74,16 +112,17 @@ export async function staffComplaintAction(formData: FormData): Promise<ActionRe
     formData,
     STAFF_COMPLAINT_FORM,
     async ({ db, actor, signal }, input) => {
-      const parcel = await parcelFor(db, input, signal)
-      if (!parcel.ok) return settled(parcel, '', PARCEL_FIELD)
+      const place = await placeFor(db, input, signal)
+      if (!place.ok) return placeRefusal(place.error)
+      const { locationText, parcelId } = place.value
       const recorded = await recordComplaint(
         db,
         actor,
         {
           channel: 'staff_entry',
-          locationText: input.locationText,
+          locationText,
           description: input.description,
-          ...(parcel.value === undefined ? {} : { parcelId: parcel.value }),
+          ...(parcelId === undefined ? {} : { parcelId }),
           ...(input.name === null ? {} : { name: input.name }),
           ...(input.phone === null ? {} : { phone: input.phone }),
           ...(input.email === null ? {} : { email: input.email }),

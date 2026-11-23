@@ -56,8 +56,9 @@ const SORT_COLUMNS = {
   agenda: sql`case ${AGENDA} when 'none' then 0 when 'draft' then 1 else 2 end`,
 }
 
-function whenClause(when: MeetingWhen, today: string): SQL {
-  return when === 'upcoming' ? sql`${m.meetingDate} >= ${today}` : sql`${m.meetingDate} < ${today}`
+function whenClause(when: MeetingWhen, today: string, nowMinute: number): SQL {
+  const upcoming = sql`(${m.meetingDate} > ${today} or (${m.meetingDate} = ${today} and ${m.startsAtMinute} >= ${nowMinute}))`
+  return when === 'upcoming' ? upcoming : sql`not ${upcoming}`
 }
 
 function groupClauses(filters: MeetingFilters) {
@@ -74,11 +75,12 @@ export async function meetingFilterBoards(
   db: Db,
   when: MeetingWhen,
   today: string,
+  nowMinute: number,
 ): Promise<BoardRow[]> {
   const listed = await db
     .selectDistinct({ boardId: m.boardId })
     .from(m)
-    .where(whenClause(when, today))
+    .where(whenClause(when, today, nowMinute))
   const withMeetings = new Set(listed.map((r) => r.boardId))
   return (await allBoards(db)).filter((b) => b.archivedAt === null || withMeetings.has(b.id))
 }
@@ -93,12 +95,12 @@ async function usualLocation(db: Db): Promise<string> {
   return row?.location ?? ''
 }
 
-async function tabCounts(db: Db, filters: MeetingFilters, today: string) {
+async function tabCounts(db: Db, filters: MeetingFilters, today: string, nowMinute: number) {
   const where = whereAll([], groupClauses(filters))
   const [row] = await db
     .select({
-      upcoming: sql<number>`(count(*) filter (where ${whenClause('upcoming', today)}))::int`,
-      past: sql<number>`(count(*) filter (where ${whenClause('past', today)}))::int`,
+      upcoming: sql<number>`(count(*) filter (where ${whenClause('upcoming', today, nowMinute)}))::int`,
+      past: sql<number>`(count(*) filter (where ${whenClause('past', today, nowMinute)}))::int`,
     })
     .from(m)
     .where(where)
@@ -114,6 +116,7 @@ export async function listMeetingTable(
   input: {
     when: MeetingWhen
     today: string
+    nowMinute: number
     sort: SortState<MeetingSortKey>
     filters: MeetingFilters
     boardIds: readonly string[]
@@ -124,7 +127,7 @@ export async function listMeetingTable(
 ): Promise<MeetingListPage | null> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return null
-  const scope = whenClause(input.when, input.today)
+  const scope = whenClause(input.when, input.today, input.nowMinute)
   const groups = groupClauses(input.filters)
   const where = whereAll([scope], groups)
   const tiebreak = [
@@ -153,7 +156,7 @@ export async function listMeetingTable(
       .limit(input.limit + 1)
       .offset(input.offset),
     db.select({ n: sql<number>`count(*)::int` }).from(m).where(where),
-    tabCounts(db, input.filters, input.today),
+    tabCounts(db, input.filters, input.today, input.nowMinute),
     countFacets(db, {
       table: m,
       scope,

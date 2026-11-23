@@ -5,7 +5,11 @@ import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
-vi.mock('../../abutters/actions', () => ({}))
+vi.mock('../../abutters/actions', () => ({
+  generateListAction: vi.fn(),
+  addProfessionalAction: vi.fn(),
+}))
+vi.mock('@/components/parcels/picker/ParcelPicker', () => ({ ParcelPicker: () => null }))
 vi.mock('../../boards/actions', () => ({
   desDeterminationAction: vi.fn(),
   boardRegionalImpactAction: vi.fn(),
@@ -25,7 +29,7 @@ function data(suggested: 'within_500ft' | 'not_within' | null): BoardPanelData {
     applicationId: 'a1',
     canDetermine: false,
     canManage: true,
-    regional: { summary: 'No regional impact.', options: [], chosen: [] },
+    regional: { applies: true, summary: 'No regional impact.', options: [], chosen: [] },
     des: {
       applies: true,
       suggestion: 'The map suggests this parcel is farther than 500 feet from any water body.',
@@ -61,6 +65,38 @@ describe('NH DES determination form', () => {
   })
 })
 
+describe('determinations the pack does not ask for', () => {
+  function without(regional: boolean, des: boolean): BoardPanelData {
+    const base = data(null)
+    return {
+      ...base,
+      canDetermine: true,
+      regional: { ...base.regional, applies: regional },
+      des: { ...base.des, applies: des },
+    }
+  }
+
+  it('offers no regional impact form when the pack has no regional impact rule', () => {
+    render(
+      <CsrfProvider token="t">
+        <DeterminationSection data={without(false, true)} />
+      </CsrfProvider>,
+    )
+    expect(screen.queryByText('Record the regional impact determination')).toBeNull()
+    expect(screen.queryByText('No regional impact.')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Water bodies' })).toBeTruthy()
+  })
+
+  it('shows nothing when neither determination applies', () => {
+    const { container } = render(
+      <CsrfProvider token="t">
+        <DeterminationSection data={without(false, false)} />
+      </CsrfProvider>,
+    )
+    expect(container.textContent).toBe('')
+  })
+})
+
 describe('abutter lists on the board panel', () => {
   function lists(canOpenLists: boolean): BoardPanelData {
     return {
@@ -87,6 +123,23 @@ describe('abutter lists on the board panel', () => {
     expect(screen.getByRole('link', { name: 'Version 1' }).getAttribute('href')).toBe(
       '/staff/abutters/l1',
     )
+  })
+
+  it('offers no professional form when the classification sends no notice to one', () => {
+    render(
+      <CsrfProvider token="t">
+        <ListSection
+          data={{
+            ...lists(false),
+            canManage: true,
+            professionalsApply: false,
+            professionals: [{ id: 'p1', text: 'Rowan Tessaly, Land surveyor' }],
+          }}
+        />
+      </CsrfProvider>,
+    )
+    expect(screen.queryByText('Add a professional whose seal is on the plat')).toBeNull()
+    expect(screen.getByText('Rowan Tessaly, Land surveyor')).toBeTruthy()
   })
 
   it('shows the version as text for a viewer who cannot open lists', () => {
@@ -126,7 +179,7 @@ describe('refusals beside their fields on the board panel', () => {
           data={{
             ...data('not_within'),
             canDetermine: true,
-            regional: { text: null, summary: 'x', options, chosen: [] },
+            regional: { applies: true, text: null, summary: 'x', options, chosen: [] },
           }}
         />
       </CsrfProvider>,

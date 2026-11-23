@@ -1,13 +1,17 @@
-import type { RecipientRole } from '@packs/nh/schema'
 import type { EnforcementStatus } from '@/db/schema'
+import { cureRules } from '@/features/enforcement/cureRules'
 import { ROLE_LABELS } from '@/features/enforcement/labels'
+import type { RecipientRole } from '@/features/packs/schema'
+import { boardAbbrev } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
-import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
+import { orderAvailableForFindings } from './orderAvailability'
+import { cureStep } from './workPlanCure'
 import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  courtWithoutOrder,
   draftIsStale,
   draftOrderOf,
   filingLead,
@@ -18,32 +22,20 @@ import {
   stepOf,
   unservedFor,
 } from './workPlanInput'
-import type { CaseAction, CaseActor, CaseNowStep } from './workPlanTypes'
+import {
+  correctionWaitStep,
+  judgmentStep,
+  noOrderCounselStep,
+  resolveStep,
+  type Step,
+  town,
+  waiting,
+} from './workPlanNoOrder'
 
-export type Step = Omit<CaseNowStep, 'warnings'>
+export type { Step }
 
 export function roleName(item: { role: RecipientRole }): string {
   return ROLE_LABELS[item.role].toLowerCase()
-}
-
-function town(key: string, task: string, action: CaseAction | null, note: string | null = null) {
-  return { key, task, ask: task, actor: 'town' as const, actorName: null, note, action }
-}
-
-interface Waiting {
-  key: string
-  actor: CaseActor
-  ask: string
-  task: string
-  note?: string | null
-}
-
-function waiting(w: Waiting): Step {
-  return { ...w, actorName: null, note: w.note ?? null, action: null }
-}
-
-function resolveStep(): Step {
-  return town('move:resolved', 'Resolve the case', { kind: 'move', to: 'resolved' })
 }
 
 function issueStep(draft: CasePlanOrder): Step {
@@ -76,14 +68,33 @@ function draftStep(input: CasePlanInput, draft: CasePlanOrder): Step {
   return draftIsStale(input.findings, draft.row.findingIds) ? redraftStep(draft) : issueStep(draft)
 }
 
+function cureRouting(): string | null {
+  const rules = cureRules()
+  if (rules.length === 0) return null
+  return rules
+    .map(
+      (rule) =>
+        `If the ${rule.label.toLowerCase()} applies, choose it under Cure notice before sending a notice of violation.`,
+    )
+    .join(' ')
+}
+
 function violationStep(input: CasePlanInput): Step {
   const standing = findingStanding(input)
-  if (standing === 'corrected') return resolveStep()
+  if (standing === 'corrected') return resolveStep(input)
   if (standing === 'withdrawn') return noViolationStep()
+  const cure = cureStep(input)
+  const lapsedDraft =
+    cure?.key === 'cure.remedy' && orderAvailableForFindings(input.findings)
+      ? draftOrderOf(input)
+      : null
+  if (lapsedDraft !== null) return draftStep(input, lapsedDraft)
+  if (cure !== null) return cure
   if (!noticeOfViolationSent(input.notices)) {
-    return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
+    return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' }, cureRouting())
   }
-  const draft = draftOrderOf(input)
+  const ordered = orderAvailableForFindings(input.findings)
+  const draft = ordered ? draftOrderOf(input) : null
   if (draft !== null) return draftStep(input, draft)
   const unreceived = input.notices.find((n) => n.receivedOn === null)
   if (unreceived !== undefined && !input.notices.some((n) => n.receivedOn !== null)) {
@@ -92,6 +103,7 @@ function violationStep(input: CasePlanInput): Step {
       noticeId: unreceived.id,
     })
   }
+  if (!ordered) return correctionWaitStep(input) ?? noOrderCounselStep(input)
   return town('order.drafted', 'Draft a cease and desist order', { kind: 'draft_order' })
 }
 
@@ -132,15 +144,6 @@ function serviceStep(order: CasePlanOrder): Step | null {
   })
 }
 
-function judgmentStep(input: CasePlanInput): Step {
-  const owed = input.fines.find((f) => f.dueCents > 0)
-  if (owed === undefined) return resolveStep()
-  return town('fines.paid', `Collect the ${formatCents(owed.dueCents)} fine balance`, {
-    kind: 'record_fine_payment',
-    fineId: owed.row.id,
-  })
-}
-
 function answerStep(input: CasePlanInput, order: CasePlanOrder): Step {
   const running = runningAnswers(order, input.today)
   const names = running.map((a) => a.name)
@@ -160,7 +163,7 @@ function answerStep(input: CasePlanInput, order: CasePlanOrder): Step {
 function counselStep(input: CasePlanInput): Step {
   const counsel = counselState(input)
   if (counsel === 'won') return judgmentStep(input)
-  if (counsel === 'ended') return resolveStep()
+  if (counsel === 'ended') return resolveStep(input)
   if (counsel === 'open') {
     const task = 'Take the answered order to court'
     return waiting({ key: 'court.answered', actor: 'counsel', ask: task, task })
@@ -222,7 +225,12 @@ function afterOrderStep(input: CasePlanInput): Step {
   const draft = draftOrderOf(input)
   if (draft !== null && input.staff.row.status === 'order_issued') return draftStep(input, draft)
   const live = liveOrder(input)
-  return live === null ? resolveStep() : orderStep(input, live)
+  if (live !== null) return orderStep(input, live)
+  return courtWithoutOrder(input) ? noOrderCounselStep(input) : resolveStep(input)
+}
+
+export function stayStepTask(): string {
+  return `Wait for the ${boardAbbrev('zba')} decision`
 }
 
 function stayStep(): Step {
@@ -230,7 +238,7 @@ function stayStep(): Step {
     key: 'stay',
     actor: 'zba',
     ask: 'Decide the appeal',
-    task: 'Wait for the ZBA decision',
+    task: stayStepTask(),
   })
 }
 

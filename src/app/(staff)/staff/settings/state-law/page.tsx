@@ -14,7 +14,10 @@ import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
 import { ruleSummary } from '@/features/packs/ruleSummary'
 import { scopedSort } from '@/features/staffTables/scopedSort'
+import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
+import { civilYear, todayInTimeZone } from '@/types/civilDate'
+import { Holidays } from './Holidays'
 import { PackRules } from './PackRules'
 
 export const metadata: Metadata = { title: 'State law' }
@@ -33,6 +36,10 @@ export default async function StateLawPage({
   const rules = sortRuleSummaries(loadPack().rules.map(ruleSummary), ruleSort.state)
   const townValues = await publishedTownRuleValues(ctx.db, ctx.signal)
   const info = packInfo()
+  const town = await getTownSettings(ctx.db, ctx.signal)
+  const year = civilYear(
+    todayInTimeZone(town.ok ? town.value.timeZone : 'America/New_York', new Date()),
+  )
   return (
     <main>
       <SettingsHeader
@@ -40,6 +47,7 @@ export default async function StateLawPage({
         lead="The rules Chiban follows from state law, and what the town can change in each."
       />
       <PackRules rules={rules} links={ruleSort.links} townValues={townValues} />
+      <Holidays year={year} />
       <p className="text-sm text-muted-foreground">{`Jurisdiction pack ${info.id} version ${info.version}, fingerprint ${info.hash.slice(0, 12)}.`}</p>
     </main>
   )

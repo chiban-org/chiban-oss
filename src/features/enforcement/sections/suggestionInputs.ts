@@ -1,4 +1,3 @@
-import { stateCodeReference, stateCodeSectionsFor } from '@packs/nh/buildingCodeSections'
 import { and, asc, desc, eq, isNotNull, ne, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -11,6 +10,11 @@ import {
   violationFindings,
 } from '@/db/schema'
 import { resolveCodeEdition } from '@/features/building/codeEdition'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
+import {
+  stateCodeReference,
+  stateCodeSectionsFor,
+} from '@/features/enforcement/sections/stateCodeSections'
 import {
   type ConditionRef,
   mergeSuggestions,
@@ -153,7 +157,10 @@ export async function loadSuggestionInputs(
     used: await loadUsedRefs(db, signal),
     town: await loadTownRefs(db, signal),
     conditions: await loadConditionRefs(db, scope.parcelId, signal),
-    stateCode: stateCodeRefs(await suggestedEditions(db, scope, signal)),
+    stateCode:
+      (await getBuildingProgram(db, signal)).codeChoice === null
+        ? []
+        : stateCodeRefs(await suggestedEditions(db, scope, signal)),
   }
 }
 

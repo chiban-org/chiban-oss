@@ -1,7 +1,11 @@
-import type { CivilPenaltyRule } from '@packs/nh/schema'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { enforcementCases, enforcementOrders } from '@/db/schema'
+import {
+  developmentHolds,
+  enforcementCases,
+  enforcementCivilActions,
+  enforcementOrders,
+} from '@/db/schema'
 import { orderBlocks } from '@/features/enforcement/counselOrderBlocks'
 import {
   appealBlocks,
@@ -10,7 +14,9 @@ import {
   proofBlock,
   townWinOn,
 } from '@/features/enforcement/counselSectionBlocks'
+import { cureRules } from '@/features/enforcement/cureRules'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import type { CivilPenaltyRule } from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { publishedTemplate } from '@/features/templates/findTemplate'
@@ -43,6 +49,48 @@ async function orderSection(
   return { blocks, convictedOn, penaltyRule }
 }
 
+async function remedyBlocks(db: DbOrTx, caseId: string): Promise<PdfBlock[]> {
+  if (cureRules().length === 0) return []
+  const [holds, civil] = await Promise.all([
+    db
+      .select()
+      .from(developmentHolds)
+      .where(eq(developmentHolds.caseId, caseId))
+      .orderBy(asc(developmentHolds.placedOn)),
+    db
+      .select()
+      .from(enforcementCivilActions)
+      .where(eq(enforcementCivilActions.caseId, caseId))
+      .orderBy(asc(enforcementCivilActions.filedOn)),
+  ])
+  if (holds.length === 0 && civil.length === 0) return []
+  return [
+    { kind: 'heading', text: 'Remedies' },
+    ...holds.map(
+      (h): PdfBlock => ({
+        kind: 'fields',
+        rows: [
+          { label: 'Hold placed', value: formatCivilDate(h.placedOn) },
+          {
+            label: 'Hold released',
+            value: h.releasedOn === null ? 'Not released' : formatCivilDate(h.releasedOn),
+          },
+        ],
+      }),
+    ),
+    ...civil.map(
+      (c): PdfBlock => ({
+        kind: 'fields',
+        rows: [
+          { label: 'Civil action filed', value: formatCivilDate(c.filedOn) },
+          { label: 'Court', value: c.court },
+          { label: 'Docket', value: c.docket ?? 'Not recorded' },
+        ],
+      }),
+    ),
+  ]
+}
+
 export async function counselPacketInput(
   db: DbOrTx,
   caseId: string,
@@ -55,6 +103,7 @@ export async function counselPacketInput(
   const today = await townToday(db, now, signal)
   const findings = await findingsBlocks(db, caseId)
   const orders = await orderSection(db, caseId)
+  const remedies = await remedyBlocks(db, caseId)
   const proof = await proofBlock(db, caseId)
   const appeals = await appealBlocks(db, caseId, today, signal)
   const convictedOn = orders.convictedOn ?? (await townWinOn(db, caseId))
@@ -77,7 +126,7 @@ export async function counselPacketInput(
       },
       sections: new Map([
         ['counsel.findings', findings],
-        ['counsel.orders', orders.blocks],
+        ['counsel.orders', [...orders.blocks, ...remedies]],
         ['counsel.proof', [proof]],
         ['counsel.appeals', appeals],
         ['counsel.penalty', penalty],

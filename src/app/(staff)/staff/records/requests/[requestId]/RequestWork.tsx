@@ -1,4 +1,5 @@
 import { DoThisNowCard, RequirementItem, RequirementsPanel } from '@/components/layout/WorkPlan'
+import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { letterNoteFor } from '@/features/rtk/requesterEmail'
 import type { ReleaseCandidate, RequestApproval } from '@/features/rtk/requestPage'
 import type { RtkRequestView } from '@/features/rtk/requests'
@@ -66,6 +67,7 @@ export function RequestDoThisNow({ data }: { data: WorkData }) {
           startOnRelease={searched(data) || pendingApprovals(data.approvals).length > 0}
           releaseStep={<ReleaseStep data={data} />}
           letterNote={letterNoteFor(data.request.requesterContact)}
+          acknowledgement={acknowledgementEnabled() && data.request.status === 'open'}
         />
       ) : null}
       {now.kind === 'release' ? <ReleaseStep data={data} /> : null}

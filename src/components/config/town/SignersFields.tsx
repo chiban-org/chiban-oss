@@ -9,9 +9,9 @@ import {
   rowKey,
 } from '@/components/config/primitives'
 import { ImageUpload } from '@/components/config/town/ImageUpload'
+import { usePackText, useSignerRoleLabel } from '@/components/PackTextProvider'
 import { Legend } from '@/components/ui/legend'
 import {
-  SIGNER_ROLE_LABELS,
   SIGNER_ROLES,
   type Signer,
   type SignerRole,
@@ -22,10 +22,6 @@ interface Props {
   body: TownProfileBody
   onChange: (next: TownProfileBody) => void
   errors: FieldErrors
-}
-
-function roleLabel(role: SignerRole): string {
-  return new Map(Object.entries(SIGNER_ROLE_LABELS)).get(role) ?? role
 }
 
 function SignerRow({
@@ -39,7 +35,11 @@ function SignerRow({
   onChange: (next: Signer) => void
   onRemove: () => void
 }) {
-  const roles = SIGNER_ROLES.filter((r) => r === signer.role || !taken.has(r))
+  const roleLabel = useSignerRoleLabel()
+  const { signerRoles } = usePackText()
+  const roles = SIGNER_ROLES.filter(
+    (r) => r === signer.role || (!taken.has(r) && signerRoles.includes(r)),
+  )
   return (
     <li className="record-item py-4">
       <fieldset className="grid gap-4">
@@ -85,8 +85,9 @@ function SignerRow({
 }
 
 export function SignersFields({ body, onChange, errors }: Props) {
+  const { signerRoles } = usePackText()
   const taken = new Set(body.signers.map((s) => s.role))
-  const free = SIGNER_ROLES.filter((r) => !taken.has(r))
+  const free = signerRoles.filter((r) => !taken.has(r))
   const setSigners = (signers: Signer[]) => onChange({ ...body, signers })
   return (
     <div className="grid gap-3">

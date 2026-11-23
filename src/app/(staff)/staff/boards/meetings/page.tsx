@@ -27,7 +27,7 @@ import {
 } from '@/features/dataTable/params'
 import { chipGroups, filterTabs, labeledOptions } from '@/features/dataTable/quickFilters'
 import { sortLinks } from '@/features/dataTable/sort'
-import { townToday } from '@/features/town/today'
+import { townClock } from '@/features/hearings/publicMeetings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { AddMeeting } from './AddMeeting'
 import { MeetingTable } from './MeetingTable'
@@ -84,13 +84,22 @@ export default async function MeetingsPage({
     raw,
     everyBoard.map((b) => b.id),
   )
-  const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const filterable = await meetingFilterBoards(ctx.db, when, today)
+  const { today, minute } = await townClock(ctx.db, new Date(), ctx.signal)
+  const filterable = await meetingFilterBoards(ctx.db, when, today, minute)
   const boardIds = filterable.map((b) => b.id)
   const list = await listMeetingTable(
     ctx.db,
     ctx.actor,
-    { when, today, sort, filters, boardIds, limit: PAGE_SIZE, offset: readOffset(params) },
+    {
+      when,
+      today,
+      nowMinute: minute,
+      sort,
+      filters,
+      boardIds,
+      limit: PAGE_SIZE,
+      offset: readOffset(params),
+    },
     ctx.signal,
   )
   if (list === null) return <NoPermission title="Meetings" action="keep the meeting calendar" />
@@ -114,7 +123,7 @@ export default async function MeetingsPage({
       <ListHeader
         title="Meetings"
         lead={leadText(when === 'upcoming', list.usualLocation)}
-        actions={<AddMeeting boards={[...activeNames]} />}
+        actions={<AddMeeting boards={[...activeNames]} today={today} />}
       />
       <FilterTabs label="Meetings" tabs={tabs} />
       <div className="toolbar">

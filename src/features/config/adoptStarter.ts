@@ -1,4 +1,3 @@
-import { NH_STARTERS, type StarterBundle } from '@packs/nh/starters'
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { configVersions } from '@/db/schema'
@@ -10,6 +9,8 @@ import {
   type PublishError,
   publishNewVersion,
 } from '@/features/config/publish'
+import { activePack } from '@/features/packs/registry'
+import type { StarterBundle } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
 export type AdoptError = 'forbidden' | 'already_adopted' | 'unknown_starter' | PublishError
@@ -42,7 +43,7 @@ export async function adoptStarter(
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
   if (!allowed.ok) return err('forbidden')
-  const starter = NH_STARTERS.find((s) => s.id === starterId)
+  const starter = activePack().starters.find((s) => s.id === starterId)
   if (starter === undefined) return err('unknown_starter')
   return await transactionResult<{ versionIds: string[] }, AdoptError>(db, async (tx) => {
     const [existing] = await tx

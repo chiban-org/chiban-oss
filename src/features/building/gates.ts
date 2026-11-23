@@ -1,4 +1,3 @@
-import type { GateRule } from '@packs/nh/schema'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import {
@@ -7,13 +6,18 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
-import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
+import { applicabilityOf } from '@/features/buildingProgram/applicability'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
+import {
+  buildGateDefinition,
+  type GateDefinition,
+  type GateEvaluator,
+  registerGate,
+} from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles, roleCitationSuffix } from '@/features/packs/roles'
+import type { GateRule } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
-
-export const CODE_EDITION_GATE_KEY = 'nh.bp.code_edition_recorded'
-export const REGIONAL_IMPACT_GATE_KEY = 'nh.bp.regional_impact'
-const COMMENT_CLOCK_RULE_KEY = 'nh.bp.regional_impact_comment'
 
 function gateRule(key: string): GateRule {
   const rule = ruleByKey(loadPack(), key)
@@ -23,13 +27,24 @@ function gateRule(key: string): GateRule {
   return rule
 }
 
+export function codeEditionMissingReason(): string {
+  return `State building code edition not recorded${roleCitationSuffix('codeEditionGate')}.`
+}
+
+export function regionalDeterminationMissingReason(): string {
+  return `Regional impact determination not recorded${roleCitationSuffix('regionalImpactGate')}.`
+}
+
 const codeEditionRecorded: GateEvaluator = async (tx, app) => {
   const [record] = await tx
     .select({ id: codeEditionRecords.applicationId })
     .from(codeEditionRecords)
     .where(eq(codeEditionRecords.applicationId, app.id))
   return record === undefined
-    ? { status: 'blocked', reason: 'State building code edition not recorded (RSA 155-A:2).' }
+    ? {
+        status: 'blocked',
+        reason: codeEditionMissingReason(),
+      }
     : { status: 'pass' }
 }
 
@@ -41,7 +56,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   if (determination === undefined) {
     return {
       status: 'unknown',
-      reason: 'Regional impact determination not recorded (RSA 36:57 IV).',
+      reason: regionalDeterminationMissingReason(),
     }
   }
   if (determination.determination !== 'yes') return { status: 'pass' }
@@ -68,7 +83,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
     .where(
       and(
         eq(clocks.applicationId, app.id),
-        eq(clocks.ruleKey, COMMENT_CLOCK_RULE_KEY),
+        clockRuleIs(packRoles().rules.regionalImpactComment),
         ne(clocks.status, 'superseded'),
       ),
     )
@@ -83,5 +98,24 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   return { status: 'pass' }
 }
 
-registerPackGate(gateRule(CODE_EDITION_GATE_KEY), codeEditionRecorded)
-registerPackGate(gateRule(REGIONAL_IMPACT_GATE_KEY), regionalImpactCleared)
+const codeEditionRelevant: GateDefinition['relevantTo'] = (app) =>
+  applicabilityOf(app).codeChoice !== null
+
+export function buildingGateDefinitions(): GateDefinition[] {
+  const { rules } = packRoles()
+  const gates: [string | null, GateEvaluator][] = [
+    [rules.codeEditionGate, codeEditionRecorded],
+    [rules.regionalImpactGate, regionalImpactCleared],
+  ]
+  return gates.flatMap(([key, evaluate]) => {
+    if (key === null) return []
+    const definition = buildGateDefinition(gateRule(key), evaluate)
+    return [
+      key === rules.codeEditionGate
+        ? { ...definition, relevantTo: codeEditionRelevant }
+        : definition,
+    ]
+  })
+}
+
+for (const gate of buildingGateDefinitions()) registerGate(gate)

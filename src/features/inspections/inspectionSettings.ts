@@ -1,7 +1,7 @@
-import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import type { DbOrTx } from '@/db/client'
 import { getPublished } from '@/features/config/store'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
+import { activePack } from '@/features/packs/registry'
 
 export async function getInspectionSettings(
   db: DbOrTx,
@@ -9,6 +9,6 @@ export async function getInspectionSettings(
 ): Promise<InspectionSettingsBody> {
   const published = await getPublished(db, 'inspection_settings', 'default', signal)
   return published === null
-    ? NH_INSPECTION_SETTINGS_DEFAULT
+    ? activePack().inspectionSettingsDefault
     : (published.body as InspectionSettingsBody)
 }

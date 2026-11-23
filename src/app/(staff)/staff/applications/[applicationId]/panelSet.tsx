@@ -29,8 +29,9 @@ export interface RecordPanelsInput {
 export function applicationPanels(input: RecordPanelsInput) {
   const { state } = input.view
   const board = input.board !== null
+  const hasNotice = input.view.decisionNotice != null
   return arrangePanels([...workPanels(input), ...recordPanels(input)], {
-    lead: panelPriority(state, board),
-    history: historyPanels(state, board),
+    lead: panelPriority(state, board, hasNotice),
+    history: historyPanels(state, board, hasNotice),
   })
 }

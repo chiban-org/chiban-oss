@@ -10,6 +10,10 @@ vi.mock('../../boards/hearings/actions', () => ({
   routeToTrcAction: vi.fn(),
 }))
 
+vi.mock('../../boards/hearings/decisionActions', () => ({
+  recordDecisionWithoutHearingAction: vi.fn(),
+}))
+
 const { HearingsPanel } = await import('./hearingsPanel')
 const { scheduleHearingAction } = await import('../../boards/hearings/actions')
 

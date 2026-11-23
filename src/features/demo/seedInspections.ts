@@ -1,4 +1,3 @@
-import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications, inspections, inspectorCalendars, projects } from '@/db/schema'
@@ -31,6 +30,7 @@ import { scheduleInspection } from '@/features/inspections/schedule'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import { schedulingDates } from '@/features/inspections/slots'
 import { packHolidayCalendar } from '@/features/packs/holidays'
+import { activePack } from '@/features/packs/registry'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { getTownSettings } from '@/features/town/settings'
 import { addDays, type CivilDate, dayOfWeek, todayInTimeZone } from '@/types/civilDate'
@@ -84,7 +84,7 @@ async function publishSettings(db: Db, cast: Cast, signal: AbortSignal): Promise
     await saveDraft(
       db,
       cast.admin,
-      { kind: 'inspection_settings', key: 'default', body: NH_INSPECTION_SETTINGS_DEFAULT },
+      { kind: 'inspection_settings', key: 'default', body: activePack().inspectionSettingsDefault },
       signal,
     ),
     'inspection settings draft',

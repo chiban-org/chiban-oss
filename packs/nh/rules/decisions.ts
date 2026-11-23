@@ -1,5 +1,5 @@
 import { RSA_36_57_URL, RSA_676_3 } from '@packs/nh/rules/boardUrls'
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 export const DECISION_RULES: PackRule[] = [
   {

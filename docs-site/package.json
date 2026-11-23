@@ -13,7 +13,7 @@
     "typecheck": "tsc",
     "deploy": "pnpm build && wrangler deploy",
     "shots": "tsx scripts/captureShots.ts",
-    "test": "node --import tsx --test scripts/shotManifest.spec.ts"
+    "test": "node --import tsx --test scripts/shotManifest.spec.ts plugins/llmsTxt/format.spec.ts"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",
@@ -50,5 +50,12 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "pnpm": {
+    "overrides": {
+      "tinypool": "^2.1.2",
+      "serialize-javascript": "^7.1.3",
+      "uuid@<11.1.1": "^11.1.1"
+    }
   }
 }

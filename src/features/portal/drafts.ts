@@ -8,7 +8,10 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { createApplication } from '@/features/applications/createApplication'
 import { keepStaffOnlyValues } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
+import { intakeOpen } from '@/features/buildingProgram/intake'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { getVersion } from '@/features/config/store'
+import { activeHoldFor } from '@/features/enforcement/holdReads'
 import type { FormBody } from '@/features/forms/formSchema'
 import {
   extractFacts,
@@ -32,11 +35,13 @@ export async function listPortalTypes(db: Db, signal: AbortSignal): Promise<Port
     .select()
     .from(configVersions)
     .where(and(eq(configVersions.kind, 'application_type'), eq(configVersions.status, 'published')))
+  const program = await getBuildingProgram(db, signal)
   return rows
     .map((r) => {
       const body = r.body as ApplicationTypeBody
       return { key: r.key, label: body.label, classification: body.classification }
     })
+    .filter((t) => intakeOpen(t.classification, program))
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
@@ -46,6 +51,7 @@ export const RETIRED_PARCEL_COPY =
 export type StartError =
   | 'unknown_parcel'
   | 'retired_parcel'
+  | 'parcel_held'
   | 'not_published'
   | 'config_inconsistent'
   | 'forbidden'
@@ -115,6 +121,7 @@ export async function startApplication(
       .where(eq(parcels.id, input.parcelId))
     if (parcel === undefined) return err('unknown_parcel')
     if (parcel.status === 'retired') return err('retired_parcel')
+    if ((await activeHoldFor(tx, input.parcelId, signal)) !== null) return err('parcel_held')
     const unanswered = await findUnansweredDraft(tx, actor, input)
     if (unanswered !== null) return ok(unanswered)
     const display = await displayIdsFor(tx, [input.parcelId])

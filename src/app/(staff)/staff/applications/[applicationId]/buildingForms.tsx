@@ -67,7 +67,7 @@ export function RegionalDeterminationForm({
 
 export function codeEditionEditable(view: StaffApplicationView): boolean {
   return (
-    view.classification === 'nh.building_permit' &&
+    view.codeEditionApplies &&
     view.state !== 'draft' &&
     !TERMINAL_STATES.includes(view.state) &&
     view.permissions.canIssue

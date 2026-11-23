@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import type { Db } from '@/db/client'
 import { boardMeetings } from '@/db/schema'
 import { adoptStarter } from '@/features/config/adoptStarter'
@@ -19,6 +18,7 @@ import {
 import { decideGrantedVariance, seedHearings, seedMembers } from '@/features/demo/seedHearings'
 import { actorFor, type Cast, must } from '@/features/demo/seedPermitSupport'
 import { seatStaffBoardMember } from '@/features/demo/seedStaffSeat'
+import { activePack } from '@/features/packs/registry'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { todayInTimeZone } from '@/types/civilDate'
@@ -50,7 +50,7 @@ export async function seedBoards(
   await seatStaffBoardMember(db, cast, signal)
   const existing = await db.select({ id: boardMeetings.id }).from(boardMeetings).limit(1)
   if (existing.length > 0) return false
-  for (const starter of NH_STARTERS) {
+  for (const starter of activePack().starters) {
     const adopted = await adoptStarter(db, cast.admin, starter.id, signal)
     if (!adopted.ok && adopted.error !== 'already_adopted') must(adopted, `adopt ${starter.id}`)
   }

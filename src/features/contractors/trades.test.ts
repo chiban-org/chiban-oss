@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { CONTRACTOR_TRADES, tradeForLicenseType, tradeLabel } from '@/features/contractors/trades'
+import { contractorTrades, tradeForLicenseType, tradeLabel } from '@/features/contractors/trades'
 
 describe('contractor trades', () => {
   it('offers the four NH license trades', () => {
-    expect(CONTRACTOR_TRADES.map((t) => t.label)).toEqual([
+    expect(contractorTrades().map((t) => t.label)).toEqual([
       'Electrical',
       'Plumbing',
       'Fuel gas fitting',

@@ -1,4 +1,3 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
@@ -8,6 +7,8 @@ import { SelectField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadEditorSource } from '@/features/redaction/previewPages'
+import { exemptionChoices } from '@/features/rtk/exemptions'
+import { redactPurposeOptions } from '@/features/rtk/requestCopy'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -18,11 +19,6 @@ import { staffRecordHref } from './recordHref'
 export const metadata: Metadata = { title: 'Redact a document' }
 
 export const dynamic = 'force-dynamic'
-
-const EXEMPTIONS = [
-  ...NH_RTK_EXEMPTIONS.map((e) => ({ key: e.key, label: `${e.citation.label}: ${e.label}` })),
-  { key: OTHER_LAW_EXEMPTION_KEY, label: 'Made confidential by another law' },
-]
 
 export default async function RedactPage({
   params,
@@ -77,12 +73,9 @@ export default async function RedactPage({
           label="The copy is for"
           name="purpose"
           defaultValue={forRequest === undefined ? 'public' : 'rtk_release'}
-          options={[
-            ['public', 'The public website'],
-            ['rtk_release', 'A Right-to-Know request'],
-          ]}
+          options={redactPurposeOptions()}
         />
-        <BoxEditor pages={pages} exemptions={EXEMPTIONS} mode={mode} />
+        <BoxEditor pages={pages} exemptions={exemptionChoices()} mode={mode} />
       </ActionForm>
       <ApprovalHint requestId={forRequest} recordHref={recordHref} canPublish={canPublish} />
     </main>

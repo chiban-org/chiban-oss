@@ -6,7 +6,7 @@ import { AreaField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { type FindingUses, mayEditFinding } from '@/features/enforcement/findingUses'
 import { FINDING_STATUS_LABELS, PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import {
   editFindingAction,
   markFindingCorrectedAction,
@@ -33,6 +33,7 @@ function EditFinding({ finding, detail }: { finding: Finding; detail: CaseDetail
         <Hidden name="findingId" value={finding.id} />
         <ProvisionFields
           suggestions={detail.suggestions ?? null}
+          buildingCode={detail.buildingCodeOffered === true}
           defaultKind={finding.provisionKind}
           defaultRef={finding.provisionRef}
         />
@@ -136,6 +137,9 @@ export function FindingRow({
         <StatusChip status={CHIP[f.status]} label={FINDING_STATUS_LABELS[f.status]} />
       </div>
       <p>{`${f.facts} Inspected ${formatCivilDate(f.inspectionDate)}, found by ${detail.names[f.foundBy] ?? 'staff'}.`}</p>
+      {f.editionInForce == null ? null : (
+        <p>{`Code in force on the inspection date: ${humanizeIsoDates(f.editionInForce)}`}</p>
+      )}
       {line === null ? null : <p className="text-muted-foreground">{line}</p>}
       {used.length === 0 ? null : (
         <p className="text-sm text-muted-foreground">{`${used.join('. ')}.`}</p>

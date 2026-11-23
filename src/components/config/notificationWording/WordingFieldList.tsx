@@ -1,10 +1,12 @@
 'use client'
 
-import { FIELD_LABELS, type WordingField } from '@/features/notifications/wording/wordingFields'
+import { usePackText } from '@/components/PackTextProvider'
+import {
+  type WordingField,
+  wordingFieldLabels,
+} from '@/features/notifications/wording/wordingFields'
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
 import { allowedFields } from '@/features/notifications/wording/wordingSchema'
-
-const LABELS = new Map(Object.entries(FIELD_LABELS))
 
 export function WordingFieldList({
   fieldKey,
@@ -14,6 +16,7 @@ export function WordingFieldList({
   onInsert: (field: string) => void
 }) {
   const fields = [...allowedFields(fieldKey)] as WordingField[]
+  const labels = wordingFieldLabels(usePackText().recordsAcknowledgement)
   return (
     <div>
       <p className="m-0 mb-1 font-semibold text-ink">Fields this message can use</p>
@@ -29,7 +32,7 @@ export function WordingFieldList({
               className="tap-target rounded-sm border border-control-border bg-surface px-2 py-1 text-left text-sm text-ink hover:bg-canvas"
             >
               <span className="font-mono">{`{{${field}}}`}</span>
-              <span className="ml-2 text-muted-foreground">{LABELS.get(field)}</span>
+              <span className="ml-2 text-muted-foreground">{labels[field]}</span>
             </button>
           </li>
         ))}

@@ -6,6 +6,7 @@ const STAFF_ROLE_ORDER: readonly Role[] = [
   'records_custodian',
   'staff',
   'finance',
+  'plumbing_inspector',
   'inspector',
   'reviewer',
   'board_member',
@@ -17,6 +18,7 @@ const LABELS: ReadonlyMap<Role, string> = new Map([
   ['staff', 'Land use staff'],
   ['finance', 'Finance'],
   ['inspector', 'Inspector'],
+  ['plumbing_inspector', 'Plumbing inspector'],
   ['reviewer', 'Reviewer'],
   ['board_member', 'Board member'],
 ])

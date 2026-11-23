@@ -10,19 +10,22 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { cutoverRows } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadAmendForm } from '@/features/applications/amendForm'
-import { closureStage } from '@/features/applications/closureStage'
+import { loadLateAppealWarning } from '@/features/applications/appealTimeliness'
+import { closureStage, finalChecklistLabel } from '@/features/applications/closureStage'
+import { loadApplicationContext } from '@/features/applications/context'
 import { getLimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import {
   getStaffApplicationView,
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
 import { applicationStatusText } from '@/features/applications/statusText'
-import { planWork } from '@/features/applications/workPlan'
+import { hasBoardClassification, planWork } from '@/features/applications/workPlan'
 import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { counterIntakeLine } from '@/features/counter/intake/intakeProvenance'
 import { withLettersToMail } from '@/features/decisions/letterPlan'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
+import { inspectableTypes } from '@/features/inspections/eligibility'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadLicenseCheckPanel } from '@/features/licenseChecks/licenseCheckPanel'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
@@ -78,6 +81,8 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     license,
     letters,
     amend,
+    lateAppeal,
+    checklists,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -97,6 +102,10 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     loadLicenseCheckPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadLettersData(ctx, applicationId),
     loadAmendForm(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadApplicationContext(ctx.db, applicationId, ctx.signal).then((app) =>
+      loadLateAppealWarning(ctx.db, app, ctx.signal),
+    ),
+    inspectableTypes(ctx.db, applicationId, ctx.signal),
   ])
   if (view === null || records === null) return null
   return {
@@ -115,6 +124,8 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     notes,
     license,
     letters,
+    lateAppeal,
+    finalLabel: finalChecklistLabel(checklists),
   }
 }
 
@@ -152,14 +163,21 @@ export default async function StaffApplicationPage({ params }: Props) {
     closure: {
       ...closureStage(ready.inspections.history, new Set(ready.inspections.reinspectableIds)),
       dueFinal: due?.row.isFinal === true,
+      finalLabel: ready.finalLabel,
     },
+    lateAppeal: ready.lateAppeal,
   })
   const plan = withLettersToMail(planned, ready.letters.letters)
   const parts = applicationPanels({ ...ready, hosted: hostedActions(plan) })
   const status = (
     <StatusChip
       status={headerStatus(view)}
-      label={applicationStatusText(view.state, view.substep, view.substeps)}
+      label={applicationStatusText(
+        view.state,
+        view.substep,
+        view.substeps,
+        hasBoardClassification(view.classification),
+      )}
     />
   )
   const notice = <BalanceDueNotice notices={balanceNotices} />

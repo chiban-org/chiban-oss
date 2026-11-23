@@ -1,14 +1,5 @@
 import { NH_2021_EDITION_KEY, NH_2024_EDITION_KEY } from '@packs/nh/codeEditions'
-
-export interface StateCodeSection {
-  code: 'IRC' | 'IBC'
-  edition: string
-  editionKey: string
-  section: string
-  title: string
-  topic: string
-  sourceUrl: string
-}
+import type { StateCodeSection } from '@/features/packs/schema'
 
 const ICC = 'https://codes.iccsafe.org/content'
 const CHAPTER_1 = 'chapter-1-scope-and-administration'
@@ -80,11 +71,3 @@ export const NH_STATE_CODE_SECTIONS: readonly StateCodeSection[] = [
     ['R114.1', 'Authority', 'stop work order'],
   ]),
 ]
-
-export function stateCodeReference(entry: StateCodeSection): string {
-  return `${entry.code} ${entry.edition} Section ${entry.section}`
-}
-
-export function stateCodeSectionsFor(editionKeys: readonly string[]): StateCodeSection[] {
-  return editionKeys.flatMap((key) => NH_STATE_CODE_SECTIONS.filter((s) => s.editionKey === key))
-}

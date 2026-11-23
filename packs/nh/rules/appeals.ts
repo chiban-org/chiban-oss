@@ -1,5 +1,5 @@
 import { RSA_676_5, RSA_677_2, RSA_677_4, RSA_677_15 } from '@packs/nh/rules/boardUrls'
-import type { ClockRule, PackRule } from '@packs/nh/schema'
+import type { ClockRule, PackRule } from '@/features/packs/schema'
 
 type WindowOptions = Pick<ClockRule, 'key' | 'label' | 'startEvent'> &
   Partial<Pick<ClockRule, 'onlyWhen'>> & {

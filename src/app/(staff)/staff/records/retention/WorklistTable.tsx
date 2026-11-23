@@ -1,9 +1,9 @@
-import type { RecordEventKind } from '@packs/nh/schema'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { SortLink } from '@/features/dataTable/sort'
+import type { RecordEventKind } from '@/features/packs/schema'
 import type { RetentionStatus } from '@/features/records/computeRetention'
 import type { WorklistRow, WorklistSortKey, WorklistState } from '@/features/records/worklist'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -23,6 +23,14 @@ const AUTOMATIC_EVENTS: ReadonlyMap<RecordEventKind, string> = new Map([
   ['registration_expired', 'Chiban records this when the registration expires.'],
   ['application_withdrawn', 'Chiban records this when the application is withdrawn.'],
   ['application_denied', 'Chiban records this when the application is denied.'],
+  ['permit_expired', 'Chiban records this when the permit expires.'],
+  [
+    'occupancy_certificate_issued',
+    'Chiban records this when the certificate of occupancy is issued.',
+  ],
+  ['final_inspection_passed', 'Chiban records this when the final inspection passes.'],
+  ['case_closed', 'Chiban records this when the enforcement case is closed.'],
+  ['request_completed', 'Chiban records this when the records request is closed or withdrawn.'],
 ])
 
 function eventChoices(row: WorklistRow): [string, string][] {

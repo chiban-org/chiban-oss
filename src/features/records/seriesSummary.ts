@@ -1,4 +1,4 @@
-import type { RecordSeries } from '@packs/nh/schema'
+import type { RecordSeries } from '@/features/packs/schema'
 import { computeRetention, type RetentionContext } from '@/features/records/computeRetention'
 
 export type SeriesOutcome = 'withdrawn' | 'denied' | 'expired'

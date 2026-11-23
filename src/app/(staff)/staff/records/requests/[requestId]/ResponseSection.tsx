@@ -1,22 +1,34 @@
 import { NEW_TAB } from '@/components/newTab'
 import type { RtkLetterOutcome } from '@/db/schema'
-import { costTotal, responseLabel } from '@/features/rtk/labels'
+import { costTotal, responseDateOf, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
+import { firstResponseDetail } from '@/features/rtk/workPlanRequirements'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
+import { AnswerForm } from './AnswerForm'
+
+const RESPONDED: readonly string[] = ['responded_on_time', 'responded_late']
 
 function timelinessText(request: RtkRequestView): string | null {
-  const t = request.timeliness
-  if (t.kind === 'responded_late') {
-    return `Answered late: due ${formatCivilDate(t.dueOn)}, answered ${formatCivilDate(t.respondedOn)}.`
-  }
-  return t.kind === 'responded_on_time' ? 'Answered on time.' : null
+  return RESPONDED.includes(request.timeliness.kind) ? firstResponseDetail(request) : null
 }
 
 function recordedLine(request: RtkRequestView): string {
   const label = responseLabel(request.firstResponseKind) ?? 'Response recorded'
-  return request.firstResponseOn === null
-    ? `${label}.`
-    : `${label}, ${formatCivilDate(request.firstResponseOn)}.`
+  const on = responseDateOf(request)
+  return on === null ? `${label}.` : `${label}, ${formatCivilDate(on)}.`
+}
+
+function acknowledgementLines(request: RtkRequestView): string[] {
+  if (request.acknowledgedOn === null) return []
+  const lines = [`Receipt acknowledged, ${formatCivilDate(request.acknowledgedOn)}.`]
+  if (request.clarificationQuestion !== null) {
+    lines.push(`Question for the requester: ${request.clarificationQuestion}`)
+  }
+  const answeredOn = request.clarificationAnsweredOn
+  if (typeof request.clarificationAnswer === 'string' && typeof answeredOn === 'string') {
+    lines.push(`Requester answered, ${formatCivilDate(answeredOn)}: ${request.clarificationAnswer}`)
+  }
+  return lines
 }
 
 function statementLine(statement: RtkRequestView['timeStatements'][number]): string {
@@ -33,7 +45,11 @@ export function ResponseSection({ request }: { request: RtkRequestView }) {
   return (
     <section aria-labelledby="first-response">
       <h2 id="first-response">First response</h2>
-      <p>{recordedLine(request)}</p>
+      {acknowledgementLines(request).map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+      <AnswerForm request={request} />
+      {request.firstResponseKind === 'acknowledged' ? null : <p>{recordedLine(request)}</p>}
       {late === null ? null : <p>{late}</p>}
       {request.timeStatements.map((s) => (
         <p key={s.id}>{statementLine(s)}</p>

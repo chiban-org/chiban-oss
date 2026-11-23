@@ -65,6 +65,27 @@ describe('referencesTo', () => {
     })
   })
 
+  it('names the late appeal warning, not project facts, for the appealed decision date', () => {
+    const form: FormBody = {
+      ...FORM,
+      fields: [
+        {
+          key: 'decision_date',
+          label: 'Date',
+          type: 'date',
+          required: true,
+          fact: 'appealedDecisionDate',
+        },
+      ],
+    }
+    expect(referencesTo(form, 0, [])).toEqual([
+      {
+        source: 'Late appeal warning',
+        detail: 'Reads this answer as the date of the decision being appealed.',
+      },
+    ])
+  })
+
   it('names the fact a question supplies', () => {
     const refs = referencesTo(FORM, indexOf('dwelling_units'), uses)
     expect(refs.map((r) => r.source)).toContain('Project facts')

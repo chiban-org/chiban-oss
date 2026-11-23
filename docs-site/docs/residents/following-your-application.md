@@ -14,9 +14,11 @@ sidebar_position: 3
 
 Applications sit in three groups.
 
-- **Needs you.** Something is waiting on you: finish a draft, pay a fee, add a document or ask for an inspection. Each row says which, for example "Pay $45.00" or "Finish the form and submit it."
-- **In progress.** The town has it and you have nothing to do.
+- **Needs you.** Something is waiting on you: finish a draft, pay a fee, add a document or ask for an inspection. Each row says which, for example "Pay $45.00" or "Finish the form and submit it." Where the town does not take payment online, a fee reads "Pay $45.00 at the" town office.
+- **In progress.** The town has it and you have nothing to do. An application a board has approved reads "Approved by the board." while it waits for the permit.
 - **Finished.** Closed, denied, withdrawn or otherwise over. This group is folded away until you open it.
+
+If you have asked the town for records while signed in, a section below the applications lists your own requests. Each shows its number, the date received and where it stands. While the town still owes you an answer, it also says when the response is due. Once the request is over it says when it was closed or withdrawn. Only your own requests are listed, and the section does not appear if you have none.
 
 Each row shows the street address, the project name and the application number, a plain sentence about the next step, and a status. Choose the address to open the application. The page also has links to **Contractor projects** and **Look up a parcel**.
 
@@ -44,7 +46,7 @@ When Chiban knows the one thing you should do next, a **Do this now** box sits a
 ### The rest of the page
 
 - **Application** shows your answers. While the application is a draft, the same section is the form.
-- **Board hearing and decision** appears for board applications once a hearing, a decision or a deadline exists. It lists them in plain sentences.
+- **Board hearing and decision** appears for board applications once a hearing, a decision or a deadline exists. It lists them in plain sentences. Under **Notice of the hearing**, a short summary says how neighbors were told: how many abutting owners were mailed and on what date, the date notice was posted, and the date it was published in the newspaper. It shows counts and dates only, with no names or addresses. If the newspaper notice has no proof yet, it says "Newspaper notice: Not published."
 - **Conditions** lists conditions attached to an approval, each marked **Open**, **Met** or **Waived**.
 - **Documents** holds what you filed, the checklist of what the town still wants and anything the town added for you under **From the town**. A document you replace keeps the older copies listed as earlier versions. Add more with **Add other files**. Files open in a new tab.
 - **Inspections** appears once the permit is issued, and stays through suspension and closing. See [inspections](./inspections.md).
@@ -52,4 +54,4 @@ When Chiban knows the one thing you should do next, a **Do this now** box sits a
 
 ## If something looks wrong
 
-You cannot edit an application after you send it. To correct something, call the land use office, whose phone number is at the bottom of every page, or withdraw and file again if the town has not yet decided.
+You cannot edit an application after you send it. To correct something, call the land use office, whose phone number is at the bottom of every page, or withdraw and file again if the town has not yet decided. When you choose to withdraw an application that already has fees charged, the confirmation adds that the fees charged are still owed.

@@ -1,4 +1,3 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { z } from 'zod'
 
 export const TOWN_ASSET_PREFIX = 'town-assets/'
@@ -20,18 +19,10 @@ export const SIGNER_ROLES = [
   'zba_chair',
   'code_enforcement_officer',
   'town_clerk',
+  'plumbing_inspector',
 ] as const
 export const SignerRoleSchema = z.enum(SIGNER_ROLES)
 export type SignerRole = z.infer<typeof SignerRoleSchema>
-
-export const SIGNER_ROLE_LABELS: Record<SignerRole, string> = {
-  building_official: 'Building official',
-  land_use_administrator: 'Land use administrator',
-  planning_board_chair: `${BOARD_KIND_TRAITS.planning_board.label} chair`,
-  zba_chair: `${BOARD_KIND_TRAITS.zba.label} chair`,
-  code_enforcement_officer: 'Code enforcement officer',
-  town_clerk: 'Town clerk',
-}
 
 const required = (message: string) => z.string().trim().min(1, message)
 

@@ -21,6 +21,8 @@ export async function recordAdministrativeDecisionAction(
       if (recorded.ok) outcome.applicationId = recorded.value.applicationId
       return errorOrField(recorded, 'Administrative decision recorded.', {
         future_date: 'occurredOn',
+        before_receipt: 'occurredOn',
+        board_application: 'applicationNumber',
       })
     },
   )

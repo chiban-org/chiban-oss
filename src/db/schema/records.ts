@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { enforcementCases } from './enforcement'
 import { applications, projects } from './projects'
+import { rtkRequests } from './rightToKnow'
 
 export const retentionAssignments = pgTable(
   'retention_assignments',
@@ -42,6 +43,7 @@ export const recordEvents = pgTable(
     projectId: uuid('project_id').references(() => projects.id),
     caseId: uuid('case_id').references(() => enforcementCases.id),
     applicationId: uuid('application_id').references(() => applications.id),
+    rtkRequestId: uuid('rtk_request_id').references(() => rtkRequests.id),
     kind: text('kind', {
       enum: [
         'application_withdrawn',
@@ -50,6 +52,11 @@ export const recordEvents = pgTable(
         'registration_expired',
         'septic_replaced_or_removed',
         'appeal_period_expired',
+        'permit_expired',
+        'occupancy_certificate_issued',
+        'final_inspection_passed',
+        'case_closed',
+        'request_completed',
       ],
     }).notNull(),
     occurredOn: date('occurred_on', { mode: 'string' }).notNull(),
@@ -60,7 +67,11 @@ export const recordEvents = pgTable(
   (t) => [
     index('record_events_project_idx').on(t.projectId),
     index('record_events_case_idx').on(t.caseId),
-    check('record_events_one_target_check', sql`(${t.projectId} is null) <> (${t.caseId} is null)`),
+    index('record_events_rtk_request_idx').on(t.rtkRequestId),
+    check(
+      'record_events_one_target_check',
+      sql`num_nonnulls(${t.projectId}, ${t.caseId}, ${t.rtkRequestId}) = 1`,
+    ),
   ],
 )
 

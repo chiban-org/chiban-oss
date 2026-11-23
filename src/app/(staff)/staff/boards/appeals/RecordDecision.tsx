@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { FormDialog } from '@/components/FormDialog'
 import { TextField } from '@/components/staff/fields'
+import { recordDecisionDescription } from '@/features/appeals/appealWords'
 import { recordAdministrativeDecisionAction } from './actions'
 
 export function RecordDecision({ today }: { today: string }) {
@@ -8,7 +9,7 @@ export function RecordDecision({ today }: { today: string }) {
     <FormDialog
       label="Record an administrative decision"
       title="Record an administrative decision"
-      description="A decision by the building inspector, zoning administrator or another town official on an application or permit. Recording it starts the time to appeal it to the Zoning Board."
+      description={recordDecisionDescription()}
       variant="default"
     >
       <ActionForm

@@ -4,6 +4,7 @@ import type { Db, Tx } from '@/db/client'
 import { applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
+import { recordIssuedDecisionTx } from '@/features/applications/staffDecision'
 import { type TransitionError, transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { attachDocument } from '@/features/documents/attach'
@@ -40,6 +41,7 @@ export async function issueInTransaction(
     deps.now,
   )
   if (!moved.ok) return err(moved.error)
+  await recordIssuedDecisionTx(tx, actor, input.applicationId, signal)
   const pdf = await buildPermitPdf(tx, input.applicationId, signal)
   if (!pdf.ok) {
     throw new AppError(ErrorIds.DB_INVARIANT, 'An issued permit could not be rendered', {

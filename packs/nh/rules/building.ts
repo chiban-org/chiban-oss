@@ -1,4 +1,4 @@
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 const RSA_155A_4 = 'https://gc.nh.gov/rsa/html/XII/155-A/155-A-4.htm'
 const RSA_155A_2 = 'https://gc.nh.gov/rsa/html/XII/155-A/155-A-2.htm'

@@ -1,9 +1,9 @@
-import type { BoardKind } from '@packs/nh/schema'
 import {
   type BoardSettingsBody,
   type BoardSettingsEntry,
   boardSettingsDefault,
 } from '@/features/boards/boardSettingsSchema'
+import type { BoardKind } from '@/features/packs/schema'
 
 const TOWN_HALL = 'Alder Pond Town Hall bulletin board'
 

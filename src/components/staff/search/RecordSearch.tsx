@@ -4,8 +4,10 @@ import { Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Popover as PopoverPrimitive } from 'radix-ui'
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react'
+import { usePackText } from '@/components/PackTextProvider'
 import { movedIndex } from '@/components/parcels/picker/pickerChoice'
 import { Input } from '@/components/ui/input'
+import type { Vocabulary } from '@/features/packs/vocabulary'
 import { MIN_SEARCH_CHARS, type SearchResult } from '@/features/search/searchTypes'
 import { cn } from '@/lib/utils'
 import { type FindRecords, findRecords } from './findRecordsClient'
@@ -24,9 +26,9 @@ interface RecordSearchProps {
 
 const NO_OPTIONS: SearchOptions = { options: [], exactIndex: -1 }
 
-function optionsFor(state: RecordSearchState, query: string): SearchOptions {
+function optionsFor(state: RecordSearchState, query: string, words: Vocabulary): SearchOptions {
   if (state.phase !== 'done' || state.query !== query.trim()) return NO_OPTIONS
-  return searchOptions(state.result)
+  return searchOptions(state.result, words)
 }
 
 async function resultFor(
@@ -61,7 +63,8 @@ export function RecordSearch({
   const [picked, setPicked] = useState<number | null>(null)
   const pending = useRef<AbortController | null>(null)
   const state = useRecordSearch(find, query)
-  const { options, exactIndex } = optionsFor(state, query)
+  const { vocabulary } = usePackText()
+  const { options, exactIndex } = optionsFor(state, query, vocabulary)
   const active = picked ?? exactIndex
   const expanded = open && state.phase !== 'idle'
   useEffect(() => {

@@ -1,5 +1,3 @@
-import { NH_LICENSE_TYPES, nhDefaultLicenseType } from '@packs/nh/licenseTypes'
-import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { eq } from 'drizzle-orm'
 import type { ReactNode } from 'react'
 import { CounterParcelSearch } from '@/components/counter/CounterParcelSearch'
@@ -8,6 +6,11 @@ import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
 import { parcels } from '@/db/schema'
 import { loadCounterFormData } from '@/features/counter/counterFormData'
 import type { DirectIssueType } from '@/features/counter/directIssueTypes'
+import {
+  defaultLicenseType,
+  licenseGroups,
+  licenseLookup,
+} from '@/features/licenseChecks/packLicenses'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { searchExample } from '@/features/parcels/searchExample'
 import { searchParcels } from '@/features/parcels/searchParcels'
@@ -26,11 +29,6 @@ const actions = {
   complete: completeAction,
   lookupContractor: lookupContractorAction,
 }
-
-const LICENSE_GROUPS = NH_LICENSE_TYPES.map((group) => ({
-  label: group.label,
-  licenses: group.licenses,
-}))
 
 export async function parcelLabel(ctx: StaffContext, parcelId: string): Promise<string> {
   const [display, [row]] = await Promise.all([
@@ -76,9 +74,9 @@ export async function issueStep(
       parcelLabel={label}
       summary={<ChosenSteps steps={steps} />}
       licenseRequired={type.requiresLicense}
-      licenseGroups={LICENSE_GROUPS}
-      defaultLicenseType={nhDefaultLicenseType(type.key)}
-      lookup={NH_LICENSE_LOOKUP}
+      licenseGroups={licenseGroups()}
+      defaultLicenseType={defaultLicenseType(type.key)}
+      lookup={licenseLookup()}
       actions={actions}
       {...formData}
     />

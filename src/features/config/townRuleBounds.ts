@@ -1,4 +1,4 @@
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 export const TOWN_RULE_BOUNDS = {
   months: { min: 1, max: 120 },

@@ -6,11 +6,13 @@ import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import { ActivityPanel } from './activityPanel'
 import { BoardPanel } from './boardPanel'
 import { ClocksPanel, noDeadlines } from './clocksPanel'
+import { DecisionNoticePanel } from './decisionNoticePanel'
 import { HearingsPanel } from './hearingsPanel'
 import { NotesPanel } from './notesPanel'
 import type { RecordPanelsInput } from './panelSet'
 import { CompletenessPanel, completenessApplies } from './panels'
 import { mayAddToRecord, mayAssignReviewers } from './recordStage'
+import { ReliancePanel, reliancePanelApplies } from './reliancePanel'
 import { ReviewersPanel } from './reviewersPanel'
 
 function reviewRequired(view: StaffApplicationView): boolean {
@@ -71,14 +73,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
     {
       key: 'hearings',
       empty: hearingsEmpty(hearings),
-      node: (
-        <HearingsPanel
-          key="hearings"
-          data={hearings}
-          meetingOnBoard={board?.boardKind === 'zba' && board.acceptanceMeetingId !== null}
-          deadline={deadline}
-        />
-      ),
+      node: <HearingsPanel key="hearings" data={hearings} deadline={deadline} />,
     },
     {
       key: 'completeness',
@@ -88,10 +83,36 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           key="completeness"
           view={view}
           formElsewhere={hosted.has('mark_complete')}
+          canMarkComplete={records.canMarkComplete}
         />
       ) : null,
     },
     { key: 'clocks', empty: noDeadlines(view), node: <ClocksPanel key="clocks" view={view} /> },
+    {
+      key: 'decisionNotice',
+      empty: false,
+      node:
+        view.decisionNotice == null ? null : (
+          <DecisionNoticePanel
+            key="decisionNotice"
+            view={view}
+            documents={records.noticeDocuments}
+          />
+        ),
+    },
+    {
+      key: 'variance',
+      empty: false,
+      node: reliancePanelApplies(view.varianceValidity, view.reliance) ? (
+        <ReliancePanel
+          key="variance"
+          applicationId={view.id}
+          validity={view.varianceValidity}
+          reliance={view.reliance}
+          canLink={view.permissions.canOpenHearings}
+        />
+      ) : null,
+    },
     {
       key: 'notes',
       empty: notes.notes.length === 0,

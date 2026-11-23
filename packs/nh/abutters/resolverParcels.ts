@@ -1,4 +1,5 @@
-import { type Context, checkedProvenance, makeRecipient } from './resolverContext'
+import { makeRecipient } from '@/features/abutters/recipientBasis'
+import { type Context, checkedProvenance } from './resolverContext'
 import { loadAssociations, loadParcelFacts, loadParks } from './resolverSources'
 
 function pushOwner(

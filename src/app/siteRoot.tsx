@@ -5,8 +5,10 @@ import '@fontsource-variable/mulish'
 import '@fontsource-variable/source-serif-4'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { DemoBanner } from '@/components/DemoBanner'
+import { PackTextProvider } from '@/components/PackTextProvider'
 import { Providers } from '@/components/providers'
 import { CSRF_COOKIE } from '@/constants/cookies'
+import { packText } from '@/features/packs/packText'
 import './globals.css'
 
 export const SITE_METADATA: Metadata = {
@@ -40,7 +42,9 @@ export async function SiteRoot({ children }: { children: ReactNode }) {
       <body>
         <DemoBanner />
         <CsrfProvider token={token}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <PackTextProvider value={packText()}>{children}</PackTextProvider>
+          </Providers>
         </CsrfProvider>
       </body>
     </html>

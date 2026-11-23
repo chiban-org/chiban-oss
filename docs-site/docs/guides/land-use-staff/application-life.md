@@ -45,7 +45,7 @@ A reviewer or a board member sees a shorter page with only the parts they need, 
 
 An application arrives from the applicant's portal or from the counter. It starts as **Submitted**. If the permit type charges a fee at filing, the fee is assessed now. Chiban starts the clocks that law attaches to the filing, and they appear under **Clocks** and as **Due next**.
 
-On a building permit, the first requirement is **Marked complete**. Choose **Mark complete** and enter the **Completed on** date, which is today unless the application became complete earlier. The decision clock starts from that date.
+On a building permit, the first requirement is **Marked complete**. Choose **Mark complete** and enter the **Completed on** date, which is today unless the application became complete earlier. In New Hampshire the decision clock starts from that date. In Maine the decision clock already started when the application was filed, so marking it complete does not move the decision date.
 
 ### 2. Assign a responsible staff member
 
@@ -75,7 +75,11 @@ Leave notes for the rest of the office under **Staff notes** with **Add a note**
 
 ### 6. Record the decision
 
-When the requirements are met, **Do this now** says **Record the decision**. Choose it and the application becomes **Decided**.
+When the requirements are met, **Do this now** says **Approve the application**. Choose it and the application becomes **Decided**. Chiban prints a **Decision on your application** letter into the record's **Documents**, for the people on the project, and adds the decision to the **Appeals** register under **Boards**, which starts the time to appeal it.
+
+To refuse the application instead, choose **Deny the application**. It asks for a **Reason for the denial** of at least 10 characters, which is printed on the decision letter. A denial without a reason is refused. A permit issued straight from submitted, where the type allows it, still enters the Appeals register when it is issued, but has no decision letter.
+
+Applications decided by a board keep **Record the decision**, because the board's vote is the decision. See [decisions](../boards/decisions.md).
 
 If the permit type collects its fee at approval, the fee is assessed now. The people on the project are emailed that a fee is due.
 
@@ -94,13 +98,15 @@ Some permit types close the moment they are issued. Others stay **Issued** until
 ### 9. After the permit is issued
 
 - **Inspections.** The **Inspections** panel lists each inspection and its result. Choose **Take an inspection request for this permit** when someone calls for one. Inspectors record the results.
-- **Closing.** A building permit closes when the final inspection has passed and the certificate of occupancy is issued. **Do this now** walks you through it: **Book the final inspection**, then, after a pass, **Issue the certificate of occupancy**. A permit type that closes in other ways has **Close the permit** under **More actions**.
+- **Closing.** A building permit closes when the final inspection has passed and the certificate of occupancy is issued. **Do this now** walks you through it: **Book the final inspection**, then, after a pass, **Issue the certificate of occupancy**. The link on that step opens the inspection request with the final checklist already first in the list. Where a permit type's final checklist is not named final, the step names the checklist instead, for example **Book the inspection: Occupancy walkthrough**. A permit type that closes in other ways has **Close the permit** under **More actions**.
 - **Renewing.** Under **More actions**, **Renew the permit** asks for the **Renewed on** date. The renewal fee is added to the fees.
 - **Fixing a mistake.** Use **Correct this permit**. See [Printing a permit or placard](./permits-and-placards.md).
 
 ## Requirements you cannot meet
 
 When a requirement blocks the application and the cause cannot be fixed, such as a document that does not apply, land use staff can open **Override this requirement** under it, enter a reason of at least ten characters and choose **Override with reason**. The override is recorded with your name and the reason, and **Revoke override** puts the requirement back.
+
+When the requirement is a missing document, the override stays visible after the permit is issued. On the **Documents** checklist the row reads **Gone ahead without the document**, with "Overridden", the reason, your name and the date. The applicant sees the row marked **Accepted by the town**, without the reason. The application's history records "Overrode a gate" with the requirement and the reason.
 
 This works for requirements the town sets for itself. A requirement that comes from state law cannot be overridden by land use staff. Only an administrator can clear one, by recording a statutory exception with its legal authority.
 

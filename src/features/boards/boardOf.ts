@@ -1,6 +1,6 @@
-import type { BoardKind } from '@packs/nh/schema'
 import type { ApplicationContext } from '@/features/applications/context'
 import { loadPack } from '@/features/packs/loadPack'
+import type { BoardKind } from '@/features/packs/schema'
 
 export function boardOfApplication(app: ApplicationContext): BoardKind | null {
   return (

@@ -92,11 +92,7 @@ export function QueueTable({ rows, reviewers, assign, empty, sort }: Props) {
                   data-label="Status"
                   className="max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
                 >
-                  <ApplicationStatusChip
-                    state={row.state}
-                    substep={row.substep}
-                    substepLabel={row.substepLabel}
-                  />
+                  <ApplicationStatusChip state={row.state} label={row.statusText} />
                 </td>
                 <DueCell row={row} />
                 <FeesCell cents={row.feesDueCents} />

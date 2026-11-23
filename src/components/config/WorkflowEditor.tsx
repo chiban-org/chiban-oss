@@ -182,6 +182,11 @@ export function WorkflowEditor({
       ) : (
         <p className="text-sm">This kind of proceeding always goes through the board.</p>
       )}
+      <Check
+        label="A reviewer must sign off before the decision"
+        checked={workflow.reviewRequired !== false}
+        onChange={(checked) => setWorkflow({ ...workflow, reviewRequired: checked })}
+      />
       <Pick
         label="Closes"
         value={workflow.closesOn}

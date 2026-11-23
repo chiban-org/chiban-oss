@@ -1,4 +1,3 @@
-import { type CeaseAndDesistRule, civilDateSchema, type OrderContentField } from '@packs/nh/schema'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
@@ -15,12 +14,19 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { designationOn } from '@/features/enforcement/designations'
 import { contentProblem, issueBlock } from '@/features/enforcement/orderIssueChecks'
 import { renderOrderPdf } from '@/features/enforcement/orderPdf'
 import { stayFor } from '@/features/enforcement/stay'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import {
+  type CeaseAndDesistRule,
+  civilDateSchema,
+  type OrderContentField,
+} from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { publishedTemplate } from '@/features/templates/findTemplate'
@@ -45,6 +51,7 @@ export type IssueOrderError =
   | 'not_designated'
   | 'deadline_before_issue'
   | 'notice_required'
+  | 'building_code_not_enforced'
   | { missingContent: OrderContentField[] }
   | { findingsNotOpen: string[] }
 
@@ -91,6 +98,12 @@ export async function issueOrder(
       throw new AppError(ErrorIds.ENF_INVARIANT, 'Order rule is not a cease and desist rule', {
         key: order.ruleKey,
       })
+    }
+    if (
+      order.ruleKey === packRoles().rules.buildingCodeOrder &&
+      !(await buildingCodeOpenFor(tx, caseRow.createdAt, signal))
+    ) {
+      return err('building_code_not_enforced')
     }
     const designation = await designationOn(tx, actor.userId, value.issuedOn)
     if (!issuerAuthorized(rule, designation !== null)) return err('not_designated')

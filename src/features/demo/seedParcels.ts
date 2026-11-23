@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { NH_PARCEL_ID_FORMATS } from '@packs/nh/parcelIdFormats'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { aliasOverrides, gisLayers, parcelIdFormats, parcelRecordLinks, parcels } from '@/db/schema'
+import { aliasOverrides, gisLayers, parcelRecordLinks, parcels } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { storyDay, storyInstant } from '@/features/demo/seedCalendar'
@@ -14,6 +13,7 @@ import { createAliasOverride } from '@/features/parcels/aliasOverrides'
 import { createParcelPlaceholder, recordLineageEvent } from '@/features/parcels/lineage'
 import { linkRecordByRawRef } from '@/features/parcels/recordLinks'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
+import { syncPackParcelIdFormats } from '@/features/parcels/syncPackFormats'
 import type { CivilDate } from '@/types/civilDate'
 
 const PARCEL_IMPORT_AT = '2026-06-01T12:00:00Z'
@@ -167,10 +167,7 @@ async function seedUnresolvedRecord(c: SeedContext): Promise<void> {
 
 export async function seedParcels(db: Db, signal: AbortSignal): Promise<{ imported: boolean }> {
   signal.throwIfAborted()
-  await db
-    .insert(parcelIdFormats)
-    .values(NH_PARCEL_ID_FORMATS.map(({ example: _example, ...format }) => format))
-    .onConflictDoNothing()
+  await syncPackParcelIdFormats(db, signal)
   const staff = await db.query.users.findFirst({
     where: (u, { eq: same }) => same(u.email, `staff@${DEMO_DOMAIN}`),
   })

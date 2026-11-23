@@ -1,4 +1,3 @@
-import type { ProximityRule } from '@packs/nh/schema'
 import { sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, DbOrTx } from '@/db/client'
@@ -6,6 +5,7 @@ import { desProximityDeterminations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { uuidArray } from '@/db/uuidList'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import { proximityVerdict } from '@/features/abutters/proximityRule'
 import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { lockedAndFinished } from '@/features/applications/lockApplication'
@@ -14,21 +14,33 @@ import type { Actor } from '@/features/auth/actor'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles, requireRuleRole } from '@/features/packs/roles'
+import type { ProximityRule } from '@/features/packs/schema'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
-export const DES_RULE_KEY = 'nh.pb.des_500ft'
 const MIN_REASON_LENGTH = 10
 
 export type DesSuggestion = HonestValue<{ within: boolean; withinFt: number | null }>
 
-export function desRule(): ProximityRule {
-  const rule = ruleByKey(loadPack(), DES_RULE_KEY)
+function proximityRule(key: string): ProximityRule {
+  const rule = ruleByKey(loadPack(), key)
   if (rule.kind !== 'proximity') {
-    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.des_500ft must be a proximity rule')
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'The DES notice rule is not a proximity rule', {
+      key,
+    })
   }
   return rule
+}
+
+export function desRule(): ProximityRule {
+  return proximityRule(requireRuleRole('desProximity'))
+}
+
+export function desRuleIfPresent(): ProximityRule | null {
+  const key = packRoles().rules.desProximity
+  return key === null ? null : proximityRule(key)
 }
 
 async function anyUnmapped(db: DbOrTx, parcelIds: string[]): Promise<boolean> {
@@ -51,8 +63,9 @@ export async function suggestDesProximity(
   if (status.state === 'not_configured') return { state: 'unknown' }
   const parcelIds = await applicantParcelIds(db, applicationId, signal)
   if (parcelIds.length === 0) return { state: 'unknown' }
+  const srid = projectedSridParam()
   const result = await db.execute<{ feet: number | null }>(sql`
-    select min(ST_Distance(ST_Transform(p.geom, 3437), ST_Transform(w.geom, 3437)))::float8 as feet
+    select min(ST_Distance(ST_Transform(p.geom, ${srid}), ST_Transform(w.geom, ${srid})))::float8 as feet
     from parcels p
     cross join gis_features w
     where p.id = any(${uuidArray(parcelIds)})

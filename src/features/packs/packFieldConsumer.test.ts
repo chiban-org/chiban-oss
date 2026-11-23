@@ -1,9 +1,13 @@
+import { describe, expect, it } from 'vitest'
+import { FIELD_PROBES } from '@/features/packs/fieldProbes'
 import {
   AbutterParamsSchema,
   CeaseAndDesistRuleSchema,
   CivilPenaltyRuleSchema,
   ClockRuleSchema,
   CodeEditionEntrySchema,
+  CureNoticeRuleSchema,
+  DecisionDeliveryRuleSchema,
   EffectRuleSchema,
   GateRuleSchema,
   ListAgeRuleSchema,
@@ -13,9 +17,7 @@ import {
   RecordRuleSchema,
   RecordSeriesSchema,
   TownSettingRuleSchema,
-} from '@packs/nh/schema'
-import { describe, expect, it } from 'vitest'
-import { FIELD_PROBES } from '@/features/packs/fieldProbes'
+} from '@/features/packs/schema'
 import { leafPaths } from '@/features/packs/schemaPaths'
 
 const KIND_SCHEMAS = {
@@ -27,8 +29,10 @@ const KIND_SCHEMAS = {
   list_age: ListAgeRuleSchema,
   proximity: ProximityRuleSchema,
   notice_requirement: NoticeRequirementRuleSchema,
+  decision_delivery: DecisionDeliveryRuleSchema,
   cease_and_desist: CeaseAndDesistRuleSchema,
   civil_penalty: CivilPenaltyRuleSchema,
+  cure_notice: CureNoticeRuleSchema,
   classification: ProceedingClassificationSchema,
   code_edition: CodeEditionEntrySchema,
   record_series: RecordSeriesSchema,

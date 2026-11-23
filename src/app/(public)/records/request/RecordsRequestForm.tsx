@@ -4,7 +4,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { AreaField, TextField } from '@/components/staff/fields'
 import { submitRecordsRequestAction } from './actions'
 
-export function RecordsRequestForm() {
+export function RecordsRequestForm({ email }: { email: string | null }) {
   return (
     <ActionForm
       action={submitRecordsRequestAction}
@@ -35,6 +35,7 @@ export function RecordsRequestForm() {
         required
         maxLength={320}
         autoComplete="email"
+        defaultValue={email ?? ''}
       />
       <TextField
         label="Your phone (optional)"

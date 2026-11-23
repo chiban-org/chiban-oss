@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { contractorTrades } from '@/features/contractors/trades'
+import { activePack } from '@/features/packs/registry'
 import { TradeFields } from './TradeFields'
 
 afterEach(cleanup)
@@ -8,7 +10,12 @@ afterEach(cleanup)
 function renderFields(trades: string[], licenses: { trade: string; number: string }[] = []) {
   return render(
     <form>
-      <TradeFields trades={trades} licenses={licenses} />
+      <TradeFields
+        choices={contractorTrades()}
+        licenseNumberLabel={activePack().labels.stateLicenseNumber}
+        trades={trades}
+        licenses={licenses}
+      />
     </form>,
   )
 }
@@ -38,7 +45,12 @@ describe('TradeFields', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Electrical' }))
     rerender(
       <form>
-        <TradeFields trades={['electrical']} licenses={[]} />
+        <TradeFields
+          choices={contractorTrades()}
+          licenseNumberLabel={activePack().labels.stateLicenseNumber}
+          trades={['electrical']}
+          licenses={[]}
+        />
       </form>,
     )
     expect(screen.getByRole('checkbox', { name: 'Electrical' }).getAttribute('aria-checked')).toBe(

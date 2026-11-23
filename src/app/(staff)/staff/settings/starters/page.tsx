@@ -24,8 +24,8 @@ export default async function StartersPage() {
         lead="A starter copies a complete permit into your settings: its form, fees, conditions, checklists, permit template and application type."
       />
       <p className="text-muted-foreground">
-        The fee amounts are examples for the fictional Town of Alder Pond. Change them to your own
-        schedule before you use them.
+        Starter fees are not your town's schedule. Check every amount against what the town has
+        adopted before you use a starter.
       </p>
       <StarterList adopted={new Set(typeKeys.map((k) => k.key))} />
       <p>

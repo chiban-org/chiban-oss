@@ -1,4 +1,3 @@
-import type { CivilPenaltyRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -21,6 +20,7 @@ import {
 } from '@/features/enforcement/labels'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { orderRule } from '@/features/enforcement/service'
+import type { CivilPenaltyRule } from '@/features/packs/schema'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'

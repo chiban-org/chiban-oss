@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { uuidArray } from '@/db/uuidList'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import type { CrossingFeature, OtherParcel, Pt } from '@/features/abutters/projection/types'
 
 export interface CrossingInputs {
@@ -83,21 +84,23 @@ function featureOf(row: {
 export async function loadCrossingInputs(
   tx: DbOrTx,
   applicantParcelIds: string[],
-  radiusFt: number,
+  radiusFt: number | null,
   signal: AbortSignal,
 ): Promise<CrossingInputs> {
   signal.throwIfAborted()
-  if (applicantParcelIds.length === 0) return { applicantRings: [], others: [], features: [] }
-  const union = sql`(select ST_Transform(ST_Union(a.geom), 3437) from parcels a where a.id = any(${uuidArray(applicantParcelIds)}))`
+  if (radiusFt === null || applicantParcelIds.length === 0)
+    return { applicantRings: [], others: [], features: [] }
+  const srid = projectedSridParam()
+  const union = sql`(select ST_Transform(ST_Union(a.geom), ${srid}) from parcels a where a.id = any(${uuidArray(applicantParcelIds)}))`
   const applicant = await tx.execute<{ gj: string | null }>(
     sql`select ST_AsGeoJSON(${union}, 4) as gj`,
   )
   const nearby = await tx.execute<{ id: string; gj: string }>(sql`
-    select p.id, ST_AsGeoJSON(ST_Transform(p.geom, 3437), 4) as gj
+    select p.id, ST_AsGeoJSON(ST_Transform(p.geom, ${srid}), 4) as gj
     from parcels p
     where p.geom is not null and p.status = 'active'
       and p.id <> all(${uuidArray(applicantParcelIds)})
-      and ST_DWithin(ST_Transform(p.geom, 3437), ${union}, ${radiusFt})
+      and ST_DWithin(ST_Transform(p.geom, ${srid}), ${union}, ${radiusFt})
     order by p.id
   `)
   const features = await tx.execute<{
@@ -106,10 +109,10 @@ export async function loadCrossingInputs(
     name: string | null
     gj: string
   }>(sql`
-    select f.id, f.layer_key, f.name, ST_AsGeoJSON(ST_Transform(f.geom, 3437), 4) as gj
+    select f.id, f.layer_key, f.name, ST_AsGeoJSON(ST_Transform(f.geom, ${srid}), 4) as gj
     from gis_features f
     where f.layer_key in ('roads', 'water')
-      and ST_DWithin(ST_Transform(f.geom, 3437), ${union}, ${radiusFt})
+      and ST_DWithin(ST_Transform(f.geom, ${srid}), ${union}, ${radiusFt})
     order by f.layer_key, f.source_key
   `)
   const applicantJson = applicant.rows[0]?.gj ?? null

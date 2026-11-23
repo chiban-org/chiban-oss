@@ -1,6 +1,6 @@
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { auditLog, type InspectionStatus, inspections } from '@/db/schema'
+import { applicationConditions, auditLog, type InspectionStatus, inspections } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -28,6 +28,7 @@ export interface InspectionRecord {
   cancel: CancelFacts | null
   followUpId: string | null
   previousId: string | null
+  conditions: string[]
 }
 
 async function zoneOf(db: DbOrTx, signal: AbortSignal): Promise<string> {
@@ -74,6 +75,20 @@ async function followUpOf(
   return row ?? null
 }
 
+async function unmetConditions(db: DbOrTx, applicationId: string): Promise<string[]> {
+  const rows = await db
+    .select({ text: applicationConditions.textSnapshot })
+    .from(applicationConditions)
+    .where(
+      and(
+        eq(applicationConditions.applicationId, applicationId),
+        eq(applicationConditions.status, 'unmet'),
+      ),
+    )
+    .orderBy(asc(applicationConditions.changedAt), asc(applicationConditions.code))
+  return rows.map((r) => r.text)
+}
+
 async function takesReinspection(
   db: DbOrTx,
   view: InspectionView,
@@ -104,15 +119,15 @@ export async function loadInspectionRecord(
   const view = loaded.value
   const { inspection } = view
   const zone = await zoneOf(db, signal)
-  const [maySchedule, recordedByName, cancel, followUp, mayRequestReinspection] = await Promise.all(
-    [
+  const [maySchedule, recordedByName, cancel, followUp, mayRequestReinspection, conditions] =
+    await Promise.all([
       hasCapability(db, actor.userId, 'inspection.schedule', signal),
       userName(db, inspection.resultRecordedBy),
       cancelFacts(db, view, zone),
       inspection.status === 'failed' ? followUpOf(db, inspection.id) : Promise.resolve(null),
       takesReinspection(db, view, signal),
-    ],
-  )
+      unmetConditions(db, inspection.applicationId),
+    ])
   const plan = planInspection({
     row: inspection,
     viewerId: actor.userId,
@@ -140,5 +155,6 @@ export async function loadInspectionRecord(
     cancel,
     followUpId: followUp?.id ?? null,
     previousId: inspection.reinspectionOf,
+    conditions,
   })
 }

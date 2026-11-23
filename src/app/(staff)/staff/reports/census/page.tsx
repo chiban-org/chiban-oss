@@ -6,6 +6,7 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { loadApplicationContext } from '@/features/applications/context'
 import { censusBpsReport, incompleteCopy } from '@/features/census/bpsReport'
+import { censusClassification } from '@/features/census/classify'
 import { censusPeriod } from '@/features/census/period'
 import { type CensusSuggestion, suggestCensus } from '@/features/census/suggest'
 import { firstParam, type RawSearchParams, readTableParams } from '@/features/dataTable/params'
@@ -56,6 +57,14 @@ export default async function CensusPage({
 }: {
   searchParams: Promise<RawSearchParams>
 }) {
+  if (censusClassification() === null) {
+    return (
+      <main>
+        <h1>Census building permits report</h1>
+        <p>This report covers building permits, and this town&apos;s state pack has none.</p>
+      </main>
+    )
+  }
   const tableParams = readTableParams(await searchParams)
   const yearParam = firstParam(tableParams, 'year')
   const monthParam = firstParam(tableParams, 'month')

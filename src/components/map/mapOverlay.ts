@@ -25,6 +25,13 @@ export function addOverlay(map: MapLibreMap, overlay: MapOverlay): void {
     paint: { 'line-color': '#1d4ed8', 'line-width': 1.5, 'line-dasharray': [2, 2] },
   })
   map.addLayer({
+    id: 'overlay-buffer',
+    type: 'line',
+    source: OVERLAY_SOURCE,
+    filter: only('buffer'),
+    paint: { 'line-color': '#b45309', 'line-width': 2, 'line-dasharray': [4, 2] },
+  })
+  map.addLayer({
     id: 'overlay-connector',
     type: 'line',
     source: OVERLAY_SOURCE,

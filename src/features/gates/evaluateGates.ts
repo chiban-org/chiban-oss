@@ -46,6 +46,7 @@ export async function evaluateGates(
     if (gate.boundBy !== null && !bindings.has(gate.boundBy)) continue
     if (gate.relevantTo !== undefined && !gate.relevantTo(app)) continue
     const outcome = await gate.evaluate(tx, app, today, signal)
+    if (outcome.status === 'pass' && outcome.notApplicable === true) continue
     const override =
       overrides.find((o) => o.gateKey === gate.key && o.kind === OVERRIDE_KIND[gate.kind]) ?? null
     const passes = outcome.status === 'pass' || override !== null

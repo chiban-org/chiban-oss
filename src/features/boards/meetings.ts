@@ -1,4 +1,3 @@
-import type { BoardKind } from '@packs/nh/boardSchema'
 import { and, asc, eq } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { boardMeetings, boards } from '@/db/schema'
@@ -15,6 +14,7 @@ import {
 import { closeMeetingPacket } from '@/features/boards/packetCancel'
 import { getBoardLocked } from '@/features/boards/townBoards'
 import { recomputeMeetingBoundClocks } from '@/features/clocks/recomputeMeetingBound'
+import type { BoardKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'

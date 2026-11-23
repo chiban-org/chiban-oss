@@ -1,15 +1,15 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import type { ReactNode } from 'react'
 import { VersionChanges } from '@/components/config/VersionChanges'
 import { StatusChip } from '@/components/StatusChip'
 import type { VersionRowView } from '@/features/config/settingsViews'
+import { activePack } from '@/features/packs/registry'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 
 const STATUS_LABEL = { draft: 'Draft', published: 'In use', superseded: 'Replaced' } as const
 
 function upstreamText(upstream: { id: string; version: number }): string {
-  const starter = NH_STARTERS.find((s) => s.id === upstream.id)
+  const starter = activePack().starters.find((s) => s.id === upstream.id)
   const name =
     starter === undefined
       ? words(upstream.id.split('.').at(-1) ?? upstream.id)

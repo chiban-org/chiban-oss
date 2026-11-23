@@ -14,7 +14,7 @@ function pageFiles(dir: string, acc: string[] = []): string[] {
 }
 
 const relative = (file: string) => path.relative(APP, file).split(path.sep).join('/')
-const TITLED = /export (?:const metadata\b|async function generateMetadata\b)/
+const TITLED = /export (?:const metadata\b|(?:async )?function generateMetadata\b)/
 
 describe('page titles', () => {
   const pages = pageFiles(APP)

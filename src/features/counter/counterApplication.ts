@@ -1,4 +1,3 @@
-import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { and, eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { applications, licenseChecks, parcels, projects } from '@/db/schema'
@@ -7,6 +6,7 @@ import { createApplication } from '@/features/applications/createApplication'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import type { QuickIssueError, QuickIssueInput } from '@/features/counter/quickIssue'
+import { licenseLookupUrl } from '@/features/licenseChecks/packLicenses'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
@@ -105,7 +105,7 @@ export async function createCounterApplication(
       licenseType: input.license.type,
       result: input.license.result,
       note: input.license.note ?? null,
-      lookupUrl: NH_LICENSE_LOOKUP.url,
+      lookupUrl: licenseLookupUrl(),
       checkedBy: actor.userId,
       checkedAt: now,
     })

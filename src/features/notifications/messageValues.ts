@@ -30,6 +30,8 @@ export function wordingValues(input: {
     'inspection.type': p.inspectionLabel ?? '',
     'inspection.date': longDate(p.onDate),
     'inspection.time': p.atTime ?? '',
+    'inspection.previousDate': longDate(p.previousDate),
+    'inspection.previousTime': p.previousTime ?? '',
     'inspection.result': p.result ?? 'was recorded',
     'permit.revision': p.revision === undefined ? '' : String(p.revision),
     'account.from': accountPlace(claimed, 'from'),

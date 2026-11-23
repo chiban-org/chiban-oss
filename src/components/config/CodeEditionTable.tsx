@@ -1,6 +1,6 @@
-import type { CodeEditionEntry } from '@packs/nh/schema'
 import { StatusChip } from '@/components/StatusChip'
 import { componentsNotInLabel, describeCodeEdition } from '@/features/building/codeEdition'
+import type { CodeEditionEntry } from '@/features/packs/schema'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 

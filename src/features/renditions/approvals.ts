@@ -7,6 +7,7 @@ import {
   documents,
   documentVersions,
   preservationRecords,
+  redactionBoxes,
   renditionApprovals,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -14,6 +15,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { deleteDerivedObjects, onApprovalRevoked } from '@/features/renditions/propagate'
+import { releasedOffline } from '@/features/renditions/releasedOffline'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
@@ -73,7 +75,27 @@ export async function insertSystemApproval(
     .onConflictDoNothing()
 }
 
-export type ApproveError = 'forbidden' | 'invalid' | 'not_found' | 'wrong_role' | 'not_ready'
+export type ApproveError =
+  | 'forbidden'
+  | 'invalid'
+  | 'not_found'
+  | 'wrong_role'
+  | 'not_ready'
+  | 'redaction_not_cited'
+
+async function redactionCited(
+  tx: Tx,
+  version: { role: string; redactionJobId: string | null },
+): Promise<boolean> {
+  if (version.role === 'original') return true
+  if (version.redactionJobId === null) return false
+  const [box] = await tx
+    .select({ id: redactionBoxes.id })
+    .from(redactionBoxes)
+    .where(eq(redactionBoxes.jobId, version.redactionJobId))
+    .limit(1)
+  return box !== undefined
+}
 
 export async function approveRendition(
   db: Db,
@@ -90,7 +112,11 @@ export async function approveRendition(
   const staleKeys: string[] = []
   const result = await transactionResult<{ approvalId: string }, ApproveError>(db, async (tx) => {
     const [version] = await tx
-      .select({ documentId: documentVersions.documentId, role: documentVersions.role })
+      .select({
+        documentId: documentVersions.documentId,
+        role: documentVersions.role,
+        redactionJobId: documentVersions.redactionJobId,
+      })
       .from(documentVersions)
       .where(eq(documentVersions.id, value.versionId))
     if (version === undefined) return err('not_found')
@@ -101,6 +127,9 @@ export async function approveRendition(
       .for('update')
     const allowedRoles = value.purpose === 'public' ? PUBLIC_ROLES : RELEASE_ROLES
     if (!allowedRoles.includes(version.role)) return err('wrong_role')
+    if (value.purpose === 'rtk_release' && !(await redactionCited(tx, version))) {
+      return err('redaction_not_cited')
+    }
     const [pending] = await tx
       .select({ id: preservationRecords.id })
       .from(preservationRecords)
@@ -170,6 +199,7 @@ export type RevokeError =
   | 'not_found'
   | 'reason_required'
   | 'already_revoked'
+  | 'released_offline'
 
 export async function revokeApproval(
   db: Db,
@@ -194,10 +224,19 @@ export async function revokeApproval(
     if (input.reason.trim().length < MIN_REASON) return err('reason_required')
     const supersededOnly = approval.revokedAt !== null && approval.revokeReason === 'superseded'
     if (approval.revokedAt !== null && !supersededOnly) return err('already_revoked')
+    if (approval.purpose === 'rtk_release' && (await releasedOffline(tx, approval.versionId))) {
+      return err('released_offline')
+    }
     const now = new Date()
+    const publicOnly = approval.purpose === 'public'
     const revoked = await revokeActive(
       tx,
-      eq(renditionApprovals.versionId, approval.versionId),
+      publicOnly
+        ? and(
+            eq(renditionApprovals.versionId, approval.versionId),
+            eq(renditionApprovals.purpose, 'public'),
+          )
+        : eq(renditionApprovals.versionId, approval.versionId),
       actor.userId,
       input.reason.trim(),
       now,
@@ -212,7 +251,12 @@ export async function revokeApproval(
       staleKeys.push(
         ...(await onApprovalRevoked(
           tx,
-          { approvalId: row.id, versionId: row.versionId, revokedAt: now, kind: 'revoked' },
+          {
+            approvalId: row.id,
+            versionId: row.versionId,
+            revokedAt: now,
+            kind: publicOnly ? 'public_revoked' : 'revoked',
+          },
           signal,
         )),
       )

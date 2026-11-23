@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, DbOrTx, Tx } from '@/db/client'
@@ -12,6 +11,7 @@ import { computeDue } from '@/features/clocks/computeDue'
 import { createClock, resolveClockLength } from '@/features/clocks/startClocks'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

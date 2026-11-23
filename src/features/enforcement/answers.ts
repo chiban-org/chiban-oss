@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
@@ -10,8 +9,9 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/service'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
+import { civilDateSchema } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
 export async function refreshAnswerDues(
@@ -33,7 +33,7 @@ export async function refreshAnswerDues(
     const due = computeSubjectDue(answerRule, served, {
       holidays: packHolidayCalendar(),
       packVersion: pack.version,
-      citations: PACK_COUNTING_CITATIONS,
+      citations: packCountingCitations(),
     })
     await tx
       .update(orderServiceRecipients)

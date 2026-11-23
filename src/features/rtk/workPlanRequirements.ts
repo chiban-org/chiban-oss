@@ -11,7 +11,9 @@ export function isPending(a: PlanApproval): boolean {
   return !a.revoked && a.releasedIn === null
 }
 
-function firstResponseDetail(request: RequestPlanInput['request']): string {
+export function firstResponseDetail(
+  request: Pick<RequestPlanInput['request'], 'timeliness'>,
+): string {
   const t = request.timeliness
   switch (t.kind) {
     case 'responded_late':
@@ -62,17 +64,19 @@ function denialGroup(request: RequestPlanInput['request']): RequirementGroup {
 
 function releaseGroup(input: RequestPlanInput): RequirementGroup {
   const pending = input.approvals.filter(isPending)
+  const standing = input.approvals.filter((a) => !a.revoked)
+  const allReleased = standing.length > 0 && standing.every((a) => a.releasedIn !== null)
   const items: RequirementRow[] = [
     {
       key: 'approved',
-      done: pending.length > 0,
+      done: pending.length > 0 || allReleased,
       label: 'Each version approved for this request',
       detail: 'Only a version approved for this request, or for the public, can be released.',
       anchor: 'do-this-now',
     },
     {
       key: 'cited',
-      done: pending.every((a) => !a.redacted || a.cited),
+      done: standing.length > 0 && standing.every((a) => !a.redacted || a.cited),
       label: 'Each redacted copy has its exemptions drawn',
       detail: 'A redacted copy is released only when each box carries its exemption.',
       anchor: 'do-this-now',

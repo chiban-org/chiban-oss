@@ -6,6 +6,7 @@ import { isSingletonKind } from '@/features/config/kinds'
 import { newItemKey } from '@/features/config/newItemKey'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
+import { retireTownRule } from '@/features/config/retireTownRule'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { skeletonBodyFor } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
@@ -81,6 +82,22 @@ export async function rollbackAction(formData: FormData): Promise<ActionResult> 
       ok: false,
       error: 'That version cannot be restored.',
       fieldErrors: fieldErrorsFor(result.error),
+    }
+  })
+}
+
+export async function retireTownRuleAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, DISCARD_FORM, async ({ db, actor, signal }, input) => {
+    if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
+    if (input.kind !== 'town_rule_setting') return { ok: false, error: errorCopy('forbidden') }
+    const retired = await retireTownRule(db, actor, input.key, signal)
+    if (retired.ok) return { ok: true, message: 'Chiban uses the starting value again.' }
+    return {
+      ok: false,
+      error:
+        retired.error === 'forbidden'
+          ? errorCopy('forbidden')
+          : 'The town has no value in use for this rule.',
     }
   })
 }

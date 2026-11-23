@@ -1,4 +1,3 @@
-import type { BoardKind } from '@packs/nh/boardSchema'
 import {
   type BoardSettingsBody,
   boardSettingsDefault,
@@ -14,6 +13,7 @@ import {
   publishedBody,
   publishOverlayBody,
 } from '@/features/demo/overlay/publishOverlay'
+import type { BoardKind } from '@/features/packs/schema'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import type { TownProfileBody } from '@/features/town/profileSchema'
 

@@ -8,7 +8,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
-import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
+import { requestsNoPermissionAction, requestsTitle } from '@/features/rtk/requestCopy'
 import { listRtkRequestPage, rtkRequestFacets } from '@/features/rtk/requestList'
 import { requestChipGroups } from '@/features/rtk/requestListChips'
 import {
@@ -17,7 +17,7 @@ import {
   REQUESTS_PATH,
   readRequestsView,
 } from '@/features/rtk/requestListParams'
-import { requestRowChipStatus } from '@/features/rtk/requestStatus'
+import { requestRowChipStatus, requestStatusLabel } from '@/features/rtk/requestStatus'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -25,7 +25,9 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { LogRequest } from './LogRequestForm'
 
-export const metadata: Metadata = { title: 'Right-to-Know requests' }
+export function generateMetadata(): Metadata {
+  return { title: requestsTitle() }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +41,7 @@ export default async function RightToKnowLogPage({
   const { params, sort, filters } = readRequestsView(await searchParams)
   const ctx = await requireStaffContext()
   if (!mayOpen(REQUESTS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    return <NoPermission title="Right-to-Know requests" action="see Right-to-Know requests" />
+    return <NoPermission title={requestsTitle()} action={requestsNoPermissionAction()} />
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const [list, facets] = await Promise.all([
@@ -58,7 +60,7 @@ export default async function RightToKnowLogPage({
   return (
     <main data-wide="">
       <ListHeader
-        title="Right-to-Know requests"
+        title={requestsTitle()}
         lead="Soonest next date first. Requests with no date running come last."
         actions={<LogRequest today={today} />}
       />
@@ -96,8 +98,9 @@ export default async function RightToKnowLogPage({
                       status={requestRowChipStatus(
                         row.status,
                         row.dueOn !== null && row.dueOn < today,
+                        row.firstResponseKind,
                       )}
-                      label={RTK_STATUS_LABELS[row.status]}
+                      label={requestStatusLabel(row)}
                     />
                   </td>
                   <td>

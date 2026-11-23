@@ -1,12 +1,37 @@
-import { doc, fields, heading, para, section } from '@/features/templates/doc/build'
+import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
+import { doc, fields, heading, para, section, signature } from '@/features/templates/doc/build'
 import type { DocumentKindDef } from '@/features/templates/kinds/kindTypes'
 
+export function rtkResponseWords(words: Pick<Vocabulary, 'recordsLaw' | 'recordsRequest'>): {
+  label: string
+  title: string
+  record: string
+} {
+  return {
+    label: `${words.recordsLaw} response`,
+    title: `Response to your ${words.recordsRequest}`,
+    record: words.recordsRequest,
+  }
+}
+
 export const RTK_RESPONSE_KIND: DocumentKindDef = {
-  label: 'Right-to-Know response',
-  title: 'Response to your Right-to-Know request',
-  record: 'Right-to-Know request',
+  get label() {
+    return rtkResponseWords(packVocabulary()).label
+  },
+  get title() {
+    return rtkResponseWords(packVocabulary()).title
+  },
+  get record() {
+    return rtkResponseWords(packVocabulary()).record
+  },
   scale: 'document',
-  fields: ['rtk.number', 'rtk.receivedOn', 'rtk.description'],
+  fields: [
+    'rtk.number',
+    'rtk.receivedOn',
+    'rtk.description',
+    'rtk.letterDate',
+    'rtk.requesterName',
+  ],
   sections: [
     { name: 'rtk.response', label: 'How the town is responding' },
     { name: 'rtk.timeStatements', label: 'Time the town needs' },
@@ -15,6 +40,10 @@ export const RTK_RESPONSE_KIND: DocumentKindDef = {
   ],
   locked: [],
   defaultDoc: doc(
+    fields([
+      ['Date', 'rtk.letterDate'],
+      ['To', 'rtk.requesterName'],
+    ]),
     fields([
       ['Request number', 'rtk.number'],
       ['Received', 'rtk.receivedOn'],
@@ -26,6 +55,7 @@ export const RTK_RESPONSE_KIND: DocumentKindDef = {
     section('rtk.released'),
     heading('Records withheld or redacted'),
     section('rtk.withheld'),
+    signature('town_clerk'),
   ),
 }
 

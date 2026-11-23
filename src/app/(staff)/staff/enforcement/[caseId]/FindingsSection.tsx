@@ -15,9 +15,11 @@ import {
   recordNoticeReceiptAction,
   sendNoticeAction,
 } from '../findingActions'
+import { CureSection } from './CureSection'
 import type { Can } from './can'
 import { FindingChoices } from './FindingChoices'
 import { FindingRow } from './FindingRow'
+import { RemedySection } from './RemedySection'
 import { Hidden, Section } from './Section'
 
 const METHODS = Object.entries(NOTICE_METHOD_LABELS) as [string, string][]
@@ -66,7 +68,10 @@ export function RecordFindingForm({ detail, variant }: { detail: CaseDetail; var
   return (
     <ActionForm action={recordFindingAction} submitLabel="Record finding" variant={variant}>
       <Hidden name="caseId" value={detail.staff.row.id} />
-      <ProvisionFields suggestions={detail.suggestions ?? null} />
+      <ProvisionFields
+        suggestions={detail.suggestions ?? null}
+        buildingCode={detail.buildingCodeOffered === true}
+      />
       <AreaField label="Facts" name="facts" rows={3} required />
       <TextField
         label="Inspection date"
@@ -103,9 +108,17 @@ export function ReceiptForm({
   )
 }
 
+const RECORD_NOTICE_NOTE = 'Chiban makes the notice PDF. Send it yourself, then record how it went.'
+
 export function SendNoticeForm({ detail, variant }: { detail: CaseDetail; variant: Variant }) {
+  const owner = detail.parcelOwner ?? null
   return (
-    <ActionForm action={sendNoticeAction} submitLabel="Send notice of violation" variant={variant}>
+    <ActionForm
+      action={sendNoticeAction}
+      submitLabel="Record notice of violation"
+      submitNote={RECORD_NOTICE_NOTE}
+      variant={variant}
+    >
       <Hidden name="caseId" value={detail.staff.row.id} />
       <FindingChoices
         legend="Findings to include"
@@ -113,6 +126,13 @@ export function SendNoticeForm({ detail, variant }: { detail: CaseDetail; varian
       />
       <TextField label="Date sent" name="sentOn" type="date" defaultValue={detail.today} required />
       <SelectField label="How it was sent" name="method" options={METHODS} />
+      <TextField label="Recipient name" name="recipientName" defaultValue={owner?.name ?? ''} />
+      <TextField
+        label="Recipient mailing address"
+        name="recipientAddress"
+        defaultValue={owner?.mailingAddress ?? ''}
+      />
+      <TextField label="Correct the violation by" name="correctBy" type="date" />
     </ActionForm>
   )
 }
@@ -189,12 +209,14 @@ export function FindingsSection({
           />
         ))}
       </ul>
-      {can.manage && open.length > 0 && !hosted.has('send_notice') ? (
+      {can.manage && open.length > 0 && detail.cure.rule === null && !hosted.has('send_notice') ? (
         <details>
           <summary>Send a notice of violation</summary>
           <SendNoticeForm detail={detail} variant="outline" />
         </details>
       ) : null}
+      <CureSection detail={detail} can={can} hosted={hosted} />
+      <RemedySection detail={detail} can={can} hosted={hosted} />
     </Section>
   )
 }

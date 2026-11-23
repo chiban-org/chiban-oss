@@ -1,8 +1,10 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
 import type { Role } from '@/constants/roles'
 import type { EnforcementStatus, InspectionStatus } from '@/db/schema'
 import type { CoreState } from '@/features/applications/states'
+import { VALIDITY_LABELS, type VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { Status } from '@/features/design/tokens'
+import type { DecisionOutcome } from '@/features/packs/schema'
+import { rehearingWords } from '@/features/packs/vocabulary'
 
 export const OPEN_GROUPS = [
   'case',
@@ -79,19 +81,29 @@ export const APPROVING_OUTCOMES: readonly DecisionOutcome[] = [
   'approved_with_conditions',
 ]
 
-const OUTCOME_WORDS = new Map<DecisionOutcome, { label: string; chip: Status }>([
-  ['approved', { label: 'Approved', chip: 'passed' }],
-  ['approved_with_conditions', { label: 'Approved with conditions', chip: 'passed' }],
-  ['denied', { label: 'Denied', chip: 'failed' }],
-  ['rehearing_granted', { label: 'Rehearing granted', chip: 'neutral' }],
-  ['rehearing_denied', { label: 'Rehearing denied', chip: 'neutral' }],
+function outcomeWords(): Map<DecisionOutcome, { label: string; chip: Status }> {
+  return new Map([
+    ['approved', { label: 'Approved', chip: 'passed' }],
+    ['approved_with_conditions', { label: 'Approved with conditions', chip: 'passed' }],
+    ['denied', { label: 'Denied', chip: 'failed' }],
+    ['rehearing_granted', { label: `${rehearingWords().capitalised} granted`, chip: 'neutral' }],
+    ['rehearing_denied', { label: `${rehearingWords().capitalised} denied`, chip: 'neutral' }],
+  ])
+}
+
+const VALIDITY_WORDS = new Map<VarianceValidity, { label: string; chip: Status }>([
+  ['pending_recording', { label: VALIDITY_LABELS.pending_recording, chip: 'neutral' }],
+  ['void', { label: VALIDITY_LABELS.void, chip: 'failed' }],
 ])
 
 export function decisionOutcome(
   outcome: DecisionOutcome,
   boardKind: string | null,
+  validity: VarianceValidity = 'not_required',
 ): { label: string; chip: Status } {
-  const words = OUTCOME_WORDS.get(outcome) ?? { label: 'Decided', chip: 'neutral' }
+  const unrecorded = VALIDITY_WORDS.get(validity)
+  if (unrecorded !== undefined && APPROVING_OUTCOMES.includes(outcome)) return unrecorded
+  const words = outcomeWords().get(outcome) ?? { label: 'Decided', chip: 'neutral' }
   if (boardKind !== 'zba' || !APPROVING_OUTCOMES.includes(outcome)) return words
   return { ...words, label: words.label.replace('Approved', 'Granted') }
 }

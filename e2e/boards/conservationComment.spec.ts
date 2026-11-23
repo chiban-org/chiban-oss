@@ -67,7 +67,7 @@ test.describe
         await comments.getByLabel(/^Comment/).fill(comment)
         await submit.click()
         await expect(comments.getByRole('status')).toHaveText(
-          'Comment posted. The land use office can read it now.',
+          'Comment posted. The Land Use Office can read it now.',
         )
         await page.reload()
         await expect(page.getByRole('region', { name: 'Comments' })).toContainText(comment)

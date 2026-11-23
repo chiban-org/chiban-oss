@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { configVersions } from '@/db/schema'
+import { packHasPlumbingScope } from '@/features/authz/classificationScope'
 import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -36,7 +37,10 @@ describe('seedTownProfile', () => {
     )
     expect(frame.officeName).toBe('Alder Pond Zoning Board of Adjustment')
     expect(frame.logo).not.toBeNull()
-    expect(frame.signers.map((s) => s.role).sort()).toEqual([...SIGNER_ROLES].sort())
+    const expectedRoles = SIGNER_ROLES.filter(
+      (r) => r !== 'plumbing_inspector' || packHasPlumbingScope(),
+    )
+    expect(frame.signers.map((s) => s.role).sort()).toEqual([...expectedRoles].sort())
     expect(frame.signers.find((s) => s.role === 'building_official')?.signature).not.toBeNull()
   })
 

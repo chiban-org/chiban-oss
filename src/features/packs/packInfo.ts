@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
+import { activePack } from '@/features/packs/registry'
 
 export interface PackInfo {
   id: string
@@ -19,9 +19,10 @@ export function canonicalJson(value: unknown): string {
 }
 
 export function packInfo(): PackInfo {
+  const manifest = activePack().manifest
   return {
-    id: NH_PACK_MANIFEST.id,
-    version: NH_PACK_MANIFEST.version,
-    hash: createHash('sha256').update(canonicalJson(NH_PACK_MANIFEST)).digest('hex'),
+    id: manifest.id,
+    version: manifest.version,
+    hash: createHash('sha256').update(canonicalJson(manifest)).digest('hex'),
   }
 }

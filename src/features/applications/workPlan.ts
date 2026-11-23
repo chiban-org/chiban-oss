@@ -1,3 +1,6 @@
+import { completenessCopy, offersCompleteness } from '@/features/applications/completenessStep'
+import { HELD_ISSUE_COPY } from '@/features/enforcement/holdCopy'
+import { loadPack } from '@/features/packs/loadPack'
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
 import { type NextStepPlan, planNextStep } from './nextStep'
@@ -12,6 +15,7 @@ import {
   type PlanAction,
   type PlanActionKind,
   type PlanBoard,
+  type PlanWarning,
   type Requirement,
   type RequirementGroup,
   type WorkPlan,
@@ -22,6 +26,7 @@ import { workSentence } from './workSentence'
 export type PlanView = Pick<
   StaffApplicationView,
   | 'state'
+  | 'isBuildingPermit'
   | 'classification'
   | 'completedDate'
   | 'nextTransitions'
@@ -31,6 +36,7 @@ export type PlanView = Pick<
   | 'allowsDirectIssue'
   | 'clocks'
   | 'regionalImpact'
+  | 'heldParcel'
 >
 
 export interface WorkPlanExtras {
@@ -39,6 +45,7 @@ export interface WorkPlanExtras {
   responsible: string | null
   inspection?: InspectionStep | null
   closure?: ClosureFacts
+  lateAppeal?: string | null
 }
 
 const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
@@ -50,8 +57,25 @@ const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
   ['withdrawn', 'Withdraw the application'],
 ])
 
-export function moveTask(to: CoreState): string {
-  return MOVE_TASKS.get(to) ?? to
+const STAFF_MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
+  ['decided', 'Approve the application'],
+])
+
+const BOARD_MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
+  ['issued', 'Mark the approval in effect'],
+])
+
+export function moveTask(to: CoreState, board: boolean): string {
+  const own = (board ? BOARD_MOVE_TASKS : STAFF_MOVE_TASKS).get(to)
+  return own ?? MOVE_TASKS.get(to) ?? to
+}
+
+export function hasBoardClassification(classification: string | null | undefined): boolean {
+  return loadPack().classifications.find((c) => c.key === classification)?.boardKind != null
+}
+
+function isBoardPlan(view: PlanView, board: PlanBoard | null): boolean {
+  return board !== null || hasBoardClassification(view.classification)
 }
 
 function groupTitle(to: CoreState, board: boolean): string {
@@ -64,13 +88,13 @@ function groupTitle(to: CoreState, board: boolean): string {
 const COMPLETENESS_STATES: readonly CoreState[] = ['submitted', 'under_review']
 
 function completenessRow(view: PlanView, extras: WorkPlanExtras): Requirement | null {
-  if (view.classification !== 'nh.building_permit' || view.completedDate !== null) return null
+  if (!offersCompleteness(view) || view.completedDate !== null) return null
   if (!COMPLETENESS_STATES.includes(view.state)) return null
   return {
     key: 'completeness',
     label: 'Marked complete',
     done: false,
-    detail: 'The decision clock starts when the application is marked complete.',
+    detail: completenessCopy(view).detail,
     task: 'Mark the application complete',
     actor: 'town',
     anchor: 'completeness',
@@ -101,6 +125,7 @@ function groupRows(view: PlanView, board: PlanBoard | null, to: CoreState, extra
   const rows = results.map((gate) => gateRow(gate, facts))
   if (board === null || view.state !== 'submitted' || to !== 'under_review') return rows
   const unmet = rows.some((r) => !r.done)
+  if (board.boardKind === 'zba') return [...rows, boardMeetingRow(board, extras.abilities)]
   return [
     boardMeetingRow(board, extras.abilities),
     ...rows,
@@ -141,19 +166,28 @@ function stepFrom(row: Requirement, secondary: PlanAction[]): NowStep {
   }
 }
 
-function moveStep(moves: NextStepPlan, secondary: PlanAction[]): NowStep | null {
+function moveStep(
+  moves: NextStepPlan,
+  secondary: PlanAction[],
+  facts: { held: boolean; board: boolean },
+): NowStep | null {
   if (moves.lead === null) return null
   const { to } = moves.lead
+  const { held } = facts
   const step = {
     key: `move:${to}`,
-    task: moveTask(to),
+    task: moveTask(to, facts.board),
     actor: 'town' as const,
     secondary,
     warnings: [],
   }
   return moves.leadAllowed
     ? { ...step, note: null, action: { kind: 'move', to } }
-    : { ...step, note: 'Your role cannot make this move.', action: null }
+    : {
+        ...step,
+        note: held && to === 'issued' ? null : 'Your role cannot make this move.',
+        action: null,
+      }
 }
 
 function nowStep(
@@ -178,7 +212,10 @@ function nowStep(
       warnings: [],
     }
   }
-  return moveStep(moves, secondary)
+  return moveStep(moves, secondary, {
+    held: view.heldParcel === true,
+    board: isBoardPlan(view, board),
+  })
 }
 
 function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | null {
@@ -193,6 +230,17 @@ function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | n
     secondary: now.secondary,
     warnings: now.warnings,
   }
+}
+
+function missingBoardWarning(board: PlanBoard | null): PlanWarning | null {
+  return board?.missingBoard == null ? null : { key: 'board.missing', text: board.missingBoard }
+}
+
+function withWarnings(plan: WorkPlan, warnings: (PlanWarning | null)[]): WorkPlan {
+  return warnings.reduce<WorkPlan>(
+    (acc, warning) => (warning === null ? acc : addWarning(acc, warning)),
+    plan,
+  )
 }
 
 export function planWork(
@@ -224,11 +272,10 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
-  const withConflict =
-    conflict === null
-      ? plan
-      : addWarning(plan, { key: 'board.meeting.deadline', text: conflict.warning })
-  return board?.missingBoard == null
-    ? withConflict
-    : addWarning(withConflict, { key: 'board.missing', text: board.missingBoard })
+  return withWarnings(plan, [
+    extras.lateAppeal == null ? null : { key: 'appeal.late', text: extras.lateAppeal },
+    view.heldParcel === true ? { key: 'parcel.held', text: HELD_ISSUE_COPY } : null,
+    conflict === null ? null : { key: 'board.meeting.deadline', text: conflict.warning },
+    missingBoardWarning(board),
+  ])
 }

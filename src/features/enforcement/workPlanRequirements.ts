@@ -1,13 +1,16 @@
-import type { RecipientRole } from '@packs/nh/schema'
 import { MOTION_BLOCK_TEXT } from '@/features/enforcement/labels'
+import type { RecipientRole } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'
+import { orderAvailableForFindings } from './orderAvailability'
 import { rolesToServe } from './serviceStatus'
+import { cureNoticeSent, cureReceiptRecorded } from './workPlanCure'
 import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  courtWithoutOrder,
   filingLead,
   gateBlocks,
   liveOrder,
@@ -41,21 +44,37 @@ const findingRow = (input: CasePlanInput) =>
     input.findings.some((f) => f.status !== 'withdrawn'),
   )
 
+const CURE_RECEIPT_DETAIL = 'Not required to refer. A refused certified letter never comes back.'
+
+function noticeRows(input: CasePlanInput, receivedDetail: string): CaseRequirement[] {
+  const notice = noticeOfViolationSent(input.notices) || cureNoticeSent(input)
+  const received = input.notices.some((n) => n.receivedOn !== null) || cureReceiptRecorded(input)
+  if (input.cure?.rule != null) {
+    return [
+      findingRow(input),
+      row('notice.sent', 'Cure notice mailed', notice),
+      row('notice.received', 'Return receipt recorded', received, CURE_RECEIPT_DETAIL),
+    ]
+  }
+  return [
+    findingRow(input),
+    row('notice.sent', 'Notice of violation sent', notice),
+    row('notice.received', 'Receipt of the notice recorded', received, receivedDetail),
+  ]
+}
+
+function violationGroup(input: CasePlanInput): CaseRequirementGroup {
+  if (orderAvailableForFindings(input.findings)) return orderGroup(input)
+  return { key: 'notice', title: 'Before the case goes to counsel', rows: noticeRows(input, '') }
+}
+
 function orderGroup(input: CasePlanInput): CaseRequirementGroup {
-  const notice = noticeOfViolationSent(input.notices)
   const drafted = input.orders.some((o) => o.row.status !== 'withdrawn')
   return {
     key: 'order',
     title: 'Before the order is issued',
     rows: [
-      findingRow(input),
-      row('notice.sent', 'Notice of violation sent', notice),
-      row(
-        'notice.received',
-        'Receipt of the notice recorded',
-        input.notices.some((n) => n.receivedOn !== null),
-        'Penalty accrual starts when written notice is received.',
-      ),
+      ...noticeRows(input, 'Penalty accrual starts when written notice is received.'),
       row('order.drafted', 'Order drafted', drafted),
       row(
         'order.issued',
@@ -162,6 +181,7 @@ function counselGroup(input: CasePlanInput): CaseRequirementGroup {
 }
 
 function courtGroups(input: CasePlanInput): CaseRequirementGroup[] {
+  if (courtWithoutOrder(input)) return [counselGroup(input)]
   const order = liveOrder(input)
   if (order === null) return []
   if (stepOf(order, 'motion_to_enforce') !== null) return [resolveGroup(input, order)]
@@ -176,7 +196,7 @@ export function requirementGroups(input: CasePlanInput): CaseRequirementGroup[] 
     case 'investigating':
       return [{ key: 'finding', title: 'Before a violation is found', rows: [findingRow(input)] }]
     case 'violation_found':
-      return [orderGroup(input)]
+      return [violationGroup(input)]
     case 'order_issued':
     case 'in_court':
       return courtGroups(input)

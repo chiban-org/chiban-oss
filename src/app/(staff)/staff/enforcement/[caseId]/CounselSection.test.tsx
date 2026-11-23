@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
@@ -72,5 +72,25 @@ describe('recording a counsel outcome', () => {
     openSection('Record an outcome')
     fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Document')), message)
+  })
+})
+
+describe('counsel on a closed case', () => {
+  it('lists the referral and offers no refer or outcome controls', () => {
+    const closed = stubDetail({
+      staff: { ...detail.staff, row: { ...detail.staff.row, status: 'closed' } },
+      referrals: detail.referrals,
+    })
+    renderForm(<CounselSection detail={closed} can={ALL_CAN} />)
+    expect(screen.getByText(/Referred to FS-C Counsel Esq/)).toBeTruthy()
+    expect(screen.queryByText('Refer to counsel')).toBeNull()
+    expect(screen.queryByText('Record an outcome')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Record outcome' })).toBeNull()
+  })
+
+  it('offers both controls while the case is open', () => {
+    renderForm(<CounselSection detail={detail} can={ALL_CAN} />)
+    expect(screen.getAllByText('Refer to counsel').length).toBeGreaterThan(0)
+    expect(screen.getByText('Record an outcome')).toBeTruthy()
   })
 })

@@ -1,19 +1,26 @@
 'use server'
 
 import { addAppealNode } from '@/features/appeals/graph'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
+import { recordDecisionDelivery } from '@/features/decisions/delivery'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { recordDecision } from '@/features/decisions/recordDecision'
+import { recordDecisionRecording, recordFinalWrittenApproval } from '@/features/decisions/recording'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
-import { runStaffForm } from '@/server/formInput'
+import { refuseField, runStaffForm } from '@/server/formInput'
 import { errorOrField } from '../formFields'
 import {
   ADD_APPEAL_NODE_FORM,
   DECISION_ONLY_FORM,
   FILE_DECISION_FORM,
   RECORD_DECISION_FORM,
+  RECORD_DECISION_NO_HEARING_FORM,
+  RECORD_DELIVERY_FORM,
+  RECORD_FINAL_APPROVAL_FORM,
+  RECORD_REGISTRY_FORM,
 } from './forms'
 
 export async function recordDecisionAction(formData: FormData): Promise<ActionResult> {
@@ -30,6 +37,36 @@ export async function recordDecisionAction(formData: FormData): Promise<ActionRe
       )
       return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
         future_date: 'votedOn',
+        already_final: 'finalMunicipalApproval',
+      })
+    },
+  )
+}
+
+export async function recordDecisionWithoutHearingAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    RECORD_DECISION_NO_HEARING_FORM,
+    async ({ db, actor, signal }, input) => {
+      const { reasons, ...rest } = input
+      const recorded = await recordDecision(
+        db,
+        actor,
+        { ...rest, hearingId: null, reasonsForDisapproval: reasons ?? '' },
+        signal,
+      )
+      if (!recorded.ok && typeof recorded.error === 'object' && 'meetingBefore' in recorded.error) {
+        return refuseField('meetingId', boardErrorCopy(recorded.error.meetingBefore))
+      }
+      return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
+        future_date: 'votedOn',
+        before_meeting: 'votedOn',
+        before_receipt: 'votedOn',
+        before_acceptance: 'votedOn',
+        not_found: 'meetingId',
+        already_final: 'finalMunicipalApproval',
       })
     },
   )
@@ -77,6 +114,40 @@ export async function transmittalAction(formData: FormData): Promise<ActionResul
   })
 }
 
+export async function recordDeliveryAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, RECORD_DELIVERY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await recordDecisionDelivery(db, actor, input, signal), 'Delivery recorded.', {
+      future_date: 'deliveredOn',
+      before_vote: 'deliveredOn',
+      method_not_allowed: 'method',
+    }),
+  )
+}
+
+export async function recordFinalApprovalAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    RECORD_FINAL_APPROVAL_FORM,
+    async ({ db, actor, signal }, input) =>
+      errorOrField(
+        await recordFinalWrittenApproval(db, actor, input, signal),
+        'Final written approval recorded. The recording period has started.',
+        { future_date: 'approvedOn', before_vote: 'approvedOn' },
+      ),
+  )
+}
+
+export async function recordRegistryAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, RECORD_REGISTRY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await recordDecisionRecording(db, actor, input, signal), 'Recording saved.', {
+      future_date: 'recordedOn',
+      before_approval: 'recordedOn',
+      after_period: 'recordedOn',
+      document_not_found: 'certificateDocumentId',
+    }),
+  )
+}
+
 export async function addAppealNodeAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(
     formData,
@@ -99,6 +170,10 @@ export async function addAppealNodeAction(formData: FormData): Promise<ActionRes
         before_parent: 'occurredOn',
         duplicate_step: 'kind',
         route_not_allowed: 'kind',
+        not_final: 'kind',
+        before_reinstatement: 'occurredOn',
+        filed_during_hold: 'occurredOn',
+        already_final: 'finalMunicipalApproval',
         wrong_outcome: 'outcome',
       })
     },

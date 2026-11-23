@@ -1,4 +1,4 @@
-import type { RecordRule } from '@packs/nh/schema'
+import type { RecordRule } from '@/features/packs/schema'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 

@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
+
+import { ME_PACK } from '@packs/me'
+import { NH_PACK } from '@packs/nh'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setActivePackForTest } from '@/features/packs/registry'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
@@ -10,6 +14,7 @@ import {
   renderForm,
   stubDetail,
 } from '@/test/enforcementRender'
+import { XX_PACK } from '@/test/packs/xx'
 
 vi.mock('../appealActions', () => ({
   appealAction: vi.fn(),
@@ -28,7 +33,10 @@ const {
   restrainingOrderAction,
 } = await import('../appealActions')
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  setActivePackForTest(null)
+})
 
 const detail = stubDetail({
   orders: [{ row: { id: 'o1', number: 'CD-2027-0001', status: 'issued' } }],
@@ -112,5 +120,78 @@ describe('marking a restraining order dissolved', () => {
     renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
     fireEvent.click(screen.getByRole('button', { name: 'Mark dissolved' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Date dissolved')), message)
+  })
+})
+
+describe('the appeals heading', () => {
+  it('names the New Hampshire board as before', () => {
+    setActivePackForTest(NH_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(
+      screen.getByRole('heading', { name: 'Appeals to the zoning board of adjustment' }),
+    ).toBeTruthy()
+  })
+
+  it('names the Maine Board of Appeals', () => {
+    setActivePackForTest(ME_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(screen.getByRole('heading', { name: 'Appeals to the board of appeals' })).toBeTruthy()
+    expect(screen.queryByText(/zoning board/i)).toBeNull()
+  })
+})
+
+describe('the stay controls on an appeal', () => {
+  const summaries = () =>
+    screen.queryAllByText(/./, { selector: 'summary' }).map((s) => s.textContent)
+
+  it('offers peril and restraining order controls where an appeal stays enforcement', () => {
+    setActivePackForTest(NH_PACK)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(summaries()).toEqual(
+      expect.arrayContaining(['Certify imminent peril', 'Record a restraining order']),
+    )
+  })
+
+  it.each([
+    ['Maine', ME_PACK],
+    ['a pack with no stay rule', XX_PACK],
+  ])('offers neither under %s', (_name, pack) => {
+    setActivePackForTest(pack)
+    renderForm(<AppealsSection detail={detail} can={ALL_CAN} />)
+    expect(summaries()).not.toContain('Certify imminent peril')
+    expect(summaries()).not.toContain('Record a restraining order')
+    expect(screen.getByRole('button', { name: 'Record decision' })).toBeTruthy()
+  })
+})
+
+describe('the notice of violation as an appeal target', () => {
+  it.each([
+    ['in_hand', 'Notice of violation handed to the recipient on July 3, 2027, Section 4.2'],
+    [
+      'first_class_mail',
+      'Notice of violation sent by first class mail on July 3, 2027, Section 4.2',
+    ],
+    ['certified_mail', 'Notice of violation sent by certified mail on July 3, 2027, Section 4.2'],
+    ['posting', 'Notice of violation posted on the property on July 3, 2027, Section 4.2'],
+    ['email', 'Notice of violation sent by email on July 3, 2027, Section 4.2'],
+  ])('names how a notice sent by %s went out, its date and provisions', (method, label) => {
+    const withNotice = stubDetail({
+      findings: [{ id: 'f1', provisionKind: 'zoning_ordinance', provisionRef: 'Section 4.2' }],
+      notices: [{ id: 'n1', findingIds: ['f1'], method, sentOn: '2027-07-03' }],
+    })
+    renderForm(<AppealsSection detail={withNotice} can={ALL_CAN} />)
+    openSection('Record an appeal')
+    expect(screen.getByRole('option', { name: /^Notice of violation/ }).textContent).toBe(label)
+  })
+
+  it('leaves off the provisions when the notice names none', () => {
+    const bare = stubDetail({
+      notices: [{ id: 'n1', findingIds: [], method: 'email', sentOn: '2027-07-03' }],
+    })
+    renderForm(<AppealsSection detail={bare} can={ALL_CAN} />)
+    openSection('Record an appeal')
+    expect(screen.getByRole('option', { name: /^Notice of violation/ }).textContent).toBe(
+      'Notice of violation sent by email on July 3, 2027',
+    )
   })
 })

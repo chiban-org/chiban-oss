@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { parseEnv } from 'node:util'
+import { e2eDatabaseName } from './databaseName'
 
 const DEFAULT_PORT = '4730'
 const DEFAULT_MAILPIT_PORT = '8025'
@@ -32,7 +33,7 @@ const dotEnv = readDotEnv()
 
 export const E2E_PORT = portFrom('E2E_PORT', process.env.E2E_PORT, DEFAULT_PORT)
 export const E2E_BASE_URL = `http://localhost:${E2E_PORT}`
-export const E2E_DATABASE_NAME = `chiban_e2e_${E2E_PORT}`
+export const E2E_DATABASE_NAME = e2eDatabaseName(E2E_PORT, process.env.CHIBAN_PACK)
 export const E2E_DATABASE_URL = databaseUrlFor(dotEnv.DATABASE_URL, E2E_DATABASE_NAME)
 export const E2E_MAINTENANCE_DATABASE_URL = databaseUrlFor(dotEnv.DATABASE_URL, 'postgres')
 export const E2E_S3_BUCKET = `chiban-e2e-${E2E_PORT}`

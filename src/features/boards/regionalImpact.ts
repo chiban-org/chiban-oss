@@ -14,14 +14,15 @@ import {
   recordRegionalImpactDetermination,
 } from '@/features/building/regionalImpact'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { createClock } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export const REGIONAL_IMPACT_DETERMINED = 'regional_impact_determined'
-const DECISION_KEY = 'nh.pb.decision'
 
 export type BoardRegionalImpactError =
   | 'forbidden'
@@ -39,14 +40,14 @@ async function recomputeDecisionClock(tx: Tx, applicationId: string, signal: Abo
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, DECISION_KEY),
+        clockRuleIs(packRoles().rules.planningBoardDecision),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )
   if (running === undefined) return
   const app = await loadApplicationContext(tx, applicationId, signal)
   if (app === null) return
-  const rule = ruleByKey(loadPack(), DECISION_KEY, running.ruleVersion)
+  const rule = ruleByKey(loadPack(), running.ruleKey, running.ruleVersion)
   if (rule.kind !== 'clock') return
   const facts = await factsWithDeterminations(tx, applicationId, app.facts)
   const freshId = await createClock(

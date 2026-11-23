@@ -1,4 +1,4 @@
-import type { RecordSeries } from '@packs/nh/schema'
+import type { RecordSeries } from '@/features/packs/schema'
 
 const UNSCHEDULED = 'nh.rs.unscheduled_permanent'
 const STATUTE_URL = 'https://gc.nh.gov/rsa/html/III/33-A/33-A-3-a.htm'

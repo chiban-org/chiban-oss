@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ACTIVITY_PHRASES, activityPhrase } from '@/features/applications/activityPhrase'
+import { registerGate } from '@/features/gates/registry'
 
 const RAW_KEY = /[a-z]+[._][a-z_]+/
 
@@ -10,6 +11,12 @@ describe('activity phrases', () => {
     )
     expect(activityPhrase('application.transition', { state: 'mystery' })).toBe(
       'Moved the application to a new status',
+    )
+  })
+
+  it('names an incomplete application notice', () => {
+    expect(activityPhrase('application.incomplete_notice', null)).toBe(
+      'Sent an incomplete application notice',
     )
   })
 
@@ -59,5 +66,28 @@ describe('activity phrases', () => {
       expect(phrase).not.toMatch(RAW_KEY)
       expect(phrase).not.toMatch(/\.$/)
     }
+  })
+})
+
+describe('the gate override phrase', () => {
+  it('names the gate and the reason', () => {
+    registerGate({
+      key: 'fernhollow.test_gate',
+      label: 'Fernhollow test gate',
+      kind: 'administrative',
+      appliesTo: ['issued'],
+      boundBy: null,
+      evaluate: () => Promise.resolve({ status: 'pass' }),
+    })
+    expect(
+      activityPhrase('gate.override', {
+        gateKey: 'fernhollow.test_gate',
+        reason: 'Approval confirmed by phone.',
+      }),
+    ).toBe('Overrode a gate: Fernhollow test gate. Reason: Approval confirmed by phone.')
+    expect(activityPhrase('gate.override', { gateKey: 'unknown.gate', reason: 'Seen.' })).toBe(
+      'Overrode a gate. Reason: Seen.',
+    )
+    expect(activityPhrase('gate.override', null)).toBe('Overrode a gate')
   })
 })

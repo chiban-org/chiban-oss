@@ -5,6 +5,7 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { SeePublicLink } from '@/components/SeePublicLink'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssignment'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { type CaseView, caseViewFor } from '@/features/enforcement/caseView'
@@ -103,6 +104,11 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
         suggestions: await loadFindingSuggestions(
           ctx.db,
           { parcelId: loaded.value.staff.row.parcelId, today },
+          ctx.signal,
+        ),
+        buildingCodeOffered: await buildingCodeOpenFor(
+          ctx.db,
+          loaded.value.staff.row.createdAt,
           ctx.signal,
         ),
         attachable: await attachableComplaints(ctx.db, {

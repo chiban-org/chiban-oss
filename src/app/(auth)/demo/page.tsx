@@ -6,7 +6,7 @@ import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
 import { isDemoMode } from '@/features/demo/demoMode'
-import { DEMO_PERSONAS } from '@/features/demo/personas'
+import { demoPersonas } from '@/features/demo/personas'
 import { demoSignInAction } from './actions'
 
 export const metadata: Metadata = { title: 'Try the demo' }
@@ -20,6 +20,7 @@ export default async function DemoPage({
 }) {
   if (!isDemoMode()) notFound()
   const { busy } = await searchParams
+  const offered = demoPersonas()
   const found = await db
     .select({ email: users.email, name: users.displayName })
     .from(users)
@@ -27,13 +28,13 @@ export default async function DemoPage({
       and(
         inArray(
           users.email,
-          DEMO_PERSONAS.map((p) => p.email),
+          offered.map((p) => p.email),
         ),
         eq(users.isActive, true),
       ),
     )
   const names = new Map(found.map((u) => [u.email, u.name]))
-  const personas = DEMO_PERSONAS.filter((p) => names.has(p.email))
+  const personas = offered.filter((p) => names.has(p.email))
   return (
     <main className="mx-auto max-w-2xl p-6">
       <h1>Try the demo</h1>

@@ -27,6 +27,8 @@ function view(amendments: unknown[] = []): StaffApplicationView {
     id: 'app-1',
     state: 'submitted',
     classification: 'nh.building_permit',
+    isBuildingPermit: true,
+    codeEditionApplies: true,
     permissions: { canIssue: true },
     codeEdition: {
       record: {},

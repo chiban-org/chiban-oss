@@ -1,10 +1,10 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import { PackManifestSchema, PackRuleSchema } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
+import { PackManifestSchema, PackRuleSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate

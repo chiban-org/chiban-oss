@@ -50,7 +50,7 @@ export async function loadCorrectionForm(
 ): Promise<CorrectionFormData | null> {
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null || !isCorrectablePermit(app)) return null
-  if (!(await mayCorrectPermits(db, actor, signal))) return null
+  if (!(await mayCorrectPermits(db, actor, applicationId, signal))) return null
   const form = (await getVersion(db, app.pins.form, signal))?.body as FormBody
   const [project] = await db.select().from(projects).where(eq(projects.id, app.projectId))
   const parties = await activeParties(db, app.projectId)

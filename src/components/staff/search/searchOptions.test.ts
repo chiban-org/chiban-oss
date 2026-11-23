@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { packVocabulary } from '@/features/packs/vocabulary'
 import type { SearchGroup, SearchResult } from '@/features/search/searchTypes'
 import { searchOptions, sectionsOf } from './searchOptions'
 
@@ -40,7 +41,7 @@ function result(patch: Partial<SearchResult>): SearchResult {
 
 describe('searchOptions', () => {
   it('lists every row and the see-all link in group order', () => {
-    const { options, exactIndex } = searchOptions(result({}))
+    const { options, exactIndex } = searchOptions(result({}), packVocabulary())
     expect(options.map((o) => o.title)).toEqual([
       'PL-2026-0005',
       'See all application matches',
@@ -56,7 +57,7 @@ describe('searchOptions', () => {
       href: '/staff/applications/a1',
       newTab: false,
     }
-    const { options, exactIndex } = searchOptions(result({ exact }))
+    const { options, exactIndex } = searchOptions(result({ exact }), packVocabulary())
     expect(options).toHaveLength(3)
     expect(exactIndex).toBe(0)
   })
@@ -68,7 +69,7 @@ describe('searchOptions', () => {
       href: '/staff/receipts/r1',
       newTab: true,
     }
-    const { options, exactIndex } = searchOptions(result({ exact }))
+    const { options, exactIndex } = searchOptions(result({ exact }), packVocabulary())
     expect(exactIndex).toBe(0)
     expect(options[0]).toMatchObject({
       section: 'Exact number',
@@ -81,7 +82,7 @@ describe('searchOptions', () => {
 
 describe('sectionsOf', () => {
   it('groups options under their section with their flat index', () => {
-    const sections = sectionsOf(searchOptions(result({})).options)
+    const sections = sectionsOf(searchOptions(result({}), packVocabulary()).options)
     expect(sections.map((s) => [s.label, s.items.map((i) => i.index)])).toEqual([
       ['Applications', [0, 1]],
       ['Parcels', [2]],

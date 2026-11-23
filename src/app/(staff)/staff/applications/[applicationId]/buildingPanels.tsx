@@ -29,7 +29,7 @@ export function CodeEditionPanel({
   formElsewhere?: boolean
 }) {
   const edition = view.codeEdition
-  if (view.classification !== 'nh.building_permit') return null
+  if (!view.codeEditionApplies) return null
   return (
     <section aria-label="Code edition" id="code-edition">
       <h2>State building code edition</h2>

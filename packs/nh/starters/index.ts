@@ -16,10 +16,10 @@ import { SIGN_STARTER } from '@packs/nh/starters/sign'
 import { STREET_ADDRESS_STARTER } from '@packs/nh/starters/streetAddress'
 import { TEMPORARY_STRUCTURE_STARTER } from '@packs/nh/starters/temporaryStructure'
 import { TEMPORARY_USE_STARTER } from '@packs/nh/starters/temporaryUse'
-import type { StarterBundle } from '@packs/nh/starters/types'
 import { VOLUNTARY_MERGER_STARTER } from '@packs/nh/starters/voluntaryMerger'
+import type { StarterBundle } from '@/features/packs/schema'
 
-export type { StarterBundle } from '@packs/nh/starters/types'
+export type { StarterBundle } from '@/features/packs/schema'
 
 export const NH_STARTERS: StarterBundle[] = [
   BUILDING_DEMOLITION_STARTER,

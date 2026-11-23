@@ -1,86 +1,21 @@
-import type { MergeField } from '@/features/templates/mergeFields'
+import { packVocabulary } from '@/features/packs/vocabulary'
+import { MERGE_FIELDS, type MergeField } from '@/features/templates/mergeFields'
+import {
+  type MergeFieldWords,
+  mergeFieldLabelFor,
+  mergeFieldLabelsFor,
+} from '@/features/templates/mergeFieldWords'
 
-export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
-  'town.name': 'Town name',
-  'application.number': 'Application number',
-  'application.typeLabel': 'Application type',
-  'application.issuedOn': 'Date issued',
-  'application.expiresOn': 'Expiration date',
-  'parcel.displayId': 'Parcel ID',
-  'parcel.siteAddress': 'Parcel address',
-  'parcel.ownerName': 'Property owner',
-  'project.title': 'Project title',
-  'party.applicant.name': 'Applicant name',
-  'party.contractor.name': 'Contractor name',
-  'fees.totalFormatted': 'Total fees',
-  'conditions.list': 'Conditions of approval',
-  'codeEdition.label': 'Building code edition',
-  'board.name': 'Board name',
-  'board.short_name': 'Board short name',
-  'board.chair.name': 'Board chair name',
-  'meeting.date': 'Meeting date',
-  'meeting.location': 'Meeting location',
-  'meeting.time': 'Meeting time',
-  'hearing.kind': 'Kind of hearing',
-  'notice.recipientName': 'Notice recipient name',
-  'notice.recipientAddress': 'Notice recipient address',
-  'decision.outcome': 'Decision',
-  'decision.votedOn': 'Date of the vote',
-  'decision.findings': 'Findings',
-  'decision.conditions': 'Conditions of the decision',
-  'decision.reasons': 'Reasons for disapproval',
-  'decision.conditionsSection': 'Conditions paragraph, when there are conditions',
-  'decision.reasonsSection': 'Reasons paragraph, when the application was disapproved',
-  'decision.appealRights': 'Appeal rights',
-  'town.address': 'Office address',
-  'town.phone': 'Office phone',
-  'town.email': 'Office email',
-  'town.website': 'Town website',
-  'office.name': 'Office name',
-  'signer.building_official.name': 'Building official name',
-  'signer.building_official.title': 'Building official title',
-  'signer.land_use_administrator.name': 'Land use administrator name',
-  'signer.land_use_administrator.title': 'Land use administrator title',
-  'signer.planning_board_chair.name': 'Planning Board chair name',
-  'signer.planning_board_chair.title': 'Planning Board chair title',
-  'signer.zba_chair.name': 'Zoning Board of Adjustment chair name',
-  'signer.zba_chair.title': 'Zoning Board of Adjustment chair title',
-  'signer.code_enforcement_officer.name': 'Code enforcement officer name',
-  'signer.code_enforcement_officer.title': 'Code enforcement officer title',
-  'signer.town_clerk.name': 'Town clerk name',
-  'signer.town_clerk.title': 'Town clerk title',
-  'permit.contractorWithLicense': 'Contractor and license number',
-  'fees.status': 'Fees and what is still owed',
-  'certificate.number': 'Certificate number',
-  'certificate.issuedOn': 'Date the certificate was issued',
-  'certificate.finalInspection': 'Final inspection date and inspector',
-  'certificate.use': 'Use of the building',
-  'order.number': 'Order number',
-  'order.property': 'Property',
-  'order.issuedOn': 'Date the order was issued',
-  'order.authority': 'Legal authority for the order',
-  'order.correctiveAction': 'Corrective action required',
-  'order.correctiveDeadline': 'Corrective action due date',
-  'order.issuerName': 'Name of the officer issuing the order',
-  'order.issuerTitle': 'Title of the officer issuing the order',
-  'rtk.number': 'Request number',
-  'rtk.receivedOn': 'Date the request was received',
-  'rtk.description': 'What was requested',
-  'case.number': 'Case number',
-  'case.property': 'Property',
-  'case.status': 'Case status',
-  'case.openedOn': 'Date the case was opened',
-  'case.referredOn': 'Date the case was referred to counsel',
-  'receipt.number': 'Receipt number',
-  'receipt.date': 'Receipt date',
-  'receipt.payerName': 'Paid by',
-  'receipt.total': 'Total received',
-  'receipt.footer': 'Receipt footer from payment settings',
-  'packet.title': 'Packet title',
-}
+export const MERGE_FIELD_LABELS = Object.defineProperties(
+  {},
+  Object.fromEntries(
+    MERGE_FIELDS.map((name) => [
+      name,
+      { enumerable: true, get: () => mergeFieldLabelsFor(packVocabulary())[name] },
+    ]),
+  ),
+) as Record<MergeField, string>
 
-const LABELS: ReadonlyMap<string, string> = new Map(Object.entries(MERGE_FIELD_LABELS))
-
-export function mergeFieldLabel(name: string): string {
-  return LABELS.get(name) ?? name
+export function mergeFieldLabel(name: string, words: MergeFieldWords = packVocabulary()): string {
+  return mergeFieldLabelFor(name, words)
 }

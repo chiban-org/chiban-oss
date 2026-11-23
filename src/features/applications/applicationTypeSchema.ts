@@ -1,18 +1,27 @@
-import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import { CLASSIFICATION_KEYS } from '@packs/nh/schema'
 import { z } from 'zod'
-import { DocumentItemSchema, documentItemIssues } from '@/features/applications/documentItemSchema'
+import { documentItemIssues } from '@/features/applications/documentItemIssues'
+import { DocumentItemSchema } from '@/features/applications/documentItemSchema'
 import { CORE_STATES } from '@/features/applications/states'
+import { loadPack } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
+import { packRoles } from '@/features/packs/roles'
 
 const STEP_NAME_REQUIRED = 'Name every step.'
+
+export function isApplicationClassification(key: string): boolean {
+  return (
+    activePack().classificationKeys.includes(key) &&
+    !packRoles().classifications.enforcement.includes(key)
+  )
+}
 
 const ApplicationTypeBodyShape = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
   prefix: z.string().regex(/^[A-Z]{1,4}$/, 'Use one to four capital letters, such as BP.'),
   classification: z
-    .enum(CLASSIFICATION_KEYS)
-    .exclude(['nh.enforcement_zoning', 'nh.enforcement_building_code'])
+    .string()
+    .refine(isApplicationClassification, 'Choose a classification the state pack declares.')
     .optional(),
   formKey: z.string().min(1),
   feeScheduleKey: z.string().min(1),
@@ -24,6 +33,7 @@ const ApplicationTypeBodyShape = z.object({
   bindings: z.array(z.string().min(1)),
   workflow: z.object({
     allowsDirectIssue: z.boolean(),
+    reviewRequired: z.boolean().optional(),
     substeps: z.array(
       z.object({
         state: z.enum(CORE_STATES),
@@ -44,7 +54,7 @@ const ApplicationTypeBodyShape = z.object({
 })
 
 export function boardKindOf(classification: string | undefined): string | null {
-  return NH_CLASSIFICATIONS.find((c) => c.key === classification)?.boardKind ?? null
+  return loadPack().classifications.find((c) => c.key === classification)?.boardKind ?? null
 }
 
 export const ApplicationTypeBodySchema = ApplicationTypeBodyShape.superRefine((body, ctx) => {

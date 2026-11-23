@@ -2,6 +2,7 @@ import { getTableName } from 'drizzle-orm'
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import * as t from '@/db/schema'
+import { ENFORCEMENT_SPECS } from '@/features/export/enforcementSpecs'
 import { M10_SPECS } from '@/features/export/m10Specs'
 
 export interface ExportEntity {
@@ -37,27 +38,6 @@ export interface Spec {
   poly?: ExportEntity['polyRefs']
 }
 
-const ENFORCEMENT_SPECS: Spec[] = [
-  { table: t.enforcementCases },
-  { table: t.complaints },
-  { table: t.enforcementNotes },
-  { table: t.violationFindings },
-  { table: t.violationNotices },
-  { table: t.enforcementDesignations },
-  { table: t.enforcementOrders },
-  { table: t.orderServiceRecipients },
-  { table: t.orderServiceRoleChecks },
-  { table: t.orderServiceEvents },
-  { table: t.orderCourtSteps },
-  { table: t.enforcementAppeals },
-  { table: t.perilCertifications },
-  { table: t.restrainingOrders },
-  { table: t.counselReferrals },
-  { table: t.counselOutcomes },
-  { table: t.enforcementFines },
-  { table: t.anonymousIntakeVerifications },
-]
-
 const SPECS: Spec[] = [
   { table: t.abutterListCandidates },
   { table: t.abutterListRecipients },
@@ -75,6 +55,7 @@ const SPECS: Spec[] = [
   { table: t.applicationConditions },
   { table: t.applicationDocumentItems },
   { table: t.applicationDocumentLinks },
+  { table: t.applicationMunicipalities },
   { table: t.applicationProfessionals },
   { table: t.applicationNumberCounters },
   { table: t.applicationSnapshots },
@@ -101,6 +82,10 @@ const SPECS: Spec[] = [
   { table: t.clockAdjustments },
   { table: t.clocks },
   { table: t.completenessVotes },
+  { table: t.decisionDeliveries },
+  { table: t.decisionNotices },
+  { table: t.decisionRecordings },
+  { table: t.deemedRefusals },
   { table: t.codeEditionRecords },
   { table: t.configVersions },
   { table: t.contractorClaims, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
@@ -148,6 +133,7 @@ const SPECS: Spec[] = [
   { table: t.historicalRecords },
   { table: t.importExceptions },
   { table: t.importRuns },
+  { table: t.incompleteNotices },
   { table: t.inspectionItemResults },
   { table: t.inspections },
   { table: t.inspectorCalendars },
@@ -236,6 +222,7 @@ const SPECS: Spec[] = [
   { table: t.rosterReviews },
   { table: t.ruleTransitionsApplied },
   { table: t.selectmenCertifications },
+  { table: t.sourceWaterDeterminations },
   { table: t.townSettings, importMode: 'replace' },
   { table: t.townSections },
   { table: t.trcRoutings },

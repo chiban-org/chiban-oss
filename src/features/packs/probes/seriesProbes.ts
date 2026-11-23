@@ -1,7 +1,7 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { loadPack } from '@/features/packs/loadPack'
 import { type FieldProbe, probe } from '@/features/packs/probes/probe'
+import type { RecordSeries } from '@/features/packs/schema'
 import { seriesSummary } from '@/features/records/seriesSummary'
 import type { CivilDate } from '@/types/civilDate'
 

@@ -1,4 +1,3 @@
-import type { BoardKind } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
@@ -18,6 +17,7 @@ import { getBoardSettings } from '@/features/boards/boardSettings'
 import { getMeeting } from '@/features/boards/meetings'
 import { boardForKind } from '@/features/boards/townBoards'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
+import { applyHearingHeldBeforeAcceptance } from '@/features/clocks/heldHearingAtAcceptance'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import {
   createClock,
@@ -29,11 +29,11 @@ import { effectiveBindings } from '@/features/config/bindings'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import type { BoardKind } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export const COMPLETENESS_KEY = 'nh.pb.completeness'
 
 export type VoteError =
   | 'forbidden'
@@ -88,6 +88,48 @@ function voteErrorFrom(error: TransitionError): VoteError {
   return 'invalid_state'
 }
 
+export function incompleteVoteDenies(): boolean {
+  const key = packRoles().rules.filingLead
+  if (key === null) return false
+  const rule = loadPack().rules.find((r) => r.key === key)
+  return rule?.kind === 'clock' && rule.consequence.kind === 'not_accepted_at_meeting'
+}
+
+async function moveOnVote(
+  tx: Tx,
+  actor: Actor,
+  vote: {
+    app: NonNullable<Awaited<ReturnType<typeof loadApplicationContext>>>
+    outcome: 'accepted' | 'not_accepted'
+    votedOn: CivilDate
+  },
+  signal: AbortSignal,
+): Promise<Result<number, VoteError>> {
+  const { app } = vote
+  if (vote.outcome === 'not_accepted' && !incompleteVoteDenies()) return ok(app.rowVersion)
+  const moved = await transitionApplication(
+    tx,
+    actor,
+    vote.outcome === 'accepted'
+      ? {
+          applicationId: app.id,
+          to: 'under_review',
+          boardVote: true,
+          expectedRowVersion: app.rowVersion,
+          onDate: vote.votedOn,
+        }
+      : {
+          applicationId: app.id,
+          to: 'denied',
+          expectedRowVersion: app.rowVersion,
+          onDate: vote.votedOn,
+          closureReason: 'not_accepted_incomplete',
+        },
+    signal,
+  )
+  return moved.ok ? ok(moved.value.rowVersion) : err(voteErrorFrom(moved.error))
+}
+
 export async function recordCompletenessVote(
   db: Db,
   actor: Actor,
@@ -128,29 +170,16 @@ export async function recordCompletenessVote(
     )
     if (!checked.ok) return checked
     const meeting = checked.value
-    await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
-    if (boardKind === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
-    const moved = await transitionApplication(
+    const { rules } = packRoles()
+    await markClockMet(tx, app.id, rules.planningBoardCompleteness, input.votedOn, signal)
+    if (boardKind === 'zba') await markClockMet(tx, app.id, rules.zbaHearing, input.votedOn, signal)
+    const moved = await moveOnVote(
       tx,
       actor,
-      input.outcome === 'accepted'
-        ? {
-            applicationId: app.id,
-            to: 'under_review',
-            boardVote: true,
-            expectedRowVersion: app.rowVersion,
-            onDate: input.votedOn,
-          }
-        : {
-            applicationId: app.id,
-            to: 'denied',
-            expectedRowVersion: app.rowVersion,
-            onDate: input.votedOn,
-            closureReason: 'not_accepted_incomplete',
-          },
+      { app, outcome: input.outcome, votedOn: input.votedOn },
       signal,
     )
-    if (!moved.ok) return err(voteErrorFrom(moved.error))
+    if (!moved.ok) return moved
     await tx.insert(completenessVotes).values({
       applicationId: app.id,
       meetingId: meeting.id,
@@ -168,12 +197,13 @@ export async function recordCompletenessVote(
         const stepped = await setSubstep(
           tx,
           actor,
-          { applicationId: app.id, substep: 'hearing', expectedRowVersion: moved.value.rowVersion },
+          { applicationId: app.id, substep: 'hearing', expectedRowVersion: moved.value },
           signal,
         )
         if (!stepped.ok) return err('invalid_state')
       }
       await startClocksFor(tx, app.id, 'application_accepted', input.votedOn, signal)
+      await applyHearingHeldBeforeAcceptance(tx, app.id, signal)
     }
     await writeAudit(
       tx,

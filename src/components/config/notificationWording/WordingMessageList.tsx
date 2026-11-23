@@ -1,7 +1,7 @@
 'use client'
 
 import type { FieldErrors } from '@/components/config/primitives'
-import { isChanged } from '@/features/notifications/wording/wordingEdits'
+import { isChanged } from '@/features/notifications/wording/wordingChanges'
 import {
   WORDING_KEY_INFO,
   WORDING_KEYS,

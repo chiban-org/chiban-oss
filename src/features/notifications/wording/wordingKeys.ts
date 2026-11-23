@@ -7,6 +7,7 @@ export const WORDING_KEYS = [
   'application_issued',
   'application_denied',
   'inspection_scheduled',
+  'inspection_rescheduled',
   'inspection_cancelled',
   'inspection_result',
   'permit_corrected',
@@ -90,6 +91,12 @@ export const WORDING_KEY_INFO: Record<WordingKey, WordingKeyInfo> = {
     label: 'Inspection scheduled',
     audience: 'applicants',
     fields: [...APPLICATION, ...INSPECTION],
+    link: 'required',
+  },
+  inspection_rescheduled: {
+    label: 'Inspection moved',
+    audience: 'applicants',
+    fields: [...APPLICATION, ...INSPECTION, 'inspection.previousDate', 'inspection.previousTime'],
     link: 'required',
   },
   inspection_cancelled: {

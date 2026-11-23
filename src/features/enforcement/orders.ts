@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
@@ -7,8 +6,11 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
+import { orderRuleKeyForKind } from '@/features/enforcement/orderAvailability'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { civilDateSchema } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
 export {
@@ -25,12 +27,19 @@ const DraftSchema = z.object({
   ceaseImmediately: z.boolean(),
 })
 
-export type OrderRuleKey = 'nh.enf.cd_zoning' | 'nh.enf.cd_building'
+type OrderRuleKey =
+  | { kind: 'key'; key: string }
+  | { kind: 'split' }
+  | { kind: 'not_enforced' }
+  | { kind: 'not_available' }
 
-export function orderRuleKeyFor(kinds: readonly string[]): OrderRuleKey | 'split_required' {
+function orderRuleKeyFor(kinds: readonly string[], codeOpen: boolean): OrderRuleKey {
   const building = kinds.filter((k) => k === 'building_code').length
-  if (building === kinds.length) return 'nh.enf.cd_building'
-  return building === 0 ? 'nh.enf.cd_zoning' : 'split_required'
+  if (building > 0 && building === kinds.length && !codeOpen) return { kind: 'not_enforced' }
+  if (kinds.every((k) => orderRuleKeyForKind(k) === null)) return { kind: 'not_available' }
+  if (building > 0 && building < kinds.length) return { kind: 'split' }
+  const key = orderRuleKeyForKind(kinds[0])
+  return key === null ? { kind: 'not_available' } : { kind: 'key', key }
 }
 
 export async function draftOrder(
@@ -41,8 +50,14 @@ export async function draftOrder(
   now: Date = new Date(),
 ): Promise<
   Result<
-    { orderId: string; number: string; ruleKey: OrderRuleKey },
-    'forbidden' | 'invalid' | 'not_found' | 'findings_invalid' | 'split_required'
+    { orderId: string; number: string; ruleKey: string },
+    | 'forbidden'
+    | 'invalid'
+    | 'not_found'
+    | 'findings_invalid'
+    | 'split_required'
+    | 'building_code_not_enforced'
+    | 'order_not_available'
   >
 > {
   signal.throwIfAborted()
@@ -53,7 +68,7 @@ export async function draftOrder(
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
     const [caseRow] = await tx
-      .select({ id: enforcementCases.id })
+      .select({ id: enforcementCases.id, createdAt: enforcementCases.createdAt })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
       .for('update')
@@ -69,8 +84,14 @@ export async function draftOrder(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
-    const ruleKey = orderRuleKeyFor(findings.map((f) => f.provisionKind))
-    if (ruleKey === 'split_required') return err('split_required')
+    const resolved = orderRuleKeyFor(
+      findings.map((f) => f.provisionKind),
+      await buildingCodeOpenFor(tx, caseRow.createdAt, signal),
+    )
+    if (resolved.kind === 'split') return err('split_required')
+    if (resolved.kind === 'not_enforced') return err('building_code_not_enforced')
+    if (resolved.kind === 'not_available') return err('order_not_available')
+    const ruleKey = resolved.key
     const rule = ruleByKey(loadPack(), ruleKey)
     const { number } = await nextEnforcementNumber(tx, 'CD', now, signal)
     const [row] = await tx

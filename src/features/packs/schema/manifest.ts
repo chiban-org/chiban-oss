@@ -1,0 +1,228 @@
+import { z } from 'zod'
+import {
+  type AbutterParams,
+  AbutterParamsSchema,
+  type ProceedingClassification,
+  ProceedingClassificationSchema,
+} from './boards'
+import {
+  CeaseAndDesistRuleSchema,
+  CivilPenaltyRuleSchema,
+  CureNoticeRuleSchema,
+} from './enforcement'
+import {
+  type CodeEditionEntry,
+  CodeEditionEntrySchema,
+  type RecordSeries,
+  RecordSeriesSchema,
+} from './records'
+import { roleIssues } from './roleChecks'
+import { type PackRoles, PackRolesSchema } from './roles'
+import {
+  ClockRuleSchema,
+  DecisionDeliveryRuleSchema,
+  EffectRuleSchema,
+  GateRuleSchema,
+  ListAgeRuleSchema,
+  NoticeRequirementRuleSchema,
+  ProximityRuleSchema,
+  RecordRuleSchema,
+  TownSettingRuleSchema,
+} from './rules'
+
+export const PackRuleSchema = z
+  .union([
+    ClockRuleSchema,
+    GateRuleSchema,
+    ListAgeRuleSchema,
+    ProximityRuleSchema,
+    RecordRuleSchema,
+    EffectRuleSchema,
+    TownSettingRuleSchema,
+    NoticeRequirementRuleSchema,
+    DecisionDeliveryRuleSchema,
+    CeaseAndDesistRuleSchema,
+    CivilPenaltyRuleSchema,
+    CureNoticeRuleSchema,
+  ])
+  .refine(
+    (r) =>
+      r.key.startsWith('town.')
+        ? r.citation.label === 'Town rule' && r.citation.url === null
+        : r.citation.url !== null,
+    {
+      message: 'town rules cite "Town rule" with no url; all others need a url',
+      path: ['citation'],
+    },
+  )
+export type PackRule = z.infer<typeof PackRuleSchema>
+
+function deliveryIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'decision_delivery') return []
+    const due = clockByKey.get(r.dueRuleKey)
+    const valid = due?.clockType === 'action_due' && due.startEvent === 'board_vote'
+    return valid
+      ? []
+      : [
+          `decision_delivery ${r.key} dueRuleKey ${r.dueRuleKey} must be an action_due clock started by board_vote`,
+        ]
+  })
+}
+
+function receiptStageIssues(rules: PackRule[]): string[] {
+  const clockByKey = new Map(
+    rules.flatMap((r) => (r.kind === 'clock' ? [[r.key, r] as const] : [])),
+  )
+  return rules.flatMap((r) => {
+    if (r.kind !== 'notice_requirement' || r.stage !== 'on_receipt') return []
+    const lead = clockByKey.get(r.leadRuleKey)
+    const valid = lead?.direction === 'after' && lead.startEvent === 'application_received'
+    return valid
+      ? []
+      : [
+          `notice_requirement ${r.key} is on_receipt and its lead clock ${r.leadRuleKey} must count after application_received`,
+        ]
+  })
+}
+
+function cureIssues(rules: PackRule[]): string[] {
+  const byKey = new Map(rules.map((r) => [r.key, r] as const))
+  return rules.flatMap((r) => {
+    if (r.kind !== 'cure_notice') return []
+    const issues: string[] = []
+    const cure = byKey.get(r.cureRuleKey)
+    if (
+      cure?.kind !== 'clock' ||
+      cure.clockType !== 'action_due' ||
+      cure.startEvent !== 'cure_notice_sent'
+    ) {
+      issues.push(
+        `cure_notice ${r.key} cureRuleKey ${r.cureRuleKey} must be an action_due clock started by cure_notice_sent`,
+      )
+    }
+    if (r.penaltyRuleKey !== null && byKey.get(r.penaltyRuleKey)?.kind !== 'civil_penalty') {
+      issues.push(
+        `cure_notice ${r.key} penaltyRuleKey ${r.penaltyRuleKey} must be a civil_penalty rule`,
+      )
+    }
+    return issues
+  })
+}
+
+function penaltyRoleIssues(roles: PackRoles, rules: PackRule[]): string[] {
+  const key = roles.rules.enforcementPenalty
+  if (key === null) return []
+  const rule = rules.find((r) => r.key === key)
+  return rule === undefined || rule.kind === 'civil_penalty'
+    ? []
+    : [`role rules.enforcementPenalty ${key} must be a civil_penalty rule`]
+}
+
+function settingClockIssues(rules: PackRule[]): string[] {
+  const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
+  const issues: string[] = []
+  for (const r of rules) {
+    if (r.kind !== 'clock') continue
+    if (r.consequence.kind === 'deemed_refused' && r.clockType !== 'action_due') {
+      issues.push(`clock ${r.key} is deemed_refused and must be an action_due clock`)
+    }
+    if (r.consequence.kind === 'void_unless_recorded' && r.clockType !== 'action_due') {
+      issues.push(`clock ${r.key} is void_unless_recorded and must be an action_due clock`)
+    }
+    if (!('fromSetting' in r.length)) {
+      if (r.overridePolicy.policy === 'delegated_choice') {
+        issues.push(
+          `clock ${r.key} uses delegated_choice; read a town_setting through length.fromSetting`,
+        )
+      }
+    } else if (kindByKey.get(r.length.fromSetting) !== 'town_setting') {
+      issues.push(`clock ${r.key} fromSetting ${r.length.fromSetting} is not a town_setting`)
+    }
+  }
+  return issues
+}
+
+function triggeredClockIssues(rules: PackRule[]): string[] {
+  return rules.flatMap((r) => {
+    if (r.kind !== 'clock') return []
+    const issues: string[] = []
+    if (r.satisfiedByInspection === true && r.startEvent !== 'permit_issued') {
+      issues.push(`clock ${r.key} is satisfiedByInspection and must start at permit_issued`)
+    }
+    if (r.satisfiedByCompletion === true && r.startEvent !== 'application_received') {
+      issues.push(`clock ${r.key} is satisfiedByCompletion and must start at application_received`)
+    }
+    if (r.onlyIfHearingScheduled === true && r.startEvent !== 'application_accepted') {
+      issues.push(`clock ${r.key} is onlyIfHearingScheduled and must start at application_accepted`)
+    }
+    return issues
+  })
+}
+
+export const PackManifestSchema = z
+  .object({
+    id: z.string().min(1),
+    version: z.string().min(1),
+    rules: z.array(PackRuleSchema).min(1),
+    classifications: z.array(ProceedingClassificationSchema).min(1),
+    codeEditions: z.array(CodeEditionEntrySchema).min(1),
+    recordSeries: z.array(RecordSeriesSchema).min(1),
+    recordSeriesDefaults: z.object({
+      byClassification: z.record(z.string(), z.string()),
+      byApplicationType: z.record(z.string(), z.string()),
+    }),
+    abutterParams: z.array(AbutterParamsSchema).min(1),
+    roles: PackRolesSchema,
+  })
+  .superRefine((m, ctx) => {
+    const keys = new Set(m.rules.map((r) => r.key))
+    const seen = new Set<string>()
+    for (const r of m.rules) {
+      const id = `${r.key}@${r.version}`
+      if (seen.has(id)) ctx.addIssue({ code: 'custom', message: `duplicate rule ${id}` })
+      seen.add(id)
+    }
+    for (const c of m.classifications) {
+      for (const k of c.mandatoryRuleKeys) {
+        if (!keys.has(k)) ctx.addIssue({ code: 'custom', message: `unknown mandatory rule ${k}` })
+      }
+      for (const k of c.noticeRequirementKeys) {
+        if (!keys.has(k)) ctx.addIssue({ code: 'custom', message: `unknown notice rule ${k}` })
+      }
+    }
+    const targets = {
+      ruleKeys: keys,
+      classificationKeys: new Set(m.classifications.map((c) => c.key)),
+      seriesKeys: new Set(m.recordSeries.map((r) => r.key)),
+    }
+    const issues = [
+      ...roleIssues(m.roles, targets),
+      ...settingClockIssues(m.rules),
+      ...triggeredClockIssues(m.rules),
+      ...deliveryIssues(m.rules),
+      ...receiptStageIssues(m.rules),
+      ...cureIssues(m.rules),
+      ...penaltyRoleIssues(m.roles, m.rules),
+    ]
+    for (const message of issues) ctx.addIssue({ code: 'custom', message })
+  })
+export type PackManifestData = z.infer<typeof PackManifestSchema>
+
+export interface PackManifest {
+  id: string
+  version: string
+  rules: PackRule[]
+  classifications: ProceedingClassification[]
+  codeEditions: CodeEditionEntry[]
+  recordSeries: RecordSeries[]
+  recordSeriesDefaults: {
+    byClassification: Record<string, string>
+    byApplicationType: Record<string, string>
+  }
+  abutterParams: AbutterParams[]
+  roles: PackRoles
+}

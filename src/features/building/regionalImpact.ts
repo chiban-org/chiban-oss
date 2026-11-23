@@ -11,11 +11,12 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { REGIONAL_IMPACT_OPEN_STATES } from '@/features/building/regionalImpactStates'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { startClocksFor } from '@/features/clocks/startClocks'
+import { packRoles } from '@/features/packs/roles'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const COMMENT_CLOCK_KEY = 'nh.bp.regional_impact_comment'
 const CERTIFIED_KINDS = ['regional_planning_commission', 'affected_municipality'] as const
 
 export type Determination = 'yes' | 'no' | 'previously_determined'
@@ -99,7 +100,7 @@ async function restartCommentClock(
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, COMMENT_CLOCK_KEY),
+        clockRuleIs(packRoles().rules.regionalImpactComment),
         ne(clocks.status, 'superseded'),
       ),
     )
@@ -123,7 +124,7 @@ async function restartCommentClock(
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, COMMENT_CLOCK_KEY),
+        clockRuleIs(packRoles().rules.regionalImpactComment),
         eq(clocks.status, 'running'),
       ),
     )

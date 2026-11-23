@@ -35,7 +35,7 @@ The **Preview** at the bottom shows the page as **Town documents** or as any one
 
 **Signers** lists who signs permits, certificates, orders and letters. Each signer has a role they sign as, a name, the title as printed, and an optional signature image.
 
-The roles are Building official, Land use administrator, Planning Board chair, Zoning Board of Adjustment chair, Code enforcement officer and Town clerk. Each role can be used once. Letters refer to a signer by role, so changing the name under "Building official" changes it on every permit printed from then on. Use **Add a signer** for a role not yet listed and **Remove signer** to take one out.
+The roles are Building official, Land use administrator, Planning Board chair, Zoning Board of Adjustment chair, Code enforcement officer and Town clerk. A town whose rules give some permits to a plumbing inspector, as Maine's do, also has a Plumbing inspector role. Elsewhere that role is not offered, unless a signer already holds it. Each role can be used once. Letters refer to a signer by role, so changing the name under "Building official" changes it on every permit printed from then on. Use **Add a signer** for a role not yet listed and **Remove signer** to take one out.
 
 A signature is optional: a PNG or JPEG up to 2 MB, on a white or clear background.
 

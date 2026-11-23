@@ -60,7 +60,7 @@ const envShape = z.object({
   DATABASE_URL: z.string().min(1),
   BASE_URL: z.url(),
   SMTP_URL: z.string().min(1).default('smtp://localhost:1025'),
-  MAIL_FROM: z.string().min(3).default('Town of Alder Pond <noreply@alderpond.example>'),
+  MAIL_FROM: z.preprocess(blankAsUnset, z.string().min(3).optional()),
   ENABLE_DEV_SIGN_IN: boolFromString.default(false),
   ENABLE_SIMULATED_PAYMENTS: z.preprocess(blankAsUnset, boolFromString.default(false)),
   STRIPE_API_BASE: z.preprocess(blankAsUnset, z.url().optional()),
@@ -95,6 +95,13 @@ const envShape = z.object({
   CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   CHIBAN_IMAGE_REF: z.string().min(1).optional(),
   CHIBAN_TERMS_FILE: z.string().optional(),
+  CHIBAN_PACK: z.preprocess(
+    blankAsUnset,
+    z
+      .string()
+      .regex(/^[a-z][a-z0-9]*$/)
+      .default('nh'),
+  ),
   USPS_CLIENT_ID: optionalSecret,
   USPS_CLIENT_SECRET: optionalSecret,
   USPS_API_BASE: z.preprocess(blankAsUnset, z.url().default('https://apis.usps.com')),

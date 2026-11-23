@@ -1,12 +1,16 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { boardDecisions, boardMeetings, boards, clocks, hearings } from '@/db/schema'
+import { boardDecisions, boardMeetings, boards, clocks, hearings, noticeItems } from '@/db/schema'
 import { canViewApplication } from '@/features/access/queries'
 import type { Actor } from '@/features/auth/actor'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { HEARING_STATUS_LABELS } from '@/features/hearings/views'
+import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import { inRuleGroup } from '@/features/packs/ruleGroups'
+import { pendingWindowLines } from '@/features/portal/pendingWindows'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -15,10 +19,66 @@ export interface PortalBoardRecord {
   hearings: string[]
   decisions: string[]
   deadlines: string[]
+  notice: string[]
 }
 
-const APPEAL_PREFIX = 'nh.appeal.'
-const EXERCISE_KEY = 'nh.zba.exercise'
+const MAIL_CHANNELS: readonly string[] = ['verified_mail', 'certified_mail', 'first_class_mail']
+const POSTING_CHANNELS: readonly string[] = ['public_posting', 'bulletin_board']
+const OWNER_ROLE = 'abutter_owner'
+
+function latestProof(items: readonly NoticeStatusItem[]): string | null {
+  const dates = items.flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
+  return dates.sort().at(-1) ?? null
+}
+
+function noticeLines(
+  items: readonly NoticeStatusItem[],
+  ownerItems: ReadonlySet<string>,
+): string[] {
+  const mailed = items.filter(
+    (i) => MAIL_CHANNELS.includes(i.channel) && i.proof !== null && ownerItems.has(i.itemId),
+  )
+  const postedOn = latestProof(items.filter((i) => POSTING_CHANNELS.includes(i.channel)))
+  const newspaper = items.filter((i) => i.channel === 'newspaper')
+  const publishedOn = latestProof(newspaper)
+  const owners = mailed.length === 1 ? 'owner' : 'owners'
+  const mailedOn = latestProof(mailed)
+  return [
+    ...(mailedOn === null
+      ? []
+      : [`${mailed.length} ${owners} mailed on ${formatCivilDate(mailedOn)}.`]),
+    ...(postedOn === null ? [] : [`Posted on ${formatCivilDate(postedOn)}.`]),
+    ...(newspaper.length === 0
+      ? []
+      : [
+          publishedOn === null
+            ? 'Newspaper notice: Not published.'
+            : `Published in the newspaper on ${formatCivilDate(publishedOn)}.`,
+        ]),
+  ]
+}
+
+async function latestNotice(
+  db: Db,
+  held: readonly { hearing: { noticeSetId: string } }[],
+  signal: AbortSignal,
+): Promise<string[]> {
+  const last = held.at(-1)
+  if (last === undefined) return []
+  const { items } = await noticeStatus(db, last.hearing.noticeSetId, signal)
+  if (items.length === 0) return []
+  const roles = await db
+    .select({ id: noticeItems.id, roles: noticeItems.roles })
+    .from(noticeItems)
+    .where(
+      inArray(
+        noticeItems.id,
+        items.map((i) => i.itemId),
+      ),
+    )
+  const owners = new Set(roles.filter((r) => r.roles.includes(OWNER_ROLE)).map((r) => r.id))
+  return noticeLines(items, owners)
+}
 
 const CONFIRMED = ' The board confirmed it was properly noticed.'
 
@@ -57,12 +117,14 @@ export async function loadPortalBoardRecord(
     )
     .orderBy(asc(clocks.currentDue))
   const pack = loadPack()
+  const shown = packRoles().ruleGroups.portalBoardDeadlines
   const deadlines = running
-    .filter((c) => c.ruleKey.startsWith(APPEAL_PREFIX) || c.ruleKey === EXERCISE_KEY)
+    .filter((c) => inRuleGroup(c.ruleKey, shown))
     .flatMap((c) => {
       const rule = ruleByKey(pack, c.ruleKey, c.ruleVersion)
       return rule.kind === 'clock' ? [`${rule.label}, due ${formatCivilDate(c.currentDue)}.`] : []
     })
+  const pending = await pendingWindowLines(db, decisions.at(-1), signal)
   return ok({
     hearings: held.map(({ hearing, meeting, boardShortName }) => {
       const where = meeting.location === '' ? '' : `, ${meeting.location}`
@@ -72,6 +134,7 @@ export async function loadPortalBoardRecord(
       (d) =>
         `${OUTCOME_LABELS[d.outcome]}, voted ${formatCivilDate(d.votedOn)}.${d.filedOn === null ? '' : ` Filed ${formatCivilDate(d.filedOn)}.`}`,
     ),
-    deadlines,
+    deadlines: [...deadlines, ...pending],
+    notice: await latestNotice(db, held, signal),
   })
 }

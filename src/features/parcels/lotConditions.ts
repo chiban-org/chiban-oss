@@ -2,6 +2,8 @@ import { and, eq, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applicationConditions, applications, projects } from '@/db/schema'
 import { expiryDates } from '@/features/applications/expiryDates'
+import { varianceValidity } from '@/features/decisions/recording'
+import type { VarianceValidity } from '@/features/decisions/recordingRequired'
 import type { Status } from '@/features/design/tokens'
 import { type LatestDecision, latestDecisions } from '@/features/parcels/boardOutcomes'
 import { decisionOutcome } from '@/features/parcels/openGroups'
@@ -44,12 +46,13 @@ function decisionEntry(
   app: StandingApp,
   decision: LatestDecision,
   own: readonly LotCondition[],
+  validity: VarianceValidity,
 ): Omit<LotDecision, 'expires'> {
   return {
     kind: 'decision',
     applicationId: app.id,
     number: app.number,
-    outcome: decisionOutcome(decision.outcome, decision.boardKind),
+    outcome: decisionOutcome(decision.outcome, decision.boardKind, validity),
     decidedOn: decision.votedOn,
     conditions: merged(
       decision.conditions.map((c) => ({ code: c.code, text: c.text })),
@@ -123,6 +126,10 @@ export async function loadLotConditions(
   const decisions = await latestDecisions(db, ids)
   const own = await conditionsByApplication(db, ids)
   const expiries = await expiryDates(db, ids)
+  const validities = new Map<string, VarianceValidity>()
+  for (const app of apps) {
+    if (decisions.has(app.id)) validities.set(app.id, await varianceValidity(db, app.id, signal))
+  }
   return apps
     .flatMap((app) => {
       const decision = decisions.get(app.id)
@@ -130,7 +137,7 @@ export async function loadLotConditions(
       const entry =
         decision === undefined
           ? permitEntry(app, conditions)
-          : decisionEntry(app, decision, conditions)
+          : decisionEntry(app, decision, conditions, validities.get(app.id) ?? 'not_required')
       return entry === null ? [] : [{ ...entry, expires: expiries.get(app.id) ?? null }]
     })
     .sort(

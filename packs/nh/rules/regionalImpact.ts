@@ -1,5 +1,5 @@
 import { RSA_36_57_URL } from '@packs/nh/rules/boardUrls'
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 export const REGIONAL_IMPACT_BOARD_RULES: PackRule[] = [
   {

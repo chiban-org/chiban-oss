@@ -1,6 +1,6 @@
 import type { abutterListRecipients } from '@/db/schema'
+import { recipientRoleLabel } from '@/features/abutters/recipientRoleLabels'
 import type { Recipient } from '@/features/abutters/resolution'
-import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import { type SourceLine, sourceLines } from '@/features/abutters/sourceLinks'
 
 export interface RecipientView {
@@ -23,7 +23,7 @@ export function frozenView(data: Recipient, index: number): RecipientView {
     id: `frozen-${index}`,
     name: data.name,
     mailingAddress: data.mailingAddress,
-    roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
+    roles: data.roles.map(recipientRoleLabel),
     statusText: 'Complete',
     provenance: sourceLines(data.provenance),
     excluded: false,
@@ -45,7 +45,7 @@ export function recipientView(row: typeof abutterListRecipients.$inferSelect): R
     id: row.id,
     name: data.name,
     mailingAddress: data.mailingAddress,
-    roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
+    roles: data.roles.map(recipientRoleLabel),
     statusText:
       data.status === 'needs_decision'
         ? row.qualifies === null

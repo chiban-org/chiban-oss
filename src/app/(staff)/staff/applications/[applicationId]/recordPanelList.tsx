@@ -9,6 +9,7 @@ import { InspectionsPanel } from './inspectionsPanel'
 import { LicenseCheckPanel } from './licensePanel'
 import type { RecordPanelsInput } from './panelSet'
 import { ConditionsPanel, PartiesPanel } from './panels'
+import { PrintLetterPanel } from './printLetterPanel'
 import { mayAddToRecord } from './recordStage'
 import { RecordsPanel } from './recordsPanels'
 import { RequiredDocuments } from './requiredDocuments'
@@ -96,13 +97,20 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
             records.checklist === null ? undefined : (
               <RequiredDocuments
                 checklist={records.checklist}
-                canFile={records.canManageDocuments}
+                canFile={records.canFileItems}
                 canAccept={records.canAcceptItems}
               />
             )
           }
         />
       ),
+    },
+    {
+      key: 'letters',
+      empty: false,
+      node: records.canManageDocuments ? (
+        <PrintLetterPanel key="letters" applicationId={view.id} />
+      ) : null,
     },
     {
       key: 'parties',
@@ -135,7 +143,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
       key: 'appeals',
       empty: !hasAppeals(view, graph),
       node:
-        hasAppeals(view, graph) || (view.state === 'issued' && view.permissions.canIssue) ? (
+        hasAppeals(view, graph) || (view.acceptsAppeal && view.permissions.canRecordAppeal) ? (
           <AppealsPanel key="appeals" view={view} graph={graph} />
         ) : null,
     },
@@ -151,7 +159,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
           holds={records.appHolds}
           canHold={records.canHold}
           canManage={records.canManageDocuments}
-          buildingRemoval={view.classification === 'nh.building_permit'}
+          buildingRemoval={view.isBuildingPermit}
           zone={records.zone}
         />
       ),

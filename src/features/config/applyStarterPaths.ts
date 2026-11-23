@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { and, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { configVersions } from '@/db/schema'
@@ -11,6 +10,7 @@ import type { ConfigKind } from '@/features/config/kinds'
 import { type PublishError, publishNewVersion } from '@/features/config/publish'
 import { starterDiff } from '@/features/config/starterDiff'
 import { getPublished } from '@/features/config/store'
+import { activePack } from '@/features/packs/registry'
 import { err, ok, type Result } from '@/types/result'
 
 export type ApplyStarterPathsError = 'forbidden' | 'not_adopted' | 'unknown_path' | PublishError
@@ -22,7 +22,7 @@ export interface ApplyStarterPathsInput {
 }
 
 function findMember(input: ApplyStarterPathsInput) {
-  for (const starter of NH_STARTERS) {
+  for (const starter of activePack().starters) {
     const member = membersInOrder(starter).find((m) => m.kind === input.kind && m.key === input.key)
     if (member !== undefined) return { starter, member }
   }

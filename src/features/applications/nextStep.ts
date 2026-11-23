@@ -1,24 +1,28 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { gateDetail } from '@/features/gates/gateDetail'
 import { LICENSE_GATE_KEY } from '@/features/licenseChecks/licenseRules'
+import { keyedByRole, packRoles } from '@/features/packs/roles'
 import { type CoreState, TERMINAL_STATES } from './states'
 
-const GATE_PANELS: ReadonlyMap<string, string> = new Map([
-  ['fees.paid', 'fees-and-payments'],
-  ['conditions.blocking_met', 'conditions'],
-  ['closure.requirement_met', 'inspections'],
-  ['reviews.signed_off', 'reviewers'],
-  ['nh.bp.code_edition_recorded', 'code-edition'],
-  ['nh.bp.regional_impact', 'regional-impact'],
-  ['nh.appeal.suspension', 'appeals'],
-  ['nh.ri.determination', 'board'],
-  ['nh.pb.abutter_list_fresh', 'board'],
-  ['abutters.list_issued', 'board'],
-  [LICENSE_GATE_KEY, 'license-check'],
-])
+function gatePanels(): ReadonlyMap<string, string> {
+  const { rules, gates } = packRoles()
+  return keyedByRole([
+    ['fees.paid', 'fees-and-payments'],
+    ['conditions.blocking_met', 'conditions'],
+    ['closure.requirement_met', 'inspections'],
+    ['reviews.signed_off', 'reviewers'],
+    [rules.codeEditionGate, 'code-edition'],
+    [rules.regionalImpactGate, 'regional-impact'],
+    [rules.appealSuspension, 'appeals'],
+    [rules.regionalImpactDetermination, 'board'],
+    [gates.abutterListFresh, 'board'],
+    ['abutters.list_issued', 'board'],
+    [LICENSE_GATE_KEY, 'license-check'],
+  ])
+}
 
 export function gateAnchor(key: string): string {
-  return GATE_PANELS.get(key) ?? 'requirements'
+  return gatePanels().get(key) ?? 'requirements'
 }
 
 export interface Blocker {

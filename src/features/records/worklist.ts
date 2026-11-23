@@ -1,10 +1,10 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { type SQL, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { SortConfig, SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
+import type { RecordSeries } from '@/features/packs/schema'
 import type { RetentionStatus } from '@/features/records/computeRetention'
 import { requireSeries } from '@/features/records/series'
 import { staffRecordHref } from '@/features/records/staffRecordLinks'
@@ -12,7 +12,7 @@ import { classifiedRecords } from '@/features/records/worklistSql'
 import { getTownSettings } from '@/features/town/settings'
 import type { CivilDate } from '@/types/civilDate'
 
-export const WORKLIST_STATES = ['eligible', 'awaiting_event', 'on_hold'] as const
+export const WORKLIST_STATES = ['eligible', 'scheduled', 'awaiting_event', 'on_hold'] as const
 export type WorklistState = (typeof WORKLIST_STATES)[number]
 
 export type WorklistSortKey = 'record' | 'kind' | 'series' | 'eligible'

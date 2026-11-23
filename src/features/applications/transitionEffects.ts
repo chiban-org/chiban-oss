@@ -3,6 +3,8 @@ import type { ApplicationContext } from '@/features/applications/context'
 import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { markClockMet, startClocksFor, stopRunningClocks } from '@/features/clocks/startClocks'
+import { supersedeHearingDependentClocks } from '@/features/clocks/triggeredClocks'
+import { decisionClockKeys } from '@/features/decisions/decisionClocks'
 import { assessFees } from '@/features/fees/assess'
 import {
   cancelOpenInspections,
@@ -19,8 +21,6 @@ const INSPECTION_CANCEL_REASON: Partial<Record<CoreState, PermitStateReason>> = 
   closed: 'permit_closed',
   withdrawn: 'permit_closed',
 }
-
-const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
 
 export async function assessForTransition(
   tx: Tx,
@@ -68,7 +68,8 @@ export async function runTransitionEffects(
   if (to === 'submitted') await startClocksFor(tx, app.id, 'application_received', today, signal)
   const issuedDirectly = to === 'issued' && app.state === 'submitted'
   if (to === 'decided' || to === 'denied' || issuedDirectly) {
-    for (const key of DECISION_CLOCK_KEYS) await markClockMet(tx, app.id, key, today, signal)
+    for (const key of decisionClockKeys()) await markClockMet(tx, app.id, key, today, signal)
+    await supersedeHearingDependentClocks(tx, app.id, signal)
   }
   if (to === 'issued' && app.state !== 'suspended') {
     await startClocksFor(tx, app.id, 'permit_issued', today, signal)

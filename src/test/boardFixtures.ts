@@ -10,6 +10,7 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { activeBoards, boardIdOf } from '@/features/boards/townBoards'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { demoBoardSettings } from '@/features/demo/demoBoardNotices'
+import type { StatePack } from '@/features/packs/schema'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import type { CivilDate } from '@/types/civilDate'
@@ -66,8 +67,10 @@ export function boardTypeBody(
   key: string,
   prefix: string,
   overrides: Partial<ApplicationTypeBody> = {},
+  pack?: StatePack,
 ): ApplicationTypeBody {
-  const classification = NH_CLASSIFICATIONS.find((c) => c.key === classificationKey)
+  const classifications = pack?.manifest.classifications ?? NH_CLASSIFICATIONS
+  const classification = classifications.find((c) => c.key === classificationKey)
   if (classification === undefined) {
     throw new AppError(ErrorIds.DB_INVARIANT, `no classification ${classificationKey}`)
   }
@@ -164,9 +167,19 @@ export async function endFixtureTerm(
 
 export async function setupBoardWorld(
   db: Db,
-  options: { pbMeetings?: string[]; zbaMeetings?: string[] } = {},
+  options: {
+    pbMeetings?: string[]
+    zbaMeetings?: string[]
+    pack?: StatePack
+    classificationKey?: string
+  } = {},
 ): Promise<BoardWorld> {
-  const world = await setupPermitWorld(db)
+  const world = await setupPermitWorld(
+    db,
+    options.pack === undefined
+      ? {}
+      : { buildingType: { classification: 'xx.building_permit', bindings: ['xx.bp.decision'] } },
+  )
   await saveAndPublish(db, world.admin, 'fee_schedule', 'board-fees', BOARD_FEES)
   await saveAndPublish(
     db,
@@ -177,19 +190,27 @@ export async function setupBoardWorld(
   )
   const pbTypeKey = 'SPR'
   const zbaTypeKey = 'VAR'
-  await saveAndPublish(
-    db,
-    world.admin,
-    'application_type',
-    pbTypeKey,
-    boardTypeBody('nh.pb_site_plan', pbTypeKey, 'SPR'),
-  )
+  if (options.classificationKey === undefined) {
+    await saveAndPublish(
+      db,
+      world.admin,
+      'application_type',
+      pbTypeKey,
+      boardTypeBody('nh.pb_site_plan', pbTypeKey, 'SPR'),
+    )
+  }
   await saveAndPublish(
     db,
     world.admin,
     'application_type',
     zbaTypeKey,
-    boardTypeBody('nh.zba_variance', zbaTypeKey, 'VAR'),
+    boardTypeBody(
+      options.classificationKey ?? 'nh.zba_variance',
+      zbaTypeKey,
+      'VAR',
+      {},
+      options.pack,
+    ),
   )
   await scheduleMeetings(db, world.staff, 'planning_board', options.pbMeetings ?? PB_MEETINGS)
   await seatFixtureMembers(db, world.admin.userId)

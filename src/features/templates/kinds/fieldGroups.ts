@@ -1,7 +1,10 @@
+import type { Vocabulary } from '@/features/packs/vocabulary'
 import { allowedFields } from '@/features/templates/kinds/documentKinds'
-import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
+import { mergeFieldLabelFor } from '@/features/templates/mergeFieldWords'
 import type { TemplateKind } from '@/features/templates/templateSchema'
+import { SIGNER_ROLES } from '@/features/town/profileSchema'
+import { signerFieldOffered } from '@/features/town/signerRoleChoices'
 
 export interface FieldGroup {
   title: string
@@ -16,6 +19,7 @@ const GROUP_OF_PREFIX: ReadonlyMap<string, string> = new Map([
   ['fees', 'Application'],
   ['conditions', 'Application'],
   ['codeEdition', 'Application'],
+  ['incomplete', 'Application'],
   ['permit', 'Application'],
   ['certificate', 'Certificate'],
   ['board', 'Meeting and notice'],
@@ -36,14 +40,18 @@ function groupOf(name: string): string {
   return GROUP_OF_PREFIX.get(name.split('.')[0] ?? '') ?? TOWN_GROUP
 }
 
-export function fieldGroups(kind: TemplateKind): FieldGroup[] {
+export function fieldGroups(
+  kind: TemplateKind,
+  words: Pick<Vocabulary, 'boardLabel'>,
+  signerRoles: readonly string[] = SIGNER_ROLES,
+): FieldGroup[] {
   const allowed = allowedFields(kind)
   const groups = new Map<string, FieldGroup>()
   for (const name of MERGE_FIELDS) {
-    if (!allowed.has(name)) continue
+    if (!allowed.has(name) || !signerFieldOffered(name, signerRoles)) continue
     const title = groupOf(name)
     const group = groups.get(title) ?? { title, fields: [] }
-    group.fields.push({ name, label: mergeFieldLabel(name) })
+    group.fields.push({ name, label: mergeFieldLabelFor(name, words) })
     groups.set(title, group)
   }
   const ordered = [...groups.values()]

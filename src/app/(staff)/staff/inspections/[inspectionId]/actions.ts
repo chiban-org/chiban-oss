@@ -3,6 +3,7 @@
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { recordInspectionResult } from '@/features/inspections/recordResult'
 import { itemsOf, RESULT_FORM } from '@/features/inspections/resultForm'
+import { loadOfficeName } from '@/features/pdf/officeName'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { type ActionResult, errorCopy, runStaffValue, text } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
@@ -73,7 +74,8 @@ export async function recordResultAction(formData: FormData): Promise<ActionResu
       }
     }
     if (typeof result.error === 'object') {
-      return { ok: false, error: 'The permit cannot be closed yet. Ask the land use office.' }
+      const office = await loadOfficeName(db, signal)
+      return { ok: false, error: `The permit cannot be closed yet. Ask the ${office}.` }
     }
     const copy = RESULT_COPY[result.error] ?? errorCopy(result.error)
     return result.error === 'notes_required'

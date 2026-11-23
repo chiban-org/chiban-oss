@@ -1,6 +1,6 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { loadPack } from '@/features/packs/loadPack'
+import type { RecordSeries } from '@/features/packs/schema'
 
 export function findSeries(key: string): RecordSeries | null {
   return loadPack().recordSeries.find((s) => s.key === key) ?? null

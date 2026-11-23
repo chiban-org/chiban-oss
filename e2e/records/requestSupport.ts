@@ -14,7 +14,7 @@ export async function logRequestViaForm(
   await dialog.getByLabel('What was asked for').fill(description)
   await dialog.getByRole('button', { name: 'Log request' }).click()
   await expect(
-    page.locator('[data-sonner-toast]').filter({ hasText: 'Request logged.' }),
+    page.locator('[data-sonner-toast]').filter({ hasText: /Request RK-\d{4}-\d{4} logged\./ }),
   ).toBeVisible()
   const row = await db.one<{ id: string }>('select id from rtk_requests where description = $1', [
     description,

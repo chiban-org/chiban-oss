@@ -19,9 +19,9 @@ beforeAll(async () => {
   useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal)
+  vi.useRealTimers()
 })
 afterAll(async () => {
-  vi.useRealTimers()
   await handle.drop()
 })
 afterEach(() => {

@@ -2,23 +2,26 @@ import type { Tx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
-import { buildResponseLetter } from '@/features/rtk/responseLetter'
+import { packRoles } from '@/features/packs/roles'
+import { buildResponseLetter, type LetterOccasion } from '@/features/rtk/responseLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
-
-export const RTK_LETTER_SERIES = 'nh.rs.correspondence_administrative'
 
 export interface LetterContext {
   store: ObjectStore
   actor: Actor
   signal: AbortSignal
+  now?: Date
 }
 
 export async function fileRequestLetter(
   tx: Tx,
   context: LetterContext,
-  letter: { requestId: string; title: string; filename: string },
+  letter: { requestId: string; title: string; filename: string; occasion?: LetterOccasion },
 ): Promise<string> {
-  const bytes = await buildResponseLetter(tx, letter.requestId, context.signal)
+  const bytes = await buildResponseLetter(tx, letter.requestId, context.signal, {
+    ...(letter.occasion === undefined ? {} : { occasion: letter.occasion }),
+    ...(context.now === undefined ? {} : { now: context.now }),
+  })
   const stored = await storeGeneratedBytes(
     tx,
     context.store,
@@ -34,7 +37,7 @@ export async function fileRequestLetter(
       title: letter.title,
       docKind: 'rtk_letter',
       file: { sha256: stored.sha256, filename: letter.filename, contentType: 'application/pdf' },
-      seriesKey: RTK_LETTER_SERIES,
+      seriesKey: packRoles().recordSeries.rtkCorrespondence,
     },
     context.signal,
   )

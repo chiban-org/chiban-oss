@@ -7,27 +7,21 @@ import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPa
 import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/actions'
-
-function noHearingText(meetingOnBoard: boolean): string {
-  return meetingOnBoard
-    ? 'The hearing meeting is shown under Hearing above.'
-    : 'No hearing is scheduled yet.'
-}
+import { DecisionFields } from '../../boards/hearings/DecisionFields'
+import { recordDecisionWithoutHearingAction } from '../../boards/hearings/decisionActions'
 
 export function HearingsPanel({
   data,
-  meetingOnBoard = false,
   deadline = null,
 }: {
   data: ApplicationHearingsPanel | null
-  meetingOnBoard?: boolean
   deadline?: MeetingDeadline | null
 }) {
   if (data === null) return null
   return (
     <section aria-label="Hearings and decisions" id="hearings">
       <h2>Hearings and decisions</h2>
-      {data.hearings.length === 0 ? <p>{noHearingText(meetingOnBoard)}</p> : null}
+      {data.hearings.length === 0 ? <p>No hearing is scheduled yet.</p> : null}
       <ul className="list-none space-y-1 p-0">
         {data.hearings.map((h) => (
           <li key={h.id}>
@@ -58,6 +52,36 @@ export function HearingsPanel({
               ])}
             />
             <SelectField label="Kind" name="kind" options={data.scheduleKinds} />
+          </ActionForm>
+        </details>
+      ) : null}
+      {data.noHearing ? (
+        <details>
+          <summary>Record a decision without a hearing</summary>
+          <ActionForm
+            action={recordDecisionWithoutHearingAction}
+            submitLabel="Record decision"
+            confirm={{
+              title: "Record the board's decision?",
+              body: 'The outcome, votes and findings become the decision of record for this application.',
+              confirmLabel: 'Record decision',
+              tone: 'default',
+            }}
+            variant="default"
+            className="max-w-2xl"
+          >
+            <input type="hidden" name="applicationId" value={data.applicationId} />
+            <SelectField
+              label="Meeting"
+              name="meetingId"
+              options={data.noHearing.meetings.map((m): [string, string] => [m.id, m.text])}
+            />
+            <DecisionFields
+              seated={data.noHearing.seatedMembers}
+              today={data.noHearing.today}
+              offerFinalApproval={data.noHearing.offerFinalApproval}
+              significance={data.noHearing.significanceQuestion ?? null}
+            />
           </ActionForm>
         </details>
       ) : null}

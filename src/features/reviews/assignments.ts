@@ -4,12 +4,37 @@ import { applications, reviewAssignments, reviewComments, userRoles, users } fro
 import { transactionResult } from '@/db/transactionResult'
 import { activeMembershipOn, isBoardMember } from '@/features/access/predicates'
 import { isReviewer } from '@/features/access/roles'
+import { mayActAsPlumbingOwnerOf } from '@/features/applications/plumbingOwner'
 import { isTerminalState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { queueNotification } from '@/features/notifications/queue'
 import { err, ok, type Result } from '@/types/result'
+
+async function mayAssignOn(
+  db: DbOrTx,
+  actor: Actor,
+  applicationOf: () => Promise<string | undefined>,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if ((await requireCapability(db, actor.userId, 'review.assign', signal)).ok) return true
+  const applicationId = await applicationOf()
+  return (
+    applicationId !== undefined && (await mayActAsPlumbingOwnerOf(db, actor, applicationId, signal))
+  )
+}
+
+async function assignmentApplication(
+  db: DbOrTx,
+  assignmentId: string,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ applicationId: reviewAssignments.applicationId })
+    .from(reviewAssignments)
+    .where(eq(reviewAssignments.id, assignmentId))
+  return row?.applicationId
+}
 
 async function isActiveReviewer(db: DbOrTx, userId: string): Promise<boolean> {
   const rows = await db
@@ -33,8 +58,8 @@ export async function assignReviewer(
   >
 > {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'review.assign', signal)
-  if (!allowed.ok) return err('forbidden')
+  const applicationOf = () => Promise.resolve(input.applicationId)
+  if (!(await mayAssignOn(db, actor, applicationOf, signal))) return err('forbidden')
   if (!(await isActiveReviewer(db, input.reviewerUserId))) return err('not_a_reviewer')
   const [app] = await db
     .select({ id: applications.id })
@@ -101,8 +126,8 @@ export async function removeReviewer(
   signal: AbortSignal,
 ): Promise<Result<void, 'forbidden' | 'not_found'>> {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'review.assign', signal)
-  if (!allowed.ok) return err('forbidden')
+  const applicationOf = () => assignmentApplication(db, input.assignmentId)
+  if (!(await mayAssignOn(db, actor, applicationOf, signal))) return err('forbidden')
   return await transactionResult(db, async (tx) => {
     const removed = await tx
       .update(reviewAssignments)

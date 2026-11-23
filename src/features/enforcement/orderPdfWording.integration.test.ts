@@ -1,8 +1,8 @@
-import type { CeaseAndDesistRule } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import type { violationFindings } from '@/db/schema'
 import { renderOrderPdf } from '@/features/enforcement/orderPdf'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { CeaseAndDesistRule } from '@/features/packs/schema'
 import { profileFrame } from '@/test/frameFixtures'
 import { pdfWording } from '@/test/pdfWording'
 

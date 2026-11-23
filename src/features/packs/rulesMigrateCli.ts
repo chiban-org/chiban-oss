@@ -1,5 +1,5 @@
-import { NH_RULE_TRANSITIONS } from '@packs/nh/transitions'
 import type { Db } from '@/db/client'
+import { activePack } from '@/features/packs/registry'
 import {
   applyRuleTransition,
   previewRuleTransition,
@@ -23,7 +23,7 @@ export function parseRulesMigrateArgs(args: string[]): Result<RulesMigrateMode, 
 export async function runRulesMigrate(
   db: Db,
   mode: RulesMigrateMode,
-  transitions: RuleTransition[],
+  transitions: readonly RuleTransition[],
   print: (line: string) => void,
   signal: AbortSignal,
 ): Promise<void> {
@@ -59,7 +59,7 @@ export async function rulesMigrateMain(db: Db, args: string[]): Promise<number> 
   await runRulesMigrate(
     db,
     mode.value,
-    NH_RULE_TRANSITIONS,
+    activePack().ruleTransitions,
     (l) => process.stdout.write(`${l}\n`),
     AbortSignal.timeout(60_000),
   )

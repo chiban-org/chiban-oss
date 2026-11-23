@@ -43,6 +43,7 @@ function row(overrides: Partial<ChecklistRow>): ChecklistRow {
     open: true,
     waiver: null,
     accepted: null,
+    override: null,
     ...overrides,
   }
 }
@@ -131,6 +132,19 @@ describe('DocumentChecklist for the applicant', () => {
     expect(screen.queryByText('Accept without the document')).toBeNull()
   })
 
+  it('says a document can come later only while its stage is open', () => {
+    const closed = {
+      ...VIEW,
+      stages: VIEW.stages.map((s) => ({
+        ...s,
+        rows: s.rows.map((r) => (r.stage === 'before_issue' ? { ...r, open: false } : r)),
+      })),
+    }
+    renderAs('applicant', { view: closed })
+    expect(item('State septic approval').textContent).toContain('Missing')
+    expect(item('State septic approval').textContent).not.toContain('Can come later')
+  })
+
   it('folds documents this project does not need into one counted group, with a plain reason', () => {
     renderAs('applicant')
     const group = notNeededGroup()
@@ -161,6 +175,44 @@ describe('DocumentChecklist for the applicant', () => {
     cleanup()
     renderAs('applicant', { view: { ...VIEW, submitted: true } })
     expect(within(item('Plot plan')).queryByRole('button', { name: /Unassign/ })).toBeNull()
+  })
+})
+
+describe('a document gate override on the checklist', () => {
+  const overridden = {
+    ...VIEW,
+    stages: VIEW.stages.map((s) => ({
+      ...s,
+      rows: s.rows.map((r) =>
+        r.stage === 'before_issue'
+          ? {
+              ...r,
+              open: false,
+              override: {
+                reason: 'Approval confirmed by phone.',
+                by: 'Dana Clerk',
+                at: '2027-03-10T15:00:00.000Z',
+              },
+            }
+          : r,
+      ),
+    })),
+  }
+
+  it('shows staff the reason and who overrode it', () => {
+    renderAs('staff', { view: overridden })
+    const text = item('State septic approval').textContent
+    expect(text).toContain('Gone ahead without the document')
+    expect(text).toContain('Overridden: Approval confirmed by phone. (Dana Clerk, 2027-03-10)')
+  })
+
+  it('shows the applicant only that the town accepted it', () => {
+    renderAs('applicant', { view: overridden })
+    const text = item('State septic approval').textContent
+    expect(text).toContain('Accepted by the town')
+    expect(text).not.toContain('Approval confirmed by phone.')
+    expect(text).not.toContain('Dana Clerk')
+    expect(text).not.toContain('Overridden')
   })
 })
 

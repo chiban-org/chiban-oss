@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
 import {
   complaints,
+  developmentHolds,
   type EnforcementStatus,
   enforcementCases,
   violationFindings,
@@ -19,6 +20,7 @@ import {
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { caseJustOpenedBy, lockCaseOpening } from '@/features/enforcement/openCaseReuse'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -105,6 +107,16 @@ export type SetStatusError =
   | 'stale_version'
   | 'reason_required'
   | 'finding_required'
+  | 'hold_active'
+
+async function holdActiveOn(tx: Tx, caseId: string): Promise<boolean> {
+  const [held] = await tx
+    .select({ id: developmentHolds.id })
+    .from(developmentHolds)
+    .where(and(eq(developmentHolds.caseId, caseId), isNull(developmentHolds.releasedOn)))
+    .limit(1)
+  return held !== undefined
+}
 
 async function transitionBlock(
   tx: Tx,
@@ -114,6 +126,9 @@ async function transitionBlock(
 ): Promise<SetStatusError | null> {
   if (STATUSES_SET_BY_THEIR_STEP.includes(to)) return 'invalid_transition'
   if (to === 'closed' && reason === '') return 'reason_required'
+  if (to === 'resolved' || to === 'closed') {
+    return (await holdActiveOn(tx, caseId)) ? 'hold_active' : null
+  }
   if (to !== 'violation_found') return null
   const [found] = await tx
     .select({ n: count() })
@@ -172,6 +187,9 @@ export async function setCaseStatus(
         ...(input.to === 'closed' ? { closedOn: today, closureReason: reason } : {}),
       })
       .where(eq(enforcementCases.id, input.caseId))
+    if (input.to === 'closed') {
+      await recordSystemEvent(tx, { kind: 'case_closed', caseId: input.caseId }, today)
+    }
     await writeAudit(
       tx,
       {

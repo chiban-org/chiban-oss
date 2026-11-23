@@ -1,5 +1,6 @@
 import type { RenditionState } from '@/features/documents/panelData'
 import { AUDIENCES, type Audience, type RecordKind } from '@/features/documents/types'
+import { recordsLaw } from '@/features/packs/vocabulary'
 import { parcelPublicHref } from '@/features/publicSite/publicHref'
 
 export interface VisibilityInput {
@@ -93,7 +94,7 @@ const COPY_WORDS = { original: 'the original', redacted: 'the redacted copy' } a
 
 function hiddenPart(doc: VisibilityInput, blockers: Blocker[]): string {
   if (blockers.includes('kind_never')) {
-    return 'Not on the public site: Right-to-Know documents are never shown there.'
+    return `Not on the public site: ${recordsLaw()} documents are never shown there.`
   }
   if (blockers.length === 0) {
     const copy = COPY_WORDS[copyOf(doc.approvedRole)]

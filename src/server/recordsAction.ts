@@ -8,6 +8,8 @@ export const RECORDS_COPY: Record<string, string> = {
   not_found: errorCopy('not_found'),
   future_date: 'The date cannot be in the future.',
   before_received: 'The response date cannot be before the request was received.',
+  before_acknowledged: 'The response date cannot be before the acknowledgement.',
+  acknowledgement_unavailable: 'This town does not record an acknowledgement as a response.',
   already_responded: 'This request already has a first response.',
   withholding_required:
     'Record at least one withheld record with its exemption before denying a request.',
@@ -38,6 +40,9 @@ export const RECORDS_COPY: Record<string, string> = {
   not_ready: 'The archival copy is still being made. Try again in a minute.',
   reason_required: 'Enter a reason of at least 10 characters.',
   already_revoked: 'That approval was already revoked.',
+  released_offline:
+    'That copy was already released by email, on paper or for inspection, so it cannot be called back.',
+  not_link_release: 'That copy was not released by link, so there is no link to stop.',
   kind_not_for_target: 'That event does not apply to this kind of record.',
   nothing_eligible: 'No records are eligible on that date.',
   not_proposed: 'That batch is no longer waiting for approval.',
@@ -46,6 +51,8 @@ export const RECORDS_COPY: Record<string, string> = {
   not_approved: 'That batch is not approved.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   already_closed: 'This request is already closed.',
+  no_clarification_question: 'This request has no open question to answer.',
+  before_acknowledgement: 'The answer cannot be dated before the request was acknowledged.',
   units_do_not_fit_category:
     'The housing units do not fit that kind of structure: one per building for a single-family house, two per building for a two-unit building, three or four per building, or five or more per building.',
   excluded_reason_required: 'Choose why the permit is left out of the count.',

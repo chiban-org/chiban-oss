@@ -1,4 +1,3 @@
-import { BOARD_KINDS } from '@packs/nh/boardKinds'
 import { sql } from 'drizzle-orm'
 import {
   date,
@@ -10,6 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { BOARD_KINDS } from '@/features/packs/schema'
 import { applications } from './projects'
 
 export const boards = pgTable(

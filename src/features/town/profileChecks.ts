@@ -1,5 +1,6 @@
 import type { PublishError } from '@/features/config/publishChecks'
-import { SIGNER_ROLE_LABELS, type TownProfileBody } from '@/features/town/profileSchema'
+import type { TownProfileBody } from '@/features/town/profileSchema'
+import { signerRoleLabels } from '@/features/town/signerRoleLabels'
 
 export function checkTownProfile(body: TownProfileBody): PublishError | null {
   const seen = new Set<string>()
@@ -9,7 +10,7 @@ export function checkTownProfile(body: TownProfileBody): PublishError | null {
         invalid: [
           {
             path: `signers.${index}.role`,
-            message: `${SIGNER_ROLE_LABELS[signer.role]} is listed twice.`,
+            message: `${signerRoleLabels()[signer.role]} is listed twice.`,
           },
         ],
       }

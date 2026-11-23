@@ -4,6 +4,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LetterheadFields } from '@/components/config/town/LetterheadFields'
 import { LetterheadPreview } from '@/components/config/town/LetterheadPreview'
 import { SignersFields } from '@/components/config/town/SignersFields'
+import { PackTextProvider } from '@/components/PackTextProvider'
+import { NEUTRAL_PACK_TEXT } from '@/features/packs/neutralPackText'
 import {
   SIGNER_ROLES,
   TOWN_PROFILE_SKELETON,
@@ -87,6 +89,33 @@ describe('SignersFields', () => {
   it('offers no new signer once every role is held', () => {
     const signers = SIGNER_ROLES.map((role) => ({ role, name: 'A', title: 'B', signature: null }))
     render(<SignersFields body={{ ...BODY, signers }} onChange={vi.fn()} errors={{}} />)
+    expect(screen.queryByText('Add a signer')).toBeNull()
+  })
+
+  it('leaves the plumbing inspector out of the roles when the pack has none', () => {
+    const roles = SIGNER_ROLES.filter((role) => role !== 'plumbing_inspector')
+    const held = roles.slice(1).map((role) => ({ role, name: 'A', title: 'B', signature: null }))
+    const onChange = vi.fn()
+    render(
+      <PackTextProvider value={{ ...NEUTRAL_PACK_TEXT, signerRoles: roles }}>
+        <SignersFields body={{ ...BODY, signers: held }} onChange={onChange} errors={{}} />
+      </PackTextProvider>,
+    )
+    const options = screen.getAllByRole('option').map((o) => o.getAttribute('value'))
+    expect(options).not.toContain('plumbing_inspector')
+    fireEvent.click(screen.getByText('Add a signer'))
+    const next = onChange.mock.calls[0]?.[0] as TownProfileBody | undefined
+    expect(next?.signers.at(-1)?.role).toBe('building_official')
+  })
+
+  it('offers no new signer once every pack role is held without the plumbing inspector', () => {
+    const roles = SIGNER_ROLES.filter((role) => role !== 'plumbing_inspector')
+    const signers = roles.map((role) => ({ role, name: 'A', title: 'B', signature: null }))
+    render(
+      <PackTextProvider value={{ ...NEUTRAL_PACK_TEXT, signerRoles: roles }}>
+        <SignersFields body={{ ...BODY, signers }} onChange={vi.fn()} errors={{}} />
+      </PackTextProvider>,
+    )
     expect(screen.queryByText('Add a signer')).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
-import type { AbutterParams } from '@packs/nh/schema'
 import type { ProjectionParams } from '@/features/abutters/projection/types'
+import type { AbutterParams } from '@/features/packs/schema'
 
 export function projectionParamsFor(
   params: AbutterParams,

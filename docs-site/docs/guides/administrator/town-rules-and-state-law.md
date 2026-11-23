@@ -12,28 +12,41 @@ The **Town rules** group under **Settings** has five pages. Between them they sh
 
 **State law** lists every rule Chiban follows from state law, with its citation, and in the last column what the town can change. You cannot edit anything on it.
 
-The last column says one of three things:
+The last column says one of these things:
 
 - "Fixed by statute. The town cannot change it."
-- "The town chooses", with the default, for example a building permit validity period with a default of 12 months.
+- "The town chooses", with the default, for example a building permit validity period with a default of 12 months. Where state law gives a range, it reads "The town chooses between" two numbers.
 - "The town may set a value of" some number or more, or some number or less. For example, the Planning Board filing deadline may be set at 21 days or fewer.
+- "The town chooses posting or newspaper." for a public notice the town may give either way.
+- "Follows the town setting" followed by the name of a town rule. The deadline takes its length from that rule, for example the building permit validity period.
+- "Chiban's starting rule. The town cannot change it here." for a rule Chiban supplies that is not set by statute and is not one of the values the town can set.
+
+Where the town has put its own value into use, the row also shows **Town value** with the number and its unit, as a link to that rule.
 
 Below the rules, **Required rules by classification** shows how many rules apply to each kind of proceeding. The last line gives the version of the state pack the town is running.
 
 ![The State law page listing rules, their citations and what the town can change.](/img/shots/administrator/state-law.png)
 
+Under the rules, **Holidays Chiban skips** lists the dates for this year and next that Chiban treats as non-business days when it counts a deadline. Each has the holiday's name and its source.
+
 For the deadlines these rules produce, see [deadlines and holidays](../../state-packs/new-hampshire/deadlines.mdx).
 
 ## Town rule settings
 
-Where state law lets the town choose a value, record the town's own on **Town rule settings**. Until you do, Chiban uses the value state law gives. Until the town sets one, the page reads "No town rules are set".
+Where state law lets the town choose a value, record the town's own on **Town rule settings**. Until the town sets one, Chiban uses the starting value shown on **State law**, and the page reads "No town rules are set".
 
-1. Choose **Set a town rule** and pick the rule. Only rules the town is allowed to set are listed.
-2. Enter **The town's value**, in the unit shown.
+1. Choose **Set a town rule** and pick the rule. Only rules the town is allowed to set are listed. This includes deadlines whose length the town may choose within a limit.
+2. Enter **The town's value**, in the unit shown. It must be a whole number. The hint under the field gives the lowest and highest value allowed, and the field will not accept a number outside them.
 3. Record the **Adoption record**: **Adopted by**, for example Town Meeting, and **Adopted on**.
 4. Put it into use. See [how changes are saved and put into use](./how-changes-are-put-into-use.md).
 
 If a value is outside what state law allows, the draft cannot be put into use.
+
+Once a town value is in use, the list shows it beside the version, for example "Version 2 in use: 18 months".
+
+### Going back to the starting value
+
+To stop using the town's value, open the rule and choose **Use the starting value again**, then confirm. Chiban goes back to the starting value shown on the State law page. The old town value stays in the version history. The button appears only for a rule that has a version in use.
 
 ## Local code amendments
 

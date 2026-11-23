@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { eq, max } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
@@ -14,6 +13,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { MailTransport } from '@/features/mail/transport'
+import { civilDateSchema } from '@/features/packs/schema'
 import { planDelivery, type ReleaseDelivery, sendRelease } from '@/features/rtk/releaseDelivery'
 import { resolveItems, withholdingsFor } from '@/features/rtk/releaseItems'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
@@ -45,6 +45,7 @@ export type ReleaseError =
   | 'not_open'
   | 'future_date'
   | 'before_received'
+  | 'before_acknowledged'
   | 'approval_missing'
   | 'approval_revoked'
   | 'duplicate_document'
@@ -68,6 +69,31 @@ async function checkReleaseDate(
 ): Promise<'future_date' | 'before_received' | null> {
   if (daysBetween(await townToday(tx, now, signal), releasedOn) > 0) return 'future_date'
   return daysBetween(receivedOn, releasedOn) < 0 ? 'before_received' : null
+}
+
+type RequestRow = typeof rtkRequests.$inferSelect
+
+function releasedBeforeAcknowledgement(request: RequestRow, releasedOn: CivilDate): boolean {
+  const acknowledgedOn = request.acknowledgedOn as CivilDate | null
+  return (
+    request.firstResponseKind === 'acknowledged' &&
+    acknowledgedOn !== null &&
+    daysBetween(acknowledgedOn, releasedOn) < 0
+  )
+}
+
+function responseFieldsAfterRelease(request: RequestRow, releasedOn: CivilDate) {
+  if (request.firstResponseKind === 'acknowledged') {
+    return {
+      firstResponseOn: request.firstResponseOn,
+      firstResponseKind: 'made_available' as const,
+      followUpOn: releasedOn,
+    }
+  }
+  return {
+    firstResponseOn: request.firstResponseOn ?? releasedOn,
+    firstResponseKind: request.firstResponseKind ?? ('made_available' as const),
+  }
 }
 
 export async function createRelease(
@@ -107,6 +133,9 @@ export async function createRelease(
       signal,
     )
     if (dated !== null) return err(dated)
+    if (releasedBeforeAcknowledgement(request, value.releasedOn)) {
+      return err('before_acknowledged')
+    }
     const items = await resolveItems(tx, value.requestId, value.items)
     if (!items.ok) return err(items.error)
     const [last] = await tx
@@ -149,13 +178,12 @@ export async function createRelease(
         position,
       })),
     )
-    if (request.status !== 'responded') {
+    if (request.status !== 'responded' || request.firstResponseKind === 'acknowledged') {
       await tx
         .update(rtkRequests)
         .set({
           status: 'responded',
-          firstResponseOn: request.firstResponseOn ?? value.releasedOn,
-          firstResponseKind: request.firstResponseKind ?? 'made_available',
+          ...responseFieldsAfterRelease(request, value.releasedOn),
           openDueOn: null,
           rowVersion: request.rowVersion + 1,
         })
@@ -163,11 +191,12 @@ export async function createRelease(
     }
     const letterDocumentId = await fileRequestLetter(
       tx,
-      { store, actor, signal },
+      { store, actor, signal, now },
       {
         requestId: request.id,
         title: `Response to request ${request.number}, release ${sequence}`,
         filename: `${request.number}-release-${sequence}.pdf`,
+        occasion: 'release',
       },
     )
     await tx.update(rtkReleases).set({ letterDocumentId }).where(eq(rtkReleases.id, releaseId))

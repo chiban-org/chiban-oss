@@ -99,6 +99,22 @@ export function ChecklistPreview({ record }: { record: InspectionRecord }) {
   )
 }
 
+export function ConditionsPanel({ record }: { record: InspectionRecord }) {
+  if (record.conditions.length === 0) return null
+  return (
+    <section aria-label="Conditions on this permit" id="conditions">
+      <h2>Conditions on this permit</h2>
+      <ul className="list-none p-0">
+        {record.conditions.map((text) => (
+          <li key={text} className="record-item">
+            {text}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export function ResultPanel({ record }: { record: InspectionRecord }) {
   const { inspection, items } = record.view
   if (inspection.status !== 'passed' && inspection.status !== 'failed') return null

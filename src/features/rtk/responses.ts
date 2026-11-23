@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
@@ -16,20 +15,23 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import { civilDateSchema } from '@/features/packs/schema'
+import { acknowledgementEnabled } from '@/features/packs/vocabulary'
 import { rtkDueContext } from '@/features/rtk/dueContext'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
+import { isAcknowledgedOnly } from '@/features/rtk/requestStatus'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export { RTK_LETTER_SERIES } from '@/features/rtk/requestLetter'
 
 const ResponseSchema = z.object({
   requestId: z.string().uuid(),
   kind: z.enum(RTK_RESPONSE_KINDS),
   respondedOn: civilDateSchema,
   websiteUrl: z.string().trim().url().max(500).optional(),
+  clarification: z.string().trim().min(1).max(2000).optional(),
   timeStatement: z
     .object({
       statedDate: civilDateSchema,
@@ -49,16 +51,20 @@ export type FirstResponseError =
   | 'not_found'
   | 'future_date'
   | 'before_received'
+  | 'before_acknowledged'
   | 'already_responded'
+  | 'acknowledgement_unavailable'
   | 'withholding_required'
   | 'stated_date_required'
   | 'website_url_required'
   | 'release_required'
 
 function statedTimeRule() {
-  const rule = ruleByKey(loadPack(), 'nh.rtk.stated_time')
+  const rule = ruleByKey(loadPack(), packRoles().rules.rtkStatedTime)
   if (rule.kind !== 'clock')
-    throw new AppError(ErrorIds.RTK_INVARIANT, 'nh.rtk.stated_time is not a clock')
+    throw new AppError(ErrorIds.RTK_INVARIANT, 'The stated time rule is not a clock', {
+      key: rule.key,
+    })
   return rule
 }
 
@@ -77,12 +83,19 @@ async function countFor(
   return row?.n ?? 0
 }
 
+function acknowledgedAfter(request: typeof rtkRequests.$inferSelect, on: CivilDate): boolean {
+  const acknowledgedOn = request.acknowledgedOn as CivilDate | null
+  return acknowledgedOn !== null && daysBetween(acknowledgedOn, on) < 0
+}
+
 async function kindPrecondition(
   tx: Tx,
   requestId: string,
   value: z.output<typeof ResponseSchema>,
 ): Promise<FirstResponseError | null> {
   switch (value.kind) {
+    case 'acknowledged':
+      return null
     case 'made_available':
       return (await countFor(tx, rtkReleases, requestId)) === 0 ? 'release_required' : null
     case 'website_reference':
@@ -95,6 +108,30 @@ async function kindPrecondition(
         statement !== undefined && daysBetween(value.respondedOn, statement.statedDate) >= 0
       return valid ? null : 'stated_date_required'
     }
+  }
+}
+
+type ResponseInput = z.output<typeof ResponseSchema>
+
+function responseColumns(
+  value: ResponseInput,
+  request: typeof rtkRequests.$inferSelect,
+  followUp: boolean,
+  statedDue: SubjectDue | null,
+) {
+  return {
+    status:
+      value.kind === 'time_statement' ? ('awaiting_decision' as const) : ('responded' as const),
+    firstResponseOn: followUp ? request.firstResponseOn : value.respondedOn,
+    ...(followUp ? { followUpOn: value.respondedOn } : {}),
+    firstResponseKind: value.kind,
+    firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
+    ...(value.kind === 'acknowledged'
+      ? { acknowledgedOn: value.respondedOn, clarificationQuestion: value.clarification ?? null }
+      : {}),
+    statedDue,
+    openDueOn: statedDue === null ? null : statedDue.due,
+    rowVersion: request.rowVersion + 1,
   }
 }
 
@@ -112,6 +149,10 @@ export async function recordFirstResponse(
   const parsed = ResponseSchema.safeParse(input)
   if (!parsed.success) return err('invalid')
   const value = parsed.data
+  if (value.kind !== 'acknowledged' && value.clarification !== undefined) return err('invalid')
+  if (value.kind === 'acknowledged' && !acknowledgementEnabled()) {
+    return err('acknowledgement_unavailable')
+  }
   return await transactionResult<{ letterDocumentId: string }, FirstResponseError>(
     db,
     async (tx) => {
@@ -121,11 +162,16 @@ export async function recordFirstResponse(
         .where(eq(rtkRequests.id, value.requestId))
         .for('update')
       if (request === undefined) return err('not_found')
-      if (request.status !== 'open') return err('already_responded')
+      const followUp = isAcknowledgedOnly(request)
+      if (request.status !== 'open' && !followUp) return err('already_responded')
+      if (followUp && value.kind === 'acknowledged') return err('already_responded')
       const today = await townToday(tx, now, signal)
       if (daysBetween(today, value.respondedOn) > 0) return err('future_date')
       if (daysBetween(request.receivedOn as CivilDate, value.respondedOn) < 0) {
         return err('before_received')
+      }
+      if (followUp && acknowledgedAfter(request, value.respondedOn)) {
+        return err('before_acknowledged')
       }
       const refused = await kindPrecondition(tx, request.id, value)
       if (refused !== null) return err(refused)
@@ -143,23 +189,16 @@ export async function recordFirstResponse(
       }
       await tx
         .update(rtkRequests)
-        .set({
-          status: value.kind === 'time_statement' ? 'awaiting_decision' : 'responded',
-          firstResponseOn: value.respondedOn,
-          firstResponseKind: value.kind,
-          firstResponseUrl: value.kind === 'website_reference' ? (value.websiteUrl ?? null) : null,
-          statedDue,
-          openDueOn: statedDue === null ? null : statedDue.due,
-          rowVersion: request.rowVersion + 1,
-        })
+        .set(responseColumns(value, request, followUp, statedDue))
         .where(eq(rtkRequests.id, request.id))
       const letterDocumentId = await fileRequestLetter(
         tx,
-        { store, actor, signal },
+        { store, actor, signal, now },
         {
           requestId: request.id,
           title: `Response to request ${request.number}`,
           filename: `${request.number}-response.pdf`,
+          occasion: 'response',
         },
       )
       await writeAudit(

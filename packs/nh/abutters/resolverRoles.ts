@@ -5,17 +5,17 @@ import {
   regionalImpactParties,
 } from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
+import { applicantRecipient } from '@/features/abutters/applicantRecipient'
+import { makeRecipient } from '@/features/abutters/recipientBasis'
 import type { Provenance } from '@/features/abutters/resolution'
+import type { ConditionalRoleTrigger } from '@/features/abutters/roles'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { professionalsFor } from '@/features/rosters/professionals'
 import { isDue } from '@/features/rosters/recheck'
 import { activeRestrictions } from '@/features/rosters/restrictions'
 import { rosterStatus } from '@/features/rosters/reviews'
 import type { CivilDate } from '@/types/civilDate'
-import { type Context, makeRecipient, rosterProvenance } from './resolverContext'
-import { applicantParty, applicationValues } from './resolverSources'
-
-const FORM_ADDRESS_FIELD = 'applicant_mailing_address'
+import { type Context, rosterProvenance } from './resolverContext'
 
 function wants(ctx: Context, role: Parameters<Context['input']['roles']['includes']>[0]): boolean {
   return ctx.input.roles.includes(role)
@@ -24,33 +24,7 @@ function wants(ctx: Context, role: Parameters<Context['input']['roles']['include
 export async function resolveApplicant(ctx: Context, signal: AbortSignal): Promise<void> {
   signal.throwIfAborted()
   if (!wants(ctx, 'applicant')) return
-  const party = await applicantParty(ctx.tx, ctx.input.applicationId)
-  const values = await applicationValues(ctx.tx, ctx.input.applicationId)
-  const address = typeof values[FORM_ADDRESS_FIELD] === 'string' ? values[FORM_ADDRESS_FIELD] : null
-  const entry = makeRecipient(party.name, address, {
-    roles: ['applicant'],
-    parcelIds: [],
-    provenance: [
-      {
-        source: 'application_form',
-        ref: ctx.input.applicationId,
-        asOf: null,
-        ageDays: null,
-        state: 'entered',
-      },
-    ],
-  })
-  ctx.recipients.unshift(entry)
-  if (entry.status === 'incomplete_data') {
-    ctx.incomplete.push({
-      role: 'applicant',
-      code: entry.name === '' ? 'owner_missing' : 'address_missing',
-      detail:
-        entry.name === ''
-          ? 'The application has no applicant name on record.'
-          : 'The application has no applicant mailing address.',
-    })
-  }
+  ctx.recipients.unshift(await applicantRecipient(ctx.tx, ctx.input.applicationId, ctx.incomplete))
 }
 
 function holdingState(
@@ -117,7 +91,7 @@ function contactProvenance(ctx: Context, ref: string) {
   return rosterProvenance('regional_contacts', ref, null, ctx.today, 'entered')
 }
 
-function asks(ctx: Context, when: 'regional_impact_yes' | 'des_within_500ft'): boolean {
+function asks(ctx: Context, when: ConditionalRoleTrigger): boolean {
   return ctx.input.conditionalRoles.some((c) => c.when === when)
 }
 

@@ -12,6 +12,7 @@ import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 export interface CounterFormData {
   fields: FormField[]
   baseCents: number
+  feeSchedule: FeeScheduleBody
   convenienceFee: PaymentSettingsBody['convenienceFee']
   cardAvailable: boolean
   readerSimulated: boolean
@@ -28,7 +29,8 @@ export async function loadCounterFormData(
   const form = await getPublished(db, 'form', typeBody.formKey, signal)
   const fee = await getPublished(db, 'fee_schedule', typeBody.feeScheduleKey, signal)
   if (form === null || fee === null) return null
-  const computed = computeFees(fee.body as FeeScheduleBody, {
+  const feeSchedule = fee.body as FeeScheduleBody
+  const computed = computeFees(feeSchedule, {
     values: {},
     facts: { classification: null, dwellingUnits: null, afterTheFact: false },
     counts: { abutters: { state: 'unknown' } },
@@ -41,6 +43,7 @@ export async function loadCounterFormData(
   return {
     fields: questionsOf((form.body as FormBody).fields).filter((f) => f.key !== LICENSE_FIELD),
     baseCents: computed.totalCents,
+    feeSchedule,
     convenienceFee: settings.convenienceFee,
     cardAvailable: processor.state === 'known',
     readerSimulated:

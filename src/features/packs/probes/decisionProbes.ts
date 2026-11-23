@@ -1,10 +1,3 @@
-import type {
-  ClockRule,
-  DecisionOutcome,
-  NoticeRequirementRule,
-  ProceedingClassification,
-  RecordRule,
-} from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { rulesForEvent } from '@/features/clocks/ruleEngine'
 import { appealRightsOf } from '@/features/decisions/appealRights'
@@ -21,6 +14,13 @@ import {
   probe,
 } from '@/features/packs/probes/probe'
 import { observeRule, ruleProbes } from '@/features/packs/probes/ruleProbes'
+import type {
+  ClockRule,
+  DecisionOutcome,
+  NoticeRequirementRule,
+  ProceedingClassification,
+  RecordRule,
+} from '@/features/packs/schema'
 import { validateWorkflow } from '@/features/workflow/validateWorkflow'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -78,12 +78,17 @@ function noticeProbe(baseKey: string, mutate: (r: NoticeRequirementRule) => Noti
   })
 }
 
+const BOARD_KINDS_LAST = ['planning_board', 'zba'] as const
+
 const FACT_VARIANTS = [
   {},
   { regionalImpact: true },
   { decisionFiledLate: true },
   { dwellingUnits: 3 },
+  { significantDecision: true },
   ...OUTCOMES.map((outcome) => ({ outcome })),
+  ...OUTCOMES.map((outcome) => ({ outcome, significantDecision: true })),
+  ...BOARD_KINDS_LAST.map((finalReviewBoard) => ({ finalReviewBoard })),
 ]
 
 function gatedProbe(baseKey: string, mutate: (r: ClockRule) => ClockRule): FieldProbe {
@@ -103,6 +108,17 @@ function gatedProbe(baseKey: string, mutate: (r: ClockRule) => ClockRule): Field
       ),
     }),
   })
+}
+
+function everyProbeChanges(probes: FieldProbe[]): FieldProbe {
+  return {
+    run() {
+      const runs = probes.map((p) => p.run())
+      const before = runs.map((r) => r.before)
+      const changed = runs.every((r) => JSON.stringify(r.before) !== JSON.stringify(r.after))
+      return { before, after: changed ? runs.map((r) => r.after) : before }
+    },
+  }
 }
 
 function rulesStarted(rule: ClockRule, facts: ProjectFacts): ClockRule[] {
@@ -156,13 +172,26 @@ export function decisionProbes(): Record<string, FieldProbe> {
       ...r,
       onlyWhen: { fact: 'regionalImpact', is: false as never },
     })),
-    'clock.onlyWhen.in': gatedProbe('nh.appeal.zba_court', (r) => ({
-      ...r,
-      onlyWhen: { fact: 'outcome', in: ['approved'] },
-    })),
+    'clock.onlyWhen.in': everyProbeChanges([
+      gatedProbe('nh.appeal.zba_court', (r) => ({
+        ...r,
+        onlyWhen: { fact: 'outcome', in: ['approved'] },
+      })),
+      gatedProbe('nh.appeal.zba_court', (r) => ({
+        ...r,
+        onlyWhen: { fact: 'finalReviewBoard', in: ['planning_board'] },
+      })),
+    ]),
     'clock.onlyWhen.gt': gatedProbe('nh.ri.transmittal', (r) => ({
       ...r,
       onlyWhen: { fact: 'dwellingUnits', gt: 0 },
+    })),
+    'clock.onlyWhen': gatedProbe('nh.appeal.zba_court', (r) => ({
+      ...r,
+      onlyWhen: [
+        { fact: 'outcome', in: ['denied'] },
+        { fact: 'significantDecision', is: true },
+      ],
     })),
     'required_record.conditionalFields.field': probe<RecordRule>({
       base: recordRule,
@@ -205,6 +234,7 @@ export function decisionProbes(): Record<string, FieldProbe> {
       ...r,
       leadRuleKey: 'nh.pb.notice.mail',
     })),
+    'notice_requirement.stage': noticeProbe(ZBA_MAIL, (r) => ({ ...r, stage: 'on_receipt' })),
     'notice_requirement.onlyWhen': noticeProbe(ZBA_MAIL, (r) => ({
       ...r,
       onlyWhen: 'regional_impact_yes',

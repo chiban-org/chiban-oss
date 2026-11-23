@@ -1,9 +1,12 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { applications, projects, users } from '@/db/schema'
 import { createApplication } from '@/features/applications/createApplication'
+import {
+  recordIssuedDecisionTx,
+  recordStaffDecisionTx,
+} from '@/features/applications/staffDecision'
 import type { CoreState } from '@/features/applications/states'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { transitionApplication } from '@/features/applications/transition'
@@ -13,12 +16,15 @@ import { markComplete } from '@/features/building/completeness'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { recordSeedDecision } from '@/features/demo/seedDecision'
 import { fileDemoDocuments } from '@/features/demo/seedDocuments'
 import { checkDemoLicense } from '@/features/demo/seedLicense'
 import { feeBalance } from '@/features/ledger/feeBalance'
+import { activePack } from '@/features/packs/registry'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
 import { assignReviewer, signOffReview } from '@/features/reviews/assignments'
+import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 export const TITLE_PREFIX = 'Demo permit:'
@@ -75,6 +81,7 @@ export class Scenario {
     readonly cast: Cast,
     readonly signal: AbortSignal,
     readonly applicationId: string,
+    readonly store: ObjectStore = getObjectStore(),
   ) {}
 
   async step(to: CoreState, on: string, actor: Actor = this.cast.staff): Promise<void> {
@@ -97,8 +104,8 @@ export class Scenario {
       .select()
       .from(applications)
       .where(eq(applications.id, this.applicationId))
-    const moved = await this.db.transaction((tx) =>
-      transitionApplication(
+    const moved = await this.db.transaction(async (tx) => {
+      const result = await transitionApplication(
         tx,
         actor,
         {
@@ -109,8 +116,20 @@ export class Scenario {
         },
         this.signal,
         noon(on),
-      ),
-    )
+      )
+      if (result.ok) {
+        await recordSeedDecision(
+          tx,
+          actor,
+          { applicationId: this.applicationId, to, on: d(on) },
+          {
+            store: this.store,
+            signal: this.signal,
+          },
+        )
+      }
+      return result
+    })
     must(moved, `move to ${to}`)
   }
 
@@ -185,7 +204,7 @@ export async function open(
     ),
     'application',
   )
-  const type = NH_STARTERS.find((s) => s.applicationType.key === input.typeKey)
+  const type = activePack().starters.find((s) => s.applicationType.key === input.typeKey)
   await fileDemoDocuments(
     db,
     cast.applicant,

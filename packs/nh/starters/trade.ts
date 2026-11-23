@@ -1,8 +1,8 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { doc } from '@packs/nh/starters/documentQuestions'
-import type { StarterBundle } from '@packs/nh/starters/types'
-import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { FormField } from '@/features/forms/formSchema'
+import type { StarterBundle } from '@/features/packs/schema'
+import { ATTESTATION_TEXT } from '@/features/packs/schema'
 
 const TRADE_BINDINGS =
   NH_CLASSIFICATIONS.find((c) => c.key === 'nh.trade_permit')?.mandatoryRuleKeys ?? []

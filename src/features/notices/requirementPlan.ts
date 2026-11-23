@@ -1,12 +1,12 @@
-import type { NoticeRequirementRule } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import type { NoticeChannel } from '@/features/notices/channels'
 import { applies } from '@/features/notices/requirementsFor'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { NoticeRequirementRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const EMPTY_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, afterTheFact: false }
@@ -14,6 +14,7 @@ const EMPTY_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, a
 export interface RequirementFlags {
   regionalImpact: boolean
   desWithin: boolean
+  sourceWaterArea?: boolean | null
 }
 
 export interface PlannedRequirement {
@@ -30,6 +31,7 @@ export interface PlanInput {
   flags: RequirementFlags
   townLeadDays: Record<string, number>
   publicChoice: 'public_posting' | 'newspaper' | null
+  stage?: NoticeRequirementRule['stage']
 }
 
 function channelOf(rule: NoticeRequirementRule, choice: PlanInput['publicChoice']): NoticeChannel {
@@ -43,10 +45,15 @@ export function planRequirement(
   rule: NoticeRequirementRule,
   input: PlanInput,
 ): PlannedRequirement | null {
-  if (!applies(rule, input.flags)) return null
+  if (!applies(rule, input.flags, input.stage ?? 'before_hearing')) return null
   const lead = ruleByKey(loadPack(), rule.leadRuleKey)
   if (lead.kind !== 'clock') return null
-  const length = resolveRuleLength(lead, EMPTY_FACTS, null, input.townLeadDays[lead.key])
+  const length = resolveRuleLength(
+    lead,
+    EMPTY_FACTS,
+    'fromSetting' in lead.length ? ruleByKey(loadPack(), lead.length.fromSetting) : null,
+    input.townLeadDays[lead.key],
+  )
   const holidays = packHolidayCalendar()
   const { due } = computeRuleDue(lead, length, input.hearingDate, holidays)
   return {
@@ -59,7 +66,7 @@ export function planRequirement(
         holidays,
       },
       { due, rolledFrom: null },
-      PACK_COUNTING_CITATIONS,
+      packCountingCitations(),
     ),
     channel: channelOf(rule, input.publicChoice),
     recipients: rule.recipients,

@@ -12,6 +12,11 @@ export const rowVersionField = () =>
 
 export const APPLICATION_FORM = z.object({ applicationId: applicationIdField() })
 
+export const DENIAL_REASON_MIN = 10
+
+export const denialReasonField = () =>
+  optionalText('a reason for the denial', { min: DENIAL_REASON_MIN, max: 2000 })
+
 export const optionalReference = (noun: string) => optionalText(noun, { max: 200 })
 
 export type FieldOf = Readonly<Record<string, string>>

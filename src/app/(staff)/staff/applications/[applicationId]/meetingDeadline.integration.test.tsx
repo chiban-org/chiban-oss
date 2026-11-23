@@ -203,21 +203,28 @@ describe('a variance whose hearing meeting meets its deadline but whose abutter 
     const meetings = await upcoming('zba')
     const html = await page('VAR-2026-0001')
     expect(html).not.toContain('is after this deadline')
-    const board = sectionOf(html, 'Hearing') ?? ''
+    const schedule = sectionOf(html, 'Requirements') ?? ''
+    expect(schedule).toContain('Schedule the hearing')
     expect(
-      optionsOf(board)
+      optionsOf(schedule)
         .filter((o) => o.value !== '')
         .map((o) => o.text),
     ).toEqual(meetings.map((m) => optionText(m, due)))
   })
 
-  it('shows the hearing date once, in the board panel, and the hearings panel does not contradict it', async () => {
+  it('keeps the old meeting out of the board panel and preselects it in the hearing scheduler', async () => {
     const set = formatCivilDate(await meetingSet('VAR-2026-0001'))
     const html = await page('VAR-2026-0001')
-    const outsideOptions = html.replace(/<option[\s\S]*?<\/option>/g, '')
-    expect(outsideOptions.split(set)).toHaveLength(2)
-    expect(sectionOf(html, 'Hearing') ?? '').toContain(`Hearing meeting: ${set}.`)
-    expect(html).not.toContain('No hearing is scheduled yet.')
+    const board = sectionOf(html, 'Hearing') ?? ''
+    expect(board).toContain('No hearing is scheduled.')
+    expect(board).not.toContain(`Hearing meeting: ${set}.`)
+    expect(html).toContain('No hearing is scheduled yet.')
+    const schedule = sectionOf(html, 'Requirements') ?? ''
+    expect(
+      optionsOf(schedule)
+        .filter((o) => o.selected)
+        .map((o) => o.text),
+    ).toEqual([expect.stringContaining(set)])
   })
 
   it('asks for the abutter list and offers no way to open the hearing while it is a draft', async () => {
@@ -231,17 +238,17 @@ describe('a variance whose hearing meeting meets its deadline but whose abutter 
 })
 
 describe('the variance after its hearing meeting, with the abutter list still a draft', () => {
-  it('still lets the clerk record that the board did not accept it, but not open the hearing', async () => {
+  it('offers only the one step hearing scheduler and no acceptance vote', async () => {
     const day = await meetingSet('VAR-2026-0001')
     const html = await page(
       'VAR-2026-0001',
       `${day.slice(0, 8)}${String(Number(day.slice(8)) + 1).padStart(2, '0')}`,
     )
     const board = sectionOf(html, 'Hearing') ?? ''
-    expect(board).toContain('Record that the board did not accept it')
-    expect(board).toContain('name="outcome" value="not_accepted"')
-    expect(html).not.toContain('value="accepted"')
+    expect(board).not.toContain('Record that the board did not accept it')
+    expect(html).not.toContain('name="outcome"')
     expect(html).not.toMatch(/>Open the hearing<\/summary>/)
+    expect(sectionOf(html, 'Requirements') ?? '').toContain('Schedule the hearing')
   })
 })
 

@@ -1,16 +1,17 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { exemptionChoices } from '@/features/rtk/exemptions'
 import { RTK_SCOPE_LABELS } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { exemptionLabel } from '@/features/rtk/responseLetter'
 import { withholdingAction } from '../actions'
 
-const EXEMPTION_OPTIONS: [string, string][] = [
-  ['', 'Choose an exemption'],
-  ...NH_RTK_EXEMPTIONS.map((e) => [e.key, `${e.citation.label}: ${e.label}`] as [string, string]),
-  [OTHER_LAW_EXEMPTION_KEY, 'Made confidential by another law'],
-]
+function exemptionOptions(): [string, string][] {
+  return [
+    ['', 'Choose an exemption'],
+    ...exemptionChoices().map((e): [string, string] => [e.key, e.label]),
+  ]
+}
 
 function WithholdingForm({ requestId }: { requestId: string }) {
   return (
@@ -30,7 +31,7 @@ function WithholdingForm({ requestId }: { requestId: string }) {
         <SelectField
           label="Exemption"
           name="exemptionKey"
-          options={EXEMPTION_OPTIONS}
+          options={exemptionOptions()}
           defaultValue=""
           required
         />

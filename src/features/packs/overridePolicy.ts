@@ -1,4 +1,4 @@
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

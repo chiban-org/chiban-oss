@@ -31,7 +31,11 @@ registerGate({
           isNotNull(reviewAssignments.reviewerUserId),
         ),
       )
-    if (active.length === 0 && app.state === 'under_review') {
+    if (
+      active.length === 0 &&
+      app.state === 'under_review' &&
+      app.typeBody.workflow.reviewRequired !== false
+    ) {
       return { status: 'blocked', reason: 'No reviewer is assigned.' }
     }
     const open = active.filter((a) => a.status !== 'signed_off')

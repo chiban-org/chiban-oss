@@ -26,6 +26,7 @@ export interface ApplicantStatusInput {
   decisionDue: CivilDate | null
   decisionLate: boolean
   canRequestInspection: boolean
+  payAtOffice?: string | null
 }
 
 export const DECISION_LATE_TEXT =
@@ -55,16 +56,19 @@ function withDecisionDate(sentence: string, input: ApplicantStatusInput): string
 }
 
 function paySentence(input: ApplicantStatusInput, amount: string): string {
+  const office = input.payAtOffice ?? null
+  const where = office === null ? '' : ` Pay it at the ${office}.`
   const outcome = OUTCOMES[input.state]
   if (outcome !== undefined) {
-    return `${outcome} ${amount} in fees charged before the decision is still owed.`
+    return `${outcome} ${amount} in fees charged before the decision is still owed.${where}`
   }
   if (input.state === 'decided' && !input.board) {
-    return `Approved. Pay ${amount} to have the permit issued.`
+    const at = office === null ? '' : ` at the ${office}`
+    return `Approved. Pay ${amount}${at} to have the permit issued.`
   }
-  if (input.state === 'decided') return `Approved by the board. A fee of ${amount} is due.`
-  if (input.state === 'issued') return `Issued. A balance of ${amount} is still due.`
-  return withDecisionDate(`Submitted. A fee of ${amount} is due.`, input)
+  if (input.state === 'decided') return `Approved by the board. A fee of ${amount} is due.${where}`
+  if (input.state === 'issued') return `Issued. A balance of ${amount} is still due.${where}`
+  return withDecisionDate(`Submitted. A fee of ${amount} is due.${where}`, input)
 }
 
 function plainSentence(input: ApplicantStatusInput): string {
@@ -91,7 +95,7 @@ function documentsStep(input: ApplicantStatusInput): ApplicantNow | null {
 }
 
 function nowStep(input: ApplicantStatusInput): ApplicantNow | null {
-  if (input.dueCents > 0) {
+  if (input.dueCents > 0 && (input.payAtOffice ?? null) === null) {
     return { task: `Pay ${formatCents(input.dueCents)}`, note: null, action: 'pay' }
   }
   const documents = documentsStep(input)

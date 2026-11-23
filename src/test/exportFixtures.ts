@@ -5,6 +5,18 @@ import { demoSeedDeps } from '@/test/demoSeedDeps'
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'source_water_determinations',
+    statement: sql`insert into source_water_determinations (application_id, determination, supplier_key, determined_by, determined_on)
+      select a.id, 'within', 'lakeside_water', u.id, '2027-03-24'
+      from applications a cross join (select id from users order by email limit 1) u
+      order by a.id limit 1`,
+  },
+  {
+    table: 'application_municipalities',
+    statement: sql`insert into application_municipalities (application_id, municipality_key, relation)
+      select id, 'pine_river', 'abutting' from applications order by id limit 1`,
+  },
+  {
     table: 'account_profiles',
     statement: sql`insert into account_profiles (user_id, phone, mailing_address)
       select id, '603-555-0142', '12 Mill Road' from users where kind = 'public' order by email limit 1`,
@@ -93,6 +105,51 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
     table: 'appeal_nodes',
     statement: sql`insert into appeal_nodes (kind, application_id, occurred_on, created_by)
       select 'administrative_decision', id, '2027-03-01', gen_random_uuid() from applications limit 1`,
+  },
+  {
+    table: 'decision_deliveries',
+    statement: sql`insert into decision_deliveries (application_id, appeal_node_id, recipient_role, recipient_name)
+      select a.id, (select id from appeal_nodes limit 1), 'applicant', 'Export Coverage' from applications a limit 1`,
+  },
+  {
+    table: 'decision_recordings',
+    statement: sql`insert into decision_recordings (decision_id, registry, book, page, recorded_on, certificate_document_id, recorded_by)
+      select b.id, 'Export Registry', '1', '1', '2027-03-20', (select id from documents limit 1), gen_random_uuid() from board_decisions b limit 1`,
+  },
+  {
+    table: 'cure_notices',
+    statement: sql`insert into cure_notices (case_id, finding_ids, recipient_role, recipient_name, mailing_address, sent_on, cure_due, sent_by)
+      select c.id, '{}'::uuid[], 'owner', 'Export Coverage', '1 Coverage Road', '2027-03-20', '{"due":"2027-03-30"}'::jsonb, gen_random_uuid() from enforcement_cases c limit 1`,
+  },
+  {
+    table: 'development_holds',
+    statement: sql`insert into development_holds (parcel_id, case_id, placed_on, placed_by)
+      select (select id from parcels limit 1), c.id, '2027-03-21', gen_random_uuid() from enforcement_cases c limit 1`,
+  },
+  {
+    table: 'hold_permit_actions',
+    statement: sql`insert into hold_permit_actions (hold_id, application_id, action, acted_on, acted_by)
+      select h.id, (select id from applications limit 1), 'suspended', '2027-03-22', gen_random_uuid() from development_holds h limit 1`,
+  },
+  {
+    table: 'enforcement_civil_actions',
+    statement: sql`insert into enforcement_civil_actions (case_id, filed_on, court, recorded_by)
+      select c.id, '2027-03-21', 'Export Coverage Court', gen_random_uuid() from enforcement_cases c limit 1`,
+  },
+  {
+    table: 'decision_notices',
+    statement: sql`insert into decision_notices (application_id, document_id, mailed_on, recorded_by)
+      select a.id, (select id from documents limit 1), '2027-03-20', gen_random_uuid() from applications a limit 1`,
+  },
+  {
+    table: 'incomplete_notices',
+    statement: sql`insert into incomplete_notices (application_id, sent_on, reason, created_by)
+      select id, '2027-03-19', 'Coverage reason', gen_random_uuid() from applications limit 1`,
+  },
+  {
+    table: 'deemed_refusals',
+    statement: sql`insert into deemed_refusals (application_id, rule_key, rule_version, due_on, fired_on)
+      select id, 'export.coverage', 1, '2027-03-20', '2027-03-21' from applications limit 1`,
   },
   {
     table: 'trc_routings',

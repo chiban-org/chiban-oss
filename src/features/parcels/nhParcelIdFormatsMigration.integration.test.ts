@@ -56,7 +56,7 @@ describe('NH parcel ID format defaults on a fresh install', () => {
 
   it('declares examples that fit their own widths', () => {
     for (const f of NH_PARCEL_ID_FORMATS) {
-      expect(f.example).toHaveLength(f.width)
+      expect(f.example).toHaveLength(Number(f.width))
       expect(f.example).toMatch(/^\d+$/)
     }
   })

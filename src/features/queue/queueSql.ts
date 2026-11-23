@@ -2,8 +2,8 @@ import { sql } from 'drizzle-orm'
 import { applications } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
-import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
 import { unprovedHearingNotice } from '@/features/hearings/noticeDeadlines'
+import { packRoles } from '@/features/packs/roles'
 
 const OPEN_CLOCK = sql`c.application_id = ${applications.id} and c.status in ('running', 'overdue')`
 
@@ -17,9 +17,11 @@ export const NEXT_DUE_RULE_KEY = sql<string | null>`(
 export const NOTICE_DUE = sql<string | null>`(
   select min(i.due_on) ${unprovedHearingNotice(applications.id)})`
 
-export const FILING_DUE = sql<string | null>`(
+export function filingDueSql() {
+  return sql<string | null>`(
   select min(c.current_due) from clocks c
-  where ${OPEN_CLOCK} and c.rule_key = ${FILING_CLOCK_KEY})`
+  where ${OPEN_CLOCK} and c.rule_key = ${packRoles().rules.decisionFiling})`
+}
 
 export const EARLIEST_DUE = sql<string | null>`least(${NEXT_DUE}, ${NOTICE_DUE})`
 

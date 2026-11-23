@@ -48,7 +48,7 @@ describe('packet cover wording', () => {
 
       Contents
 
-      Item
+      No.
       Document
 
       1

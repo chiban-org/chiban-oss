@@ -5,6 +5,7 @@ import { GroupFieldError } from '@/components/fieldErrors'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
+import { activePack } from '@/features/packs/registry'
 import { addProfessionalAction, generateListAction } from '../../abutters/actions'
 import {
   addApplicantParcelAction,
@@ -20,11 +21,14 @@ export function DeterminationSection({
   data: BoardPanelData
   formElsewhere?: boolean
 }) {
+  const agency = activePack().labels.environmentalAgencyShort
+  const regional = data.regional.applies
+  if (!regional && !data.des.applies) return null
   return (
     <section aria-label="Determinations">
-      <h3>Regional impact and water bodies</h3>
-      <p>{data.regional.summary}</p>
-      {data.canDetermine && !formElsewhere ? (
+      <h3>{regional ? 'Regional impact and water bodies' : 'Water bodies'}</h3>
+      {regional ? <p>{data.regional.summary}</p> : null}
+      {regional && data.canDetermine && !formElsewhere ? (
         <details>
           <summary>Record the regional impact determination</summary>
           <BoardRegionalForm data={data} />
@@ -34,10 +38,12 @@ export function DeterminationSection({
         <>
           <p>{data.des.suggestion}</p>
           {data.des.distanceText === '' ? null : <p>{data.des.distanceText}</p>}
-          <p>{data.des.determinationText ?? 'The NH DES determination has not been recorded.'}</p>
+          <p>
+            {data.des.determinationText ?? `The ${agency} determination has not been recorded.`}
+          </p>
           {data.canManage ? (
             <details>
-              <summary>Record the NH DES determination</summary>
+              <summary>{`Record the ${agency} determination`}</summary>
               <ActionForm
                 action={desDeterminationAction}
                 submitLabel="Record determination"
@@ -51,7 +57,7 @@ export function DeterminationSection({
                   required
                   options={[
                     ['', 'Choose a determination'],
-                    ['within_500ft', 'Within the distance, send notice to NH DES'],
+                    ['within_500ft', `Within the distance, send notice to ${agency}`],
                     ['not_within', 'Not within the distance'],
                     ['not_applicable', 'The notice does not apply'],
                   ]}
@@ -108,36 +114,38 @@ export function ListSection({ data }: { data: BoardPanelData }) {
               <ParcelPicker label="Parcel" name="parcelRef" required />
             </ActionForm>
           </details>
-          <details>
-            <summary>Add a professional whose seal is on the plat</summary>
-            <ActionForm
-              action={addProfessionalAction}
-              submitLabel="Add professional"
-              className="max-w-md"
-            >
-              <input type="hidden" name="applicationId" value={data.applicationId} />
-              <TextField label="Name" name="name" required />
-              <SelectField
-                label="Profession"
-                name="profession"
-                options={[
-                  ['land_surveyor', 'Land surveyor'],
-                  ['engineer', 'Engineer'],
-                  ['architect', 'Architect'],
-                  ['soil_scientist', 'Soil scientist'],
-                ]}
-              />
-              <AddressTextField label="Business address" name="businessAddress" required />
-              <SelectField
-                label="Seal is on the plat"
-                name="sealOnPlat"
-                options={[
-                  ['yes', 'Yes, send notice'],
-                  ['no', 'No'],
-                ]}
-              />
-            </ActionForm>
-          </details>
+          {data.professionalsApply === false ? null : (
+            <details>
+              <summary>Add a professional whose seal is on the plat</summary>
+              <ActionForm
+                action={addProfessionalAction}
+                submitLabel="Add professional"
+                className="max-w-md"
+              >
+                <input type="hidden" name="applicationId" value={data.applicationId} />
+                <TextField label="Name" name="name" required />
+                <SelectField
+                  label="Profession"
+                  name="profession"
+                  options={[
+                    ['land_surveyor', 'Land surveyor'],
+                    ['engineer', 'Engineer'],
+                    ['architect', 'Architect'],
+                    ['soil_scientist', 'Soil scientist'],
+                  ]}
+                />
+                <AddressTextField label="Business address" name="businessAddress" required />
+                <SelectField
+                  label="Seal is on the plat"
+                  name="sealOnPlat"
+                  options={[
+                    ['yes', 'Yes, send notice'],
+                    ['no', 'No'],
+                  ]}
+                />
+              </ActionForm>
+            </details>
+          )}
         </>
       ) : null}
       {data.professionals.length > 0 ? (

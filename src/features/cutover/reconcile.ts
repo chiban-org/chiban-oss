@@ -25,7 +25,7 @@ function legacyNumbersOf(bytes: Uint8Array): Result<string[], ListParseError> {
       bom: true,
       skip_empty_lines: true,
       trim: true,
-    }) as string[][]
+    })
     const column = table[0]?.indexOf('legacy_number') ?? -1
     if (column < 0) return err('missing_legacy_number')
     if (table.length === 1) return err('no_rows')

@@ -1,10 +1,10 @@
-import type { BoardKind } from '@packs/nh/boardSchema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { boards } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { inviteBoardMember } from '@/features/boards/members'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import type { BoardKind } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal

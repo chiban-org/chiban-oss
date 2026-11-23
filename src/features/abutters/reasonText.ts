@@ -16,6 +16,8 @@ export function reasonText(reason: CandidateReason): string {
       return `Across ${reason.featureName ?? 'the street or stream'}, between the projected points`
     case 'across_within_capture':
       return `Across the street or stream, ${feet(reason.distanceFt)} from a projected point`
+    case 'within_buffer':
+      return `Within ${feet(reason.bufferFt)} of the property`
   }
 }
 

@@ -1,4 +1,5 @@
 import { test as base, type Page } from '@playwright/test'
+import { distinctClientHeaders } from './clientAddress'
 import { type E2eDb, openReadOnlyDb } from './db'
 import { authStatePath, type RoleKey } from './roles'
 import { uniqueSuffix } from './suffix'
@@ -42,13 +43,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   storageState: async ({ role }, use) => {
     await use(storageStateFor(role))
   },
+  extraHTTPHeaders: async ({}, use) => {
+    await use(distinctClientHeaders())
+  },
   suffix: async ({}, use) => {
     await use(uniqueSuffix())
   },
   pageAs: async ({ browser, baseURL }, use) => {
     const contexts: Awaited<ReturnType<typeof browser.newContext>>[] = []
     await use(async (role) => {
-      const context = await browser.newContext({ baseURL, storageState: storageStateFor(role) })
+      const context = await browser.newContext({
+        baseURL,
+        storageState: storageStateFor(role),
+        extraHTTPHeaders: distinctClientHeaders(),
+      })
       contexts.push(context)
       return await context.newPage()
     })

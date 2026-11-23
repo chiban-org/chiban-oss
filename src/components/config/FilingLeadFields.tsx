@@ -8,6 +8,7 @@ type Board = BoardSettingsBody['boards'][number]
 
 interface Props {
   board: Board
+  packDays: number
   onChange: (next: Partial<Board>) => void
   errors: FieldErrors
 }
@@ -17,13 +18,13 @@ function toDaysOrNull(raw: string): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-export function FilingLeadFields({ board, onChange, errors }: Props) {
+export function FilingLeadFields({ board, packDays, onChange, errors }: Props) {
   const adoption = board.filingLeadAdoption ?? { adoptingAuthority: '', adoptedOn: null }
   return (
     <div className="sm:col-span-2">
       <Input
         label="Filing deadline, days before the meeting"
-        hint="How many days before a meeting an application must be filed. Leave empty to use the 21 days state law sets."
+        hint={`How many days before a meeting an application must be filed. Leave empty to use the ${String(packDays)} days state law sets.`}
         type="number"
         min={1}
         value={board.filingLeadDays ?? ''}

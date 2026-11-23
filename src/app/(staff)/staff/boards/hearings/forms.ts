@@ -1,7 +1,7 @@
-import { DECISION_OUTCOMES } from '@packs/nh/schema'
 import { z } from 'zod'
 import { parseConditions, parseVotes } from '@/features/decisions/formParsing'
 import {
+  checkbox,
   choice,
   civilDate,
   inputField,
@@ -11,6 +11,7 @@ import {
   wholeNumber,
 } from '@/features/input/schemas'
 import { PROOF_METHODS } from '@/features/notices/proofMethods'
+import { DECISION_OUTCOMES, DELIVERY_METHODS } from '@/features/packs/schema'
 import { err, ok } from '@/types/result'
 import { optionalRecordId, valueList } from '../formFields'
 
@@ -88,9 +89,8 @@ const votes = () =>
     return parsed === null ? err(VOTES_COPY) : ok(parsed)
   })
 
-export const RECORD_DECISION_FORM = z.object({
+const DECISION_FIELDS = {
   applicationId: recordId('an application'),
-  hearingId: hearingId(),
   votedOn: civilDate('the date of the vote'),
   outcome: choice('an outcome', DECISION_OUTCOMES),
   motion: requiredText('the motion', { max: 2000 }),
@@ -100,6 +100,19 @@ export const RECORD_DECISION_FORM = z.object({
     parseConditions(v ?? ''),
   ),
   reasons: optionalText('the reasons', { max: 10000 }),
+  finalMunicipalApproval: checkbox(),
+  significant: choice('whether this is a significant land use decision', [
+    '',
+    'yes',
+    'no',
+  ] as const).transform((v) => (v === '' ? undefined : v === 'yes')),
+}
+
+export const RECORD_DECISION_FORM = z.object({ ...DECISION_FIELDS, hearingId: hearingId() })
+
+export const RECORD_DECISION_NO_HEARING_FORM = z.object({
+  ...DECISION_FIELDS,
+  meetingId: meetingId(),
 })
 
 export const DECISION_ONLY_FORM = z.object({ decisionId: decisionId() })
@@ -110,6 +123,26 @@ export const FILE_DECISION_FORM = z.object({
   minutesDocumentId: recordId('the minutes'),
 })
 
+export const RECORD_DELIVERY_FORM = z.object({
+  deliveryId: recordId('a recipient'),
+  method: choice('a way of delivering', DELIVERY_METHODS),
+  deliveredOn: civilDate('the date it was delivered'),
+})
+
+export const RECORD_FINAL_APPROVAL_FORM = z.object({
+  decisionId: decisionId(),
+  approvedOn: civilDate('the date of the final written approval'),
+})
+
+export const RECORD_REGISTRY_FORM = z.object({
+  decisionId: decisionId(),
+  registry: requiredText('the registry of deeds', { max: 200 }),
+  book: requiredText('the book', { max: 50 }),
+  page: requiredText('the page', { max: 50 }),
+  recordedOn: civilDate('the date it was recorded'),
+  certificateDocumentId: recordId('the recorded certificate'),
+})
+
 export const ADD_APPEAL_NODE_FORM = z.object({
   parentId: recordId('the step it follows'),
   kind: choice('a step', APPEAL_KINDS),
@@ -117,4 +150,5 @@ export const ADD_APPEAL_NODE_FORM = z.object({
   outcome: choice('a result', ['', 'granted', 'denied', 'approved'] as const),
   linked: choice('whether it is a linked component', ['yes', 'no'] as const),
   appellantName: optionalText('the appellant name', { max: 200 }),
+  finalMunicipalApproval: checkbox(),
 })

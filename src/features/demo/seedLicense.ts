@@ -1,9 +1,9 @@
-import { nhDefaultLicenseType } from '@packs/nh/licenseTypes'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { LICENSE_FIELD } from '@/features/forms/formReferences'
+import { defaultLicenseType } from '@/features/licenseChecks/packLicenses'
 import { recordLicenseCheck } from '@/features/licenseChecks/recordLicenseCheck'
 
 export async function checkDemoLicense(
@@ -25,7 +25,7 @@ export async function checkDemoLicense(
     {
       applicationId: input.applicationId,
       licenseNumber: typeof number === 'string' ? number : 'Not given',
-      licenseType: nhDefaultLicenseType(row?.typeKey ?? '') ?? 'Master electrician',
+      licenseType: defaultLicenseType(row?.typeKey ?? '') ?? 'Master electrician',
       result: 'active',
       note: null,
       checkedAt: input.checkedAt,

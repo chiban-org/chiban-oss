@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import type { BoardKind } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { applications, hearings } from '@/db/schema'
@@ -13,10 +12,21 @@ import { type AcceptanceError, setAcceptanceMeetingTx } from '@/features/boards/
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { getMeeting } from '@/features/boards/meetings'
 import { boardForKind } from '@/features/boards/townBoards'
-import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import {
+  markClockMet,
+  startClocksFor,
+  startClocksWhenPackUses,
+} from '@/features/clocks/startClocks'
+import {
+  markHearingScheduledClocksMet,
+  startHearingScheduledClocks,
+} from '@/features/clocks/triggeredClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { lockHearingAfterApplication } from '@/features/hearings/lockHearing'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
+import { packRoles } from '@/features/packs/roles'
+import type { BoardKind } from '@/features/packs/schema'
 import { isAfterTownToday, townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -132,6 +142,7 @@ export async function scheduleHearing(
         subjectId: hearingId,
         applicationId: app.id,
         anchorDate: meeting.meetingDate as CivilDate,
+        stage: 'before_hearing',
       },
       signal,
     )
@@ -146,6 +157,7 @@ export async function scheduleHearing(
       noticeSetId: derived.value.setId,
       createdBy: actor.userId,
     })
+    if (input.kind !== 'rehearing') await startHearingScheduledClocks(tx, app.id, signal)
     await writeAudit(
       tx,
       {
@@ -221,12 +233,8 @@ export async function markHearingHeld(
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   if (await isAfterTownToday(db, input.heldOn, now, signal)) return err('future_date')
   return await transactionResult<void, HeldError>(db, async (tx) => {
-    const [hearing] = await tx
-      .select()
-      .from(hearings)
-      .where(eq(hearings.id, input.hearingId))
-      .for('update')
-    if (hearing === undefined) return err('not_found')
+    const hearing = await lockHearingAfterApplication(tx, input.hearingId)
+    if (hearing === null) return err('not_found')
     if (hearing.status !== 'scheduled' || hearing.properlyNoticedAt === null) {
       return err('not_properly_noticed')
     }
@@ -242,7 +250,13 @@ export async function markHearingHeld(
       .where(eq(hearings.id, hearing.id))
     const app = await loadApplicationContext(tx, hearing.applicationId, signal)
     if (app !== null && boardOfApplication(app) === 'zba') {
-      await markClockMet(tx, app.id, 'nh.zba.hearing', input.heldOn, signal)
+      await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
+    }
+    if (hearing.kind !== 'rehearing') {
+      await markHearingScheduledClocksMet(tx, hearing.applicationId, input.heldOn, signal)
+    }
+    if (app?.state === 'under_review') {
+      await startClocksWhenPackUses(tx, hearing.applicationId, 'hearing_held', input.heldOn, signal)
     }
     await writeAudit(
       tx,

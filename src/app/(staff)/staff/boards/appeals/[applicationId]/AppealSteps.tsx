@@ -1,28 +1,39 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import {
+  appealResultLabel,
+  appealStepHint,
+  appealStepOptions,
+  rehearingGrantedLabel,
+} from '@/features/appeals/appealWords'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
+import { LastApprovalCheck } from '../../hearings/LastApprovalCheck'
 
-const STEPS: [string, string][] = [
-  ['zba_appeal', 'Appeal to the Zoning Board'],
-  ['zba_decision', 'Zoning Board decision'],
-  ['rehearing_motion', 'Motion for rehearing'],
-  ['rehearing_outcome', 'Rehearing decision'],
-  ['court_petition', 'Court petition'],
-]
+const STEP_ORDER = [
+  'zba_appeal',
+  'zba_decision',
+  'rehearing_motion',
+  'rehearing_outcome',
+  'court_petition',
+] as const
 
-const RESULTS: [string, string][] = [
-  ['', 'Not applicable'],
-  ['approved', 'Appeal granted'],
-  ['denied', 'Denied'],
-  ['granted', 'Rehearing granted'],
-]
+function results(): [string, string][] {
+  return [
+    ['', 'Not applicable'],
+    ['approved', 'Appeal granted'],
+    ['denied', 'Denied'],
+    ['granted', rehearingGrantedLabel()],
+  ]
+}
 
 export function AppealSteps({
   nodeChoices,
   today,
+  offerFinalApproval = false,
 }: {
   nodeChoices: { id: string; label: string }[]
   today: string
+  offerFinalApproval?: boolean
 }) {
   return (
     <ActionForm action={addAppealNodeAction} submitLabel="Record the step" className="max-w-md">
@@ -32,7 +43,7 @@ export function AppealSteps({
         name="parentId"
         options={nodeChoices.map((n): [string, string] => [n.id, n.label])}
       />
-      <SelectField label="Step" name="kind" options={STEPS} />
+      <SelectField label="Step" name="kind" options={appealStepOptions(STEP_ORDER)} />
       <TextField
         label="Date"
         name="occurredOn"
@@ -41,16 +52,9 @@ export function AppealSteps({
         max={today}
         required
       />
-      <TextField
-        label="Who appealed"
-        name="appellantName"
-        hint="For an appeal to the Zoning Board. An appeal of an issued permit suspends it."
-      />
-      <SelectField
-        label="Result, for a Zoning Board or rehearing decision"
-        name="outcome"
-        options={RESULTS}
-      />
+      <TextField label="Who appealed" name="appellantName" hint={appealStepHint()} />
+      <SelectField label={appealResultLabel()} name="outcome" options={results()} />
+      <LastApprovalCheck offered={offerFinalApproval} />
     </ActionForm>
   )
 }

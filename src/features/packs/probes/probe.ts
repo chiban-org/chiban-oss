@@ -1,12 +1,12 @@
+import { AppError, ErrorIds } from '@/constants/errorIds'
+import { loadPack, type Pack } from '@/features/packs/loadPack'
 import type {
   ClockRule,
   CodeEditionEntry,
   GateRule,
   PackRule,
   ProceedingClassification,
-} from '@packs/nh/schema'
-import { AppError, ErrorIds } from '@/constants/errorIds'
-import { loadPack, type Pack } from '@/features/packs/loadPack'
+} from '@/features/packs/schema'
 
 export interface FieldProbe {
   run(): { before: unknown; after: unknown }

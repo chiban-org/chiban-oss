@@ -9,6 +9,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { getMeeting } from '@/features/boards/meetings'
+import { lockHearingAfterApplication } from '@/features/hearings/lockHearing'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -40,12 +41,8 @@ export async function continueHearing(
   const details = input.announcedDetails?.trim() ?? ''
   if (input.announcedAtMeeting && details === '') return err('details_required')
   return await transactionResult<{ hearingId: string }, ContinueError>(db, async (tx) => {
-    const [prior] = await tx
-      .select()
-      .from(hearings)
-      .where(eq(hearings.id, input.hearingId))
-      .for('update')
-    if (prior === undefined) return err('not_found')
+    const prior = await lockHearingAfterApplication(tx, input.hearingId)
+    if (prior === null) return err('not_found')
     if (prior.status !== 'scheduled') return err('not_continuable')
     const app = await loadApplicationContext(tx, prior.applicationId, signal)
     if (app === null) return err('not_found')
@@ -75,6 +72,7 @@ export async function continueHearing(
           subjectId: hearingId,
           applicationId: app.id,
           anchorDate: meeting.meetingDate as CivilDate,
+          stage: 'before_hearing',
         },
         signal,
       )

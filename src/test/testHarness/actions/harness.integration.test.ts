@@ -53,6 +53,7 @@ describe('actionHarness', () => {
       admin: 'staff',
       staff: 'staff',
       inspector: 'staff',
+      plumbing_inspector: 'staff',
       finance: 'staff',
       records_custodian: 'staff',
       reviewer: 'staff',

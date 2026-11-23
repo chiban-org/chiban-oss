@@ -1,19 +1,28 @@
-import type { AbutterParams } from '@packs/nh/schema'
 import { sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { uuidArray } from '@/db/uuidList'
 import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import type { Pt } from '@/features/abutters/projection/types'
+import type { AbutterParams } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 
-export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture' | 'label'
+export type OverlayKind =
+  | 'region'
+  | 'corner'
+  | 'projected'
+  | 'connector'
+  | 'capture'
+  | 'buffer'
+  | 'label'
 
 export type Overlay = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,
   { kind: OverlayKind; text?: string }
 >
+export type OverlayFeature = Overlay['features'][number]
 
 const NEARBY_MARGIN_FT = 50
 
@@ -31,7 +40,8 @@ async function toLonLat(
   geometryWkt: string,
   bufferFt: number | null,
 ): Promise<GeoJSON.Geometry> {
-  const base = sql`ST_GeomFromText(${geometryWkt}, 3437)`
+  const srid = projectedSridParam()
+  const base = sql`ST_GeomFromText(${geometryWkt}, ${srid})`
   const shaped = bufferFt === null ? base : sql`ST_Buffer(${base}, ${bufferFt})`
   const result = await tx.execute<{ gj: string }>(
     sql`select ST_AsGeoJSON(ST_Transform(${shaped}, 4326), 7) as gj`,
@@ -46,7 +56,9 @@ export async function projectionOverlay(
   assumedRightOfWayFt: number,
   signal: AbortSignal,
 ): Promise<Overlay> {
-  const radius = params.maxCrossingFt + params.captureRadiusFt + NEARBY_MARGIN_FT
+  const captureRadiusFt = params.captureRadiusFt
+  if (captureRadiusFt === null) return { type: 'FeatureCollection', features: [] }
+  const radius = params.maxCrossingFt + captureRadiusFt + NEARBY_MARGIN_FT
   const inputs = await loadCrossingInputs(tx, applicantParcelIds, radius, signal)
   const result = projectAcross({
     applicantRings: inputs.applicantRings,
@@ -72,7 +84,7 @@ export async function projectionOverlay(
     await add('connector', wkt('LINESTRING', [point.corner, point.point]))
     await add('corner', wkt('POINT', [point.corner]))
     await add('projected', wkt('POINT', [point.point]))
-    await add('capture', wkt('POINT', [point.point]), params.captureRadiusFt)
+    await add('capture', wkt('POINT', [point.point]), captureRadiusFt)
   }
   if (features.length > 0) {
     const labelled = [...applicantParcelIds, ...inputs.others.map((o) => o.parcelId)]

@@ -1,0 +1,1 @@
+ALTER TABLE "abutter_lists" ADD COLUMN "selection_settings" jsonb;

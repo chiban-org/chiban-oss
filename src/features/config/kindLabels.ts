@@ -11,6 +11,7 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   local_code_amendment: 'Local code amendments',
   payment_settings: 'Payment settings',
   inspection_settings: 'Inspection settings',
+  building_program: 'Building permits and code',
   board_settings: 'Board settings',
   regional_contacts: 'Regional notice contacts',
   review_routes: 'Technical Review Committee routes',
@@ -31,6 +32,7 @@ export const KIND_DESCRIPTIONS: Record<ConfigKind, string> = {
   local_code_amendment: 'Changes the town has adopted to the state building code.',
   payment_settings: 'The convenience fee, who checks are payable to, and the receipt footer.',
   inspection_settings: 'Inspection days and hours, slot length, notice and booking limits.',
+  building_program: 'Whether the town issues building permits and which building code it enforces.',
   board_settings: 'Each board, how it posts public notice, and how abutter lists are drawn.',
   regional_contacts: 'Who is sent notice when an application may have impact beyond the town.',
   review_routes:
@@ -54,6 +56,7 @@ export const KIND_NEW_LABELS: Record<ConfigKind, string> = {
   local_code_amendment: 'New amendment',
   payment_settings: START_SETTINGS,
   inspection_settings: START_SETTINGS,
+  building_program: START_SETTINGS,
   board_settings: START_SETTINGS,
   regional_contacts: START_SETTINGS,
   review_routes: START_SETTINGS,
@@ -65,7 +68,7 @@ const EMPTY_COPY: Partial<Record<ConfigKind, { title: string; description: strin
   town_rule_setting: {
     title: 'No town rules are set',
     description:
-      "Until the town sets one, Chiban uses the value state law gives for each rule. Set a rule to record the town's own value and who adopted it.",
+      'Until the town sets a value, Chiban uses the starting value shown for each rule on the State law page. Check them against what the town has adopted.',
   },
   local_code_amendment: {
     title: 'No local amendments are on file',

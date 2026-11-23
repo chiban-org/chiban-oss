@@ -1,14 +1,18 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import {
   COUNSEL_OUTCOME_KINDS,
   COUNSEL_PURPOSES,
   counselOutcomes,
   counselReferrals,
+  cureNotices,
   documents,
+  type EnforcementStatus,
   enforcementCases,
+  enforcementOrders,
+  violationFindings,
+  violationNotices,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -16,7 +20,11 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
 import { buildCounselPacket } from '@/features/enforcement/counselPacket'
+import { COURT_OUTCOMES, type CounselOutcomeKind } from '@/features/enforcement/courtOutcomes'
+import { orderAvailableForFindings } from '@/features/enforcement/orderAvailability'
+import { NOT_LIVE_ORDER } from '@/features/enforcement/workPlanInput'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { civilDateSchema } from '@/features/packs/schema'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
@@ -27,6 +35,27 @@ const ReferSchema = z.object({
   referredOn: civilDateSchema,
 })
 
+async function counselNoticeSent(tx: Tx, caseId: string): Promise<boolean> {
+  const findings = await tx
+    .select({ status: violationFindings.status, provisionKind: violationFindings.provisionKind })
+    .from(violationFindings)
+    .where(eq(violationFindings.caseId, caseId))
+  if (orderAvailableForFindings(findings)) return true
+  const [[violation], [cure]] = await Promise.all([
+    tx
+      .select({ id: violationNotices.id })
+      .from(violationNotices)
+      .where(eq(violationNotices.caseId, caseId))
+      .limit(1),
+    tx
+      .select({ id: cureNotices.id })
+      .from(cureNotices)
+      .where(eq(cureNotices.caseId, caseId))
+      .limit(1),
+  ])
+  return violation !== undefined || cure !== undefined
+}
+
 export async function referToCounsel(
   db: Db,
   store: ObjectStore,
@@ -35,7 +64,10 @@ export async function referToCounsel(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
-  Result<{ referralId: string; packetDocumentId: string }, 'forbidden' | 'invalid' | 'not_found'>
+  Result<
+    { referralId: string; packetDocumentId: string },
+    'forbidden' | 'invalid' | 'not_found' | 'case_closed' | 'counsel_notice_required'
+  >
 > {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.refer_counsel', signal)
@@ -45,10 +77,13 @@ export async function referToCounsel(
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
     const [caseRow] = await tx
-      .select({ number: enforcementCases.number })
+      .select({ number: enforcementCases.number, status: enforcementCases.status })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
+      .for('update')
     if (caseRow === undefined) return err('not_found')
+    if (caseRow.status === 'closed') return err('case_closed')
+    if (!(await counselNoticeSent(tx, value.caseId))) return err('counsel_notice_required')
     const bytes = await buildCounselPacket(tx, value.caseId, value.referredOn, now, signal)
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(
@@ -92,6 +127,27 @@ export async function referToCounsel(
   })
 }
 
+async function movesIntoCourt(
+  tx: Tx,
+  caseId: string,
+  row: { status: EnforcementStatus },
+  kind: CounselOutcomeKind,
+): Promise<boolean> {
+  if (row.status !== 'violation_found' || !COURT_OUTCOMES.includes(kind)) return false
+  const [findings, orders] = await Promise.all([
+    tx
+      .select({ status: violationFindings.status, provisionKind: violationFindings.provisionKind })
+      .from(violationFindings)
+      .where(eq(violationFindings.caseId, caseId)),
+    tx
+      .select({ status: enforcementOrders.status })
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.caseId, caseId)),
+  ])
+  if (orders.some((o) => !NOT_LIVE_ORDER.includes(o.status))) return false
+  return !orderAvailableForFindings(findings)
+}
+
 const OutcomeSchema = z.object({
   referralId: z.string().uuid(),
   kind: z.enum(COUNSEL_OUTCOME_KINDS),
@@ -122,8 +178,8 @@ export async function recordCounselOutcome(
       .from(counselReferrals)
       .where(eq(counselReferrals.id, value.referralId))
     if (referral === undefined) return err('not_found')
-    await tx
-      .select({ id: enforcementCases.id })
+    const [caseRow] = await tx
+      .select({ status: enforcementCases.status, rowVersion: enforcementCases.rowVersion })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, referral.caseId))
       .for('update')
@@ -153,6 +209,14 @@ export async function recordCounselOutcome(
         recordedBy: actor.userId,
       })
       .returning({ id: counselOutcomes.id })
+    const intoCourt =
+      caseRow !== undefined && (await movesIntoCourt(tx, referral.caseId, caseRow, value.kind))
+    if (caseRow !== undefined && intoCourt) {
+      await tx
+        .update(enforcementCases)
+        .set({ status: 'in_court', rowVersion: caseRow.rowVersion + 1, updatedAt: new Date() })
+        .where(eq(enforcementCases.id, referral.caseId))
+    }
     await writeAudit(
       tx,
       {
@@ -160,7 +224,12 @@ export async function recordCounselOutcome(
         action: 'enforcement.counsel_outcome',
         entityType: 'enforcement_case',
         entityId: referral.caseId,
-        after: { outcomeId: row?.id, kind: value.kind, occurredOn: value.occurredOn },
+        after: {
+          outcomeId: row?.id,
+          kind: value.kind,
+          occurredOn: value.occurredOn,
+          ...(intoCourt ? { status: 'in_court' } : {}),
+        },
       },
       signal,
     )

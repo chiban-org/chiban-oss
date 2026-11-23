@@ -1,5 +1,5 @@
-import type { ProceedingClassification } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
+import type { ProceedingClassification } from '@/features/packs/schema'
 
 const STRATEGY_KEY = 'nh.abutters.adjacency_projection'
 const RESOLVER_KEY = 'nh.recipients.v1'
@@ -104,6 +104,8 @@ function planning(key: ProceedingClassification['key'], label: string, keys: str
       { state: 'under_review', key: 'hearing' },
     ],
     directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: PB_APPEAL_RIGHTS,
   } satisfies ProceedingClassification
 }
@@ -118,6 +120,8 @@ function zba(key: ProceedingClassification['key'], label: string, keys: string[]
     noticeRequirementKeys: ZBA_NOTICE_REQUIREMENTS,
     requiredSubsteps: [{ state: 'under_review', key: 'hearing' }],
     directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: ZBA_APPEAL_RIGHTS,
   } satisfies ProceedingClassification
 }
@@ -141,6 +145,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
   {
@@ -152,6 +158,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
   planning('nh.pb_site_plan', 'Site plan review', PB_PLAN_KEYS),
@@ -175,6 +183,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: ZBA_APPEAL_RIGHTS,
   },
   {
@@ -186,6 +196,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
   {
@@ -197,6 +209,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
   {
@@ -214,6 +228,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
   {
@@ -231,6 +247,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
+    recordingRequired: false,
     appealRights: '',
   },
 ]

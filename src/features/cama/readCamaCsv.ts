@@ -54,7 +54,7 @@ export function parseCamaFile(
 ): Result<CamaFile, CamaReadError> {
   let headers: string[] = []
   try {
-    const records = parse(decodeCama(bytes, mapping.encoding), {
+    const records = parse<Record<string, string>>(decodeCama(bytes, mapping.encoding), {
       columns: (first: string[]) => {
         headers = first.map((h) => h.trim())
         return headers
@@ -63,7 +63,7 @@ export function parseCamaFile(
       skip_empty_lines: true,
       relax_column_count: true,
       bom: true,
-    }) as Record<string, string>[]
+    })
     return ok({ headers, records: records.map((r) => new Map(Object.entries(r))) })
   } catch (e) {
     return err({

@@ -4,9 +4,10 @@ import { Download, Eye, PencilRuler } from 'lucide-react'
 import { type RefObject, useEffect, useState, useTransition } from 'react'
 import type { LetterPreview } from '@/components/config/letterBuilder/letterView'
 import { Pick } from '@/components/config/primitives'
+import { usePackText } from '@/components/PackTextProvider'
 import { Button } from '@/components/ui/button'
 import type { TemplateBuilderData } from '@/features/templates/builderData'
-import { documentKind } from '@/features/templates/kinds/documentKinds'
+import { kindRecord } from '@/features/templates/kinds/kindWords'
 import type { SampleRecord } from '@/features/templates/preview/previewTypes'
 import type { TemplatePreview } from '@/features/templates/preview/templatePreview'
 import type { TemplateKind } from '@/features/templates/templateSchema'
@@ -65,7 +66,7 @@ export function PreviewBar({ kind, data, anchor, previewing, onPreview }: Props)
       onPreview({ ...preview, recordLabel: samples?.find((s) => s.id === id)?.label ?? '' }),
     )
   const save = () => run(recordId, (preview) => download(preview.pdfBase64, `${kind}-preview.pdf`))
-  const record = documentKind(kind).record
+  const record = kindRecord(kind, usePackText().vocabulary)
   if (samples !== null && samples.length === 0) {
     return (
       <p className="m-0 text-sm text-muted-foreground">

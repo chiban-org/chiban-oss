@@ -1,5 +1,5 @@
 import { RSA_676_4 } from '@packs/nh/rules/boardUrls'
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 export const PLANNING_BOARD_RULES: PackRule[] = [
   {

@@ -18,7 +18,7 @@ Land use staff open it from **Inspections**. For an inspector, **Inspections** o
 1. Choose **Take a phone or counter request**.
 2. Enter the permit number and choose **Find permit**.
 3. Say how the request came in: **Phone** or **Counter**.
-4. Choose the **Inspection**. Only types still open on this permit are listed.
+4. Choose the **Inspection**. Only types still open on this permit are listed. When you arrive from the permit's **Book the final inspection** step, the final inspection is already first in the list.
 5. Pick a **Preferred day**, or leave **No preference**. The days listed are the days the town inspects.
 6. Fill in **Contact name**, **Contact phone** and **Access notes**.
 7. Choose **Record request**.

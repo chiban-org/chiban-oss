@@ -1,6 +1,12 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+import {
+  completenessCopy,
+  completenessStepFor,
+  offersCompleteness,
+} from '@/features/applications/completenessStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
@@ -11,6 +17,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { markCompleteAction } from './actions'
 import { adjustClockAction } from './clockFeeActions'
 import { applyConditionAction, setConditionStatusAction } from './conditionActions'
+import { sendIncompleteNoticeAction } from './incompleteNoticeActions'
 
 function accountNote(party: StaffApplicationView['parties'][number]): string {
   if (party.account === null) return party.linked ? '' : ', has not claimed this project yet'
@@ -46,7 +53,7 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
 
 export function completenessApplies(view: StaffApplicationView): boolean {
   return (
-    view.classification === 'nh.building_permit' &&
+    offersCompleteness(view) &&
     view.completedDate === null &&
     ['submitted', 'under_review'].includes(view.state)
   )
@@ -73,22 +80,71 @@ export function MarkCompleteForm({
   )
 }
 
+function takesIncompleteNotice(view: StaffApplicationView): boolean {
+  return completenessStepFor(view.classification) === 'meets_completeness_clock'
+}
+
+function incompleteNoticeApplies(view: StaffApplicationView): boolean {
+  return view.state === 'submitted' && view.completedDate === null && takesIncompleteNotice(view)
+}
+
+function IncompleteNoticeForm({ view }: { view: StaffApplicationView }) {
+  return (
+    <ActionForm
+      action={sendIncompleteNoticeAction}
+      submitLabel="Send an incomplete notice"
+      variant="outline"
+    >
+      <input type="hidden" name="applicationId" value={view.id} />
+      <AreaField label="What is missing" name="reason" required rows={3} />
+    </ActionForm>
+  )
+}
+
+function SentIncompleteNotices({ view }: { view: StaffApplicationView }) {
+  if (!takesIncompleteNotice(view) || view.incompleteNotices.length === 0) {
+    return null
+  }
+  return (
+    <ul aria-label="Incomplete notices sent" className="list-none p-0">
+      {view.incompleteNotices.map((notice) => (
+        <li key={notice.id} className="record-item">
+          {`Incomplete notice sent ${formatCivilDate(notice.sentOn)}: ${notice.reason}`}
+          {notice.documentId === null ? null : (
+            <>
+              {' '}
+              <a {...NEW_TAB} href={`/api/documents/${notice.documentId}`}>
+                Open notice
+              </a>
+            </>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function CompletenessPanel({
   view,
   formElsewhere = false,
+  canMarkComplete = true,
 }: {
   view: StaffApplicationView
   formElsewhere?: boolean
+  canMarkComplete?: boolean
 }) {
+  const mayAct = canMarkComplete && completenessApplies(view)
   return (
     <section aria-label="Completeness" id="completeness">
       <h2>Completeness</h2>
       <p>
         {view.completedDate === null
-          ? 'The application has not been marked complete, so the decision clock has not started.'
+          ? completenessCopy(view).pending
           : `Marked complete on ${formatCivilDate(view.completedDate)}.`}
       </p>
-      {completenessApplies(view) && !formElsewhere ? <MarkCompleteForm view={view} /> : null}
+      {mayAct && !formElsewhere ? <MarkCompleteForm view={view} /> : null}
+      {mayAct && incompleteNoticeApplies(view) ? <IncompleteNoticeForm view={view} /> : null}
+      <SentIncompleteNotices view={view} />
     </section>
   )
 }

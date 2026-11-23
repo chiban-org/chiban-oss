@@ -1,10 +1,10 @@
+import { doc, fields, heading, section } from '@/features/templates/doc/build'
+import { textToDoc } from '@/features/templates/doc/textToDoc'
 import {
   DECISION_LETTER_TEXT,
   HEARING_NOTICE_TEXT,
   NOTICE_OF_DECISION_TEXT,
-} from '@packs/nh/starters/boards/shared'
-import { doc, fields, heading, section } from '@/features/templates/doc/build'
-import { textToDoc } from '@/features/templates/doc/textToDoc'
+} from '@/features/templates/kinds/boardLetterTexts'
 import {
   APPLICATION_FIELDS,
   type DocumentKindDef,
@@ -35,8 +35,10 @@ export const HEARING_NOTICE_KIND: DocumentKindDef = {
     ...APPLICATION_FIELDS,
     ...MEETING_FIELDS,
     'hearing.kind',
+    'hearing.kindPhrase',
     'notice.recipientName',
     'notice.recipientAddress',
+    'notice.issuedOn',
   ],
   sections: [],
   locked: [],

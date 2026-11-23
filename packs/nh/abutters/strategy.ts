@@ -1,5 +1,4 @@
 import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
-import type { AbutterParams } from '@packs/nh/schema'
 import type { Tx } from '@/db/client'
 import { mergeCandidates, selectAdjacency } from '@/features/abutters/baseSelection'
 import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
@@ -15,6 +14,7 @@ import type {
   IncompleteReason,
   StrategyInput,
 } from '@/features/abutters/types'
+import type { AbutterParams } from '@/features/packs/schema'
 
 const NEARBY_MARGIN_FT = 50
 
@@ -43,7 +43,9 @@ async function selectWithProjection(
   params: AbutterParams,
   signal: AbortSignal,
 ): Promise<CandidateSelection> {
-  const radius = params.maxCrossingFt + params.captureRadiusFt + NEARBY_MARGIN_FT
+  const captureRadiusFt = params.captureRadiusFt
+  if (captureRadiusFt === null) return base
+  const radius = params.maxCrossingFt + captureRadiusFt + NEARBY_MARGIN_FT
   const inputs = await loadCrossingInputs(tx, input.applicantParcelIds, radius, signal)
   const result = projectAcross({
     applicantRings: inputs.applicantRings,
@@ -55,7 +57,7 @@ async function selectWithProjection(
     tx,
     result,
     input.applicantParcelIds,
-    params.captureRadiusFt,
+    captureRadiusFt,
     inputs.features,
     signal,
   )

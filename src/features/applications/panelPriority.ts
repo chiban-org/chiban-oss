@@ -6,6 +6,7 @@ export type PanelKey =
   | 'hearings'
   | 'completeness'
   | 'clocks'
+  | 'decisionNotice'
   | 'notes'
   | 'activity'
   | 'conditions'
@@ -18,9 +19,21 @@ export type PanelKey =
   | 'appeals'
   | 'records'
 
-const OUTCOME: readonly PanelKey[] = ['documents', 'inspections']
-const REVIEW: readonly PanelKey[] = ['reviewers', 'completeness', 'clocks', 'fees']
-const ISSUED: readonly PanelKey[] = ['inspections', 'conditions', 'fees', 'appeals']
+const OUTCOME: readonly PanelKey[] = ['decisionNotice', 'documents', 'inspections']
+const REVIEW: readonly PanelKey[] = [
+  'reviewers',
+  'completeness',
+  'clocks',
+  'decisionNotice',
+  'fees',
+]
+const ISSUED: readonly PanelKey[] = [
+  'decisionNotice',
+  'inspections',
+  'conditions',
+  'fees',
+  'appeals',
+]
 const SUSPENDED: readonly PanelKey[] = ['appeals', 'inspections', 'conditions', 'fees']
 const BOARD_BEFORE_DECISION: readonly PanelKey[] = ['board', 'hearings', 'clocks']
 
@@ -28,7 +41,7 @@ const PERMIT_PRIORITY: Record<CoreState, readonly PanelKey[]> = {
   draft: ['parties', 'fees', 'documents'],
   submitted: REVIEW,
   under_review: REVIEW,
-  decided: ['conditions', 'fees', 'edition', 'regional'],
+  decided: ['decisionNotice', 'conditions', 'fees', 'edition', 'regional'],
   issued: ISSUED,
   suspended: SUSPENDED,
   closed: OUTCOME,
@@ -55,11 +68,13 @@ const HISTORY: readonly PanelKey[] = ['activity', 'records', 'parties']
 const PERMIT_ORDER = new Map(Object.entries(PERMIT_PRIORITY))
 const BOARD_ORDER = new Map(Object.entries(BOARD_PRIORITY))
 
-export function panelPriority(state: CoreState, board: boolean): PanelKey[] {
-  return [...((board ? BOARD_ORDER : PERMIT_ORDER).get(state) ?? [])]
+export function panelPriority(state: CoreState, board: boolean, hasNotice = false): PanelKey[] {
+  return [...((board ? BOARD_ORDER : PERMIT_ORDER).get(state) ?? [])].filter(
+    (key) => hasNotice || key !== 'decisionNotice',
+  )
 }
 
-export function historyPanels(state: CoreState, board: boolean): PanelKey[] {
-  const lead = panelPriority(state, board)
+export function historyPanels(state: CoreState, board: boolean, hasNotice = false): PanelKey[] {
+  const lead = panelPriority(state, board, hasNotice)
   return HISTORY.filter((key) => !lead.includes(key))
 }

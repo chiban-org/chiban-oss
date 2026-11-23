@@ -1,0 +1,35 @@
+import { ME_ABUTTER_PARAMS } from '@packs/me/abutters/params'
+import { ME_CLASSIFICATIONS } from '@packs/me/classifications'
+import { ME_CODE_EDITIONS } from '@packs/me/codeEditions'
+import { ME_RECORD_SERIES, ME_RECORD_SERIES_DEFAULTS } from '@packs/me/recordSeries'
+import { ME_ROLES } from '@packs/me/roles'
+import { APPEAL_RULES } from '@packs/me/rules/appeals'
+import { BOARD_OF_APPEALS_RULES } from '@packs/me/rules/boardOfAppeals'
+import { BUILDING_RULES } from '@packs/me/rules/building'
+import { ENFORCEMENT_RULES } from '@packs/me/rules/enforcement'
+import { LOCAL_PERMIT_RULES } from '@packs/me/rules/localPermits'
+import { PLANNING_BOARD_RULES } from '@packs/me/rules/planningBoard'
+import { PLUMBING_RULES } from '@packs/me/rules/plumbing'
+import { FOAA_RULES } from '@packs/me/rules/rightToKnow'
+import type { PackManifest } from '@/features/packs/schema'
+
+export const ME_PACK_MANIFEST: PackManifest = {
+  id: 'me',
+  version: '0.10.0',
+  rules: [
+    ...BUILDING_RULES,
+    ...LOCAL_PERMIT_RULES,
+    ...PLUMBING_RULES,
+    ...PLANNING_BOARD_RULES,
+    ...BOARD_OF_APPEALS_RULES,
+    ...APPEAL_RULES,
+    ...ENFORCEMENT_RULES,
+    ...FOAA_RULES,
+  ],
+  classifications: ME_CLASSIFICATIONS,
+  codeEditions: ME_CODE_EDITIONS,
+  recordSeries: ME_RECORD_SERIES,
+  recordSeriesDefaults: ME_RECORD_SERIES_DEFAULTS,
+  abutterParams: [ME_ABUTTER_PARAMS],
+  roles: ME_ROLES,
+}

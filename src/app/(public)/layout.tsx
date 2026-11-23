@@ -6,6 +6,7 @@ import { CONTENT_ID, SkipLink } from '@/components/public/SkipLink'
 import { TownFooter } from '@/components/public/TownFooter'
 import { ServiceNotice } from '@/components/ServiceNotice'
 import { db } from '@/db/client'
+import { loadNavViewer } from '@/features/staffNav/viewer'
 import { loadPublicTown } from '@/features/town/publicTown'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getActor } from '@/server/getActor'
@@ -29,7 +30,15 @@ export default async function PublicLayout({ children }: { children: ReactNode }
     <SiteRoot>
       <div className="public-shell flex min-h-screen flex-col">
         <SkipLink />
-        <PublicHeader town={town} viewer={actor} signOutAction={signOutPublicAction} />
+        <PublicHeader
+          town={town}
+          viewer={
+            actor?.kind === 'staff'
+              ? { ...actor, capabilities: (await loadNavViewer(db, actor, signal)).capabilities }
+              : actor
+          }
+          signOutAction={signOutPublicAction}
+        />
         <ServiceNotice mode={service.mode} exportUntil={service.exportUntil} />
         <div
           id={CONTENT_ID}

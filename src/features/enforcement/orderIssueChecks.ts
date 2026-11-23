@@ -1,9 +1,15 @@
-import type { CeaseAndDesistRule, OrderContentField } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { type enforcementOrders, type violationFindings, violationNotices } from '@/db/schema'
+import {
+  cureNotices,
+  type enforcementOrders,
+  type violationFindings,
+  violationNotices,
+} from '@/db/schema'
+import { packHasCureRules } from '@/features/enforcement/cureRules'
 import { noticeOfViolationSent } from '@/features/enforcement/noticeRequirement'
 import { missingOrderContent } from '@/features/enforcement/orderPdf'
+import type { CeaseAndDesistRule, OrderContentField } from '@/features/packs/schema'
 
 export function contentProblem(
   rule: CeaseAndDesistRule,
@@ -32,5 +38,16 @@ export async function issueBlock(
     .select({ id: violationNotices.id })
     .from(violationNotices)
     .where(eq(violationNotices.caseId, order.caseId))
-  return noticeOfViolationSent(notices) ? null : 'notice_required'
+  if (noticeOfViolationSent(notices)) return null
+  return (await cureNoticeSentFor(tx, order.caseId)) ? null : 'notice_required'
+}
+
+async function cureNoticeSentFor(tx: Tx, caseId: string): Promise<boolean> {
+  if (!packHasCureRules()) return false
+  const [sent] = await tx
+    .select({ id: cureNotices.id })
+    .from(cureNotices)
+    .where(eq(cureNotices.caseId, caseId))
+    .limit(1)
+  return sent !== undefined
 }

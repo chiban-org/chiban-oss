@@ -2,12 +2,18 @@ import { asc, desc, eq } from 'drizzle-orm'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
 import type { Db } from '@/db/client'
 import { appealNodes, boardDecisions, boardMeetings, documents, hearings } from '@/db/schema'
+import { loadGraphNodeRows } from '@/features/appeals/graphNodeRows'
+import { packWaitsForFinalApproval } from '@/features/appeals/projectFinality'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { seatedMemberNames } from '@/features/decisions/seatedVoters'
+import {
+  loadSignificanceQuestion,
+  type SignificanceQuestion,
+} from '@/features/decisions/significance'
 import { evidenceOf } from '@/features/documents/evidence'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { channelLabel } from '@/features/notices/channels'
@@ -64,6 +70,8 @@ export interface HearingView {
   defaultHeldOn: string
   defaultVotedOn: string
   seatedMembers: string[]
+  offerFinalApproval: boolean
+  significanceQuestion: SignificanceQuestion | null
 }
 
 export async function timeZoneOf(db: Db, signal: AbortSignal): Promise<string> {
@@ -186,15 +194,13 @@ export async function loadHearingView(
       row.meeting.boardId,
       (row.hearing.heldOn ?? row.meeting.meetingDate) as CivilDate,
     ),
+    offerFinalApproval: packWaitsForFinalApproval(),
+    significanceQuestion: await loadSignificanceQuestion(db, app, signal),
   }
 }
 
 export async function loadApplicationAppealNodes(db: Db, applicationId: string) {
-  return await db
-    .select()
-    .from(appealNodes)
-    .where(eq(appealNodes.applicationId, applicationId))
-    .orderBy(asc(appealNodes.occurredOn), asc(appealNodes.createdAt))
+  return await loadGraphNodeRows(db, applicationId)
 }
 
 export async function parcelDisplayFor(db: Db, parcelId: string): Promise<string> {

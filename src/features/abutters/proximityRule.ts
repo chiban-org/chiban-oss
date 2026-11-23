@@ -1,4 +1,4 @@
-import type { ListAgeRule, ProximityRule } from '@packs/nh/schema'
+import type { ListAgeRule, ProximityRule } from '@/features/packs/schema'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 
 export interface ProximityVerdict {

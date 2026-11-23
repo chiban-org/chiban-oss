@@ -51,11 +51,18 @@ const sidebars: SidebarsConfig = {
       'operations/demo-overlay',
     ]),
     section('State packs', [
+      'state-packs/choosing-a-pack',
       {
         type: 'category',
         label: 'New Hampshire',
         collapsed: false,
         items: ['state-packs/new-hampshire/starters', 'state-packs/new-hampshire/deadlines'],
+      },
+      {
+        type: 'category',
+        label: 'Maine',
+        collapsed: false,
+        items: ['state-packs/maine/starters', 'state-packs/maine/deadlines'],
       },
       'state-packs/writing-a-pack',
     ]),

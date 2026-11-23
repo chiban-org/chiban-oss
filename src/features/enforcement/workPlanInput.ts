@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule, RecipientRole } from '@packs/nh/schema'
 import type {
   EnforcementStatus,
   enforcementFines,
@@ -8,10 +7,13 @@ import type {
   violationNotices,
 } from '@/db/schema'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
+import type { CasePlanCure } from '@/features/enforcement/cureRules'
 import type { MotionBlock } from '@/features/enforcement/motionGate'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
+import type { CeaseAndDesistRule, RecipientRole } from '@/features/packs/schema'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
+import { orderAvailableForFindings } from './orderAvailability'
 import type { CaseActionKind } from './workPlanTypes'
 
 type OrderRow = typeof enforcementOrders.$inferSelect
@@ -42,11 +44,14 @@ export interface CasePlanInput {
   today: CivilDate
   stay: Pick<StayState, 'stayed' | 'reason'>
   banner: string | null
-  findings: readonly Pick<typeof violationFindings.$inferSelect, 'id' | 'status'>[]
-  notices: readonly Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'>[]
+  findings: readonly (Pick<typeof violationFindings.$inferSelect, 'id' | 'status'> &
+    Partial<Pick<typeof violationFindings.$inferSelect, 'provisionKind'>>)[]
+  notices: readonly (Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'> &
+    Partial<Pick<typeof violationNotices.$inferSelect, 'correctBy'>>)[]
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]
   referrals: readonly { outcomes: readonly { kind: string }[] }[]
+  cure?: CasePlanCure | null
 }
 
 export interface CasePlanExtras {
@@ -54,15 +59,28 @@ export interface CasePlanExtras {
   responsible: string | null
 }
 
-const NOT_LIVE: readonly OrderRow['status'][] = ['draft', 'annulled', 'withdrawn', 'complied']
+export const NOT_LIVE_ORDER: readonly OrderRow['status'][] = [
+  'draft',
+  'annulled',
+  'withdrawn',
+  'complied',
+]
 
 export function liveOrders(input: CasePlanInput): CasePlanOrder[] {
-  return input.orders.filter((o) => !NOT_LIVE.includes(o.row.status))
+  return input.orders.filter((o) => !NOT_LIVE_ORDER.includes(o.row.status))
 }
 
 export function liveOrder(input: CasePlanInput): CasePlanOrder | null {
   const live = liveOrders(input)
   return live.find((o) => stepOf(o, 'judgment') === null) ?? live[0] ?? null
+}
+
+export function courtWithoutOrder(input: CasePlanInput): boolean {
+  return (
+    input.staff.row.status === 'in_court' &&
+    liveOrder(input) === null &&
+    !orderAvailableForFindings(input.findings)
+  )
 }
 
 const COUNSEL_DECIDED: readonly string[] = [

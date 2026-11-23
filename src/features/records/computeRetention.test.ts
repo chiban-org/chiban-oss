@@ -1,5 +1,5 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
+import type { RecordSeries } from '@/features/packs/schema'
 import { computeRetention } from '@/features/records/computeRetention'
 import type { CivilDate } from '@/types/civilDate'
 

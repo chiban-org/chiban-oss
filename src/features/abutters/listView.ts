@@ -1,22 +1,23 @@
-import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { abutterListCandidates, abutterListRecipients, applications, parcels } from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
+import { bufferOverlay } from '@/features/abutters/bufferOverlay'
 import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
-import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
+import { type Overlay, type OverlayFeature, projectionOverlay } from '@/features/abutters/overlay'
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
 import { ageText, reasonLines } from '@/features/abutters/reasonText'
 import { frozenView, type RecipientView, recipientView } from '@/features/abutters/recipientView'
 import type { Recipient } from '@/features/abutters/resolution'
-import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import {
   type IncompleteLine,
   incompleteLines,
   type SourceLine,
   sourceLines,
 } from '@/features/abutters/sourceLinks'
+import { effectiveBufferFt } from '@/features/abutters/townBuffer'
 import type { Candidate } from '@/features/abutters/types'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings as loadBoardSettings } from '@/features/boards/boardSettings'
@@ -112,6 +113,17 @@ function boundsOf(overlay: Overlay): [number, number, number, number] | null {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 
+function withOutline(projected: Overlay | null, outline: OverlayFeature | null): Overlay | null {
+  if (outline === null) return projected
+  const features = projected?.features ?? []
+  const firstLabel = features.findIndex((f) => f.properties.kind === 'label')
+  const at = firstLabel === -1 ? features.length : firstLabel
+  return {
+    type: 'FeatureCollection',
+    features: [...features.slice(0, at), outline, ...features.slice(at)],
+  }
+}
+
 async function candidateRows(
   tx: Tx,
   listId: string,
@@ -154,6 +166,17 @@ async function candidateRows(
   )
 }
 
+function listBufferFt(
+  list: ListRow,
+  boardBufferFt: number | null | undefined,
+  params: Parameters<typeof effectiveBufferFt>[1],
+): number | null {
+  const saved = list.selectionSettings as ListSnapshot['settings'] | null
+  return saved === null || saved === undefined || !('bufferFt' in saved)
+    ? effectiveBufferFt(boardBufferFt, params)
+    : saved.bufferFt
+}
+
 export async function loadListView(
   db: Db,
   actor: Actor,
@@ -179,16 +202,22 @@ export async function loadListView(
     const settings = (await loadBoardSettings(tx, signal)).abutters
     const parcelIds = await applicantParcelIds(tx, list.applicationId, signal)
     const showMap = list.status === 'draft' || list.status === 'issued'
-    const overlay =
+    const abutterParams = primaryAbutterParams()
+    const townBufferFt = listBufferFt(list, settings.bufferFt, abutterParams)
+    const projected =
       showMap && settings.projectionEnabled
         ? await projectionOverlay(
             tx,
             parcelIds,
-            NH_ABUTTER_PARAMS,
+            abutterParams,
             settings.assumedRightOfWayFt,
             signal,
           )
         : null
+    const outline = showMap
+      ? await bufferOverlay(tx, { applicantParcelIds: parcelIds, bufferFt: townBufferFt }, signal)
+      : null
+    const overlay = withOutline(projected, outline)
     const layers = list.layers as Record<string, LayerStatus>
     const notes = (['parcels', 'roads', 'water'] as const).flatMap((key) => {
       const status = layers[key]

@@ -1,3 +1,5 @@
+import { releaseHintForRequest, releaseHintWithoutRequest } from '@/features/rtk/requestCopy'
+
 export interface ApprovalHintProps {
   requestId: string | undefined
   recordHref: string | null
@@ -20,13 +22,10 @@ export function ApprovalHint({ requestId, recordHref, canPublish }: ApprovalHint
           : ' That takes permission to show documents on the public site, so a staff member who has it approves it.'}
       </p>
       {requestId === undefined ? (
-        <p>
-          A copy for a Right-to-Know request is approved in the release step on the request page.
-          Open this page from the request to make one.
-        </p>
+        <p>{releaseHintWithoutRequest()} Open this page from the request to make one.</p>
       ) : (
         <p>
-          A copy for this Right-to-Know request is approved in the release step on the{' '}
+          {releaseHintForRequest()}{' '}
           <Place href={`/staff/records/requests/${requestId}`}>request page</Place>.
         </p>
       )}

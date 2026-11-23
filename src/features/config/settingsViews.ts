@@ -2,7 +2,7 @@ import { asc, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions, users } from '@/db/schema'
 import { FIELD_LABELS } from '@/features/config/fieldLabels'
-import type { ConfigKind } from '@/features/config/kinds'
+import { type ConfigKind, TownRuleSettingBodySchema } from '@/features/config/kinds'
 import { skeletonBodyFor } from '@/features/config/skeletons'
 import { type FieldChange, versionChanges } from '@/features/config/versionChanges'
 import { loadPack } from '@/features/packs/loadPack'
@@ -14,6 +14,7 @@ export interface KeyRow {
   label: string | null
   publishedVersion: number | null
   hasDraft: boolean
+  inUseValue?: string
   documentKind?: string
 }
 
@@ -27,6 +28,18 @@ export function labelOfBody(kind: ConfigKind, body: unknown): string | null {
   if (kind !== 'town_rule_setting') return stringField(body, 'label')
   const ruleKey = stringField(body, 'ruleKey')
   return loadPack().rules.find((r) => r.key === ruleKey)?.label ?? null
+}
+
+export function inUseValueOf(kind: ConfigKind, body: unknown): string | null {
+  if (kind !== 'town_rule_setting') return null
+  const parsed = TownRuleSettingBodySchema.safeParse(body)
+  if (!parsed.success) return null
+  const rule = loadPack().rules.find((r) => r.key === parsed.data.ruleKey)
+  const unit =
+    rule?.kind === 'town_setting' ? rule.unit : rule?.kind === 'clock' ? rule.length.unit : null
+  return unit === null
+    ? String(parsed.data.value)
+    : `${String(parsed.data.value)} ${unit.replaceAll('_', ' ')}`
 }
 
 function isTemplateKind(value: string | null): value is TemplateKind {
@@ -58,7 +71,11 @@ export async function listKeysOfKind(
       publishedVersion: null,
       hasDraft: false,
     }
-    if (row.status === 'published') held.publishedVersion = row.version
+    if (row.status === 'published') {
+      held.publishedVersion = row.version
+      const inUse = inUseValueOf(kind, row.body)
+      if (inUse !== null) held.inUseValue = inUse
+    }
     if (row.status === 'draft') held.hasDraft = true
     if (row.status !== 'superseded') {
       held.label ??= labelOfBody(kind, row.body)

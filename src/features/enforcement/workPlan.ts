@@ -1,8 +1,10 @@
 import type { EnforcementStatus } from '@/db/schema'
 import { CASE_TRANSITIONS, noViolationAllowed } from '@/features/enforcement/caseTransitions'
+import { boardLabel } from '@/features/packs/vocabulary'
 import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
+import { cureDue, remedyActions } from './workPlanCure'
 import {
   type CasePlanExtras,
   type CasePlanInput,
@@ -11,6 +13,7 @@ import {
   soonestAnswer,
   stepOf,
 } from './workPlanInput'
+import { holdActive, holdReleaseStep } from './workPlanNoOrder'
 import { requirementGroups } from './workPlanRequirements'
 import { currentStep, type Step } from './workPlanSteps'
 import type { CaseDue, CaseMove, CaseNowStep, CaseWorkPlan } from './workPlanTypes'
@@ -23,6 +26,7 @@ const OUTCOMES: ReadonlyMap<EnforcementStatus, string> = new Map([
 ])
 
 const MOVES: readonly CaseMove[] = ['investigating', 'no_violation', 'resolved', 'closed']
+const ENDINGS: readonly EnforcementStatus[] = ['resolved', 'closed']
 const DUE_STATUSES: readonly EnforcementStatus[] = ['order_issued', 'in_court']
 
 function dueAt(key: CaseDue['key'], label: string, date: string, today: CivilDate): CaseDue {
@@ -48,7 +52,9 @@ function correctiveDue(order: CasePlanOrder | null, today: CivilDate): CaseDue |
 }
 
 export function caseDue(input: CasePlanInput): CaseDue | null {
-  if (input.stay.stayed || !DUE_STATUSES.includes(input.staff.row.status)) return null
+  if (input.stay.stayed) return null
+  if (input.staff.row.status === 'violation_found') return cureDue(input)
+  if (!DUE_STATUSES.includes(input.staff.row.status)) return null
   const order = liveOrder(input)
   const answer = soonestAnswer(input)
   if (answer !== undefined) return dueAt('answer', 'Answer due', answer.due.due, input.today)
@@ -59,14 +65,14 @@ export function duePhrase(due: CaseDue): string {
   return `${due.label} ${formatCivilDate(due.date)}, ${daysLeftPhrase(due.daysLeft)}.`
 }
 
-function actorLabel(step: Step, responsible: string | null): string {
+export function actorLabel(step: Step, responsible: string | null): string {
   switch (step.actor) {
     case 'town':
       return responsible === null ? 'Town' : `Town (${responsible})`
     case 'respondent':
       return step.actorName === null ? 'Respondent' : `Respondent (${step.actorName})`
     case 'zba':
-      return 'Zoning Board of Adjustment'
+      return boardLabel('zba')
     case 'court':
       return 'Court'
     case 'counsel':
@@ -109,13 +115,32 @@ function movesOf(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlan
     (to): to is CaseMove =>
       (MOVES as readonly string[]).includes(to) &&
       to !== inCard &&
+      !(holdActive(input) && ENDINGS.includes(to)) &&
       (to !== 'no_violation' || noViolationAllowed(status, statuses)),
   )
 }
 
+const HELD_NOTE = 'Release the development hold before resolving or closing the case.'
+
+function heldNote(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlanExtras) {
+  if (!holdActive(input) || !extras.abilities.has('move') || now?.key === 'hold.release') {
+    return null
+  }
+  const endings = CASE_TRANSITIONS[input.staff.row.status].filter((to) => ENDINGS.includes(to))
+  return endings.length > 0 ? HELD_NOTE : null
+}
+
+function holdFirst(step: Step | null, input: CasePlanInput): Step | null {
+  if (!holdActive(input)) return step
+  const closes = step === null || (step.action?.kind === 'move' && step.action.to === 'closed')
+  return closes && CASE_TRANSITIONS[input.staff.row.status].includes('closed')
+    ? holdReleaseStep('closing')
+    : step
+}
+
 export function planCaseWork(input: CasePlanInput, extras: CasePlanExtras): CaseWorkPlan {
   const status = input.staff.row.status
-  const step = currentStep(input)
+  const step = holdFirst(currentStep(input), input)
   const due = caseDue(input)
   const now = nowOf(allowed(step, extras), input)
   return {
@@ -124,7 +149,9 @@ export function planCaseWork(input: CasePlanInput, extras: CasePlanExtras): Case
     sentence: sentenceOf(status, step, due, extras.responsible),
     now,
     due,
+    remedies: remedyActions(input).filter((a) => extras.abilities.has(a.kind)),
     groups: requirementGroups(input),
     moves: movesOf(input, now, extras),
+    heldNote: heldNote(input, now, extras),
   }
 }

@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DueLine } from '@/components/enforcement/DueLine'
 import { computeSubjectDue } from '@/features/clocks/subjectDue'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -18,7 +18,7 @@ const rule = (() => {
 const due = computeSubjectDue(rule, d('2027-03-01'), {
   holidays: packHolidayCalendar(),
   packVersion: loadPack().version,
-  citations: PACK_COUNTING_CITATIONS,
+  citations: packCountingCitations(),
 })
 
 describe('DueLine', () => {

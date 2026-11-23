@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule, RecipientRole } from '@packs/nh/schema'
 import { NEW_TAB } from '@/components/newTab'
 import {
   ROLE_CHECK_LABELS,
@@ -8,6 +7,7 @@ import {
 } from '@/features/enforcement/labels'
 import type { ServiceState } from '@/features/enforcement/service'
 import { coveredByOwner, type ServiceStatus } from '@/features/enforcement/serviceStatus'
+import type { CeaseAndDesistRule, RecipientRole } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const MISSING = 'rounded-md bg-highlight px-2 py-1 font-semibold'

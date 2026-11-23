@@ -34,7 +34,7 @@ function chips() {
 
 describe('the section field', () => {
   it('shows chips for the chosen kind and changes them with the kind', () => {
-    render(<ProvisionFields suggestions={suggestions} />)
+    render(<ProvisionFields suggestions={suggestions} buildingCode />)
     expect(chips()).toEqual([
       'Zoning Ordinance Section 6.1Used 3 times',
       'Zoning Ordinance Section 4.2, accessory structure setbacksTown list',
@@ -46,7 +46,7 @@ describe('the section field', () => {
   })
 
   it('fills the field from a chip', () => {
-    render(<ProvisionFields suggestions={suggestions} />)
+    render(<ProvisionFields suggestions={suggestions} buildingCode />)
     fireEvent.click(screen.getByRole('button', { name: /Section 4\.2/ }))
     expect(field()).toHaveProperty(
       'value',
@@ -55,7 +55,7 @@ describe('the section field', () => {
   })
 
   it('suggests a section by a title word and picks it with the arrow keys and Enter', () => {
-    render(<ProvisionFields suggestions={suggestions} />)
+    render(<ProvisionFields suggestions={suggestions} buildingCode />)
     fireEvent.change(field(), { target: { value: 'setback' } })
     expect(field().getAttribute('aria-expanded')).toBe('true')
     const options = within(screen.getByRole('listbox')).getAllByRole('option')
@@ -73,7 +73,7 @@ describe('the section field', () => {
   })
 
   it('closes the list with Escape and keeps free text as typed', () => {
-    render(<ProvisionFields suggestions={suggestions} />)
+    render(<ProvisionFields suggestions={suggestions} buildingCode />)
     fireEvent.change(field(), { target: { value: 'Section 4' } })
     expect(field().getAttribute('aria-expanded')).toBe('true')
     fireEvent.keyDown(field(), { key: 'Escape' })
@@ -83,8 +83,25 @@ describe('the section field', () => {
     expect(screen.queryByRole('listbox')).toBeNull()
   })
 
+  it('leaves out building code when the case cannot take one', () => {
+    render(<ProvisionFields suggestions={suggestions} buildingCode={false} />)
+    const kinds = within(screen.getByLabelText(/What was violated/))
+      .getAllByRole('option')
+      .map((o) => o.getAttribute('value'))
+    expect(kinds).not.toContain('building_code')
+    expect(kinds).toContain('zoning_ordinance')
+  })
+
+  it('offers building code when the case can take one', () => {
+    render(<ProvisionFields suggestions={suggestions} buildingCode />)
+    const kinds = within(screen.getByLabelText(/What was violated/))
+      .getAllByRole('option')
+      .map((o) => o.getAttribute('value'))
+    expect(kinds).toContain('building_code')
+  })
+
   it('submits the section under the provisionRef name', () => {
-    render(<ProvisionFields suggestions={null} defaultRef="Section 9" />)
+    render(<ProvisionFields suggestions={null} buildingCode defaultRef="Section 9" />)
     expect(field().getAttribute('name')).toBe('provisionRef')
     expect(screen.queryByRole('group', { name: 'Common sections' })).toBeNull()
   })

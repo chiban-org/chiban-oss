@@ -1,6 +1,7 @@
-import type { ClockRule } from '@packs/nh/schema'
 import type { clockAdjustments, clocks } from '@/db/schema'
 import type { Sourced } from '@/features/fees/sourced'
+import type { ClockRule } from '@/features/packs/schema'
+import { rehearingWords } from '@/features/packs/vocabulary'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 type ClockRow = typeof clocks.$inferSelect
@@ -13,12 +14,18 @@ export const START_EVENT_LABELS: Record<string, string> = {
   regional_impact_notice_mailed: 'Regional impact notice mailed',
   acceptance_meeting_set: 'Meeting set',
   application_accepted: 'Application accepted as complete',
+  hearing_held: 'Hearing held',
   final_approval: 'Final approval',
+  final_written_approval: 'Final written approval',
   board_vote: 'Board vote',
   decision_filed: 'Decision filed',
-  rehearing_vote: 'Rehearing vote',
+  get rehearing_vote() {
+    return `${rehearingWords().capitalised} vote`
+  },
+  project_final_approval: 'Final municipal approval of the project',
   administrative_decision: 'Administrative decision',
   order_served: 'Order served',
+  cure_notice_sent: 'Cure notice sent',
   judgment_entered: 'Judgment entered',
   rtk_request_received: 'Request received',
   rtk_time_statement: 'Time statement made',
@@ -51,6 +58,7 @@ export interface ClockExplanation {
   extensionPolicy: string
   allowedAdjustments: AdjustmentKind[]
   status: ClockRow['status']
+  supersededReason: string | null
   metOn: CivilDate | null
   daysRemaining: number
 }
@@ -130,6 +138,7 @@ export function explainClock(
     extensionPolicy: extensionPolicyText(rule),
     allowedAdjustments: allowedAdjustmentKinds(rule),
     status: clock.status,
+    supersededReason: clock.supersededReason,
     metOn: clock.metOn as CivilDate | null,
     daysRemaining: daysBetween(today, clock.currentDue as CivilDate),
   }

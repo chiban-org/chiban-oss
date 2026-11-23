@@ -54,6 +54,7 @@ describe('settings menu', () => {
     expect(sections[2]?.items.map((i) => i.label)).toEqual([
       'Town rule settings',
       'Local code amendments',
+      'Building permits and code',
       'State law',
       'Building code editions',
       'Sections for findings',

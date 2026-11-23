@@ -6,8 +6,9 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardMergeValues, getBoard } from '@/features/boards/townBoards'
-import { appealRightsFor } from '@/features/decisions/appealRights'
+import { appealRightsForDecision, decisionNodeKind } from '@/features/decisions/appealRights'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
@@ -49,7 +50,16 @@ export async function decisionDocumentInput(
   const reasonsText = decision.reasonsForDisapproval?.trim() ?? ''
   const reasons = reasonsText === '' ? null : reasonsText
   const conditions = decision.conditions.map((c) => c.text)
-  const appealRights = appealRightsFor(app.typeBody.classification ?? '')
+  const appealRights = await appealRightsForDecision(
+    db,
+    app.typeBody.classification ?? '',
+    {
+      kind: decisionNodeKind(boardOfApplication(app)),
+      outcome: decision.outcome,
+      significant: decision.significant,
+    },
+    signal,
+  )
   const values = {
     ...mergeContextOf(data),
     ...(await boardMergeValues(db, board)),

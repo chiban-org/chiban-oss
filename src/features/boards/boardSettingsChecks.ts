@@ -1,16 +1,27 @@
-import { BOARD_KIND_TRAITS, type PackRule } from '@packs/nh/schema'
+import {
+  NO_PROJECTION_MESSAGE,
+  primaryAbutterParams,
+  supportsProjection,
+} from '@/features/abutters/packParams'
+import { bufferAboveMaxMessage } from '@/features/abutters/townBuffer'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue, type TownValueError } from '@/features/packs/overridePolicy'
-
-const FILING_LEAD_KEY = 'nh.pb.filing_lead'
+import { packRoles } from '@/features/packs/roles'
+import type { PackRule } from '@/features/packs/schema'
 
 type Board = BoardSettingsBody['boards'][number]
 
 function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | null {
   if (!abutters.projectionEnabled) return null
+  if (!supportsProjection(primaryAbutterParams())) {
+    return {
+      invalid: [{ path: 'abutters.projectionEnabled', message: NO_PROJECTION_MESSAGE }],
+    }
+  }
   if (abutters.layersConfirmedBy === null) {
     return {
       invalid: [
@@ -27,6 +38,33 @@ function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | 
         {
           path: 'abutters.layersConfirmedOn',
           message: 'Enter the date the road and water layers were confirmed.',
+        },
+      ],
+    }
+  }
+  return null
+}
+
+function bufferIssue(abutters: BoardSettingsBody['abutters']): PublishError | null {
+  const bufferFt = abutters.bufferFt
+  if (bufferFt === null || bufferFt === undefined) return null
+  const townBuffer = primaryAbutterParams().townBuffer
+  if (townBuffer === undefined) {
+    return {
+      invalid: [
+        {
+          path: 'abutters.bufferFt',
+          message: 'State law here counts abutters by adjacency, so there is no distance to set.',
+        },
+      ],
+    }
+  }
+  if (bufferFt > townBuffer.maxFt) {
+    return {
+      invalid: [
+        {
+          path: 'abutters.bufferFt',
+          message: bufferAboveMaxMessage(townBuffer),
         },
       ],
     }
@@ -73,7 +111,7 @@ function entryIssue(entries: Board[], active: BoardRow[]): PublishError | null {
     }
     seen.add(entry.boardId)
   }
-  const missing = active.find((b) => BOARD_KIND_TRAITS[b.kind].holdsHearings && !seen.has(b.id))
+  const missing = active.find((b) => BOARD_KIND_BEHAVIOUR[b.kind].holdsHearings && !seen.has(b.id))
   if (missing !== undefined) {
     return {
       invalid: [{ path: 'boards', message: `Add the notice settings for the ${missing.name}.` }],
@@ -86,19 +124,25 @@ export function checkBoardSettings(
   body: BoardSettingsBody,
   active: BoardRow[],
 ): PublishError | null {
-  const abutters = abuttersIssue(body.abutters)
+  const abutters = abuttersIssue(body.abutters) ?? bufferIssue(body.abutters)
   if (abutters !== null) return abutters
   const entries = entryIssue(body.boards, active)
   if (entries !== null) return entries
-  const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
+  const leadKey = packRoles().rules.filingLead
   for (const entry of body.boards) {
     if (entry.filingLeadDays === null) continue
     const board = active.find((b) => b.id === entry.boardId)
-    if (board === undefined || !BOARD_KIND_TRAITS[board.kind].hasFilingLead) {
+    if (board === undefined || !BOARD_KIND_BEHAVIOUR[board.kind].hasFilingLead) {
       return {
         invalid: [{ path: 'boards', message: 'Only the Planning Board has a filing lead time.' }],
       }
     }
+    if (leadKey === null) {
+      return {
+        invalid: [{ path: 'boards', message: 'State law here sets no filing lead time.' }],
+      }
+    }
+    const rule = ruleByKey(loadPack(), leadKey)
     const checked = checkTownValue(rule, {
       value: entry.filingLeadDays,
       adoptingAuthority: entry.filingLeadAdoption?.adoptingAuthority,

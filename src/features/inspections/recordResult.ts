@@ -1,19 +1,22 @@
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { applications, inspectionItemResults, inspections } from '@/db/schema'
+import { inspectionItemResults, inspections } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { isSuspended } from '@/features/appeals/suspension'
 import type { CoreState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { requireCapability } from '@/features/authz/capabilities'
+import { mayActOnInspection } from '@/features/authz/classificationScope'
+import { markInspectionClocksMet } from '@/features/clocks/triggeredClocks'
 import { getVersion } from '@/features/config/store'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { applyPassedFinal } from '@/features/inspections/closeOnFinal'
+import { lockInspectionAfterApplication } from '@/features/inspections/lockInspection'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { recordsInspection } from '@/features/inspections/visibility'
 import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
+import { recordSystemEvent } from '@/features/records/recordEvents'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -94,7 +97,7 @@ async function storeItems(
 interface Prepared {
   locked: typeof inspections.$inferSelect
   checklist: ChecklistBody
-  appState: string
+  appState: CoreState
 }
 
 async function prepare(
@@ -104,20 +107,13 @@ async function prepare(
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<Result<Prepared, RecordResultError>> {
-  const [locked] = await tx
-    .select()
-    .from(inspections)
-    .where(eq(inspections.id, input.inspectionId))
-    .for('update')
-  if (locked === undefined) return err('not_found')
+  const found = await lockInspectionAfterApplication(tx, input.inspectionId)
+  if (found === null) return err('not_found')
+  const { inspection: locked, appState } = found
   if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
   if (locked.status !== 'scheduled') return err('not_scheduled')
   if (!recordsInspection(actor, locked.inspectorUserId)) return err('not_assigned')
-  const [app] = await tx
-    .select({ state: applications.state })
-    .from(applications)
-    .where(eq(applications.id, locked.applicationId))
-  if (app?.state === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
+  if (appState === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
     return err('permit_suspended')
   }
   if (locked.scheduledDate === null || today < locked.scheduledDate) return err('not_scheduled')
@@ -128,7 +124,7 @@ async function prepare(
   if (itemsConflict(input, checklist)) return err('result_conflicts_items')
   const notes = input.notes?.trim() ?? ''
   if (input.result === 'failed' && notes.length < MIN_FAIL_NOTES) return err('notes_required')
-  return ok({ locked, checklist, appState: app?.state ?? 'issued' })
+  return ok({ locked, checklist, appState: appState ?? 'issued' })
 }
 
 async function recordInTransaction(
@@ -154,11 +150,19 @@ async function recordInTransaction(
       updatedAt: new Date(),
     })
     .where(eq(inspections.id, locked.id))
-  const outcome =
-    input.result === 'passed' && locked.isFinal
-      ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
-      : ok({ applicationState: appState as CoreState, closed: false })
+  await markInspectionClocksMet(tx, locked.applicationId, today, signal)
+  const passedFinal = input.result === 'passed' && locked.isFinal
+  const outcome = passedFinal
+    ? await applyPassedFinal(tx, actor, locked.applicationId, today, signal)
+    : ok({ applicationState: appState, closed: false })
   if (!outcome.ok) return err(outcome.error === 'forbidden' ? 'forbidden' : outcome.error)
+  if (passedFinal) {
+    await recordSystemEvent(
+      tx,
+      { kind: 'final_inspection_passed', applicationId: locked.applicationId },
+      today,
+    )
+  }
   await queueForParties(
     tx,
     {
@@ -195,8 +199,9 @@ export async function recordInspectionResult(
   deps: { now?: Date } = {},
 ): Promise<Result<RecordResultOutcome, RecordResultError>> {
   signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'inspection.record', signal)
-  if (!allowed.ok) return err('forbidden')
+  if (!(await mayActOnInspection(db, actor, 'inspection.record', input.inspectionId, signal))) {
+    return err('forbidden')
+  }
   const today = await townToday(db, deps.now ?? new Date(), signal)
   return await transactionResult(db, (tx) => recordInTransaction(tx, actor, input, today, signal))
 }
