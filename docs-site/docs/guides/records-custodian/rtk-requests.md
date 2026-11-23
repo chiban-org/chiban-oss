@@ -31,7 +31,7 @@ The list puts the soonest date first, and requests with no date running come las
 
 Open a request and the sentence under its title says what is waiting and when it is due, for example "Waiting on: Town. Send the first response. First response due November 17, 2026, 6 days left." Under **Due next**, **How it is counted** shows the start date and the counting method.
 
-You can still record a late response. The request then shows "Answered late" with the due date and the answer date.
+You can still record a late response. The request then shows "Sent late" with the due date and the date the response was sent.
 
 ## Send the first response
 
