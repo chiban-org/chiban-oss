@@ -134,7 +134,7 @@ function recordsOf(bytes: Uint8Array): string[][] | null {
       bom: true,
       skip_empty_lines: true,
       trim: true,
-    }) as string[][]
+    })
   } catch {
     return null
   }

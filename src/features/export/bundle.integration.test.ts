@@ -161,11 +161,11 @@ describe('export bundle: tables', () => {
       expect(bytes, entity.name).toBeDefined()
       expect(sha(bytes ?? Buffer.alloc(0))).toBe(item?.sha256)
       expect([...(bytes ?? Buffer.alloc(0)).subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-      const records = parse((bytes ?? Buffer.alloc(0)).toString('utf8'), {
+      const records = parse<Record<string, string>>((bytes ?? Buffer.alloc(0)).toString('utf8'), {
         bom: true,
         columns: true,
         skip_empty_lines: true,
-      }) as Record<string, string>[]
+      })
       const ndjson = entityRows(entries, manifest, entity.name)
       expect(records, entity.name).toHaveLength(ndjson.length)
       expectSameShape(entity.name, entityColumns(entity), ndjson, records)

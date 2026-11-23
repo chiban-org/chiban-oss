@@ -98,7 +98,7 @@ function readCsv(
     bom: true,
     relax_column_count: true,
     skip_empty_lines: false,
-  }) as string[][]
+  })
   const rows = collect(
     lines.map((values, i) => ({ row: i + 1, values })),
     mapping,
