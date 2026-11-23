@@ -32,7 +32,13 @@ export async function addMeetingThroughForm(page: Page, spec: MeetingSpec): Prom
   await dialog.getByLabel('Kind').selectOption(spec.kind)
   await dialog.getByLabel('Location').fill(spec.location)
   await dialog.getByRole('button', { name: 'Add meeting' }).click()
-  await expect(dialog.getByRole('status')).toHaveText('Meeting added to the calendar.')
+  const added = dialog.getByRole('status').filter({ hasText: 'Meeting added to the calendar.' })
+  const pastConfirm = page.getByRole('alertdialog', { name: 'Add a meeting dated in the past?' })
+  await expect(added.or(pastConfirm)).toBeVisible()
+  if (await pastConfirm.isVisible()) {
+    await pastConfirm.getByRole('button', { name: 'Add the past meeting' }).click()
+  }
+  await expect(added).toBeVisible()
 }
 
 export async function meetingIdFor(db: E2eDb, spec: MeetingSpec): Promise<string> {
