@@ -5,8 +5,8 @@ import { applications, clocks, decisionNotices, deemedRefusals, documents } from
 import { transactionResult } from '@/db/transactionResult'
 import { addAdministrativeDecisionTx } from '@/features/appeals/adminAppeals'
 import {
-  checklistDocumentIds,
   mayBeDecisionNotice,
+  notDecisionDocumentIds,
 } from '@/features/applications/decisionNoticeDocuments'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -72,8 +72,8 @@ export async function recordDecisionNotice(
         ),
       )
     if (doc === undefined) return err('document_not_found')
-    const filed = await checklistDocumentIds(tx, app.id)
-    if (!mayBeDecisionNotice({ documentId: doc.id, docKind: doc.docKind }, filed)) {
+    const excluded = await notDecisionDocumentIds(tx, app.id)
+    if (!mayBeDecisionNotice({ documentId: doc.id, docKind: doc.docKind }, excluded)) {
       return err('not_a_decision_document')
     }
     const [existing] = await tx
